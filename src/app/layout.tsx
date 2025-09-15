@@ -16,7 +16,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={inter.className} style={{ backgroundColor: '#d3b588' }}>{children}</body>
+      <body className={inter.className} style={{ backgroundColor: '#d3b588' }} suppressHydrationWarning={true}>
+        {children}
+      </body>
     </html>
   );
 }
