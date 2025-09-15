@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import Image from "next/image";
 import StaggeredMenu from "./StaggeredMenu";
+import PixelBlast from "./PixelBlast";
 import { InfiniteSlider } from "@/components/ui/infinite-slider";
 import { ProgressiveBlur } from "@/components/ui/progressive-blur";
 
@@ -65,8 +66,27 @@ export default function HeroSection() {
         </div>
       </div>
       <main className="overflow-x-hidden">
-        <section>
-          <div className="pb-24 pt-12 md:pb-32 lg:pb-56 lg:pt-44">
+        <section className="relative">
+          {/* PixelBlast Background */}
+          <div className="absolute inset-0 w-full h-full">
+            <PixelBlast
+              variant="square"
+              pixelSize={4}
+              color="#d23187"
+              patternScale={2}
+              patternDensity={1.5}
+              enableRipples
+              rippleSpeed={0.4}
+              rippleThickness={0.12}
+              rippleIntensityScale={1.5}
+              speed={0.5}
+              edgeFade={0.25}
+              transparent
+            />
+          </div>
+          
+          {/* Content overlay */}
+          <div className="relative z-10 pb-24 pt-12 md:pb-32 lg:pb-56 lg:pt-44">
             <div className="relative mx-auto flex max-w-6xl flex-col px-6 lg:block">
               <div className="mx-auto max-w-lg text-center lg:ml-0 lg:w-1/2 lg:text-left">
                 <h1 className="mt-8 max-w-2xl text-balance text-5xl font-medium md:text-6xl lg:mt-16 xl:text-7xl">
@@ -107,7 +127,7 @@ export default function HeroSection() {
             </div>
           </div>
         </section>
-        <section className="bg-background pb-16 md:pb-32">
+        <section className="pb-16 md:pb-32">
           <div className="group relative m-auto max-w-6xl px-6">
             <div className="flex flex-col items-center md:flex-row">
               <div className="md:max-w-44 md:border-r md:pr-6">
@@ -163,8 +183,8 @@ export default function HeroSection() {
                   </div>
                 </InfiniteSlider>
 
-                <div className="bg-linear-to-r from-background absolute inset-y-0 left-0 w-20"></div>
-                <div className="bg-linear-to-l from-background absolute inset-y-0 right-0 w-20"></div>
+                <div className="absolute inset-y-0 left-0 w-20" style={{ background: 'linear-gradient(to right, #d3b588, transparent)' }}></div>
+                <div className="absolute inset-y-0 right-0 w-20" style={{ background: 'linear-gradient(to left, #d3b588, transparent)' }}></div>
                 <ProgressiveBlur
                   className="pointer-events-none absolute left-0 top-0 h-full w-20"
                   direction="left"
