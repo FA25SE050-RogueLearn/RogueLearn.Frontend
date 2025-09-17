@@ -3,29 +3,42 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
     "lint": "next lint"
   },
   "dependencies": {
+    "@radix-ui/react-dialog": "^1.1.15",
+    "@radix-ui/react-slot": "^1.2.3",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "gsap": "^3.13.0",
     "lucide-react": "^0.544.0",
-    "next": "14.2.3",
-    "react": "^18",
-    "react-dom": "^18",
+    "motion": "^12.23.12",
+    "next": "15.5.3",
+    "pixi.js": "^8.13.2",
+    "postprocessing": "^6.37.8",
+    "react": "19.1.1",
+    "react-dom": "19.1.1",
+    "react-use-measure": "^2.1.7",
     "tailwind-merge": "^3.3.1",
-    "tailwindcss-animate": "^1.0.7"
+    "tailwindcss-animate": "^1.0.7",
+    "three": "^0.180.0"
   },
   "devDependencies": {
     "@types/node": "^20",
-    "@types/react": "^18",
-    "@types/react-dom": "^18",
+    "@types/react": "19.1.13",
+    "@types/react-dom": "19.1.9",
+    "@types/three": "^0.180.0",
     "eslint": "^8",
-    "eslint-config-next": "14.2.3",
+    "eslint-config-next": "15.5.3",
     "postcss": "^8",
     "tailwindcss": "^3.4.1",
     "typescript": "^5"
+  },
+  "overrides": {
+    "@types/react": "19.1.13",
+    "@types/react-dom": "19.1.9"
   }
 }

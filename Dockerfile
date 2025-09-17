@@ -1,4 +1,3 @@
-# roguelearn-web/Dockerfile
 # Use an official Node.js runtime as a parent image
 FROM node:20-alpine AS base
 
@@ -43,7 +42,8 @@ COPY --from=builder /app/.next/static ./.next/static
 
 # Expose the port the app runs on
 EXPOSE 3000
-ENV PORT 3000
+# Use key=value format for environment variables to resolve the warning.
+ENV PORT=3000
 
 # The command to start the Next.js server
 CMD ["node", "server.js"]
