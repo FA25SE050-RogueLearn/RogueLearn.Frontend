@@ -1,3 +1,4 @@
+// roguelearn-web/src/components/hero-section.tsx
 "use client";
 
 import React from "react";
@@ -129,49 +130,49 @@ export default function HeroSection() {
               <div className="relative py-6 md:w-[calc(100%-11rem)]">
                 <InfiniteSlider speedOnHover={20} speed={40} gap={112}>
                   <div className="flex">
-                    <img
+                    <Image
                       className="mx-auto h-5 w-fit dark:invert"
                       src="https://html.tailus.io/blocks/customers/github.svg"
                       alt="GitHub Logo"
                       height="20"
-                      width="auto"
+                      width="80"
                     />
                   </div>
 
                   <div className="flex">
-                    <img
+                    <Image
                       className="mx-auto h-4 w-fit dark:invert"
                       src="https://html.tailus.io/blocks/customers/laravel.svg"
                       alt="Laravel Logo"
                       height="16"
-                      width="auto"
+                      width="75"
                     />
                   </div>
                   <div className="flex">
-                    <img
+                    <Image
                       className="mx-auto h-6 w-fit dark:invert"
                       src="https://html.tailus.io/blocks/customers/openai.svg"
                       alt="OpenAI Logo"
                       height="24"
-                      width="auto"
+                      width="88"
                     />
                   </div>
                   <div className="flex">
-                    <img
+                    <Image
                       className="mx-auto h-5 w-fit dark:invert"
                       src="https://html.tailus.io/blocks/customers/nvidia.svg"
                       alt="Nvidia Logo"
                       height="20"
-                      width="auto"
+                      width="86"
                     />
                   </div>
                   <div className="flex">
-                    <img
+                    <Image
                       className="mx-auto h-5 w-fit dark:invert"
                       src="https://html.tailus.io/blocks/customers/lemonsqueezy.svg"
                       alt="Lemon Squeezy Logo"
                       height="20"
-                      width="auto"
+                      width="122"
                     />
                   </div>
                 </InfiniteSlider>

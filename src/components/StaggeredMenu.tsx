@@ -1,8 +1,10 @@
+// roguelearn-web/src/components/StaggeredMenu.tsx
 'use client';
 
 import React, { useCallback, useLayoutEffect, useRef, useState } from 'react';
 import { gsap } from 'gsap';
 import './StaggeredMenu.css';
+import Image from 'next/image';
 
 export interface StaggeredMenuItem {
   label: string;
@@ -207,21 +209,7 @@ export const StaggeredMenu: React.FC<StaggeredMenuProps> = ({
 
     openTlRef.current = tl;
     return tl;
-  }, [position]);
-
-  const playOpen = useCallback(() => {
-    if (busyRef.current) return;
-    busyRef.current = true;
-    const tl = buildOpenTimeline();
-    if (tl) {
-      tl.eventCallback('onComplete', () => {
-        busyRef.current = false;
-      });
-      tl.play(0);
-    } else {
-      busyRef.current = false;
-    }
-  }, [buildOpenTimeline]);
+  }, []);
 
   const playClose = useCallback(() => {
     openTlRef.current?.kill();
@@ -259,6 +247,20 @@ export const StaggeredMenu: React.FC<StaggeredMenuProps> = ({
       }
     });
   }, [position]);
+
+  const playOpen = useCallback(() => {
+    if (busyRef.current) return;
+    busyRef.current = true;
+    const tl = buildOpenTimeline();
+    if (tl) {
+      tl.eventCallback('onComplete', () => {
+        busyRef.current = false;
+      });
+      tl.play(0);
+    } else {
+      busyRef.current = false;
+    }
+  }, [buildOpenTimeline]);
 
   const animateIcon = useCallback((opening: boolean) => {
     const icon = iconRef.current;
@@ -366,7 +368,7 @@ export const StaggeredMenu: React.FC<StaggeredMenuProps> = ({
       </div>
       <header className="staggered-menu-header" aria-label="Main navigation header">
         <div className="sm-logo" aria-label="Logo">
-          <img
+          <Image
             src={logoUrl || '/src/assets/logos/reactbits-gh-white.svg'}
             alt="Logo"
             className="sm-logo-img"
