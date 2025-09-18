@@ -19,9 +19,12 @@ const fontBody = Nunito_Sans({
 export const metadata: Metadata = {
   title: "RogueLearn",
   description: "Learn Programming Through Adventure",
-  // Adds the new logo as the website's favicon.
+  // This configuration ensures browsers prioritize your logo.png
+  // over the default favicon.ico, fixing the issue of the Vercel logo appearing.
   icons: {
     icon: '/logo.png',
+    shortcut: '/logo.png',
+    apple: '/logo.png',
   },
 };
 
