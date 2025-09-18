@@ -4,7 +4,6 @@ import { Lora, Nunito_Sans } from "next/font/google";
 import "./globals.css";
 import { cn } from "@/lib/utils";
 
-// Define fonts based on the fantasy theme: Lora for headings, Nunito Sans for body text.
 const fontHeading = Lora({ 
   subsets: ["latin"],
   display: 'swap',
@@ -20,6 +19,10 @@ const fontBody = Nunito_Sans({
 export const metadata: Metadata = {
   title: "RogueLearn",
   description: "Learn Programming Through Adventure",
+  // Adds the new logo as the website's favicon.
+  icons: {
+    icon: '/logo.png',
+  },
 };
 
 export default function RootLayout({
@@ -28,7 +31,6 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    // Set the default theme to dark and apply the chosen fonts.
     <html lang="en" className="dark">
       <body 
         className={cn("antialiased", fontHeading.variable, fontBody.variable)} 

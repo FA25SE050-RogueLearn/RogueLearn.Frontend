@@ -1,9 +1,10 @@
 // roguelearn-web/src/app/community/page.tsx
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { mockCommunity } from "@/lib/mockData";
 import { ShieldCheck } from "lucide-react";
+import Link from "next/link";
 
 // Renders the Community page, listing available guilds.
 export default function CommunityPage() {
@@ -38,7 +39,10 @@ export default function CommunityPage() {
                     <span>Active Events: {guild.activeEvents}</span>
                   </div>
                 </div>
-                <Button variant="outline">View</Button>
+                {/* Updated the button to be a Link that routes to the dynamic guild page. */}
+                <Button asChild variant="outline">
+                  <Link href={`/community/guilds/${guild.id}`}>View</Link>
+                </Button>
               </CardContent>
             </Card>
           ))}

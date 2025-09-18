@@ -34,6 +34,7 @@ export function ActiveQuest() {
           <div className="flex flex-col items-center gap-2">
             <Star className="w-6 h-6 text-accent/80" />
             <span className="font-body text-sm text-foreground/70">Mastery</span>
+            {/* The mastery percentage is now correctly sourced from the mock data. */}
             <span className="font-heading font-bold text-lg">{quest.progress.masteryPercent}%</span>
           </div>
         </div>

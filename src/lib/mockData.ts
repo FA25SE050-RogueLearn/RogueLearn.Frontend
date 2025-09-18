@@ -1,6 +1,13 @@
 // roguelearn-web/src/lib/mockData.ts
 // Centralized mock data to simulate the entire application state.
 
+// Define the Member type to ensure type safety for guild members, resolving the TypeScript error.
+interface Member {
+  id: string;
+  name: string;
+  status: 'online' | 'idle' | 'offline';
+}
+
 // User data, simulating the response from a User Service.
 export const mockUser = {
   username: "Aetherius",
@@ -68,9 +75,41 @@ export const mockArsenal = [
 ];
 
 // Community data, simulating responses from a Social Service.
+// Expanded to include members and chat messages for the guild detail page.
 export const mockCommunity = {
   guilds: [
-    { id: 'guild-1', name: "The Alchemist's Circle", description: 'A guild dedicated to the deepest mysteries of alchemy and elemental transformation.', members: 128, activeEvents: 2, isVerified: true },
-    { id: 'guild-2', name: "Beginner's Study Hall", description: 'A friendly and welcoming place for new scribes to ask questions and find study partners.', members: 42, activeEvents: 0, isVerified: false },
+    { 
+      id: 'guild-1', 
+      name: "The Alchemist's Circle", 
+      description: 'A guild dedicated to the deepest mysteries of alchemy and elemental transformation.', 
+      members: 128, 
+      activeEvents: 2, 
+      isVerified: true,
+      createdAt: 'Sep, 2025 Rank 2265',
+      // Apply the Member type to the array to ensure type compatibility.
+      membersList: [
+        { id: 'user-1', name: 'Aetherius', status: 'online' },
+        { id: 'user-2', name: 'Luna', status: 'online' },
+        { id: 'user-3', name: 'Vixxy', status: 'idle' },
+        { id: 'user-4', name: 'Morgana', status: 'offline' },
+        { id: 'user-5', name: 'Zephyr', status: 'offline' },
+      ] as Member[],
+      chatMessages: [
+        { id: 'msg-1', userId: 'user-2', name: 'Luna', message: 'Has anyone reviewed the latest chapter on elemental binding?' },
+        { id: 'msg-2', userId: 'user-1', name: 'Aetherius', message: 'I have. The section on aetheric resonance is particularly fascinating.' },
+        { id: 'msg-3', userId: 'user-3', name: 'Vixxy', message: 'I\'m still working through the prerequisites. Can anyone help with the transmutation symbols?' },
+      ]
+    },
+    { 
+      id: 'guild-2', 
+      name: "Beginner's Study Hall", 
+      description: 'A friendly and welcoming place for new scribes to ask questions and find study partners.', 
+      members: 42, 
+      activeEvents: 0, 
+      isVerified: false,
+      createdAt: 'Oct, 2025 Rank 2265',
+      membersList: [] as Member[],
+      chatMessages: []
+    },
   ]
 };
