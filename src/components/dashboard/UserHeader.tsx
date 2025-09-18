@@ -1,5 +1,5 @@
 // roguelearn-web/src/components/dashboard/UserHeader.tsx
-import { mockUser } from "@/lib/mockUser";
+import { mockUser } from "@/lib/mockData";
 
 // Renders the header section of the dashboard with user info and XP bar.
 export function UserHeader() {
