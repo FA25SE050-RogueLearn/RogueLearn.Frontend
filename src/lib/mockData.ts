@@ -1,11 +1,36 @@
 // roguelearn-web/src/lib/mockData.ts
 // Centralized mock data to simulate the entire application state.
 
-// Define the Member type to ensure type safety for guild members, resolving the TypeScript error.
-interface Member {
+// Define and export shared interfaces for mock data to ensure type safety and consistency.
+export interface Member {
   id: string;
   name: string;
   status: 'online' | 'idle' | 'offline';
+}
+
+export interface ChatMessage {
+  id: string;
+  userId: string;
+  name: string;
+  message: string;
+}
+
+// Define the structure for a Guild to be used within the mockCommunity object.
+interface Guild {
+  id: string;
+  name: string;
+  description: string;
+  members: number;
+  activeEvents: number;
+  isVerified: boolean;
+  createdAt: string;
+  membersList: Member[];
+  chatMessages: ChatMessage[];
+}
+
+// Define the structure for the Community object.
+interface Community {
+  guilds: Guild[];
 }
 
 // User data, simulating the response from a User Service.
@@ -75,8 +100,8 @@ export const mockArsenal = [
 ];
 
 // Community data, simulating responses from a Social Service.
-// Expanded to include members and chat messages for the guild detail page.
-export const mockCommunity = {
+// The data object is now strongly typed with the 'Community' interface, removing the need for type assertions.
+export const mockCommunity: Community = {
   guilds: [
     { 
       id: 'guild-1', 
@@ -86,14 +111,13 @@ export const mockCommunity = {
       activeEvents: 2, 
       isVerified: true,
       createdAt: 'Sep, 2025 Rank 2265',
-      // Apply the Member type to the array to ensure type compatibility.
       membersList: [
         { id: 'user-1', name: 'Aetherius', status: 'online' },
         { id: 'user-2', name: 'Luna', status: 'online' },
         { id: 'user-3', name: 'Vixxy', status: 'idle' },
         { id: 'user-4', name: 'Morgana', status: 'offline' },
         { id: 'user-5', name: 'Zephyr', status: 'offline' },
-      ] as Member[],
+      ],
       chatMessages: [
         { id: 'msg-1', userId: 'user-2', name: 'Luna', message: 'Has anyone reviewed the latest chapter on elemental binding?' },
         { id: 'msg-2', userId: 'user-1', name: 'Aetherius', message: 'I have. The section on aetheric resonance is particularly fascinating.' },
@@ -108,7 +132,7 @@ export const mockCommunity = {
       activeEvents: 0, 
       isVerified: false,
       createdAt: 'Oct, 2025 Rank 2265',
-      membersList: [] as Member[],
+      membersList: [],
       chatMessages: []
     },
   ]

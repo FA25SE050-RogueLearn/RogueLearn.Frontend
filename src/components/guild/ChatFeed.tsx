@@ -1,12 +1,5 @@
 // roguelearn-web/src/components/guild/ChatFeed.tsx
-import { mockUser } from "@/lib/mockData";
-
-interface Message {
-  id: string;
-  userId: string;
-  name: string;
-  message: string;
-}
+import { ChatMessage as Message } from "@/lib/mockData";
 
 interface ChatFeedProps {
   messages: Message[];

@@ -1,10 +1,7 @@
 // roguelearn-web/src/components/guild/MembersList.tsx
-interface Member {
-  id: string;
-  name: string;
-  status: 'online' | 'idle' | 'offline';
-}
+import { Member } from "@/lib/mockData";
 
+// The local 'Member' interface has been removed and is now imported from a central location.
 interface MembersListProps {
   members: Member[];
 }
