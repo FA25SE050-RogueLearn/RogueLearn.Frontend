@@ -5,10 +5,15 @@ import { Progress } from "@/components/ui/progress";
 import { mockQuests } from "@/lib/mockData";
 import { CheckCircle, Circle } from "lucide-react";
 import { Button } from "@/components/ui/button";
+interface PageProps {
+  params: Promise<{ questId: string }>;
+}
 
 // Renders the details for a specific quest, including its modules/objectives.
-export default function QuestDetailPage({ params }: { params: { questId: string } }) {
-  const quest = mockQuests.active.find(q => q.id === params.questId);
+export default async function QuestDetailPage({ params }:  PageProps) {
+ // Await the params to get the actual values
+  const { questId } = await params;
+  const quest = mockQuests.active.find(q => q.id === questId);
 
   if (!quest) {
     return (
