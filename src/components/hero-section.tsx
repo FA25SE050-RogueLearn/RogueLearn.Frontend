@@ -59,7 +59,6 @@ export default function HeroSection() {
             openMenuButtonColor="#1f2937"
             changeMenuColorOnOpen={true}
             colors={["#9B99FE", "#2BC8B7"]}
-            logoUrl="/next.svg"
             accentColor="#2BC8B7"
             onMenuOpen={() => console.log("Menu opened")}
             onMenuClose={() => console.log("Menu closed")}
