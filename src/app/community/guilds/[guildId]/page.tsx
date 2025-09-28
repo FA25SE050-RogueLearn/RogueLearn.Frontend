@@ -6,15 +6,9 @@ import { ChatFeed } from "@/components/guild/ChatFeed";
 import { ChatInput } from "@/components/guild/ChatInput";
 import { GuildBottomNav } from "@/components/guild/GuildBottomNav";
 
-// Define a specific interface for the page's props for better type safety and to resolve the build error.
-interface GuildDetailPageProps {
-  params: {
-    guildId: string;
-  };
-}
-
 // This new page renders the detailed view for a single guild.
-export default function GuildDetailPage({ params }: GuildDetailPageProps) {
+// The props type is now defined inline to be more explicit for the Next.js build process.
+export default function GuildDetailPage({ params }: { params: { guildId: string } }) {
   const guild = mockCommunity.guilds.find(g => g.id === params.guildId);
 
   if (!guild) {
