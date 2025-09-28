@@ -6,10 +6,18 @@ import { ChatFeed } from "@/components/guild/ChatFeed";
 import { ChatInput } from "@/components/guild/ChatInput";
 import { GuildBottomNav } from "@/components/guild/GuildBottomNav";
 
+// Define the PageProps interface for Next.js 15
+interface PageProps {
+  params: Promise<{ guildId: string }>
+}
+
 // This new page renders the detailed view for a single guild.
-// The props type is now defined inline to be more explicit for the Next.js build process.
-export default function GuildDetailPage({ params }: { params: { guildId: string } }) {
-  const guild = mockCommunity.guilds.find(g => g.id === params.guildId);
+// Updated for Next.js 15 async params pattern
+export default async function GuildDetailPage({ params }: PageProps) {
+  // Await the params in Next.js 15
+  const { guildId } = await params;
+  
+  const guild = mockCommunity.guilds.find(g => g.id === guildId);
 
   if (!guild) {
     return <div className="p-8">Guild not found.</div>;
