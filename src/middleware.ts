@@ -1,8 +1,8 @@
-import { createServerClient, type CookieOptions } from '@supabase/ssr'
+import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
-export default async function updateSession(request: NextRequest) {
-  let supabaseResponse = NextResponse.next({
+export async function middleware(request: NextRequest) {
+  let response = NextResponse.next({
     request,
   })
 
@@ -16,18 +16,13 @@ export default async function updateSession(request: NextRequest) {
         },
         setAll(cookiesToSet) {
           cookiesToSet.forEach(({ name, value }) => {
-            // NextRequest.cookies.set() only accepts name and value
             request.cookies.set(name, value)
           })
-          
-          // Create new response to set cookies with options
-          supabaseResponse = NextResponse.next({
+          response = NextResponse.next({
             request,
           })
-          
           cookiesToSet.forEach(({ name, value, options }) => {
-            // NextResponse.cookies.set() accepts options
-            supabaseResponse.cookies.set(name, value, options)
+            response.cookies.set(name, value, options)
           })
         },
       },
@@ -37,5 +32,18 @@ export default async function updateSession(request: NextRequest) {
   // Refresh the auth token
   await supabase.auth.getUser()
 
-  return supabaseResponse
+  return response
+}
+
+export const config = {
+  matcher: [
+    /*
+     * Match all request paths except:
+     * - _next/static (static files)
+     * - _next/image (image optimization files)
+     * - favicon.ico (favicon file)
+     * - Public files (images, etc.)
+     */
+    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+  ],
 }
