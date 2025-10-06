@@ -1,8 +1,7 @@
-// roguelearn-web/src/app/community/page.tsx
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { mockCommunity } from "@/lib/mockData";
+import { mockCommunity } from "@/lib/mock-data";
 import { ShieldCheck } from "lucide-react";
 import Link from "next/link";
 

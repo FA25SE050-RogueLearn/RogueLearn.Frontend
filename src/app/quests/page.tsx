@@ -1,8 +1,7 @@
-// roguelearn-web/src/app/quests/page.tsx
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { mockQuests } from "@/lib/mockData";
+import { mockQuests } from "@/lib/mock-data";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import Link from "next/link";

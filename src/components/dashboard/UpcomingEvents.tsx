@@ -1,6 +1,5 @@
-// roguelearn-web/src/components/dashboard/UpcomingEvents.tsx
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { mockQuests } from "@/lib/mockData";
+import { mockQuests } from "@/lib/mock-data";
 
 // Renders the card for upcoming events on the right side of the dashboard.
 export function UpcomingEvents() {

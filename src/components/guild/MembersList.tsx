@@ -1,7 +1,5 @@
-// roguelearn-web/src/components/guild/MembersList.tsx
-import { Member } from "@/lib/mockData";
+import type { Member } from "@/lib/types";
 
-// The local 'Member' interface has been removed and is now imported from a central location.
 interface MembersListProps {
   members: Member[];
 }

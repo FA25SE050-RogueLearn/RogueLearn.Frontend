@@ -1,9 +1,8 @@
-// roguelearn-web/src/app/arsenal/page.tsx
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { PlusCircle } from "lucide-react";
-import { mockArsenal } from "@/lib/mockData";
+import { mockArsenal } from "@/lib/mock-data";
 
 // Renders The Arsenal page, displaying the user's notes as cards.
 export default function ArsenalPage() {
@@ -31,7 +30,7 @@ export default function ArsenalPage() {
               </CardContent>
               <CardFooter className="flex gap-2">
                 {note.tags.map(tag => (
-                   <span key={tag} className="text-xs font-semibold bg-primary/20 text-accent px-2 py-1 rounded-full">{tag}</span>
+                  <span key={tag} className="text-xs font-semibold bg-primary/20 text-accent px-2 py-1 rounded-full">{tag}</span>
                 ))}
               </CardFooter>
             </Card>

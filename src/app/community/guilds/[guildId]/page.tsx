@@ -1,5 +1,4 @@
-// roguelearn-web/src/app/community/guilds/[guildId]/page.tsx
-import { mockCommunity } from "@/lib/mockData";
+import { mockCommunity } from "@/lib/mock-data";
 import { GuildHeader } from "@/components/guild/GuildHeader";
 import { MembersList } from "@/components/guild/MembersList";
 import { ChatFeed } from "@/components/guild/ChatFeed";
@@ -16,7 +15,7 @@ interface PageProps {
 export default async function GuildDetailPage({ params }: PageProps) {
   // Await the params in Next.js 15
   const { guildId } = await params;
-  
+
   const guild = mockCommunity.guilds.find(g => g.id === guildId);
 
   if (!guild) {
@@ -24,7 +23,7 @@ export default async function GuildDetailPage({ params }: PageProps) {
   }
 
   return (
-    <div 
+    <div
       className="min-h-screen bg-cover bg-center bg-no-repeat flex flex-col"
       style={{ backgroundImage: "url('/guild-background.jpg')" }}
     >
@@ -43,7 +42,7 @@ export default async function GuildDetailPage({ params }: PageProps) {
           <MembersList members={guild.membersList} />
         </aside>
       </div>
-      
+
       {/* Bottom Navigation */}
       <GuildBottomNav />
     </div>

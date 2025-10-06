@@ -1,8 +1,7 @@
-// roguelearn-web/src/app/quests/[questId]/page.tsx
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { mockQuests } from "@/lib/mockData";
+import { mockQuests } from "@/lib/mock-data";
 import { CheckCircle, Circle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 interface PageProps {
@@ -10,8 +9,8 @@ interface PageProps {
 }
 
 // Renders the details for a specific quest, including its modules/objectives.
-export default async function QuestDetailPage({ params }:  PageProps) {
- // Await the params to get the actual values
+export default async function QuestDetailPage({ params }: PageProps) {
+  // Await the params to get the actual values
   const { questId } = await params;
   const quest = mockQuests.active.find(q => q.id === questId);
 
