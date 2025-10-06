@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { Lora, Nunito_Sans } from "next/font/google";
 import "./globals.css";
 import { cn } from "@/lib/utils";
+import { ReactNode } from "react";
 
 const fontHeading = Lora({ 
   subsets: ["latin"],
@@ -31,7 +32,7 @@ export const metadata: Metadata = {
 export default function RootLayout({
   children,
 }: Readonly<{
-  children: React.React.Node;
+  children: ReactNode;
 }>) {
   return (
     // The "dark" className here activates our new default theme.
