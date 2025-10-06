@@ -5,6 +5,7 @@
 
 @layer base {
   :root {
+    /* Light Mode - Clean Default */
     --background: 0 0% 100%;
     --foreground: 222.2 84% 4.9%;
     --card: 0 0% 100%;
@@ -27,27 +28,46 @@
     --radius: 0.5rem;
   }
  
-  /* Defines the color palette for the fantasy theme based on the provided image. */
+  /* Dark Mode - Baldur's Gate 3 Inspired (Brown/Gold Foundation) */
   .dark {
-    --background: 30 25% 8%; /* Dark, earthy brown for the main page background */
-    --foreground: 40 30% 85%; /* Parchment/off-white for primary text */
-    --card: 28 35% 15%; /* A slightly lighter brown for main content cards */
+    /* Deep rich brown backgrounds - like aged leather and wood */
+    --background: 30 25% 8%; /* Deep earthy brown */
+    --foreground: 40 30% 85%; /* Warm parchment text */
+    
+    /* Cards - Elevated brown surfaces with warmth */
+    --card: 28 35% 15%; /* Rich leather/wood tone */
     --card-foreground: 40 30% 85%;
     --popover: 28 35% 15%;
     --popover-foreground: 40 30% 85%;
-    --primary: 30 40% 25%; /* A more saturated brown for active/selected items */
+    
+    /* Primary - Saturated warm brown (active/selected items) */
+    --primary: 30 40% 25%; /* Deep amber-brown */
     --primary-foreground: 40 30% 95%;
-    --secondary: 15 40% 20%; /* A reddish-brown for secondary cards like events */
+    
+    /* Secondary - Reddish brown (like secondary panels in BG3) */
+    --secondary: 15 40% 20%; /* Warm reddish-brown */
     --secondary-foreground: 40 30% 95%;
+    
+    /* Muted - Subtle darker brown */
     --muted: 28 35% 20%;
     --muted-foreground: 40 30% 65%;
-    --accent: 40 30% 85%; /* Parchment color for highlights like the progress bar */
+    
+    /* Accent - Bright magical gold (highlights, CTAs, progress bars) */
+    --accent: 45 90% 58%; /* Vibrant gold like BG3's UI highlights */
     --accent-foreground: 30 25% 8%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 30 25% 15%; /* A border color that subtly separates elements */
+    
+    /* Destructive - Warm red (fire/danger) */
+    --destructive: 0 65% 45%;
+    --destructive-foreground: 40 30% 95%;
+    
+    /* Success - Subtle green glow */
+    --success: 150 45% 42%;
+    --success-foreground: 40 30% 95%;
+    
+    /* Borders - Subtle brown separation */
+    --border: 30 25% 15%;
     --input: 30 25% 15%;
-    --ring: 40 30% 85%;
+    --ring: 45 90% 58%; /* Gold focus ring */
   }
 }
  
@@ -57,5 +77,19 @@
   }
   body {
     @apply bg-background text-foreground;
+  }
+  
+  /* Optional: Subtle texture for aged material feel */
+  body::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0.015;
+    pointer-events: none;
+    background-image: url("data:image/svg+xml,%3Csvg width='200' height='200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' /%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' /%3E%3C/svg%3E");
+    z-index: 9999;
   }
 }

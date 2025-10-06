@@ -31,9 +31,10 @@ export const metadata: Metadata = {
 export default function RootLayout({
   children,
 }: Readonly<{
-  children: React.ReactNode;
+  children: React.React.Node;
 }>) {
   return (
+    // The "dark" className here activates our new default theme.
     <html lang="en" className="dark">
       <body 
         className={cn("antialiased", fontHeading.variable, fontBody.variable)} 
