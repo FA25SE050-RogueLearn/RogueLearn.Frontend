@@ -55,10 +55,10 @@ export default function HeroSection() {
             displaySocials={true}
             displayItemNumbering={true}
             menuButtonColor="#d23187"
-            openMenuButtonColor="#1f2937"
+            openMenuButtonColor="#ffffff"
             changeMenuColorOnOpen={true}
-            colors={["#9B99FE", "#2BC8B7"]}
-            accentColor="#2BC8B7"
+            colors={["#5a4a3e", "#1a1612"]}
+            accentColor="#d23187"
             onMenuOpen={() => console.log("Menu opened")}
             onMenuClose={() => console.log("Menu closed")}
           />
