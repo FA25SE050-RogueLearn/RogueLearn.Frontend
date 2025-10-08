@@ -6,11 +6,11 @@ import Image from 'next/image'
 export const Logo = ({ className }: { className?: string }) => {
     return (
         <Image
-            src="/logo.png"
+            src="/barcode.png"
             alt="RogueLearn Logo"
-            width={78}
-            height={18}
-            className={cn('h-5 w-auto', className)}
+            width={300}
+            height={75}
+            className={cn('h-12 w-auto', className)}
             priority
         />
     )
