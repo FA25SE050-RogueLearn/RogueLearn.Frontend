@@ -11,7 +11,19 @@ import { redirect } from "next/navigation";
 export default async function DashboardPage() {
   const supabase = await createClient();
 
+  // Get the session to access the JWT token
+  const { data: { session } } = await supabase.auth.getSession();
   const { data: { user } } = await supabase.auth.getUser();
+
+  // Log JWT token for debugging
+  if (session?.access_token) {
+    console.log('🔐 JWT Token (Dashboard Access):', session.access_token);
+    console.log('🔐 Token Type:', session.token_type);
+    console.log('🔐 Expires At:', session.expires_at);
+    console.log('🔐 User ID:', user?.id);
+  } else {
+    console.log('❌ No JWT token found in session');
+  }
 
   if (!user) {
     // This should theoretically not be hit due to DashboardLayout's check,
