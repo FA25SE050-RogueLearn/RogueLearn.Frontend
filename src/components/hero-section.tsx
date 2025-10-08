@@ -98,8 +98,8 @@ export default function HeroSection() {
 
                 <div className="mt-12 flex flex-col items-center justify-center gap-2 sm:flex-row lg:justify-start">
                   <Button asChild size="lg" className="px-5 text-base">
-                    <Link href="/game">
-                      <span className="text-nowrap">Start Playing</span>
+                    <Link href="/dashboard">
+                      <span className="text-nowrap">Open Dashboard</span>
                     </Link>
                   </Button>
                   <Button
