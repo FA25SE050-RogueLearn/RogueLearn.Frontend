@@ -40,29 +40,20 @@ export default function HeroSection() {
           pointerEvents: "none",
         }}
       >
-        <div
-          style={{
-            pointerEvents: "auto",
-            width: "100%",
-            height: "100%",
-            position: "relative",
-          }}
-        >
-          <StaggeredMenu
-            position="right"
-            items={menuItems}
-            socialItems={socialItems}
-            displaySocials={true}
-            displayItemNumbering={true}
-            menuButtonColor="#d23187"
-            openMenuButtonColor="#ffffff"
-            changeMenuColorOnOpen={true}
-            colors={["#5a4a3e", "#1a1612"]}
-            accentColor="#d23187"
-            onMenuOpen={() => console.log("Menu opened")}
-            onMenuClose={() => console.log("Menu closed")}
-          />
-        </div>
+        <StaggeredMenu
+          position="right"
+          items={menuItems}
+          socialItems={socialItems}
+          displaySocials={true}
+          displayItemNumbering={true}
+          menuButtonColor="#d23187"
+          openMenuButtonColor="#ffffff"
+          changeMenuColorOnOpen={true}
+          colors={["#5a4a3e", "#1a1612"]}
+          accentColor="#d23187"
+          onMenuOpen={() => console.log("Menu opened")}
+          onMenuClose={() => console.log("Menu closed")}
+        />
       </div>
       <main className="overflow-x-hidden">
         <section className="relative">

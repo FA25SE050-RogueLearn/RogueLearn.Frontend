@@ -349,11 +349,11 @@ export const StaggeredMenu: React.FC<StaggeredMenuProps> = ({
   return (
     <div
       className={(className ? className + ' ' : '') + 'staggered-menu-wrapper'}
-      style={accentColor ? { ['--sm-accent' as any]: accentColor } : undefined}
+      style={accentColor ? { ['--sm-accent' as any]: accentColor, pointerEvents: 'none' } : { pointerEvents: 'none' }}
       data-position={position}
       data-open={open || undefined}
     >
-      <div ref={preLayersRef} className="sm-prelayers" aria-hidden="true">
+      <div ref={preLayersRef} className="sm-prelayers" aria-hidden="true" style={{ pointerEvents: 'none' }}>
         {(() => {
           const raw = colors && colors.length ? colors.slice(0, 4) : ['#3d342e', '#2a241f'];
           let arr = [...raw];
@@ -364,7 +364,7 @@ export const StaggeredMenu: React.FC<StaggeredMenuProps> = ({
           return arr.map((c, i) => <div key={i} className="sm-prelayer" style={{ background: c }} />);
         })()}
       </div>
-      <header className="staggered-menu-header" aria-label="Main navigation header">
+      <header className="staggered-menu-header" aria-label="Main navigation header" style={{ pointerEvents: 'auto' }}>
         <div className="sm-logo" aria-label="Logo">
           <Logo className="sm-logo-img" />
         </div>
@@ -376,6 +376,7 @@ export const StaggeredMenu: React.FC<StaggeredMenuProps> = ({
           aria-controls="staggered-menu-panel"
           onClick={toggleMenu}
           type="button"
+          style={{ pointerEvents: 'auto' }}
         >
           <span ref={textWrapRef} className="sm-toggle-textWrap" aria-hidden="true">
             <span ref={textInnerRef} className="sm-toggle-textInner">
@@ -393,7 +394,7 @@ export const StaggeredMenu: React.FC<StaggeredMenuProps> = ({
         </button>
       </header>
 
-      <aside id="staggered-menu-panel" ref={panelRef} className="staggered-menu-panel" aria-hidden={!open}>
+      <aside id="staggered-menu-panel" ref={panelRef} className="staggered-menu-panel" aria-hidden={!open} style={{ pointerEvents: 'auto' }}>
         <div className="sm-panel-inner">
           <ul className="sm-panel-list" role="list" data-numbering={displayItemNumbering || undefined}>
             {items && items.length ? (
