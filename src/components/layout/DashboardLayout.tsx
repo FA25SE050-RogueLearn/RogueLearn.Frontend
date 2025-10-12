@@ -2,11 +2,12 @@
 import { SidebarNav } from "@/components/dashboard/SidebarNav";
 import { createClient } from "@/utils/supabase/server";
 import { redirect } from "next/navigation";
+import { ReactNode } from "react";
 
-// A reusable layout component for all authenticated pages.
-// It now also acts as a security boundary, redirecting unauthenticated users.
-export async function DashboardLayout({ children }: { children: React.ReactNode }) {
-  const supabase = await createClient(); // ← Correctly awaited
+// The DashboardLayout has been refactored to use Flexbox for a more robust structure.
+// This ensures the sidebar has a fixed height and the main content area is scrollable.
+export async function DashboardLayout({ children }: { children: ReactNode }) {
+  const supabase = await createClient();
   const { data, error } = await supabase.auth.getUser();
 
   if (error || !data?.user) {
@@ -14,11 +15,17 @@ export async function DashboardLayout({ children }: { children: React.ReactNode 
   }
 
   return (
-    <div className="min-h-screen p-8 grid grid-cols-12 gap-8">
-      <aside className="col-span-12 lg:col-span-2">
+    // The main container is now a flexbox, taking up the full viewport height.
+    <div className="h-screen flex gap-8 p-8">
+      {/* The sidebar has a fixed width and will not shrink. */}
+      <aside className="hidden lg:block lg:w-64 flex-shrink-0">
         <SidebarNav />
       </aside>
-      {children}
+      
+      {/* The main content area grows to fill remaining space and handles its own scrolling. */}
+      <div className="flex-grow overflow-y-auto">
+        {children}
+      </div>
     </div>
   );
 }
