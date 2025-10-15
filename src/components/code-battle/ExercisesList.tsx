@@ -116,11 +116,9 @@ export default function ExercisesList({ apiBaseUrl, onSubmit }: ExercisesListPro
   }, [selectedProblem]);
 
   useEffect(() => {
-    console.log('ExercisesList code useEffect:', { isEditorReady, hasEditor: !!monacoEditor.current, codeLength: code?.length });
     if (isEditorReady && monacoEditor.current) {
       const currentValue = monacoEditor.current.getValue();
       if (currentValue !== code) {
-        console.log('Updating Monaco editor in ExercisesList with new code');
         monacoEditor.current.setValue(code);
       }
     }
@@ -169,7 +167,6 @@ export default function ExercisesList({ apiBaseUrl, onSubmit }: ExercisesListPro
   }, [selectedProblem, language, apiBaseUrl]);
 
   const handleProblemSelect = async (problem: CodeProblem) => {
-    console.log('ExercisesList handleProblemSelect:', { problemId: problem.ID, title: problem.Title, language });
     setSelectedProblem(problem);
     setSubmissionResult('');
     
@@ -180,8 +177,6 @@ export default function ExercisesList({ apiBaseUrl, onSubmit }: ExercisesListPro
         const normalizedLang = language === 'go' ? 'Golang' : 
                               language === 'python' ? 'Python' : 'Javascript';
         const problemDetails = mockProblemLanguageDetails[problem.ID]?.[normalizedLang];
-        
-        console.log('Exercise problem details:', { hasDetails: !!problemDetails, normalizedLang });
         
         if (problemDetails) {
           setCode(problemDetails.SolutionStub);

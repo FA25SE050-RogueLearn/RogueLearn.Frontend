@@ -87,12 +87,10 @@ export default function CodeEditor({ code, setCode, language, setLanguage, onSub
 
   useEffect(() => {
     // Only update code when editor is ready
-    console.log('CodeEditor code useEffect:', { isEditorReady, hasEditor: !!monacoEditor.current, codeLength: code?.length });
     if (isEditorReady && monacoEditor.current && code !== undefined) {
       const currentValue = monacoEditor.current.getValue();
       // Only update if the code is actually different
       if (currentValue !== code) {
-        console.log('Updating Monaco editor with new code');
         monacoEditor.current.setValue(code);
       }
     }

@@ -51,7 +51,6 @@ export default function CodeBattlePage() {
   };
 
   const handleProblemSelect = async (problemId: string, title: string) => {
-    console.log('handleProblemSelect called:', { problemId, title, language });
     setSelectedProblemId(problemId);
     setSelectedProblemTitle(title);
     setSubmissionResult('');
@@ -62,8 +61,6 @@ export default function CodeBattlePage() {
       const normalizedLang = language === 'go' ? 'Golang' : 
                             language === 'python' ? 'Python' : 'Javascript';
       const problemDetails = mockProblemLanguageDetails[problemId]?.[normalizedLang];
-      
-      console.log('Problem details found:', { problemDetails: !!problemDetails, normalizedLang });
       
       if (problemDetails) {
         setCode(problemDetails.SolutionStub);
