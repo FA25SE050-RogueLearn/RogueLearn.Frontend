@@ -1,7 +1,7 @@
 // roguelearn-web/src/components/dashboard/SidebarNav.tsx
 'use client';
 
-import { Archive, LayoutGrid, LogOut, Network, ScrollText, Users } from 'lucide-react';
+import { Archive, Code, LayoutGrid, LogOut, Network, ScrollText, Users } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '../ui/button';
 import { cn } from '@/lib/utils';
@@ -15,6 +15,7 @@ const navItems = [
   { href: '/skills', label: 'Skill Tree', icon: Network },
   { href: '/arsenal', label: 'Arsenal', icon: Archive },
   { href: '/community', label: 'Community', icon: Users },
+  { href: '/code-battle', label: 'Code Battle', icon: Code },
 ];
 
 // Renders the main sidebar navigation menu, highlighting the active page.
