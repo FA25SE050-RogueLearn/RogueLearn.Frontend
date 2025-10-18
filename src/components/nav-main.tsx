@@ -35,21 +35,25 @@ export function NavMain({
 }) {
   return (
     <SidebarGroup>
-      <SidebarGroupLabel>Platform</SidebarGroupLabel>
+      <SidebarGroupLabel className="text-[#f5c16c]/70 uppercase tracking-[0.35em] text-xs">Navigation</SidebarGroupLabel>
       <SidebarMenu>
         {items.map((item) => (
           <Collapsible key={item.title} asChild defaultOpen={item.isActive}>
             <SidebarMenuItem>
-              <SidebarMenuButton asChild tooltip={item.title}>
+              <SidebarMenuButton 
+                asChild 
+                tooltip={item.title}
+                className="hover:bg-[#d23187]/20 hover:text-[#f5c16c] data-[active=true]:bg-[#d23187]/25 data-[active=true]:text-[#f5c16c] data-[active=true]:border-l-2 data-[active=true]:border-[#d23187]"
+              >
                 <a href={item.url}>
-                  <item.icon />
-                  <span>{item.title}</span>
+                  <item.icon className="text-[#f5c16c]" />
+                  <span className="text-white/90">{item.title}</span>
                 </a>
               </SidebarMenuButton>
               {item.items?.length ? (
                 <>
                   <CollapsibleTrigger asChild>
-                    <SidebarMenuAction className="data-[state=open]:rotate-90">
+                    <SidebarMenuAction className="data-[state=open]:rotate-90 text-[#f5c16c]/70 hover:text-[#f5c16c]">
                       <ChevronRight />
                       <span className="sr-only">Toggle</span>
                     </SidebarMenuAction>
@@ -58,9 +62,9 @@ export function NavMain({
                     <SidebarMenuSub>
                       {item.items?.map((subItem) => (
                         <SidebarMenuSubItem key={subItem.title}>
-                          <SidebarMenuSubButton asChild>
+                          <SidebarMenuSubButton asChild className="hover:bg-[#d23187]/15 hover:text-[#f5c16c]">
                             <a href={subItem.url}>
-                              <span>{subItem.title}</span>
+                              <span className="text-white/80">{subItem.title}</span>
                             </a>
                           </SidebarMenuSubButton>
                         </SidebarMenuSubItem>
