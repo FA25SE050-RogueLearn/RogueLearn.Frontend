@@ -1,8 +1,6 @@
 "use client";
 
 import { useState, useEffect, useRef } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import EventsList from './EventsList';
 import RoomsList from './RoomsList';
@@ -240,79 +238,122 @@ export default function CodeBattlePage() {
   }, []);
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center gap-4 mb-8">
-        <h1 className="text-4xl font-bold font-heading text-accent">RogueLearn CodeBattle</h1>
-      </div>
-
-        <Tabs defaultValue="battle" className="w-full">
-          <TabsList className="grid w-full max-w-md grid-cols-2">
-            <TabsTrigger value="battle">Battle Arena</TabsTrigger>
-            <TabsTrigger value="practice">Practice</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="battle" className="space-y-6 mt-6">
-            {/* Events and Rooms */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <EventsList 
-                apiBaseUrl={API_BASE_URL}
-                onEventSelect={handleEventSelect}
-                selectedEventId={selectedEventId}
-              />
-              <RoomsList 
-                apiBaseUrl={API_BASE_URL}
-                eventId={selectedEventId}
-                onRoomSelect={handleRoomSelect}
-                selectedRoomId={selectedRoomId}
-              />
+    <div className="flex flex-col gap-10 pb-24">
+      <section className="relative overflow-hidden rounded-[32px] border border-[#f5c16c]/20 bg-gradient-to-br from-[#2c1712]/88 via-[#1a0d0a]/94 to-[#0b0504]/98 p-8 shadow-[0_30px_85px_rgba(52,18,9,0.65)]">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(210,49,135,0.4),_transparent_68%)]" />
+        <div className="absolute inset-0 opacity-20 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')]" />
+        <div className="relative z-10 flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+          <div className="space-y-4">
+            <div className="inline-flex items-center gap-2 rounded-full border border-[#d23187]/40 bg-[#d23187]/15 px-4 py-2 text-xs uppercase tracking-[0.35em] text-[#f9d9eb]">
+              <span className="h-2 w-2 animate-pulse rounded-full bg-[#f5c16c]" />
+              Arena Link Stable
             </div>
-
-            {/* Leaderboard and Problems */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <Leaderboard 
-                apiBaseUrl={API_BASE_URL}
-                eventId={selectedEventId}
-                roomId={selectedRoomId}
-                eventSourceRef={eventSourceRef}
-              />
-              <ProblemsList 
-                apiBaseUrl={API_BASE_URL}
-                eventId={selectedEventId}
-                roomId={selectedRoomId}
-                onProblemSelect={handleProblemSelect}
-                selectedProblemId={selectedProblemId}
-              />
+            <div>
+              <h1 className="text-4xl font-semibold text-white">CodeBattle Arena</h1>
+              <p className="mt-2 max-w-xl text-sm leading-relaxed text-foreground/70">
+                Queue into procedurally generated challenges, duel other rogues in real-time brackets, and
+                refine your spellcraft with focused drills in the practice sanctum.
+              </p>
             </div>
+          </div>
+          <div className="grid gap-3 text-xs uppercase tracking-[0.35em] text-foreground/60 sm:grid-cols-2">
+            {[{
+              label: 'Battle Rating',
+              value: '1,482',
+            }, {
+              label: 'Active Rooms',
+              value: selectedEventId ? 'Live' : 'Awaiting',
+            }, {
+              label: 'Preferred Language',
+              value: language.toUpperCase(),
+            }, {
+              label: 'Notifications',
+              value: notifications.length,
+            }].map((stat) => (
+              <div key={stat.label} className="rounded-2xl border border-[#f5c16c]/25 bg-[#d23187]/10 px-5 py-4">
+                <p className="text-[11px] text-foreground/50">{stat.label}</p>
+                <p className="mt-2 text-lg font-semibold text-white">{stat.value}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
 
-            {/* Code Editor */}
-            {selectedProblemId && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-accent">Solving: {selectedProblemTitle}</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <CodeEditor 
-                    code={code}
-                    setCode={setCode}
-                    language={language}
-                    setLanguage={setLanguage}
-                    onSubmit={handleSubmit}
-                    submissionResult={submissionResult}
-                  />
-                </CardContent>
-              </Card>
-            )}
-          </TabsContent>
+      <Tabs defaultValue="battle" className="w-full">
+        <TabsList className="relative mx-auto grid w-full max-w-xl grid-cols-2 rounded-full border border-[#f5c16c]/25 bg-[#140807]/80 p-1">
+          <TabsTrigger
+            value="battle"
+            className="rounded-full text-xs uppercase tracking-[0.35em] text-foreground/60 data-[state=active]:bg-gradient-to-r data-[state=active]:from-[#d23187] data-[state=active]:via-[#f5c16c] data-[state=active]:to-[#f5c16c] data-[state=active]:text-[#2b130f]"
+          >
+            Battle Arena
+          </TabsTrigger>
+          <TabsTrigger
+            value="practice"
+            className="rounded-full text-xs uppercase tracking-[0.35em] text-foreground/60 data-[state=active]:bg-gradient-to-r data-[state=active]:from-[#f5c16c] data-[state=active]:via-[#d23187] data-[state=active]:to-[#f38f5e] data-[state=active]:text-[#2b130f]"
+          >
+            Practice Sanctum
+          </TabsTrigger>
+        </TabsList>
 
-          <TabsContent value="practice" className="space-y-6 mt-6">
-            <ExercisesList 
+        <TabsContent value="battle" className="mt-8 space-y-8">
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+            <EventsList
               apiBaseUrl={API_BASE_URL}
-              onSubmit={handleExerciseSubmit}
+              onEventSelect={handleEventSelect}
+              selectedEventId={selectedEventId}
             />
-          </TabsContent>
-        </Tabs>
+            <RoomsList
+              apiBaseUrl={API_BASE_URL}
+              eventId={selectedEventId}
+              onRoomSelect={handleRoomSelect}
+              selectedRoomId={selectedRoomId}
+            />
+          </div>
 
-      {/* Notifications */}
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+            <Leaderboard
+              apiBaseUrl={API_BASE_URL}
+              eventId={selectedEventId}
+              roomId={selectedRoomId}
+              eventSourceRef={eventSourceRef}
+            />
+            <ProblemsList
+              apiBaseUrl={API_BASE_URL}
+              eventId={selectedEventId}
+              roomId={selectedRoomId}
+              onProblemSelect={handleProblemSelect}
+              selectedProblemId={selectedProblemId}
+            />
+          </div>
+
+          {selectedProblemId && (
+            <div className="rounded-[28px] border border-[#f5c16c]/22 bg-gradient-to-br from-[#21110d]/88 via-[#140908]/94 to-[#070304]/98 p-6 shadow-[0_24px_70px_rgba(45,15,9,0.5)]">
+              <div className="mb-4 flex items-center justify-between">
+                <div>
+                  <p className="text-xs uppercase tracking-[0.4em] text-foreground/50">Current Duel</p>
+                  <h2 className="text-2xl font-semibold text-white">{selectedProblemTitle}</h2>
+                </div>
+                <div className="rounded-full border border-[#d23187]/35 bg-[#d23187]/15 px-4 py-2 text-xs uppercase tracking-[0.35em] text-[#f9d9eb]">
+                  {language.toUpperCase()}
+                </div>
+              </div>
+              <CodeEditor
+                code={code}
+                setCode={setCode}
+                language={language}
+                setLanguage={setLanguage}
+                onSubmit={handleSubmit}
+                submissionResult={submissionResult}
+              />
+            </div>
+          )}
+        </TabsContent>
+
+        <TabsContent value="practice" className="mt-8 space-y-8">
+          <ExercisesList apiBaseUrl={API_BASE_URL} onSubmit={handleExerciseSubmit} />
+        </TabsContent>
+      </Tabs>
+
       <Notifications notifications={notifications} />
     </div>
   );

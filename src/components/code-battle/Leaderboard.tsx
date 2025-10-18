@@ -55,30 +55,35 @@ export default function Leaderboard({ apiBaseUrl, eventId, roomId, eventSourceRe
   }, [eventSourceRef]);
 
   return (
-    <Card className="border-2 border-accent/20">
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2 text-accent">
-          <Trophy className="w-5 h-5" />
+    <Card className="relative overflow-hidden rounded-[26px] border border-[#f5c16c]/18 bg-gradient-to-br from-[#24120d]/88 via-[#140a08]/94 to-[#070405]/97 p-6 shadow-[0_20px_60px_rgba(48,17,9,0.55)]">
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(245,193,108,0.38),_transparent_70%)] opacity-[0.35]" />
+      <CardHeader className="relative z-10 pb-4">
+        <CardTitle className="flex items-center gap-3 text-lg font-semibold text-white">
+          <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#d23187]/20 text-[#f5c16c]">
+            <Trophy className="h-5 w-5" />
+          </span>
           Leaderboard
         </CardTitle>
       </CardHeader>
-      <CardContent>
+      <CardContent className="relative z-10">
         {!roomId ? (
-          <p className="text-muted-foreground">Select a room to see the leaderboard</p>
+          <p className="text-sm text-foreground/60">Select a room to sync its leaderboard.</p>
         ) : entries.length === 0 ? (
-          <p className="text-muted-foreground">No players on the leaderboard yet</p>
+          <p className="text-sm text-foreground/60">No combatants ranked yet.</p>
         ) : (
-          <ul className="space-y-2">
+          <ul className="space-y-3">
             {entries.map((entry) => (
               <li
                 key={entry.place}
-                className="p-3 rounded-lg bg-card border border-border flex justify-between items-center"
+                className="flex items-center justify-between rounded-2xl border border-[#f5c16c]/20 bg-[#d23187]/10 px-4 py-3 text-sm text-foreground/80"
               >
-                <span className="flex items-center gap-2">
-                  <span className="font-bold text-accent">#{entry.place}</span>
-                  <span>{entry.player_name}</span>
+                <span className="flex items-center gap-3">
+                  <span className="flex h-8 w-8 items-center justify-center rounded-full bg-[#f5c16c]/20 text-[#f5c16c] font-semibold">
+                    #{entry.place}
+                  </span>
+                  <span className="font-medium text-white">{entry.player_name}</span>
                 </span>
-                <span className="font-semibold text-accent">{entry.score} pts</span>
+                <span className="text-xs uppercase tracking-[0.35em] text-[#f5c16c]/90">{entry.score} pts</span>
               </li>
             ))}
           </ul>

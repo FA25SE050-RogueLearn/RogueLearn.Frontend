@@ -106,35 +106,40 @@ export default function CodeEditor({ code, setCode, language, setLanguage, onSub
 
   return (
     <div className="space-y-4">
-      <div className="flex gap-4 items-center">
+      <div className="flex flex-wrap items-center gap-4">
         <select
           value={language}
           onChange={(e) => setLanguage(e.target.value)}
-          className="px-4 py-2 rounded-lg bg-card border border-border text-foreground"
+          className="rounded-full border border-[#f5c16c]/25 bg-[#140707]/80 px-4 py-2 text-sm uppercase tracking-[0.35em] text-foreground/80"
         >
           <option value="javascript">JavaScript</option>
           <option value="python">Python</option>
           <option value="go">Go</option>
         </select>
-        <Button onClick={onSubmit} className="flex items-center gap-2">
-          <Play className="w-4 h-4" />
-          Submit Solution
+        <Button
+          onClick={onSubmit}
+          className="flex items-center gap-2 rounded-full bg-gradient-to-r from-[#d23187] via-[#f5c16c] to-[#f5c16c] px-6 text-xs uppercase tracking-[0.35em] text-[#2b130f] shadow-[0_15px_40px_rgba(210,49,135,0.4)] hover:from-[#f061a6] hover:via-[#f5c16c] hover:to-[#f0b26a]"
+        >
+          <Play className="h-4 w-4" />
+          Submit Invocation
         </Button>
       </div>
-      
-      <div 
-        ref={editorRef} 
-        className="w-full h-[400px] border-2 border-accent/20 rounded-lg overflow-hidden"
+
+      <div
+        ref={editorRef}
+        className="h-[400px] w-full overflow-hidden rounded-2xl border border-[#f5c16c]/22 bg-black/40 shadow-[inset_0_0_35px_rgba(210,49,135,0.28)]"
       />
-      
+
       {submissionResult && (
-        <div className={`p-4 rounded-lg ${
-          submissionResult.includes('Success') || submissionResult.includes('Accepted')
-            ? 'bg-green-500/10 border border-green-500/30 text-green-500'
-            : submissionResult.includes('Failed') || submissionResult.includes('error')
-            ? 'bg-red-500/10 border border-red-500/30 text-red-500'
-            : 'bg-blue-500/10 border border-blue-500/30 text-blue-500'
-        }`}>
+        <div
+          className={`rounded-2xl border px-4 py-3 text-sm ${
+            submissionResult.includes('Success') || submissionResult.includes('Accepted')
+              ? 'border-[#f5c16c]/35 bg-[#f5c16c]/15 text-[#2b130f]'
+              : submissionResult.includes('Failed') || submissionResult.includes('error')
+              ? 'border-rose-400/40 bg-rose-500/20 text-white'
+              : 'border-[#d23187]/40 bg-[#d23187]/20 text-white'
+          }`}
+        >
           {submissionResult}
         </div>
       )}

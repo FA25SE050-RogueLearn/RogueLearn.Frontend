@@ -64,20 +64,97 @@ export default async function DashboardPage() {
     },
   };
 
+  const reliquary = [
+    {
+      label: "Soul Shards",
+      value: "1,240",
+      detail: "+12% this week",
+      gradient: "from-[#d23187]/70 via-[#f061a6]/65 to-[#f5c16c]/60",
+    },
+    {
+      label: "Dungeon Clears",
+      value: "27",
+      detail: "Streak: 6",
+      gradient: "from-[#f5c16c]/60 via-[#d87553]/60 to-[#a84446]/55",
+    },
+    {
+      label: "Guild Favor",
+      value: "Legend",
+      detail: "Rank 3/7",
+      gradient: "from-[#f5c16c]/65 via-[#f2a163]/60 to-[#d67b54]/55",
+    },
+  ];
+
   return (
     <DashboardLayout>
-      {/* The main content area now passes the fetched userProfile to its children */}
-      <main className="col-span-12 lg:col-span-7 flex flex-col gap-8">
+      <div className="flex flex-col gap-10">
         <UserHeader userProfile={userProfile} />
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          <CharacterStats userProfile={userProfile} />
-          {/* Use the real quest if found, otherwise fall back to the mock quest */}
-          <ActiveQuest quest={activeQuest || mockQuest} />
+
+        <section className="grid gap-4 md:grid-cols-3">
+          {reliquary.map((item) => (
+            <div
+              key={item.label}
+              className="relative overflow-hidden rounded-[22px] border border-[#f5c16c]/18 bg-[#1f0d09]/85 p-5 text-white shadow-[0_15px_45px_rgba(36,12,6,0.55)]"
+            >
+              <div className={`absolute inset-0 bg-gradient-to-br ${item.gradient}`} />
+              <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(18,6,4,0.45),_transparent_70%)]" />
+              <div className="relative z-10">
+                <p className="text-[11px] uppercase tracking-[0.45em] text-[#2b130f]/75">{item.label}</p>
+                <p className="mt-4 text-3xl font-semibold text-white">{item.value}</p>
+                <p className="mt-1 text-xs uppercase tracking-[0.35em] text-[#2b130f]/70">{item.detail}</p>
+              </div>
+            </div>
+          ))}
+        </section>
+
+        <div className="grid gap-8 xl:grid-cols-[minmax(0,7fr)_minmax(0,3fr)]">
+          <div className="space-y-8">
+            <div className="grid gap-8 lg:grid-cols-2">
+              <CharacterStats userProfile={userProfile} />
+              <ActiveQuest quest={activeQuest || mockQuest} />
+            </div>
+
+            <div className="rounded-[24px] border border-[#f5c16c]/18 bg-[#1a0b08]/80 p-6 text-sm uppercase tracking-[0.35em] text-[#f5c16c]/70">
+              <p className="text-[#f5c16c]/60">Codex Update</p>
+              <div className="mt-4 grid gap-4 md:grid-cols-3">
+                <div className="rounded-2xl border border-[#f5c16c]/22 bg-[#d23187]/15 p-4 text-center text-white">
+                  <p className="text-xs text-[#f9d9eb]/70">New Artifact</p>
+                  <p className="mt-3 text-lg font-semibold">Forgotten Compiler</p>
+                </div>
+                <div className="rounded-2xl border border-[#f5c16c]/22 bg-[#1f0d09]/85 p-4 text-center text-white">
+                  <p className="text-xs text-[#f5c16c]/70">Raid Window</p>
+                  <p className="mt-3 text-lg font-semibold">Opens in 02:41:36</p>
+                </div>
+                <div className="rounded-2xl border border-[#f5c16c]/22 bg-[#d67b54]/25 p-4 text-center">
+                  <p className="text-xs text-[#2b130f]/70">Guild Directive</p>
+                  <p className="mt-3 text-lg font-semibold text-[#2b130f]">Clear 3 Elite Dungeons</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <aside className="space-y-6">
+            <UpcomingEvents />
+            <div className="overflow-hidden rounded-[24px] border border-[#f5c16c]/20 bg-[#1c0c08]/85 p-6 text-xs uppercase tracking-[0.4em] text-[#f5c16c]/70">
+              <p className="text-[#f5c16c]/60">Realm Weather</p>
+              <div className="mt-4 space-y-3">
+                <div className="flex items-center justify-between rounded-2xl border border-[#f5c16c]/22 bg-[#d23187]/15 px-4 py-3 text-white">
+                  <span>Nebula Storms</span>
+                  <span className="text-[#f5c16c]">+15% XP</span>
+                </div>
+                <div className="flex items-center justify-between rounded-2xl border border-[#f5c16c]/22 bg-[#1f0d09]/85 px-4 py-3 text-white">
+                  <span>Arcane Winds</span>
+                  <span className="text-[#f5c16c]">Fewer traps</span>
+                </div>
+                <div className="flex items-center justify-between rounded-2xl border border-[#f5c16c]/22 bg-[#d67b54]/20 px-4 py-3 text-[#2b130f]">
+                  <span>Shadow Veil</span>
+                  <span className="text-[#7a2d25]">Stealth bonus</span>
+                </div>
+              </div>
+            </div>
+          </aside>
         </div>
-      </main>
-      <aside className="col-span-12 lg:col-span-3">
-        <UpcomingEvents />
-      </aside>
+      </div>
     </DashboardLayout>
   );
 }

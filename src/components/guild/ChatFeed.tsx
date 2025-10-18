@@ -11,12 +11,12 @@ export function ChatFeed({ messages }: ChatFeedProps) {
     <div className="h-full overflow-y-auto pr-4 space-y-6">
       {messages.map((msg) => (
         <div key={msg.id} className="flex items-start gap-4">
-          <div className="w-10 h-10 bg-secondary rounded-full flex-shrink-0 flex items-center justify-center font-bold">
+          <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full border border-accent/40 bg-accent/15 font-bold text-accent">
             {msg.name.charAt(0)}
           </div>
           <div>
-            <p className="font-semibold font-heading text-accent">{msg.name}</p>
-            <p className="font-body text-foreground/90">{msg.message}</p>
+            <p className="font-heading font-semibold text-accent">{msg.name}</p>
+            <p className="font-body text-foreground/80">{msg.message}</p>
           </div>
         </div>
       ))}

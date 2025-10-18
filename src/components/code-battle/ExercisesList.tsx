@@ -213,34 +213,41 @@ export default function ExercisesList({ apiBaseUrl, onSubmit }: ExercisesListPro
   };
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-      <Card className="border-2 border-accent/20">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-accent">
-            <BookOpen className="w-5 h-5" />
-            All Problems
+    <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+      <Card className="relative overflow-hidden rounded-[26px] border border-[#f5c16c]/18 bg-gradient-to-br from-[#26120d]/88 via-[#150908]/94 to-[#080404]/97 p-6 shadow-[0_22px_65px_rgba(52,18,9,0.55)]">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(210,49,135,0.4),_transparent_70%)] opacity-[0.35]" />
+        <CardHeader className="relative z-10 pb-4">
+          <CardTitle className="flex items-center gap-3 text-lg font-semibold text-white">
+            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#d23187]/20 text-[#f5c16c]">
+              <BookOpen className="h-5 w-5" />
+            </span>
+            Practice Codex
           </CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="relative z-10">
           {loading ? (
-            <p className="text-muted-foreground">Loading problems...</p>
+            <p className="text-sm text-foreground/60">Compiling exercises...</p>
           ) : problems.length === 0 ? (
-            <p className="text-muted-foreground">No problems available</p>
+            <p className="text-sm text-foreground/60">No drills available.</p>
           ) : (
-            <ul className="space-y-2 max-h-[500px] overflow-y-auto">
+            <ul className="max-h-[500px] space-y-3 overflow-y-auto pr-1">
               {problems.map((problem) => (
                 <li
                   key={problem.ID}
                   onClick={() => handleProblemSelect(problem)}
-                  className={`p-3 rounded-lg cursor-pointer transition-all duration-200 ${
+                  className={`rounded-2xl border px-4 py-3 text-sm transition-all duration-300 ${
                     selectedProblem?.ID === problem.ID
-                      ? 'bg-accent text-primary font-semibold'
-                      : 'bg-card hover:bg-accent/10 border border-border'
+                      ? 'border-[#d23187]/55 bg-[#d23187]/20 text-white shadow-[0_12px_30px_rgba(210,49,135,0.35)]'
+                      : 'border-[#f5c16c]/15 bg-white/5 text-foreground/70 hover:border-[#d23187]/40 hover:bg-[#d23187]/15 hover:text-white'
                   }`}
                 >
-                  <div className="flex justify-between items-center">
-                    <span>{problem.Title}</span>
-                    <span className={`text-xs px-2 py-1 rounded ${getDifficultyColor(problem.Difficulty)}`}>
+                  <div className="flex items-center justify-between">
+                    <span className="font-medium">{problem.Title}</span>
+                    <span
+                      className={`rounded-full px-3 py-1 text-[11px] uppercase tracking-[0.35em] ${getDifficultyColor(
+                        problem.Difficulty
+                      )}`}
+                    >
                       {getDifficultyLabel(problem.Difficulty)}
                     </span>
                   </div>
@@ -251,50 +258,56 @@ export default function ExercisesList({ apiBaseUrl, onSubmit }: ExercisesListPro
         </CardContent>
       </Card>
 
-      <Card className="border-2 border-accent/20">
-        <CardHeader>
-          <CardTitle className="text-accent">
+      <Card className="relative overflow-hidden rounded-[26px] border border-[#f5c16c]/18 bg-gradient-to-br from-[#23110d]/88 via-[#140908]/94 to-[#080404]/97 p-6 shadow-[0_22px_65px_rgba(54,18,9,0.55)]">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(245,193,108,0.35),_transparent_70%)] opacity-[0.35]" />
+        <CardHeader className="relative z-10 pb-4">
+          <CardTitle className="text-lg font-semibold text-white">
             {selectedProblem ? `Solving: ${selectedProblem.Title}` : 'Select a Problem'}
           </CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="relative z-10">
           {selectedProblem ? (
             <div className="space-y-4">
-              <div className="flex gap-4 items-center">
+              <div className="flex flex-wrap items-center gap-4">
                 <select
                   value={language}
                   onChange={(e) => setLanguage(e.target.value)}
-                  className="px-4 py-2 rounded-lg bg-card border border-border text-foreground"
+                  className="rounded-full border border-white/15 bg-black/40 px-4 py-2 text-sm uppercase tracking-[0.35em] text-foreground/80"
                 >
                   <option value="javascript">JavaScript</option>
                   <option value="python">Python</option>
                   <option value="go">Go</option>
                 </select>
-                <Button onClick={handleSubmit} className="flex items-center gap-2">
-                  <Play className="w-4 h-4" />
-                  Submit Solution
+                <Button
+                  onClick={handleSubmit}
+                  className="flex items-center gap-2 rounded-full bg-gradient-to-r from-[#d23187] via-[#f5c16c] to-[#f5c16c] px-6 text-xs uppercase tracking-[0.35em] text-[#2b130f] shadow-[0_15px_40px_rgba(210,49,135,0.4)] hover:from-[#f061a6] hover:via-[#f5c16c] hover:to-[#f0b26a]"
+                >
+                  <Play className="h-4 w-4" />
+                  Run Trials
                 </Button>
               </div>
-              
-              <div 
-                ref={editorRef} 
-                className="w-full h-[400px] border-2 border-accent/20 rounded-lg overflow-hidden"
+
+              <div
+                ref={editorRef}
+                className="h-[400px] w-full overflow-hidden rounded-2xl border border-[#f5c16c]/22 bg-black/40 shadow-[inset_0_0_30px_rgba(210,49,135,0.25)]"
               />
-              
+
               {submissionResult && (
-                <div className={`p-4 rounded-lg ${
-                  submissionResult.includes('Success')
-                    ? 'bg-green-500/10 border border-green-500/30 text-green-500'
-                    : submissionResult.includes('Failed')
-                    ? 'bg-red-500/10 border border-red-500/30 text-red-500'
-                    : 'bg-blue-500/10 border border-blue-500/30 text-blue-500'
-                }`}>
-                  <pre className="whitespace-pre-wrap">{submissionResult}</pre>
+                <div
+                  className={`rounded-2xl border px-4 py-3 text-sm ${
+                    submissionResult.includes('Success')
+                      ? 'border-[#f5c16c]/35 bg-[#f5c16c]/15 text-[#2b130f]'
+                      : submissionResult.includes('Failed')
+                      ? 'border-rose-400/40 bg-rose-500/15 text-white'
+                      : 'border-[#d23187]/40 bg-[#d23187]/15 text-white'
+                  }`}
+                >
+                  <pre className="whitespace-pre-wrap leading-relaxed">{submissionResult}</pre>
                 </div>
               )}
             </div>
           ) : (
-            <p className="text-muted-foreground">Select a problem to start coding</p>
+            <p className="text-sm text-foreground/60">Select a problem from the codex to begin your drill.</p>
           )}
         </CardContent>
       </Card>

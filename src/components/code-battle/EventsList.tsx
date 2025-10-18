@@ -13,6 +13,22 @@ interface EventsListProps {
 
 const USE_MOCK_DATA = true; // Set to false when backend is ready
 
+const resolveEventStatus = (event: Event) => {
+  const now = new Date();
+  const start = new Date(event.StartedDate);
+  const end = new Date(event.EndDate);
+
+  if (now < start) {
+    return 'Scheduled';
+  }
+
+  if (now > end) {
+    return 'Concluded';
+  }
+
+  return 'Live';
+};
+
 export default function EventsList({ apiBaseUrl, onEventSelect, selectedEventId }: EventsListProps) {
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
@@ -45,31 +61,39 @@ export default function EventsList({ apiBaseUrl, onEventSelect, selectedEventId 
   }, [apiBaseUrl]);
 
   return (
-    <Card className="border-2 border-accent/20">
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2 text-accent">
-          <Sword className="w-5 h-5" />
-          Events
+    <Card className="relative overflow-hidden rounded-[26px] border border-[#f5c16c]/18 bg-gradient-to-br from-[#26120e]/88 via-[#140908]/94 to-[#080404]/97 p-6 shadow-[0_20px_60px_rgba(54,18,9,0.55)]">
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(210,49,135,0.4),_transparent_70%)] opacity-[0.35]" />
+      <CardHeader className="relative z-10 pb-4">
+        <CardTitle className="flex items-center gap-3 text-lg font-semibold text-white">
+          <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#d23187]/20 text-[#f5c16c]">
+            <Sword className="h-5 w-5" />
+          </span>
+          Arena Events
         </CardTitle>
       </CardHeader>
-      <CardContent>
+      <CardContent className="relative z-10">
         {loading ? (
-          <p className="text-muted-foreground">Loading events...</p>
+          <p className="text-sm text-foreground/60">Uploading event ledger...</p>
         ) : events.length === 0 ? (
-          <p className="text-muted-foreground">No events available</p>
+          <p className="text-sm text-foreground/60">No active tournaments detected.</p>
         ) : (
-          <ul className="space-y-2">
+          <ul className="space-y-3">
             {events.map((event) => (
               <li
                 key={event.ID}
                 onClick={() => onEventSelect(event.ID)}
-                className={`p-3 rounded-lg cursor-pointer transition-all duration-200 ${
+                className={`group rounded-2xl border px-4 py-3 text-sm transition-all duration-300 ${
                   selectedEventId === event.ID
-                    ? 'bg-accent text-primary font-semibold'
-                    : 'bg-card hover:bg-accent/10 border border-border'
+                    ? 'border-[#d23187]/55 bg-[#d23187]/20 text-white shadow-[0_12px_30px_rgba(210,49,135,0.35)]'
+                    : 'border-[#f5c16c]/15 bg-white/5 text-foreground/70 hover:border-[#d23187]/40 hover:bg-[#d23187]/15 hover:text-white'
                 }`}
               >
-                {event.Title}
+                <div className="flex items-center justify-between">
+                  <span className="font-medium">{event.Title}</span>
+                  <span className="text-[11px] uppercase tracking-[0.35em] text-[#f5c16c]/80">
+                    {resolveEventStatus(event)}
+                  </span>
+                </div>
               </li>
             ))}
           </ul>

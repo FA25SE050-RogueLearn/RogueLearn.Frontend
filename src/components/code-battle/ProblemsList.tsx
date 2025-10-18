@@ -57,35 +57,38 @@ export default function ProblemsList({ apiBaseUrl, eventId, roomId, onProblemSel
   }, [apiBaseUrl, eventId, roomId]);
 
   return (
-    <Card className="border-2 border-accent/20">
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2 text-accent">
-          <Code className="w-5 h-5" />
-          Problems
+    <Card className="relative overflow-hidden rounded-[26px] border border-[#f5c16c]/18 bg-gradient-to-br from-[#26120e]/88 via-[#150909]/94 to-[#080405]/97 p-6 shadow-[0_20px_60px_rgba(54,18,9,0.55)]">
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(210,49,135,0.4),_transparent_70%)] opacity-[0.35]" />
+      <CardHeader className="relative z-10 pb-4">
+        <CardTitle className="flex items-center gap-3 text-lg font-semibold text-white">
+          <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#d23187]/20 text-[#f5c16c]">
+            <Code className="h-5 w-5" />
+          </span>
+          Arena Problems
         </CardTitle>
       </CardHeader>
-      <CardContent>
+      <CardContent className="relative z-10">
         {!roomId ? (
-          <p className="text-muted-foreground">Select a room to see problems</p>
+          <p className="text-sm text-foreground/60">Select a room to reveal its problem set.</p>
         ) : loading ? (
-          <p className="text-muted-foreground">Loading problems...</p>
+          <p className="text-sm text-foreground/60">Generating challenge scripts...</p>
         ) : problems.length === 0 ? (
-          <p className="text-muted-foreground">No problems found for this room</p>
+          <p className="text-sm text-foreground/60">No challenges bound to this room.</p>
         ) : (
-          <ul className="space-y-2">
+          <ul className="space-y-3">
             {problems.map((problem) => (
               <li
                 key={problem.CodeProblemID}
                 onClick={() => onProblemSelect(problem.CodeProblemID, problem.Title)}
-                className={`p-3 rounded-lg cursor-pointer transition-all duration-200 ${
+                className={`rounded-2xl border px-4 py-3 text-sm transition-all duration-300 ${
                   selectedProblemId === problem.CodeProblemID
-                    ? 'bg-accent text-primary font-semibold'
-                    : 'bg-card hover:bg-accent/10 border border-border'
+                    ? 'border-[#d23187]/55 bg-[#d23187]/25 text-white shadow-[0_12px_30px_rgba(210,49,135,0.35)]'
+                    : 'border-[#f5c16c]/15 bg-white/5 text-foreground/70 hover:border-[#d23187]/40 hover:bg-[#d23187]/15 hover:text-white'
                 }`}
               >
-                <div className="flex justify-between items-center">
-                  <span>{problem.Title}</span>
-                  <span className="text-sm text-accent">{problem.Score} pts</span>
+                <div className="flex items-center justify-between">
+                  <span className="font-medium">{problem.Title}</span>
+                  <span className="text-xs uppercase tracking-[0.35em] text-[#f5c16c]/80">{problem.Score} pts</span>
                 </div>
               </li>
             ))}

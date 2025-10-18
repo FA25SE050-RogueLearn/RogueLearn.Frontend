@@ -9,9 +9,9 @@ export function ChatInput() {
       <Input 
         type="text" 
         placeholder="I would say it's a good sub legacy" 
-        className="bg-background/80 border-border/50 focus:ring-accent"
+        className="rounded-full border border-white/15 bg-white/10 px-6 text-foreground placeholder:text-foreground/40 focus-visible:border-accent focus-visible:ring-0"
       />
-      <Button className="bg-accent text-accent-foreground hover:bg-accent/90">Send</Button>
+      <Button className="rounded-full bg-accent px-6 text-accent-foreground hover:bg-accent/90">Send</Button>
     </div>
   );
 }

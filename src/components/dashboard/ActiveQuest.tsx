@@ -19,18 +19,15 @@ type Quest = {
 
 // The component now accepts a quest object as a prop.
 export function ActiveQuest({ quest }: { quest: Quest }) {
-  // If there's no active quest, show a placeholder or a "Find a Quest" card.
   if (!quest) {
     return (
-      <Card className="col-span-1 md:col-span-1 bg-card/50 p-6 flex flex-col items-center justify-center text-center">
-        <CardHeader className="p-0 mb-4">
-          <CardTitle className="font-heading text-2xl">No Active Quest</CardTitle>
+      <Card className="col-span-1 flex flex-col items-center justify-center overflow-hidden rounded-[24px] border border-dashed border-[#f5c16c]/35 bg-[#1a0c08]/80 p-6 text-center backdrop-blur">
+        <CardHeader className="mb-4">
+          <CardTitle className="text-lg uppercase tracking-[0.35em] text-[#f5c16c]/70">No Active Quest</CardTitle>
         </CardHeader>
-        <CardContent className="p-0">
-          <p className="font-body text-foreground/70 mb-6">
-            Your adventure awaits! Visit the Quest Log to begin your next journey.
-          </p>
-          <Button size="lg" className="w-full mt-8 bg-accent text-accent-foreground hover:bg-accent/90">
+        <CardContent className="space-y-6 text-sm text-foreground/70">
+          <p>Whispers echo through the empty halls. Seek the Guildmaster to claim your next challenge.</p>
+          <Button size="lg" className="w-full rounded-2xl bg-gradient-to-r from-[#d23187] via-[#f061a6] to-[#f5c16c] text-sm font-semibold uppercase tracking-[0.35em] text-[#2b130f] shadow-[0_12px_30px_rgba(210,49,135,0.35)] transition hover:from-[#f061a6] hover:via-[#f5c16c] hover:to-[#f2ac64]">
             Find a Quest
           </Button>
         </CardContent>
@@ -39,39 +36,59 @@ export function ActiveQuest({ quest }: { quest: Quest }) {
   }
 
   return (
-    <Card className="col-span-1 md:col-span-1 bg-card/50 p-6 flex flex-col">
-      <CardHeader className="p-0 mb-4">
-        <div className="flex justify-between items-center mb-2">
-          <CardTitle className="font-heading text-2xl">Active Quest</CardTitle>
-          <span className="text-xs font-semibold bg-primary/20 text-accent px-2 py-1 rounded-full">{quest.status}</span>
-        </div>
-        <CardDescription className="font-body text-lg text-foreground/80">{quest.title}</CardDescription>
-      </CardHeader>
-      <CardContent className="p-0 flex-grow flex flex-col">
-        <p className="font-body text-foreground/70 mb-6">
-          {quest.description}
-        </p>
-        <div className="mt-auto flex justify-around items-center text-center pt-4">
-          <div className="flex flex-col items-center gap-2">
-            <BookOpen className="w-6 h-6 text-accent/80" />
-            <span className="font-body text-sm text-foreground/70">Chapters Read</span>
-            <span className="font-heading font-bold text-lg">{quest.progress.chaptersRead}/{quest.progress.chaptersTotal}</span>
+    <Card className="relative col-span-1 flex flex-col overflow-hidden rounded-[24px] border border-[#f5c16c]/22 bg-[#23110d]/85 p-6 shadow-[0_20px_65px_rgba(36,10,6,0.6)]">
+      <div className="absolute inset-0">
+        <div
+          className="absolute inset-0 bg-cover bg-center opacity-35"
+          style={{
+            backgroundImage:
+              "url('https://images.unsplash.com/photo-1547703465-94f05b7abe13?auto=format&fit=crop&w=1200&q=80')",
+          }}
+        />
+        <div className="absolute inset-0 bg-gradient-to-br from-[#2d140f]/92 via-[#160807]/88 to-transparent" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(210,49,135,0.32),_transparent_68%)]" />
+      </div>
+
+      <div className="relative z-10 flex flex-col h-full">
+        <CardHeader className="mb-6 border-b border-[#f5c16c]/25 pb-4">
+          <div className="flex items-center justify-between text-xs uppercase tracking-[0.45em] text-[#f5c16c]/70">
+            <span>Current Expedition</span>
+            <span className="rounded-full border border-[#f5c16c]/45 bg-[#f5c16c]/15 px-3 py-1 text-[#2b130f]">
+              {quest.status}
+            </span>
           </div>
-          <div className="flex flex-col items-center gap-2">
-            <Clock className="w-6 h-6 text-accent/80" />
-            <span className="font-body text-sm text-foreground/70">Time Spent</span>
-            <span className="font-heading font-bold text-lg">{quest.progress.timeSpentHours}h</span>
+          <CardTitle className="mt-4 text-2xl font-semibold text-white">{quest.title}</CardTitle>
+          <CardDescription className="mt-2 text-sm leading-relaxed text-foreground/70">
+            {quest.description}
+          </CardDescription>
+        </CardHeader>
+
+        <CardContent className="flex flex-1 flex-col justify-between gap-6">
+          <div className="grid grid-cols-3 gap-4 text-center text-xs uppercase tracking-[0.35em] text-[#f5c16c]/70">
+            <div className="rounded-2xl border border-[#f5c16c]/25 bg-[#140806]/80 px-3 py-4">
+              <BookOpen className="mx-auto mb-3 h-6 w-6 text-[#f5c16c]" />
+              <p>Chapters</p>
+              <p className="mt-2 text-xl font-semibold text-white">
+                {quest.progress.chaptersRead}<span className="text-sm text-foreground/50">/{quest.progress.chaptersTotal}</span>
+              </p>
+            </div>
+            <div className="rounded-2xl border border-[#f5c16c]/25 bg-[#140806]/80 px-3 py-4">
+              <Clock className="mx-auto mb-3 h-6 w-6 text-[#f5c16c]" />
+              <p>Time Spent</p>
+              <p className="mt-2 text-xl font-semibold text-white">{quest.progress.timeSpentHours}h</p>
+            </div>
+            <div className="rounded-2xl border border-[#f5c16c]/25 bg-[#140806]/80 px-3 py-4">
+              <Star className="mx-auto mb-3 h-6 w-6 text-[#f5c16c]" />
+              <p>Mastery</p>
+              <p className="mt-2 text-xl font-semibold text-white">{quest.progress.masteryPercent}%</p>
+            </div>
           </div>
-          <div className="flex flex-col items-center gap-2">
-            <Star className="w-6 h-6 text-accent/80" />
-            <span className="font-body text-sm text-foreground/70">Mastery</span>
-            <span className="font-heading font-bold text-lg">{quest.progress.masteryPercent}%</span>
-          </div>
-        </div>
-        <Button size="lg" className="w-full mt-8 bg-accent text-accent-foreground hover:bg-accent/90">
-          Continue Quest
-        </Button>
-      </CardContent>
+
+          <Button className="w-full rounded-2xl bg-gradient-to-r from-[#d23187] via-[#f061a6] to-[#f5c16c] text-sm font-semibold uppercase tracking-[0.35em] text-[#2b130f] shadow-[0_15px_40px_rgba(210,49,135,0.35)] transition hover:from-[#f061a6] hover:via-[#f5c16c] hover:to-[#f2ac64]">
+            Continue Quest
+          </Button>
+        </CardContent>
+      </div>
     </Card>
   );
 }

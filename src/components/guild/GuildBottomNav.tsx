@@ -12,11 +12,11 @@ const navItems = [
 // Renders the fixed bottom navigation bar for the guild page.
 export function GuildBottomNav() {
   return (
-    <div className="flex-shrink-0 bg-background/80 backdrop-blur-md border-t border-border/50 flex justify-around p-2">
+    <div className="flex justify-around p-2 flex-shrink-0 border-t border-white/12 bg-black/40 backdrop-blur-xl text-foreground/70">
       {navItems.map(item => (
-        <Button key={item.label} variant="ghost" className="flex flex-col h-auto p-2">
-          <item.icon className="w-6 h-6" />
-          <span className="text-xs mt-1">{item.label}</span>
+        <Button key={item.label} variant="ghost" className="flex h-auto flex-col rounded-xl bg-white/5 px-4 py-2 text-foreground hover:bg-accent/15 hover:text-accent">
+          <item.icon className="h-6 w-6" />
+          <span className="mt-1 text-xs tracking-[0.25em] uppercase">{item.label}</span>
         </Button>
       ))}
     </div>
