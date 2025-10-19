@@ -1,3 +1,4 @@
+// roguelearn-web/src/app/dashboard/page.tsx
 import { UserHeader } from "@/components/dashboard/UserHeader";
 import { CharacterStats } from "@/components/dashboard/CharacterStats";
 import { ActiveQuest } from "@/components/dashboard/ActiveQuest";
@@ -5,17 +6,58 @@ import { UpcomingEvents } from "@/components/dashboard/UpcomingEvents";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { createClient } from "@/utils/supabase/server";
 import { redirect } from "next/navigation";
+import { createServerApiClients } from "@/lib/api-server";
 
-// The homepage is the main dashboard, now wrapped in the reusable DashboardLayout.
-// It is now an async Server Component to fetch user-specific data.
+// Define interfaces for the data we expect from our backend APIs.
+// This provides type safety and clarity for our frontend code.
+interface UserProfile {
+  username: string;
+  level: number;
+  title: string;
+  experience_points: number;
+  // This is an assumption based on mock data; the backend may need to provide this.
+  xpMax?: number;
+  stats?: {
+    class?: string;
+    curriculum?: string;
+    intellect?: number;
+    wisdom?: number;
+  }
+}
+
+interface QuestSummary {
+  id: string;
+  title: string;
+  status: string;
+  sequenceOrder: number;
+}
+
+interface LearningPath {
+  id: string;
+  name: string;
+  description: string;
+  quests: QuestSummary[];
+  completionPercentage: number;
+}
+
+interface QuestDetails {
+  id: string;
+  title: string;
+  description: string;
+  status: string;
+  experiencePointsReward: number;
+  objectives: unknown[]; // Objectives structure not needed for this component yet
+}
+
+// The homepage is the main dashboard, now fetching all data from the backend.
 export default async function DashboardPage() {
   const supabase = await createClient();
 
-  // Get the session to access the JWT token
+  // Get the session to access the JWT token for logging and API calls.
   const { data: { session } } = await supabase.auth.getSession();
   const { data: { user } } = await supabase.auth.getUser();
 
-  // Log JWT token for debugging
+  // RE-ADDED: JWT token logging for debugging as requested.
   if (session?.access_token) {
     console.log('🔐 JWT Token (Dashboard Access):', session.access_token);
     console.log('🔐 Token Type:', session.token_type);
@@ -26,43 +68,69 @@ export default async function DashboardPage() {
   }
 
   if (!user) {
-    // This should theoretically not be hit due to DashboardLayout's check,
-    // but it's good practice for security.
+    // This check ensures only authenticated users can access the dashboard.
     redirect('/login');
   }
 
-  // Fetch the user's profile from the public.user_profiles table.
-  const { data: userProfile } = await supabase
-    .from('user_profiles')
-    .select('*')
-    .eq('auth_user_id', user.id)
-    .single();
+  // Create authenticated API clients for server-side requests.
+  const { userApiClient, questApiClient } = await createServerApiClients();
 
-  // Fetch the user's active quest.
-  // NOTE: This is a placeholder for a real query once the quests service is built.
-  // For now, we'll simulate fetching a quest that might belong to the user.
-  const { data: activeQuest } = await supabase
-    .from('quests') // Placeholder table
-    .select('*')
-    .eq('user_id', user.id) // Placeholder condition
-    .eq('status', 'Active')
-    .limit(1)
-    .single();
+  let userProfile: UserProfile | null = null;
+  let activeQuest: QuestDetails | null = null;
 
-  // A simple mock quest for demonstration until the backend is ready.
-  const mockQuest = {
-    id: "quest-123",
-    title: "The Fundamentals of Alchemy",
-    description: "Master the core principles of transformation and transmutation. Collect the five rare herbs of knowledge to proceed.",
-    status: "Active",
-    progress: {
+  try {
+    // 1. Fetch user profile from the User Service API instead of directly from Supabase.
+    console.log(`Fetching profile for user: ${user.id}`);
+    const profileResponse = await userApiClient.get(`/api/profiles/${user.id}`);
+    userProfile = profileResponse.data;
+  } catch (error) {
+    console.error("Failed to fetch user profile:", error);
+    // If this fails, userProfile will remain null and components will show a loading/error state.
+  }
+
+  try {
+    // 2. Fetch the user's active learning path from the Quest Service API.
+    console.log(`Fetching learning path for user: ${user.id}`);
+    const learningPathResponse = await questApiClient.get<LearningPath>('/api/learning-paths/me');
+    const learningPath = learningPathResponse.data;
+
+    // 3. From the learning path, find the user's current quest.
+    // The logic is to find the first quest that is 'InProgress' or, if none are, the first 'NotStarted'.
+    const currentQuestSummary =
+      learningPath.quests.find(q => q.status === 'InProgress') ||
+      learningPath.quests.find(q => q.status === 'NotStarted');
+
+    if (currentQuestSummary) {
+      // 4. If a current quest is identified, fetch its full details from the Quest Service API.
+      console.log(`Fetching details for quest: ${currentQuestSummary.id}`);
+      const questDetailsResponse = await questApiClient.get<QuestDetails>(`/api/quests/${currentQuestSummary.id}`);
+      activeQuest = questDetailsResponse.data;
+    }
+  } catch (error) {
+    console.error("Failed to fetch quest data:", error);
+    // It's acceptable for this to fail if the user has no active quests.
+    // The ActiveQuest component is designed to handle a null value.
+  }
+
+  // NOTE ON DATA ADAPTATION:
+  // The <ActiveQuest /> component was originally designed for mock data that had a nested `progress` object.
+  // The actual QuestDto from your backend API does not have this nested structure.
+  // To make the integration work without immediately refactoring the UI component, this `adaptedQuestForComponent`
+  // variable is created. It maps the live data from the `activeQuest` object into the structure
+  // that the component expects, using placeholder values for the progress details.
+  // LONG-TERM FIX: Align the backend DTO and the frontend component props.
+  const adaptedQuestForComponent = activeQuest ? {
+    id: activeQuest.id,
+    title: activeQuest.title,
+    description: activeQuest.description,
+    status: activeQuest.status,
+    progress: { // Placeholder progress data to satisfy the component's props
       chaptersRead: 3,
       chaptersTotal: 5,
       timeSpentHours: 2.5,
-      xp: 150,
       masteryPercent: 50
     },
-  };
+  } : null;
 
   const reliquary = [
     {
@@ -88,6 +156,7 @@ export default async function DashboardPage() {
   return (
     <DashboardLayout>
       <div className="flex flex-col gap-10">
+        {/* The components now receive live data fetched from the backend */}
         <UserHeader userProfile={userProfile} />
 
         <section className="grid gap-4 md:grid-cols-3">
@@ -111,7 +180,7 @@ export default async function DashboardPage() {
           <div className="space-y-8">
             <div className="grid gap-8 lg:grid-cols-2">
               <CharacterStats userProfile={userProfile} />
-              <ActiveQuest quest={activeQuest || mockQuest} />
+              <ActiveQuest quest={adaptedQuestForComponent} />
             </div>
 
             <div className="rounded-[24px] border border-[#f5c16c]/18 bg-[#1a0b08]/80 p-6 text-sm uppercase tracking-[0.35em] text-[#f5c16c]/70">
