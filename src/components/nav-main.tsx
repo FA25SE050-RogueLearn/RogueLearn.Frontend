@@ -24,9 +24,10 @@ export function NavMain({
 }: {
   items: {
     title: string
-    url: string
+    url?: string
     icon: LucideIcon
     isActive?: boolean
+    onSelect?: () => void
     items?: {
       title: string
       url: string
@@ -40,16 +41,33 @@ export function NavMain({
         {items.map((item) => (
           <Collapsible key={item.title} asChild defaultOpen={item.isActive}>
             <SidebarMenuItem>
-              <SidebarMenuButton 
-                asChild 
-                tooltip={item.title}
-                className="hover:bg-[#d23187]/20 hover:text-[#f5c16c] data-[active=true]:bg-[#d23187]/25 data-[active=true]:text-[#f5c16c] data-[active=true]:border-l-2 data-[active=true]:border-[#d23187]"
-              >
-                <a href={item.url}>
+              {item.onSelect ? (
+                <SidebarMenuButton
+                  type="button"
+                  tooltip={item.title}
+                  onClick={(event) => {
+                    event.preventDefault()
+                    item.onSelect?.()
+                  }}
+                  data-active={item.isActive}
+                  className="hover:bg-[#d23187]/20 hover:text-[#f5c16c] data-[active=true]:bg-[#d23187]/25 data-[active=true]:text-[#f5c16c] data-[active=true]:border-l-2 data-[active=true]:border-[#d23187]"
+                >
                   <item.icon className="text-[#f5c16c]" />
                   <span className="text-white/90">{item.title}</span>
-                </a>
-              </SidebarMenuButton>
+                </SidebarMenuButton>
+              ) : (
+                <SidebarMenuButton
+                  asChild
+                  tooltip={item.title}
+                  data-active={item.isActive}
+                  className="hover:bg-[#d23187]/20 hover:text-[#f5c16c] data-[active=true]:bg-[#d23187]/25 data-[active=true]:text-[#f5c16c] data-[active=true]:border-l-2 data-[active=true]:border-[#d23187]"
+                >
+                  <a href={item.url ?? "#"}>
+                    <item.icon className="text-[#f5c16c]" />
+                    <span className="text-white/90">{item.title}</span>
+                  </a>
+                </SidebarMenuButton>
+              )}
               {item.items?.length ? (
                 <>
                   <CollapsibleTrigger asChild>
