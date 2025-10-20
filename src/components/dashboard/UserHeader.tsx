@@ -6,7 +6,7 @@ type UserProfile = {
   level: number;
   title: string;
   experience_points: number;
-  xpMax: number; // Assuming xpMax comes from a calculation or another field
+  xpMax?: number; // Assuming xpMax comes from a calculation or another field
 } | null;
 
 

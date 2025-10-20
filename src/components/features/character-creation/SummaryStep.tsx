@@ -15,47 +15,43 @@ interface SummaryStepProps {
 
 /**
  * The final step in character creation: reviewing choices and submitting.
+ * Restyled to match the new design.
  */
 export function SummaryStep({ selectedRoute, selectedClass, onSubmit, onBack, isSubmitting, error }: SummaryStepProps) {
     return (
         <div className="animate-in fade-in duration-500">
-            <div className="text-center mb-8">
-                <Sparkles className="mx-auto h-12 w-12 text-accent" />
-                <h1 className="mt-4 text-3xl font-bold font-heading text-white">Confirm Your Path</h1>
-                <p className="mt-2 text-foreground/70 font-body max-w-2xl mx-auto">
+            <div className="text-left mb-8">
+                <h1 className="text-4xl font-bold font-heading text-white">Confirm Your Path</h1>
+                <p className="mt-2 text-foreground/70 font-body max-w-2xl">
                     Your journey is about to begin. Review your choices and embark on your quest for knowledge.
                 </p>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <Card className="border-accent/30 bg-accent/10">
-                    <CardHeader>
-                        <CardTitle className="font-heading text-white">Chosen Route</CardTitle>
-                        <CardDescription className="font-body text-accent/80">{selectedRoute.programName}</CardDescription>
-                        <p className="text-sm text-foreground/70 pt-2">{selectedRoute.description}</p>
-                    </CardHeader>
-                </Card>
-                <Card className="border-accent/30 bg-accent/10">
-                    <CardHeader>
-                        <CardTitle className="font-heading text-white">Selected Class</CardTitle>
-                        <CardDescription className="font-body text-accent/80">{selectedClass.name}</CardDescription>
-                        <p className="text-sm text-foreground/70 pt-2">{selectedClass.description}</p>
-                    </CardHeader>
-                </Card>
+                <div className="rounded-[28px] border-2 border-accent/30 bg-accent/10 p-6">
+                    <p className="text-xs uppercase tracking-[0.4em] text-foreground/50">Chosen Route</p>
+                    <h3 className="mt-3 text-2xl font-semibold text-white">{selectedRoute.programName}</h3>
+                    <p className="mt-2 text-sm text-foreground/70 line-clamp-4">{selectedRoute.description}</p>
+                </div>
+                <div className="rounded-[28px] border-2 border-accent/30 bg-accent/10 p-6">
+                    <p className="text-xs uppercase tracking-[0.4em] text-foreground/50">Selected Class</p>
+                    <h3 className="mt-3 text-2xl font-semibold text-white">{selectedClass.name}</h3>
+                    <p className="mt-2 text-sm text-foreground/70 line-clamp-4">{selectedClass.description}</p>
+                </div>
             </div>
 
             {error && (
-                <div className="mt-6 text-red-400 text-sm font-body p-3 bg-red-900/50 rounded-md flex items-center justify-center gap-2">
-                    <AlertCircle className="w-4 h-4" />
+                <div className="mt-8 text-red-400 text-sm font-body p-4 bg-red-900/50 rounded-2xl flex items-center justify-center gap-2">
+                    <AlertCircle className="w-5 h-5" />
                     {error}
                 </div>
             )}
 
-            <div className="mt-8 flex justify-between">
-                <Button size="lg" variant="outline" onClick={onBack} disabled={isSubmitting}>
+            <div className="mt-12 flex justify-between">
+                <Button size="lg" variant="outline" onClick={onBack} disabled={isSubmitting} className="h-12 rounded-full px-8 text-xs uppercase tracking-[0.4em]">
                     Back
                 </Button>
-                <Button size="lg" onClick={onSubmit} disabled={isSubmitting} className="bg-accent text-accent-foreground hover:bg-accent/90">
+                <Button size="lg" onClick={onSubmit} disabled={isSubmitting} className="h-12 rounded-full bg-accent px-8 text-xs uppercase tracking-[0.4em] text-accent-foreground hover:bg-accent/90">
                     {isSubmitting ? (
                         <>
                             <Loader2 className="mr-2 h-4 w-4 animate-spin" />

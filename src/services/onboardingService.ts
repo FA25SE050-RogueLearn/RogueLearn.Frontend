@@ -36,14 +36,16 @@ export const getClasses = async (): Promise<CareerClass[]> => {
 /**
  * Submits the user's final onboarding choices to the backend.
  * Corresponds to POST /api/onboarding/complete in the User service.
- * @param curriculumVersionId The ID of the selected academic route (maps to a curriculum version).
+ * @param curriculumProgramId The ID of the selected academic route (program).
  * @param careerRoadmapId The ID of the selected career class.
  * @returns A promise that resolves when the operation is complete.
  */
-export const completeOnboarding = async (curriculumVersionId: string, careerRoadmapId: string): Promise<void> => {
+// MODIFIED: Renamed 'curriculumVersionId' to 'curriculumProgramId' for clarity.
+export const completeOnboarding = async (curriculumProgramId: string, careerRoadmapId: string): Promise<void> => {
   try {
+    // MODIFIED: Changed the property name in the request body to match the backend command.
     await userApiClient.post("/api/onboarding/complete", {
-      curriculumVersionId,
+      curriculumProgramId,
       careerRoadmapId,
     });
   } catch (error) {
