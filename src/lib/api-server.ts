@@ -2,6 +2,7 @@
 import axios from 'axios';
 import { createClient } from '@/utils/supabase/server';
 import { cookies } from 'next/headers';
+import https from 'https'; // Use the native Node.js https module on the server
 
 /**
  * Creates pre-configured Axios clients for making authenticated API calls from within Next.js Server Components.
@@ -10,17 +11,20 @@ import { cookies } from 'next/headers';
  */
 export async function createServerApiClients() {
     const cookieStore = cookies();
-    const supabase = await createClient(); // This correctly uses the server-side cookie store
+    const supabase = await createClient();
     
-    // Retrieve the current user's session, which contains the access token
     const { data: { session } } = await supabase.auth.getSession();
     const token = session?.access_token;
+    
+    // MODIFIED: Create an httpsAgent for development to bypass self-signed certificate errors.
+    const httpsAgent = new https.Agent({
+        rejectUnauthorized: process.env.NODE_ENV === 'production',
+    });
 
-    // A helper function to create a new Axios instance with the base URL and auth header
     const createClientInstance = (baseURL: string | undefined) => {
-        const instance = axios.create({ baseURL });
+        // MODIFIED: Pass the httpsAgent to the axios instance.
+        const instance = axios.create({ baseURL, httpsAgent });
         
-        // If a token exists, set it as the default Authorization header for this instance
         if (token) {
             instance.defaults.headers.common['Authorization'] = `Bearer ${token}`;
         }
@@ -28,7 +32,6 @@ export async function createServerApiClients() {
         return instance;
     };
     
-    // Return a collection of ready-to-use API clients for each microservice
     return {
         userApiClient: createClientInstance(process.env.NEXT_PUBLIC_USER_API_URL),
         questApiClient: createClientInstance(process.env.NEXT_PUBLIC_QUEST_API_URL),
