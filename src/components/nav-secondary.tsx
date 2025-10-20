@@ -1,3 +1,4 @@
+// roguelearn-web/src/components/nav-secondary.tsx
 import * as React from "react"
 import { type LucideIcon } from "lucide-react"
 
@@ -27,19 +28,22 @@ export function NavSecondary({
         <SidebarMenu>
           {items.map((item) => (
             <SidebarMenuItem key={item.title}>
-              <SidebarMenuButton 
-                asChild={!onClick} 
+              {/* MODIFIED: The onClick handler is passed directly to SidebarMenuButton */}
+              <SidebarMenuButton
                 size="sm"
                 className="hover:bg-[#d23187]/20 hover:text-[#f5c16c] border border-[#d23187]/30 bg-[#d23187]/10"
                 onClick={onClick}
+                // MODIFIED: Set asChild to false when there's an onClick handler, so it renders a button.
+                asChild={!onClick}
               >
+                {/* MODIFIED: Removed the nested <button>. The content is now rendered directly. */}
                 {onClick ? (
-                  <button type="button" className="flex items-center gap-2">
+                  <>
                     <item.icon className="text-[#f5c16c]" />
                     <span className="text-white/90">{item.title}</span>
-                  </button>
+                  </>
                 ) : (
-                  <a href={item.url}>
+                  <a href={item.url} className="flex items-center gap-2">
                     <item.icon className="text-[#f5c16c]" />
                     <span className="text-white/90">{item.title}</span>
                   </a>
