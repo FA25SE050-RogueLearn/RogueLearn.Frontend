@@ -96,7 +96,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const [showCharacterWizard, setShowCharacterWizard] = React.useState(false)
   const [showAlreadyOnboarded, setShowAlreadyOnboarded] = React.useState(false);
 
-  // Fetch the user profile on component mount
   React.useEffect(() => {
     getMyProfile().then(setUserProfile);
   }, []);
@@ -107,15 +106,22 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     router.push("/login")
     router.refresh()
   }
-
+  
   const handleForgeClick = () => {
-    // If we have a profile and onboarding is complete, show an alert.
     if (userProfile?.onboardingCompleted) {
       setShowAlreadyOnboarded(true);
     } else {
-      // Otherwise, open the character creation wizard.
       setShowCharacterWizard(true);
     }
+  };
+
+  // MODIFIED: This handler will optimistically update the client-side state
+  // and close the dialog immediately upon successful onboarding submission.
+  const handleOnboardingComplete = () => {
+    if (userProfile) {
+      setUserProfile({ ...userProfile, onboardingCompleted: true });
+    }
+    setShowCharacterWizard(false);
   };
 
   const navItems = React.useMemo(
@@ -128,8 +134,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         onSelect: handleForgeClick,
       },
     ],
-    // Dependency array ensures this only re-calculates if needed
-    [userProfile]
+    [userProfile] 
   )
 
   return (
@@ -162,33 +167,31 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         </SidebarFooter>
       </Sidebar>
 
-      {/* MODIFIED: Character Creation Wizard Dialog */}
       <Dialog open={showCharacterWizard} onOpenChange={setShowCharacterWizard}>
         <DialogContent className="max-w-[1100px] overflow-hidden rounded-[40px] border border-white/12 bg-gradient-to-br from-[#12060a] via-[#1d0a11] to-[#060205] p-0 shadow-[0_32px_140px_rgba(20,2,16,0.85)] backdrop-blur-2xl">
-          <div className="relative max-h-[82vh] overflow-y-auto bg-gradient-to-br from-[#1d0a10] via-[#240d14] to-[#090307] px-8 py-10 shadow-[0_24px_80px_rgba(10,0,16,0.65)]">
+           <div className="relative max-h-[82vh] overflow-y-auto bg-gradient-to-br from-[#1d0a10] via-[#240d14] to-[#090307] px-8 py-10 shadow-[0_24px_80px_rgba(10,0,16,0.65)]">
             <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(210,49,135,0.32),_transparent_70%)] opacity-45" />
             <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_bottom_right,_rgba(240,177,90,0.26),_transparent_72%)] opacity-50" />
             <div className="relative z-10">
-              {/* MODIFIED: Pass an onComplete handler to close the dialog */}
-              <CharacterCreationWizard onComplete={() => setShowCharacterWizard(false)} />
+              {/* MODIFIED: The handler is passed down to the wizard. */}
+              <CharacterCreationWizard onOnboardingComplete={handleOnboardingComplete} />
             </div>
           </div>
         </DialogContent>
       </Dialog>
-
-      {/* ADDED: Dialog to inform user they have already created a character */}
+      
       <Dialog open={showAlreadyOnboarded} onOpenChange={setShowAlreadyOnboarded}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle className="font-heading text-2xl text-white">Character Already Forged</DialogTitle>
-            <DialogDescription className="text-foreground/70 pt-2">
-              You have already completed the character creation process. In the future, this is where you&#39;ll be able to edit your character&apos;s path.
-            </DialogDescription>
-          </DialogHeader>
-          <Button onClick={() => setShowAlreadyOnboarded(false)} className="mt-4 bg-accent text-accent-foreground">
-            Close
-          </Button>
-        </DialogContent>
+          <DialogContent>
+              <DialogHeader>
+                  <DialogTitle className="font-heading text-2xl text-white">Character Already Forged</DialogTitle>
+                  <DialogDescription className="text-foreground/70 pt-2">
+                      You have already completed the character creation process. In the future, this is where you'll be able to edit your character's path.
+                  </DialogDescription>
+              </DialogHeader>
+              <Button onClick={() => setShowAlreadyOnboarded(false)} className="mt-4 bg-accent text-accent-foreground">
+                  Close
+              </Button>
+          </DialogContent>
       </Dialog>
     </>
   )
