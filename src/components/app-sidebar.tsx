@@ -185,7 +185,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               <DialogHeader>
                   <DialogTitle className="font-heading text-2xl text-white">Character Already Forged</DialogTitle>
                   <DialogDescription className="text-foreground/70 pt-2">
-                      You have already completed the character creation process. In the future, this is where you'll be able to edit your character's path.
+                      You have already completed the character creation process. In the future, this is where you&apos;ll be able to edit your character&apos;s path.
                   </DialogDescription>
               </DialogHeader>
               <Button onClick={() => setShowAlreadyOnboarded(false)} className="mt-4 bg-accent text-accent-foreground">
