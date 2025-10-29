@@ -1,3 +1,4 @@
+// roguelearn-web/src/components/code-battle/CodeBattlePage.tsx
 "use client";
 
 import { useState, useEffect, useRef } from 'react';
@@ -10,7 +11,8 @@ import CodeEditor from './CodeEditor';
 import ExercisesList from './ExercisesList';
 import Notifications from './Notifications';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8080";
+// This component will now correctly use the dedicated environment variable for the Code Battle service.
+const API_BASE_URL = process.env.NEXT_PUBLIC_CODE_BATTLE_API_URL;
 const PLAYER_ID = "11111111-1111-1111-1111-111111111111"; // TODO: Get from auth
 
 export default function CodeBattlePage() {
@@ -298,12 +300,12 @@ export default function CodeBattlePage() {
         <TabsContent value="battle" className="mt-8 space-y-8">
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
             <EventsList
-              apiBaseUrl={API_BASE_URL}
+              apiBaseUrl={API_BASE_URL!}
               onEventSelect={handleEventSelect}
               selectedEventId={selectedEventId}
             />
             <RoomsList
-              apiBaseUrl={API_BASE_URL}
+              apiBaseUrl={API_BASE_URL!}
               eventId={selectedEventId}
               onRoomSelect={handleRoomSelect}
               selectedRoomId={selectedRoomId}
@@ -312,13 +314,13 @@ export default function CodeBattlePage() {
 
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
             <Leaderboard
-              apiBaseUrl={API_BASE_URL}
+              apiBaseUrl={API_BASE_URL!}
               eventId={selectedEventId}
               roomId={selectedRoomId}
               eventSourceRef={eventSourceRef}
             />
             <ProblemsList
-              apiBaseUrl={API_BASE_URL}
+              apiBaseUrl={API_BASE_URL!}
               eventId={selectedEventId}
               roomId={selectedRoomId}
               onProblemSelect={handleProblemSelect}
@@ -350,7 +352,7 @@ export default function CodeBattlePage() {
         </TabsContent>
 
         <TabsContent value="practice" className="mt-8 space-y-8">
-          <ExercisesList apiBaseUrl={API_BASE_URL} onSubmit={handleExerciseSubmit} />
+          <ExercisesList apiBaseUrl={API_BASE_URL!} onSubmit={handleExerciseSubmit} />
         </TabsContent>
       </Tabs>
 

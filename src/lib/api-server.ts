@@ -1,4 +1,3 @@
-// roguelearn-web/src/lib/api-server.ts
 import axios from 'axios';
 import { createClient } from '@/utils/supabase/server';
 import { cookies } from 'next/headers';
@@ -16,13 +15,13 @@ export async function createServerApiClients() {
     const { data: { session } } = await supabase.auth.getSession();
     const token = session?.access_token;
     
-    // MODIFIED: Create an httpsAgent for development to bypass self-signed certificate errors.
+    // Create an httpsAgent for development to bypass self-signed certificate errors.
     const httpsAgent = new https.Agent({
         rejectUnauthorized: process.env.NODE_ENV === 'production',
     });
 
     const createClientInstance = (baseURL: string | undefined) => {
-        // MODIFIED: Pass the httpsAgent to the axios instance.
+        // Pass the httpsAgent to the axios instance.
         const instance = axios.create({ baseURL, httpsAgent });
         
         if (token) {
@@ -33,8 +32,9 @@ export async function createServerApiClients() {
     };
     
     return {
-        userApiClient: createClientInstance(process.env.NEXT_PUBLIC_USER_API_URL),
-        questApiClient: createClientInstance(process.env.NEXT_PUBLIC_QUEST_API_URL),
+        // The single client for the consolidated User, Quest, Social, and Meeting service.
+        coreApiClient: createClientInstance(process.env.NEXT_PUBLIC_API_URL),
+        // The separate client for the Code Battle service.
         codeBattleApiClient: createClientInstance(process.env.NEXT_PUBLIC_CODE_BATTLE_API_URL),
     };
 }

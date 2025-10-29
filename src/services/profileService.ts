@@ -1,5 +1,5 @@
 // roguelearn-web/src/services/profileService.ts
-import { userApiClient } from "@/lib/api";
+import { coreApiClient } from "@/lib/api";
 import { UserProfile } from "@/types/user";
 
 /**
@@ -9,7 +9,7 @@ import { UserProfile } from "@/types/user";
  */
 export const getMyProfile = async (): Promise<UserProfile | null> => {
   try {
-    const response = await userApiClient.get<UserProfile>("/api/profiles/me");
+    const response = await coreApiClient.get<UserProfile>("/api/profiles/me");
     return response.data;
   } catch (error) {
     console.error("Failed to fetch current user profile:", error);

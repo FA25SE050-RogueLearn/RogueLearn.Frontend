@@ -73,15 +73,16 @@ export default async function DashboardPage() {
   }
 
   // Create authenticated API clients for server-side requests.
-  const { userApiClient, questApiClient } = await createServerApiClients();
+  // We now use a single `coreApiClient` for both user and quest data.
+  const { coreApiClient } = await createServerApiClients();
 
   let userProfile: UserProfile | null = null;
   let activeQuest: QuestDetails | null = null;
 
   try {
-    // 1. Fetch user profile from the User Service API instead of directly from Supabase.
+    // 1. Fetch user profile from the consolidated core service API.
     console.log(`Fetching profile for user: ${user.id}`);
-    const profileResponse = await userApiClient.get(`/api/profiles/${user.id}`);
+    const profileResponse = await coreApiClient.get(`/api/profiles/${user.id}`);
     userProfile = profileResponse.data;
   } catch (error) {
     console.error("Failed to fetch user profile:", error);
@@ -89,9 +90,9 @@ export default async function DashboardPage() {
   }
 
   try {
-    // 2. Fetch the user's active learning path from the Quest Service API.
+    // 2. Fetch the user's active learning path from the consolidated core service API.
     console.log(`Fetching learning path for user: ${user.id}`);
-    const learningPathResponse = await questApiClient.get<LearningPath>('/api/learning-paths/me');
+    const learningPathResponse = await coreApiClient.get<LearningPath>('/api/learning-paths/me');
     const learningPath = learningPathResponse.data;
 
     // 3. From the learning path, find the user's current quest.
@@ -101,9 +102,9 @@ export default async function DashboardPage() {
       learningPath.quests.find(q => q.status === 'NotStarted');
 
     if (currentQuestSummary) {
-      // 4. If a current quest is identified, fetch its full details from the Quest Service API.
+      // 4. If a current quest is identified, fetch its full details from the consolidated core service API.
       console.log(`Fetching details for quest: ${currentQuestSummary.id}`);
-      const questDetailsResponse = await questApiClient.get<QuestDetails>(`/api/quests/${currentQuestSummary.id}`);
+      const questDetailsResponse = await coreApiClient.get<QuestDetails>(`/api/quests/${currentQuestSummary.id}`);
       activeQuest = questDetailsResponse.data;
     }
   } catch (error) {
