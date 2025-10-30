@@ -4,14 +4,14 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { AcademicRoute, CareerClass } from "@/types/onboarding";
-import { getRoutes, getClasses, completeOnboarding } from "@/services/onboardingService";
+// MODIFIED: Import from the new API service object
+import onboardingApi from "@/api/onboardingApi"; 
 import { SelectRouteStep } from "./SelectRouteStep";
 import { SelectClassStep } from "./SelectClassStep";
 import { SummaryStep } from "./SummaryStep";
 import { Progress } from "@/components/ui/progress";
 import { Loader2 } from "lucide-react";
 
-// MODIFIED: Renamed prop for better clarity.
 interface CharacterCreationWizardProps {
   onOnboardingComplete: () => void;
 }
@@ -34,12 +34,28 @@ export function CharacterCreationWizard({ onOnboardingComplete }: CharacterCreat
   useEffect(() => {
     const fetchData = async () => {
       setIsLoading(true);
+      setError(null);
       try {
-        const [routesData, classesData] = await Promise.all([getRoutes(), getClasses()]);
-        setRoutes(routesData);
-        setClasses(classesData);
-      } catch (err) {
-        setError("Failed to load necessary data. Please try again later.");
+        // MODIFIED: Call the new service functions and handle the structured response.
+        const [routesResult, classesResult] = await Promise.all([
+          onboardingApi.getRoutes(),
+          onboardingApi.getClasses()
+        ]);
+
+        if (routesResult.isSuccess && routesResult.data) {
+          setRoutes(routesResult.data);
+        } else {
+          throw new Error("Failed to fetch academic routes.");
+        }
+        
+        if (classesResult.isSuccess && classesResult.data) {
+          setClasses(classesResult.data);
+        } else {
+          throw new Error("Failed to fetch career classes.");
+        }
+
+      } catch (err: any) {
+        setError(err.message || "Failed to load necessary data. Please try again later.");
       } finally {
         setIsLoading(false);
       }
@@ -71,16 +87,16 @@ export function CharacterCreationWizard({ onOnboardingComplete }: CharacterCreat
     setIsSubmitting(true);
     setError(null);
     try {
-      await completeOnboarding(selectedRoute.id, selectedClass.id);
+      // MODIFIED: Call the new service function.
+      await onboardingApi.completeOnboarding(selectedRoute.id, selectedClass.id);
       
-      // MODIFIED: Call the handler passed from the parent to update state and close the dialog.
       onOnboardingComplete();
 
       // The router push and refresh will still happen as the dialog closes.
       router.push("/dashboard");
       router.refresh();
-    } catch (err) {
-      setError("An unexpected error occurred. Please try again.");
+    } catch (err: any) {
+      setError(err.response?.data?.message || "An unexpected error occurred. Please try again.");
       setIsSubmitting(false);
     }
   };
@@ -94,6 +110,15 @@ export function CharacterCreationWizard({ onOnboardingComplete }: CharacterCreat
         <Loader2 className="h-12 w-12 animate-spin text-accent" />
         <h2 className="text-2xl font-semibold font-heading text-white">Forging Your Path...</h2>
         <p className="text-foreground/70">Gathering ancient knowledge and career blueprints.</p>
+      </div>
+    );
+  }
+  
+  if (error && !isSubmitting) {
+     return (
+      <div className="flex flex-col items-center justify-center gap-4 text-center min-h-[50vh]">
+        <h2 className="text-2xl font-semibold font-heading text-red-400">Failed to Load Data</h2>
+        <p className="text-foreground/70">{error}</p>
       </div>
     );
   }
