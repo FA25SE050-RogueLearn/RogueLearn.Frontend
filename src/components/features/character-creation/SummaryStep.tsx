@@ -1,8 +1,7 @@
 // roguelearn-web/src/components/features/character-creation/SummaryStep.tsx
 import { AcademicRoute, CareerClass } from "@/types/onboarding";
 import { Button } from "@/components/ui/button";
-import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { AlertCircle, Loader2, Sparkles } from "lucide-react";
+import { AlertCircle, Loader2 } from "lucide-react";
 
 interface SummaryStepProps {
     selectedRoute: AcademicRoute;

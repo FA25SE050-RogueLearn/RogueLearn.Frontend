@@ -4,7 +4,6 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { AcademicRoute, CareerClass } from "@/types/onboarding";
-// MODIFIED: Import from the new API service object
 import onboardingApi from "@/api/onboardingApi"; 
 import { SelectRouteStep } from "./SelectRouteStep";
 import { SelectClassStep } from "./SelectClassStep";
@@ -36,7 +35,6 @@ export function CharacterCreationWizard({ onOnboardingComplete }: CharacterCreat
       setIsLoading(true);
       setError(null);
       try {
-        // MODIFIED: Call the new service functions and handle the structured response.
         const [routesResult, classesResult] = await Promise.all([
           onboardingApi.getRoutes(),
           onboardingApi.getClasses()
@@ -87,12 +85,10 @@ export function CharacterCreationWizard({ onOnboardingComplete }: CharacterCreat
     setIsSubmitting(true);
     setError(null);
     try {
-      // MODIFIED: Call the new service function.
       await onboardingApi.completeOnboarding(selectedRoute.id, selectedClass.id);
       
       onOnboardingComplete();
 
-      // The router push and refresh will still happen as the dialog closes.
       router.push("/dashboard");
       router.refresh();
     } catch (err: any) {

@@ -32,7 +32,8 @@ import {
 import { createClient } from "@/utils/supabase/client"
 import { useRouter } from "next/navigation"
 import { CharacterCreationWizard } from "@/components/features/character-creation/CharacterCreationWizard"
-import { getMyProfile } from "@/services/profileService"
+// MODIFIED: Import from the correct API layer
+import profileApi from "@/api/profileApi" 
 import { UserProfile } from "@/types/user"
 import { Button } from "./ui/button"
 
@@ -97,7 +98,14 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const [showAlreadyOnboarded, setShowAlreadyOnboarded] = React.useState(false);
 
   React.useEffect(() => {
-    getMyProfile().then(setUserProfile);
+    const fetchProfile = async () => {
+      // MODIFIED: Use the new API service
+      const response = await profileApi.getMyProfile();
+      if (response.isSuccess) {
+        setUserProfile(response.data);
+      }
+    };
+    fetchProfile();
   }, []);
 
   const handleLogout = async () => {
@@ -115,8 +123,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     }
   };
 
-  // MODIFIED: This handler will optimistically update the client-side state
-  // and close the dialog immediately upon successful onboarding submission.
   const handleOnboardingComplete = () => {
     if (userProfile) {
       setUserProfile({ ...userProfile, onboardingCompleted: true });
@@ -173,7 +179,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(210,49,135,0.32),_transparent_70%)] opacity-45" />
             <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_bottom_right,_rgba(240,177,90,0.26),_transparent_72%)] opacity-50" />
             <div className="relative z-10">
-              {/* MODIFIED: The handler is passed down to the wizard. */}
               <CharacterCreationWizard onOnboardingComplete={handleOnboardingComplete} />
             </div>
           </div>

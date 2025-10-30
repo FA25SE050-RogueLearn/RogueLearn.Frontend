@@ -12,7 +12,7 @@ interface SelectClassStepProps {
     onBack: () => void;
 }
 
-// Mock data for tags, as this is not yet in the API response.
+// NOTE: Mock data for tags, as this is not yet in the API response.
 const classTags: Record<string, string[]> = {
     "ASP.NET Core Roadmap": ["Backend", "C#", "Microservices"],
     "React Roadmap": ["Frontend", "TypeScript", "Web Apps"],

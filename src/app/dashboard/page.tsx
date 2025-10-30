@@ -1,4 +1,3 @@
-// roguelearn-web/src/app/dashboard/page.tsx
 import { UserHeader } from "@/components/dashboard/UserHeader";
 import { CharacterStats } from "@/components/dashboard/CharacterStats";
 import { ActiveQuest } from "@/components/dashboard/ActiveQuest";
@@ -53,23 +52,25 @@ interface QuestDetails {
 export default async function DashboardPage() {
   const supabase = await createClient();
 
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) {
+    // This check ensures only authenticated users can access the dashboard.
+    // It's placed at the top to prevent any further execution for unauthenticated users.
+    redirect('/login');
+  }
+
   // Get the session to access the JWT token for logging and API calls.
   const { data: { session } } = await supabase.auth.getSession();
-  const { data: { user } } = await supabase.auth.getUser();
 
   // RE-ADDED: JWT token logging for debugging as requested.
   if (session?.access_token) {
     console.log('🔐 JWT Token (Dashboard Access):', session.access_token);
     console.log('🔐 Token Type:', session.token_type);
     console.log('🔐 Expires At:', session.expires_at);
-    console.log('🔐 User ID:', user?.id);
+    console.log('🔐 User ID:', user.id);
   } else {
     console.log('❌ No JWT token found in session');
-  }
-
-  if (!user) {
-    // This check ensures only authenticated users can access the dashboard.
-    redirect('/login');
   }
 
   // Create authenticated API clients for server-side requests.
