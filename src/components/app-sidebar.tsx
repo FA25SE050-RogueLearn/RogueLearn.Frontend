@@ -32,8 +32,7 @@ import {
 import { createClient } from "@/utils/supabase/client"
 import { useRouter } from "next/navigation"
 import { CharacterCreationWizard } from "@/components/features/character-creation/CharacterCreationWizard"
-// MODIFIED: Import from the correct API layer
-import profileApi from "@/api/profileApi" 
+import profileApi from "@/api/profileApi"
 import { UserProfile } from "@/types/user"
 import { Button } from "./ui/button"
 
@@ -97,16 +96,40 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const [showCharacterWizard, setShowCharacterWizard] = React.useState(false)
   const [showAlreadyOnboarded, setShowAlreadyOnboarded] = React.useState(false);
 
+  // NEW: Use an effect to listen for auth changes, this is the robust solution.
   React.useEffect(() => {
+    const supabase = createClient();
+    
+    // Define the function to fetch profile data
     const fetchProfile = async () => {
-      // MODIFIED: Use the new API service
       const response = await profileApi.getMyProfile();
       if (response.isSuccess) {
         setUserProfile(response.data);
+      } else {
+        // Handle cases where API fails but user is logged in
+        console.error("Failed to fetch profile even though user is authenticated.");
+        setUserProfile(null);
       }
     };
-    fetchProfile();
-  }, []);
+
+    // Listen for changes in authentication state (SIGNED_IN, SIGNED_OUT, etc.)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session) {
+        // If a session exists, the user is logged in. Fetch their profile.
+        console.log("Auth state changed: User is signed in. Fetching profile...");
+        fetchProfile();
+      } else {
+        // If the session is null, the user is logged out. Clear the profile.
+        console.log("Auth state changed: User is signed out.");
+        setUserProfile(null);
+      }
+    });
+
+    // The cleanup function runs when the component unmounts
+    return () => {
+      subscription?.unsubscribe();
+    };
+  }, []); // The empty dependency array ensures this runs only once on mount
 
   const handleLogout = async () => {
     const supabase = createClient()
@@ -140,6 +163,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         onSelect: handleForgeClick,
       },
     ],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [userProfile] 
   )
 
