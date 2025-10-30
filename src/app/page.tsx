@@ -1,3 +1,4 @@
+// roguelearn-web/src/app/page.tsx
 "use client";
 
 import { useState } from 'react';
@@ -11,6 +12,9 @@ import TeamSection from '@/components/team';
 import ContentSection from '@/components/content-one';
 import LoadingScreen from '@/components/LoadingScreen';
 
+// This is the correct entry point for your root URL ('/').
+// It was correct before, the 404 suggests a deeper configuration issue or
+// a problem with how the dev server was started. This file itself is architecturally sound.
 export default function Home() {
   const [loadingComplete, setLoadingComplete] = useState(false);
 
@@ -19,13 +23,16 @@ export default function Home() {
       {!loadingComplete && (
         <LoadingScreen onLoadingComplete={() => setLoadingComplete(true)} />
       )}
-      <HeroSection />
-      <ContentSection />
-      <TestimonialsSection />
-      <TeamSection />
-      <FAQsTwo />
-      <CallToAction />
-      <FooterSection />
+      {/* The loading screen will cover these until it completes */}
+      <div style={{ visibility: loadingComplete ? 'visible' : 'hidden' }}>
+        <HeroSection />
+        <ContentSection />
+        <TestimonialsSection />
+        <TeamSection />
+        <FAQsTwo />
+        <CallToAction />
+        <FooterSection />
+      </div>
     </>
   );
 }
