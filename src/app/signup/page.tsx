@@ -39,6 +39,8 @@ export default function SignupPage() {
           first_name: firstName,
           last_name: lastName,
         },
+        // ADD THIS LINE to specify the confirmation redirect URL
+        emailRedirectTo: `${window.location.origin}/auth/callback`,
       },
     });
 
