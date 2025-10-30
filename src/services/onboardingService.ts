@@ -1,5 +1,5 @@
 // roguelearn-web/src/services/onboardingService.ts
-import { userApiClient } from "@/lib/api";
+import { coreApiClient } from "@/lib/api";
 import { AcademicRoute, CareerClass } from "@/types/onboarding";
 
 /**
@@ -9,7 +9,7 @@ import { AcademicRoute, CareerClass } from "@/types/onboarding";
  */
 export const getRoutes = async (): Promise<AcademicRoute[]> => {
   try {
-    const response = await userApiClient.get<AcademicRoute[]>("/api/onboarding/routes");
+    const response = await coreApiClient.get<AcademicRoute[]>("/api/onboarding/routes");
     return response.data;
   } catch (error) {
     console.error("Failed to fetch academic routes:", error);
@@ -25,7 +25,7 @@ export const getRoutes = async (): Promise<AcademicRoute[]> => {
  */
 export const getClasses = async (): Promise<CareerClass[]> => {
   try {
-    const response = await userApiClient.get<CareerClass[]>("/api/onboarding/classes");
+    const response = await coreApiClient.get<CareerClass[]>("/api/onboarding/classes");
     return response.data;
   } catch (error) {
     console.error("Failed to fetch career classes:", error);
@@ -44,7 +44,7 @@ export const getClasses = async (): Promise<CareerClass[]> => {
 export const completeOnboarding = async (curriculumProgramId: string, careerRoadmapId: string): Promise<void> => {
   try {
     // MODIFIED: Changed the property name in the request body to match the backend command.
-    await userApiClient.post("/api/onboarding/complete", {
+    await coreApiClient.post("/api/onboarding/complete", {
       curriculumProgramId,
       careerRoadmapId,
     });
