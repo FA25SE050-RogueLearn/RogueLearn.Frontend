@@ -1,15 +1,14 @@
-// roguelearn-web/src/components/features/character-creation/CharacterCreationWizard.tsx
 "use client";
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { AcademicRoute, CareerClass } from "@/types/onboarding";
-import onboardingApi from "@/api/onboardingApi"; 
+import onboardingApi from "@/api/onboardingApi";
 import { SelectRouteStep } from "./SelectRouteStep";
 import { SelectClassStep } from "./SelectClassStep";
 import { SummaryStep } from "./SummaryStep";
 import { Progress } from "@/components/ui/progress";
-import { Loader2 } from "lucide-react";
+import { Loader2, AlertCircle } from "lucide-react";
 
 interface CharacterCreationWizardProps {
   onOnboardingComplete: () => void;
@@ -45,7 +44,7 @@ export function CharacterCreationWizard({ onOnboardingComplete }: CharacterCreat
         } else {
           throw new Error("Failed to fetch academic routes.");
         }
-        
+
         if (classesResult.isSuccess && classesResult.data) {
           setClasses(classesResult.data);
         } else {
@@ -86,13 +85,15 @@ export function CharacterCreationWizard({ onOnboardingComplete }: CharacterCreat
     setError(null);
     try {
       await onboardingApi.completeOnboarding(selectedRoute.id, selectedClass.id);
-      
+
       onOnboardingComplete();
 
-      router.push("/dashboard");
+      // After completing onboarding, redirect user to connect their FAP account
+      router.push("/onboarding/connect-fap");
       router.refresh();
     } catch (err: any) {
-      setError(err.response?.data?.message || "An unexpected error occurred. Please try again.");
+      const errorMessage = (err.response?.data?.message || err.message) ?? "An unexpected error occurred. Please try again.";
+      setError(errorMessage);
       setIsSubmitting(false);
     }
   };
@@ -109,10 +110,11 @@ export function CharacterCreationWizard({ onOnboardingComplete }: CharacterCreat
       </div>
     );
   }
-  
+
   if (error && !isSubmitting) {
-     return (
+    return (
       <div className="flex flex-col items-center justify-center gap-4 text-center min-h-[50vh]">
+        <AlertCircle className="w-12 h-12 text-red-400" />
         <h2 className="text-2xl font-semibold font-heading text-red-400">Failed to Load Data</h2>
         <p className="text-foreground/70">{error}</p>
       </div>
@@ -128,12 +130,12 @@ export function CharacterCreationWizard({ onOnboardingComplete }: CharacterCreat
 
       <div className="mb-8">
         <div className="flex items-center justify-between mb-2">
-            <p className="text-sm uppercase tracking-[0.3em] text-foreground/50">Progress</p>
-            <p className="text-sm font-semibold text-white">{Math.round(progressValue)}%</p>
+          <p className="text-sm uppercase tracking-[0.3em] text-foreground/50">Progress</p>
+          <p className="text-sm font-semibold text-white">{Math.round(progressValue)}%</p>
         </div>
         <Progress value={progressValue} className="h-2 bg-white/10" />
       </div>
-      
+
       {currentStep === "route" && (
         <SelectRouteStep
           routes={routes}
