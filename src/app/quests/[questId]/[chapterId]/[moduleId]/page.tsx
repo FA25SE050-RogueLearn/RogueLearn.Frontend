@@ -1,68 +1,43 @@
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
-import { mockQuests } from "@/lib/mockData";
 import { ModuleLearningView } from "@/components/quests/ModuleLearningView";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Trophy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
+import { createServerApiClients } from "@/lib/api-server";
+import { QuestDetails, LearningPath } from "@/types/quest";
 
 interface PageProps {
   params: Promise<{ questId: string; chapterId: string; moduleId: string }>;
 }
 
 export default async function ModuleLearningPage({ params }: PageProps) {
-  const { questId, chapterId, moduleId } = await params;
-  
-  // Find quest
-  const quest = 
-    mockQuests.active.find(q => q.id === questId) ||
-    mockQuests.completed.find(q => q.id === questId) ||
-    mockQuests.available.find(q => q.id === questId);
+  const { questId: learningPathId, chapterId, moduleId: questId } = await params;
+  const { coreApiClient } = await createServerApiClients();
 
-  if (!quest) {
-    return (
-      <DashboardLayout>
-        <div className="flex flex-col items-center justify-center min-h-[400px] gap-4">
-          <p className="text-xl text-muted-foreground">Quest not found.</p>
-          <Button asChild variant="outline">
-            <Link href="/quests">
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Back to Quests
-            </Link>
-          </Button>
-        </div>
-      </DashboardLayout>
-    );
+  let questDetails: QuestDetails | null = null;
+  let learningPath: LearningPath | null = null;
+
+  try {
+    const [questDetailsResponse, learningPathResponse] = await Promise.all([
+      coreApiClient.get<QuestDetails>(`/api/quests/${questId}`),
+      coreApiClient.get<LearningPath>('/api/learning-paths/me')
+    ]);
+    questDetails = questDetailsResponse.data;
+    learningPath = learningPathResponse.data;
+  } catch (error) {
+    console.error(`Failed to fetch data for quest ${questId}:`, error);
   }
 
-  // Find chapter
-  const chapter = quest.chapters.find(ch => ch.id === chapterId);
+  const chapter = learningPath?.chapters.find(ch => ch.id === chapterId);
 
-  if (!chapter) {
+  if (!questDetails || !learningPath || !chapter) {
     return (
       <DashboardLayout>
         <div className="flex flex-col items-center justify-center min-h-[400px] gap-4">
-          <p className="text-xl text-muted-foreground">Chapter not found.</p>
+          <Trophy className="w-16 h-16 text-muted-foreground" />
+          <p className="text-xl text-muted-foreground">Quest content not found.</p>
           <Button asChild variant="outline">
-            <Link href={`/quests/${questId}`}>
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Back to Questline
-            </Link>
-          </Button>
-        </div>
-      </DashboardLayout>
-    );
-  }
-
-  // Find module
-  const currentModule = chapter.modules?.find(m => m.id === moduleId);
-
-  if (!currentModule) {
-    return (
-      <DashboardLayout>
-        <div className="flex flex-col items-center justify-center min-h-[400px] gap-4">
-          <p className="text-xl text-muted-foreground">Module not found.</p>
-          <Button asChild variant="outline">
-            <Link href={`/quests/${questId}/${chapterId}`}>
+            <Link href={`/quests/${learningPathId}/${chapterId}`}>
               <ArrowLeft className="w-4 h-4 mr-2" />
               Back to Chapter
             </Link>
@@ -74,10 +49,10 @@ export default async function ModuleLearningPage({ params }: PageProps) {
 
   return (
     <DashboardLayout>
-      <ModuleLearningView 
-        quest={quest}
+      <ModuleLearningView
+        learningPath={learningPath}
         chapter={chapter}
-        module={currentModule}
+        questDetails={questDetails}
       />
     </DashboardLayout>
   );
