@@ -1,3 +1,4 @@
+// roguelearn-web/src/api/academicApi.ts
 import axiosClient from './axiosClient';
 import { ApiResponse } from '../types/base/Api';
 import { FapRecordData, GapAnalysisResponse, ForgedLearningPath } from '../types/academic';
@@ -56,10 +57,18 @@ const academicApi = {
    * @param questId The ID of the quest for which to generate content.
    */
   generateQuestSteps: (questId: string): Promise<ApiResponse<QuestStep[]>> =>
-    axiosClient.post(`/quests/${questId}/generate-steps`).then(res => ({
+    // MODIFICATION: Added the required '/api' prefix to match the backend controller's route.
+    axiosClient.post(`/api/quests/${questId}/generate-steps`).then(res => ({
       isSuccess: true,
       data: res.data,
     })),
+  
+  /**
+   * Marks a quest step as complete for the user.
+   * Corresponds to POST /api/quests/{questId}/steps/{stepId}/progress
+   */
+  updateQuestStepProgress: (questId: string, stepId: string, status: string) =>
+    axiosClient.post(`/api/quests/${questId}/steps/${stepId}/progress`, { status }),
 };
 
-export default academicApi;
+export default academicApi;

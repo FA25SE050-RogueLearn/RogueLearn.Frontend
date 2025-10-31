@@ -1,3 +1,4 @@
+// roguelearn-web/src/types/quest.ts
 // Represents a summary of a quest within a learning path.
 export interface QuestSummary {
   id: string;
@@ -13,7 +14,6 @@ export interface QuestChapter {
   sequence: number;
   status: 'NotStarted' | 'InProgress' | 'Completed';
   quests: QuestSummary[];
-  description: string;
 }
 
 // Represents the user's main learning path or questline.
@@ -25,28 +25,72 @@ export interface LearningPath {
   completionPercentage: number;
 }
 
+// --- START OF MODIFICATIONS ---
+
+// Define the specific content structure for each step type
+export interface ReadingContent {
+  readingMaterial: string;
+  recommendedExercises: string;
+}
+
+export interface InteractiveContent {
+  challenge?: string;
+  learningPoints?: string[];
+  scenario?: string;
+  prompt?: string;
+  keyLearning?: string[];
+}
+
+export interface CodingContent {
+  challenge: string;
+  template: string;
+  expectedOutput: string;
+}
+
+export interface QuizContent {
+  questions: {
+    question: string;
+    options: string[];
+    answer: string;
+  }[];
+}
+
+export interface SubmissionContent {
+  assignment: string;
+  submissionFormat: string;
+  rubric: string;
+}
+
+export interface ReflectionContent {
+  challenge: string;
+  reflectionPrompt: string;
+  expectedOutcome: string;
+}
+
+export interface VideoContent {
+  videoUrl: string;
+  summary: string;
+}
+
+// A union type for all possible content structures
+type StepContent = ReadingContent | InteractiveContent | CodingContent | QuizContent | SubmissionContent | ReflectionContent | VideoContent;
+
 /**
  * Represents a single objective or step within a quest.
- * MODIFIED: This now accurately reflects the data from the /api/quests/{id} endpoint.
+ * MODIFICATION: The 'content' property is now optional ('?') to reflect that
+ * some API endpoints may not return it.
  */
 export interface QuestStep {
     id: string;
     stepNumber: number;
     title: string;
     description: string;
-    stepType: string;
-    // The 'content' field from the AI generation is not in the quest detail view yet,
-    // but we can add it as optional for future use.
-    content?: any; 
-    // Status is not provided per-step by the API, so it's removed from the base type.
-    // The frontend will manage the step's completion status in its own state.
+    stepType: 'Reading' | 'Video' | 'Interactive' | 'Coding' | 'Quiz' | 'Discussion' | 'Submission' | 'Reflection';
+    content?: StepContent; // Made optional
 }
 
 /**
  * Represents the detailed view of a single quest.
- * MODIFIED: Changed 'objectives' to 'steps' to match the live API response.
- * Other fields not present in the provided JSON (like status, xp) are removed
- * to strictly match the API contract for this specific endpoint.
  */
 export interface QuestDetails {
     id: string;
@@ -54,3 +98,4 @@ export interface QuestDetails {
     description: string;
     steps: QuestStep[];
 }
+// --- END OF MODIFICATIONS ---

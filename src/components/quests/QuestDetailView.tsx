@@ -88,7 +88,6 @@ export function QuestDetailView({ learningPath, chapter }: QuestDetailViewProps)
                 {learningPath.name} <span className="text-foreground/40">/</span> Chapter {chapter.sequence}
               </div>
               <h1 className="text-4xl font-semibold text-white md:text-5xl">{chapter.title}</h1>
-              <p className="max-w-2xl text-sm leading-relaxed text-foreground/70">{chapter.description || "Dive into this chapter's challenges."}</p>
             </div>
           </div>
         </section>
