@@ -5,19 +5,37 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { 
-  ArrowLeft, ArrowRight, BookOpen, CheckCircle, Loader2, Link as LinkIcon
+  ArrowLeft, 
+  ArrowRight, 
+  BookOpen, 
+  CheckCircle, 
+  XCircle,
+  Loader2, 
+  Link as LinkIcon
 } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
-import { LearningPath, QuestChapter, QuestDetails, QuestStep, ReadingContent, InteractiveContent, CodingContent, QuizContent, SubmissionContent, ReflectionContent } from "@/types/quest";
+import { 
+  LearningPath, 
+  QuestChapter, 
+  QuestDetails, 
+  QuestStep, 
+  ReadingContent, 
+  InteractiveContent, 
+  CodingContent, 
+  QuizContent, 
+  SubmissionContent, 
+  ReflectionContent 
+} from "@/types/quest";
 import academicApi from "@/api/academicApi";
 
 // --- Sub-components for each Step Type ---
 
-// MODIFIED: This component now renders the `articleTitle`, `summary`, and a clickable `url`.
 const ReadingStepContent = ({ content }: { content: ReadingContent }) => (
     <Card className="bg-muted/30 border-white/10">
-        <CardHeader><CardTitle>{content.articleTitle || 'Reading Material'}</CardTitle></CardHeader>
+        <CardHeader>
+            <CardTitle>{content.articleTitle || 'Reading Material'}</CardTitle>
+        </CardHeader>
         <CardContent className="space-y-4 prose prose-invert max-w-none prose-p:text-foreground/80 prose-headings:text-white">
             <p className="whitespace-pre-wrap font-body">{content.summary || content.readingMaterial}</p>
             {content.url && (
@@ -38,76 +56,260 @@ const ReadingStepContent = ({ content }: { content: ReadingContent }) => (
     </Card>
 );
 
-// MODIFIED: This component now conditionally renders questions, backlog items, or user stories.
-const InteractiveStepContent = ({ content }: { content: InteractiveContent }) => (
-    <Card className="bg-muted/30 border-white/10">
-        <CardHeader><CardTitle>Challenge</CardTitle></CardHeader>
-        <CardContent className="space-y-6">
-            {content.challenge && <p className="whitespace-pre-wrap font-body text-foreground/80">{content.challenge}</p>}
-            
-            {content.questions && (
-                <div className="space-y-4">
-                    {content.questions.map((q, index) => (
-                        <div key={index} className="p-4 rounded-lg border border-white/10 bg-black/20">
-                            <p className="font-semibold text-white/90">{q.task}</p>
-                            <div className="mt-3 flex flex-col gap-2">
-                                {q.options.map(opt => (
-                                    <Button key={opt} variant="outline" className="justify-start border-white/20 hover:bg-white/10">
-                                        {opt}
-                                    </Button>
-                                ))}
+const InteractiveStepContent = ({ content }: { content: InteractiveContent }) => {
+    // State for handling question-based interactions (Step 2)
+    const [selectedAnswers, setSelectedAnswers] = useState<Record<number, string>>({});
+    const [submitted, setSubmitted] = useState(false);
+    
+    // State for handling backlog selection (Step 3)
+    const [selectedBacklogItems, setSelectedBacklogItems] = useState<Set<string>>(new Set());
+    
+    // State for handling user story ranking (Step 4)
+    const [rankedStories, setRankedStories] = useState<string[]>([]);
+
+    // Handler for question selection
+    const handleQuestionSelect = (qIndex: number, option: string) => {
+        if (submitted) return;
+        setSelectedAnswers(prev => ({...prev, [qIndex]: option}));
+    };
+
+    // Handler for submitting question answers
+    const handleSubmitQuestions = () => {
+        setSubmitted(true);
+    };
+
+    // Handler for backlog item selection
+    const toggleBacklogItem = (itemId: string) => {
+        setSelectedBacklogItems(prev => {
+            const newSet = new Set(prev);
+            if (newSet.has(itemId)) {
+                newSet.delete(itemId);
+            } else {
+                newSet.add(itemId);
+            }
+            return newSet;
+        });
+    };
+
+    // Calculate total effort for selected backlog items
+    const getTotalEffort = () => {
+        if (!content.backlogItems) return 0;
+        return content.backlogItems
+            .filter(item => selectedBacklogItems.has(item.id))
+            .reduce((sum, item) => sum + item.effortEstimate, 0);
+    };
+
+    // Handler for user story ranking
+    const handleRankStory = (storyId: string, rank: number) => {
+        setRankedStories(prev => {
+            const newRanked = [...prev];
+            // Remove the story if it's already ranked
+            const currentIndex = newRanked.indexOf(storyId);
+            if (currentIndex !== -1) {
+                newRanked.splice(currentIndex, 1);
+            }
+            // Insert at the new position (rank-1 because array is 0-indexed)
+            newRanked.splice(rank - 1, 0, storyId);
+            return newRanked;
+        });
+    };
+
+    return (
+        <Card className="bg-muted/30 border-white/10">
+            <CardHeader><CardTitle>Challenge</CardTitle></CardHeader>
+            <CardContent className="space-y-6">
+                {content.challenge && (
+                    <p className="whitespace-pre-wrap font-body text-foreground/80">{content.challenge}</p>
+                )}
+                
+                {/* Question-based interaction (Step 2) */}
+                {content.questions && (
+                    <div className="space-y-6">
+                        {content.questions.map((q, index) => {
+                            const selectedAnswer = selectedAnswers[index];
+                            const isCorrect = selectedAnswer === q.answer;
+                            
+                            return (
+                                <div key={index} className="p-4 rounded-lg border border-white/10 bg-black/20">
+                                    <p className="font-semibold text-white/90 mb-3">{q.task}</p>
+                                    <div className="flex flex-col gap-2">
+                                        {q.options.map(opt => {
+                                            const isSelected = selectedAnswer === opt;
+                                            const isCorrectOption = q.answer === opt;
+                                            
+                                            let buttonClass = "justify-start border-white/20 hover:bg-white/10";
+                                            if (submitted) {
+                                                if (isCorrectOption) {
+                                                    buttonClass = "justify-start bg-green-500/20 border-green-500 text-white hover:bg-green-500/30";
+                                                } else if (isSelected && !isCorrect) {
+                                                    buttonClass = "justify-start bg-red-500/20 border-red-500 text-white hover:bg-red-500/30";
+                                                }
+                                            } else if (isSelected) {
+                                                buttonClass = "justify-start bg-accent/20 border-accent text-white hover:bg-accent/30";
+                                            }
+                                            
+                                            return (
+                                                <Button
+                                                    key={opt}
+                                                    variant="outline"
+                                                    className={buttonClass}
+                                                    onClick={() => handleQuestionSelect(index, opt)}
+                                                    disabled={submitted}
+                                                >
+                                                    {submitted && isCorrectOption && (
+                                                        <CheckCircle className="w-4 h-4 mr-2 text-green-400" />
+                                                    )}
+                                                    {submitted && isSelected && !isCorrect && (
+                                                        <XCircle className="w-4 h-4 mr-2 text-red-400" />
+                                                    )}
+                                                    {opt}
+                                                </Button>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            );
+                        })}
+                        
+                        {!submitted && (
+                            <Button
+                                onClick={handleSubmitQuestions}
+                                className="bg-accent text-accent-foreground hover:bg-accent/90"
+                                disabled={Object.keys(selectedAnswers).length !== content.questions.length}
+                            >
+                                Submit Answers
+                            </Button>
+                        )}
+                        
+                        {submitted && (
+                            <div className="mt-4 p-4 rounded-md bg-black/20 text-center">
+                                <p className="text-lg font-bold text-white">
+                                    You got {content.questions.filter((q, i) => selectedAnswers[i] === q.answer).length} out of {content.questions.length} correct!
+                                </p>
                             </div>
+                        )}
+                    </div>
+                )}
+
+                {/* Backlog item selection (Step 3) */}
+                {content.backlogItems && (
+                    <div>
+                        <h4 className="font-semibold mb-3 text-white">Backlog Items</h4>
+                        <p className="text-sm text-foreground/60 mb-4">
+                            Select items for your sprint (Target: ~20 points | Current: {getTotalEffort()} points)
+                        </p>
+                        <div className="space-y-3">
+                            {content.backlogItems.map(item => {
+                                const isSelected = selectedBacklogItems.has(item.id);
+                                return (
+                                    <div
+                                        key={item.id}
+                                        className={`p-4 rounded-lg border cursor-pointer transition-all ${
+                                            isSelected
+                                                ? 'border-accent bg-accent/10'
+                                                : 'border-white/10 bg-black/20 hover:bg-black/30'
+                                        }`}
+                                        onClick={() => toggleBacklogItem(item.id)}
+                                    >
+                                        <div className="flex justify-between items-start">
+                                            <div className="flex-1">
+                                                <div className="flex items-start gap-2">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={isSelected}
+                                                        onChange={() => {}}
+                                                        className="mt-1"
+                                                    />
+                                                    <p className="text-foreground/80">{item.story}</p>
+                                                </div>
+                                            </div>
+                                            <div className="text-right ml-4">
+                                                <p className="text-xs text-foreground/60">
+                                                    Priority: <span className="font-bold text-white/80">{item.priority}</span>
+                                                </p>
+                                                <p className="text-xs text-foreground/60">
+                                                    Effort: <span className="font-bold text-white/80">{item.effortEstimate} pts</span>
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                );
+                            })}
                         </div>
-                    ))}
-                </div>
-            )}
-
-            {content.backlogItems && (
-                <div>
-                    <h4 className="font-semibold mb-3 text-white">Backlog Items</h4>
-                    <div className="space-y-3">
-                        {content.backlogItems.map(item => (
-                            <div key={item.id} className="p-4 rounded-lg border border-white/10 bg-black/20 flex justify-between items-start">
-                                <p className="text-foreground/80 flex-1">{item.story}</p>
-                                <div className="text-right ml-4">
-                                    <p className="text-xs text-foreground/60">Priority: <span className="font-bold text-white/80">{item.priority}</span></p>
-                                    <p className="text-xs text-foreground/60">Effort: <span className="font-bold text-white/80">{item.effortEstimate} pts</span></p>
-                                </div>
-                            </div>
-                        ))}
                     </div>
-                </div>
-            )}
+                )}
 
-            {content.userStories && (
-                 <div>
-                    <h4 className="font-semibold mb-3 text-white">User Stories to Prioritize</h4>
-                    <div className="space-y-3">
-                        {content.userStories.map(item => (
-                            <div key={item.id} className="p-4 rounded-lg border border-white/10 bg-black/20 flex justify-between items-start">
-                                <p className="text-foreground/80 flex-1">{item.story}</p>
-                                 <div className="text-right ml-4">
-                                    <p className="text-xs text-foreground/60">Value: <span className="font-bold text-white/80">{item.value}</span></p>
-                                    <p className="text-xs text-foreground/60">Effort: <span className="font-bold text-white/80">{item.effort}</span></p>
-                                </div>
-                            </div>
-                        ))}
+                {/* User story ranking (Step 4) */}
+                {content.userStories && (
+                    <div>
+                        <h4 className="font-semibold mb-3 text-white">User Stories to Prioritize</h4>
+                        <p className="text-sm text-foreground/60 mb-4">
+                            Click a rank button (1-5) next to each story to set its priority
+                        </p>
+                        <div className="space-y-3">
+                            {content.userStories.map(item => {
+                                const currentRank = rankedStories.indexOf(item.id) + 1;
+                                
+                                return (
+                                    <div
+                                        key={item.id}
+                                        className="p-4 rounded-lg border border-white/10 bg-black/20"
+                                    >
+                                        <div className="flex justify-between items-start gap-4">
+                                            <div className="flex-1">
+                                                <p className="text-foreground/80">{item.story}</p>
+                                                <div className="flex gap-4 mt-2">
+                                                    <p className="text-xs text-foreground/60">
+                                                        Value: <span className="font-bold text-white/80">{item.value}</span>
+                                                    </p>
+                                                    <p className="text-xs text-foreground/60">
+                                                        Effort: <span className="font-bold text-white/80">{item.effort}</span>
+                                                    </p>
+                                                </div>
+                                            </div>
+                                            <div className="flex flex-col gap-2">
+                                                <div className="flex gap-1">
+                                                    {[1, 2, 3, 4, 5].map(rank => (
+                                                        <Button
+                                                            key={rank}
+                                                            variant="outline"
+                                                            size="sm"
+                                                            className={`w-8 h-8 p-0 ${
+                                                                currentRank === rank
+                                                                    ? 'bg-accent border-accent text-white'
+                                                                    : 'border-white/20'
+                                                            }`}
+                                                            onClick={() => handleRankStory(item.id, rank)}
+                                                        >
+                                                            {rank}
+                                                        </Button>
+                                                    ))}
+                                                </div>
+                                                {currentRank > 0 && (
+                                                    <p className="text-xs text-center text-accent">Rank: {currentRank}</p>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
                     </div>
-                </div>
-            )}
+                )}
 
-            {(content.guidance || content.task || content.answerExplanation) && (
-                <div className="mt-4 p-4 rounded-lg border border-amber-300/20 bg-amber-400/10 text-amber-200/80 text-sm">
-                    {content.guidance && <p><strong>Guidance:</strong> {content.guidance}</p>}
-                    {content.task && <p className="mt-2"><strong>Task:</strong> {content.task}</p>}
-                    {content.answerExplanation && <p className="mt-2"><strong>Hint:</strong> {content.answerExplanation}</p>}
-                </div>
-            )}
-        </CardContent>
-    </Card>
-);
+                {/* Guidance section */}
+                {(content.guidance || content.task || content.answerExplanation) && (
+                    <div className="mt-4 p-4 rounded-lg border border-amber-300/20 bg-amber-400/10 text-amber-200/80 text-sm">
+                        {content.guidance && <p><strong>Guidance:</strong> {content.guidance}</p>}
+                        {content.task && <p className="mt-2"><strong>Task:</strong> {content.task}</p>}
+                        {content.answerExplanation && <p className="mt-2"><strong>Hint:</strong> {content.answerExplanation}</p>}
+                    </div>
+                )}
+            </CardContent>
+        </Card>
+    );
+};
 
-// MODIFIED: Changed `q.answer` to `q.correctAnswer` to match the updated type definition.
 const QuizStepContent = ({ content }: { content: QuizContent }) => {
     const [selectedAnswers, setSelectedAnswers] = useState<Record<number, string>>({});
     const [submitted, setSubmitted] = useState(false);
@@ -139,7 +341,12 @@ const QuizStepContent = ({ content }: { content: QuizContent }) => {
                                     : (isSelected ? 'bg-accent/20 border-accent' : 'bg-transparent border-white/10');
                                 
                                 return (
-                                    <Button key={opt} variant="outline" className={`w-full justify-start text-left h-auto py-2 whitespace-normal ${buttonClass}`} onClick={() => handleSelect(i, opt)}>
+                                    <Button 
+                                        key={opt} 
+                                        variant="outline" 
+                                        className={`w-full justify-start text-left h-auto py-2 whitespace-normal ${buttonClass}`} 
+                                        onClick={() => handleSelect(i, opt)}
+                                    >
                                         {opt}
                                     </Button>
                                 );
@@ -148,7 +355,15 @@ const QuizStepContent = ({ content }: { content: QuizContent }) => {
                         {submitted && <p className="text-xs mt-2 text-foreground/60">{q.explanation}</p>}
                     </div>
                 ))}
-                {!submitted && <Button onClick={checkAnswers} className="bg-accent text-accent-foreground hover:bg-accent/90">Submit Answers</Button>}
+                {!submitted && (
+                    <Button 
+                        onClick={checkAnswers} 
+                        className="bg-accent text-accent-foreground hover:bg-accent/90"
+                        disabled={Object.keys(selectedAnswers).length !== content.questions.length}
+                    >
+                        Submit Answers
+                    </Button>
+                )}
                 {submitted && (
                     <div className="mt-4 p-4 rounded-md bg-black/20 text-center">
                         <p className="text-lg font-bold text-white">You scored {correctCount} out of {content.questions.length}!</p>
@@ -165,7 +380,9 @@ const CodingStepContent = ({ content }: { content: CodingContent }) => (
         <CardContent className="space-y-4">
             <p className="whitespace-pre-wrap font-body">{content.challenge}</p>
             <h4 className="font-semibold text-white">Code Template:</h4>
-            <pre className="bg-black/50 p-4 rounded-md text-sm font-mono overflow-x-auto text-white/90"><code>{content.template}</code></pre>
+            <pre className="bg-black/50 p-4 rounded-md text-sm font-mono overflow-x-auto text-white/90">
+                <code>{content.template}</code>
+            </pre>
             <h4 className="font-semibold text-white">Expected Outcome:</h4>
             <p className="whitespace-pre-wrap font-body text-foreground/80">{content.expectedOutput}</p>
         </CardContent>
@@ -181,7 +398,7 @@ const SubmissionStepContent = ({ content }: { content: SubmissionContent }) => (
             {content.exampleUserStory && (
                 <div>
                     <h4 className="font-semibold text-white">Example User Story</h4>
-                    <p className="whitespace-pre-wrap font-body text-foreground/80 italic">"{content.exampleUserStory}"</p>
+                    <p className="whitespace-pre-wrap font-body text-foreground/80 italic">&quot;{content.exampleUserStory}&quot;</p>
                 </div>
             )}
             <h4 className="font-semibold text-white">Submission Format</h4>
@@ -214,7 +431,6 @@ const PlaceholderContent = ({ type }: { type: string }) => (
 );
 
 // --- Main Component ---
-// (No changes needed in the main component logic below this line)
 
 interface ModuleLearningViewProps {
   learningPath: LearningPath;
@@ -302,9 +518,13 @@ export function ModuleLearningView({ learningPath, chapter, questDetails }: Modu
       <div className="flex items-center justify-between">
         <div>
           <div className="flex items-center gap-2 text-sm text-foreground/60 mb-2">
-            <Link href={`/quests/${learningPath.id}`} className="hover:text-accent">{learningPath.name}</Link>
+            <Link href={`/quests/${learningPath.id}`} className="hover:text-accent">
+              {learningPath.name}
+            </Link>
             <span>/</span>
-            <Link href={`/quests/${learningPath.id}/${chapter.id}`} className="hover:text-accent">{chapter.title}</Link>
+            <Link href={`/quests/${learningPath.id}/${chapter.id}`} className="hover:text-accent">
+              {chapter.title}
+            </Link>
           </div>
           <h1 className="text-4xl font-bold font-heading flex items-center gap-3 text-white">
             <BookOpen className="w-10 h-10 text-accent" />
@@ -331,12 +551,28 @@ export function ModuleLearningView({ learningPath, chapter, questDetails }: Modu
       </Card>
 
       <div className="flex items-center justify-between pt-8 border-t border-white/10">
-        <Button variant="outline" size="lg" onClick={handlePrevStep} disabled={currentStepIndex === 0} className="border-white/20 bg-white/5 hover:bg-white/10 text-white">
+        <Button 
+          variant="outline" 
+          size="lg" 
+          onClick={handlePrevStep} 
+          disabled={currentStepIndex === 0} 
+          className="border-white/20 bg-white/5 hover:bg-white/10 text-white"
+        >
           <ArrowLeft className="w-5 h-5 mr-2" /> Previous Step
         </Button>
+        
         {stepProgress[currentStep.id] !== 'Completed' ? (
-            <Button size="lg" className="bg-gradient-to-r from-accent to-amber-400 text-primary-foreground font-bold" onClick={() => handleCompleteStep(currentStep.id)} disabled={isCompleting === currentStep.id}>
-                {isCompleting === currentStep.id ? <Loader2 className="w-5 h-5 mr-2 animate-spin" /> : <CheckCircle className="w-5 h-5 mr-2" />}
+            <Button 
+              size="lg" 
+              className="bg-gradient-to-r from-accent to-amber-400 text-primary-foreground font-bold" 
+              onClick={() => handleCompleteStep(currentStep.id)} 
+              disabled={isCompleting === currentStep.id}
+            >
+                {isCompleting === currentStep.id ? (
+                  <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                ) : (
+                  <CheckCircle className="w-5 h-5 mr-2" />
+                )}
                 Mark as Complete
             </Button>
         ) : (
@@ -344,7 +580,14 @@ export function ModuleLearningView({ learningPath, chapter, questDetails }: Modu
                 <CheckCircle className="w-5 h-5" /> Step Completed
             </div>
         )}
-        <Button variant="outline" size="lg" onClick={handleNextStep} disabled={!questDetails || currentStepIndex === questDetails.steps.length - 1} className="border-white/20 bg-white/5 hover:bg-white/10 text-white">
+        
+        <Button 
+          variant="outline" 
+          size="lg" 
+          onClick={handleNextStep} 
+          disabled={!questDetails || currentStepIndex === questDetails.steps.length - 1} 
+          className="border-white/20 bg-white/5 hover:bg-white/10 text-white"
+        >
           Next Step <ArrowRight className="w-5 h-5 ml-2" />
         </Button>
       </div>
