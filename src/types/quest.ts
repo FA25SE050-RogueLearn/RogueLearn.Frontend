@@ -5,9 +5,7 @@ export interface QuestSummary {
   title: string;
   status: 'NotStarted' | 'InProgress' | 'Completed';
   sequenceOrder: number;
-  // ADDED: The ID of the parent Learning Path.
   learningPathId: string;
-  // ADDED: The ID of the parent Quest Chapter.
   chapterId: string;
 }
 
@@ -29,20 +27,43 @@ export interface LearningPath {
   completionPercentage: number;
 }
 
-// --- START OF MODIFICATIONS ---
+// --- MODIFICATION START ---
+// Updated interfaces to match the rich JSON structure from the AI.
 
-// Define the specific content structure for each step type
 export interface ReadingContent {
-  readingMaterial: string;
-  recommendedExercises: string;
+  // Original properties (can be kept for backward compatibility or removed if unused)
+  readingMaterial?: string;
+  recommendedExercises?: string;
+  // New properties from your JSON
+  articleTitle?: string;
+  url?: string;
+  summary?: string;
 }
 
 export interface InteractiveContent {
   challenge?: string;
-  learningPoints?: string[];
-  scenario?: string;
-  prompt?: string;
-  keyLearning?: string[];
+  // This content can now contain questions, backlog items, or user stories.
+  // By making them optional, the component can handle different types of interactive content.
+  questions?: {
+    task: string;
+    options: string[];
+    answer: string;
+  }[];
+  backlogItems?: {
+    id: string;
+    story: string;
+    priority: string;
+    effortEstimate: number;
+  }[];
+  userStories?: {
+    id: string;
+    story: string;
+    value: string;
+    effort: string;
+  }[];
+  guidance?: string;
+  task?: string;
+  answerExplanation?: string;
 }
 
 export interface CodingContent {
@@ -55,14 +76,16 @@ export interface QuizContent {
   questions: {
     question: string;
     options: string[];
-    answer: string;
+    correctAnswer: string; // Renamed from 'answer' to be more explicit
+    explanation: string;
   }[];
 }
 
 export interface SubmissionContent {
-  assignment: string;
+  challenge: string;
   submissionFormat: string;
-  rubric: string;
+  exampleUserStory?: string; // Made optional
+  rubric?: string; // Made optional
 }
 
 export interface ReflectionContent {
@@ -76,30 +99,21 @@ export interface VideoContent {
   summary: string;
 }
 
-// A union type for all possible content structures
 type StepContent = ReadingContent | InteractiveContent | CodingContent | QuizContent | SubmissionContent | ReflectionContent | VideoContent;
 
-/**
- * Represents a single objective or step within a quest.
- * MODIFICATION: The 'content' property is now optional ('?') to reflect that
- * some API endpoints may not return it.
- */
 export interface QuestStep {
     id: string;
     stepNumber: number;
     title: string;
     description: string;
     stepType: 'Reading' | 'Video' | 'Interactive' | 'Coding' | 'Quiz' | 'Discussion' | 'Submission' | 'Reflection';
-    content?: StepContent; // Made optional
+    content?: StepContent;
 }
 
-/**
- * Represents the detailed view of a single quest.
- */
 export interface QuestDetails {
     id: string;
     title: string;
     description: string;
     steps: QuestStep[];
 }
-// --- END OF MODIFICATIONS ---
+// --- MODIFICATION END ---
