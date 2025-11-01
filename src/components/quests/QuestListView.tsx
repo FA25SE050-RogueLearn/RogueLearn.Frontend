@@ -1,3 +1,4 @@
+// roguelearn-web/src/components/quests/QuestListView.tsx
 "use client";
 
 import { useEffect, useRef, useState } from 'react';
@@ -70,20 +71,15 @@ export default function QuestListView({
     return () => ctx.revert();
   }, []);
 
-  const handleStartQuest = async (event: React.MouseEvent, questId: string) => {
+  const handleStartQuest = async (event: React.MouseEvent, quest: QuestSummary) => {
     event.preventDefault();
     event.stopPropagation();
-    setGeneratingQuestId(questId);
+    setGeneratingQuestId(quest.id);
     try {
-      const response = await academicApi.generateQuestSteps(questId);
+      const response = await academicApi.generateQuestSteps(quest.id);
       if (response.isSuccess && response.data && response.data.length > 0) {
-        const firstStep = response.data[0];
-        // This navigation is incorrect. The URL should be /quests/[questId]/[chapterId]/[moduleId]
-        // We need to find the chapter and module this first step belongs to.
-        // For now, let's assume a simplified structure and navigate to questId, which will
-        // show the chapter list. The user can then click the chapter to proceed.
-        // A better long-term solution is for generate-steps to return chapter/module context.
-        router.push(`/quests/${questId}`);
+        // MODIFIED: Use the correct, fully-formed URL for navigation.
+        router.push(`/quests/${quest.learningPathId}/${quest.chapterId}/${quest.id}`);
       } else {
         alert('Failed to generate quest steps. Please try again.');
         setGeneratingQuestId(null);
@@ -106,7 +102,8 @@ export default function QuestListView({
 
   const QuestCard = ({ quest, isLocked = false }: { quest: QuestSummary; isLocked?: boolean }) => (
     <Link
-      href={isLocked ? '#' : `/quests/${quest.id}`}
+      // MODIFIED: The Link now constructs the full, correct URL for navigation to the quest's detailed steps view.
+      href={isLocked ? '#' : `/quests/${quest.learningPathId}/${quest.chapterId}/${quest.id}`}
       className={`quest-card group relative block transition ${isLocked ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'
         }`}
     >
@@ -142,7 +139,7 @@ export default function QuestListView({
 
           {(quest.status === 'InProgress' || quest.status === 'NotStarted') && !isLocked && (
             <Button
-              onClick={(e) => handleStartQuest(e, quest.id)}
+              onClick={(e) => handleStartQuest(e, quest)}
               disabled={generatingQuestId === quest.id}
               className="w-full bg-accent text-accent-foreground hover:bg-accent/90"
             >

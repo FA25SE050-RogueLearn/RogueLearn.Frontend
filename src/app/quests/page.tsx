@@ -1,3 +1,4 @@
+// roguelearn-web/src/app/quests/page.tsx
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import QuestListView from '@/components/quests/QuestListView';
 import { createServerApiClients } from '@/lib/api-server';
@@ -17,15 +18,26 @@ export default async function QuestsPage() {
     const response = await coreApiClient.get<LearningPath>('/api/learning-paths/me');
     learningPath = response.data;
   } catch (error: any) {
-    // If a 404 is returned, it means the user has not forged a path yet.
-    // Redirect them to the start of the personalization flow.
     if (error.response?.status === 404) {
       redirect('/onboarding/connect-fap');
     }
     console.error("Failed to fetch learning path:", error);
   }
 
-  const allQuests: QuestSummary[] = learningPath?.chapters.flatMap(c => c.quests) ?? [];
+  // --- MODIFICATION START ---
+  // The original logic `learningPath?.chapters.flatMap(c => c.quests) ?? []`
+  // lost the parent context. This new logic iterates through each chapter and
+  // explicitly adds the `learningPathId` and `chapterId` to each quest object
+  // as it flattens the array. This ensures the full context is preserved.
+  const allQuests: QuestSummary[] = learningPath?.chapters.flatMap(chapter =>
+    chapter.quests.map(quest => ({
+      ...quest,
+      learningPathId: learningPath.id, // Explicitly pass down the Learning Path ID
+      chapterId: chapter.id             // Explicitly pass down the Chapter ID
+    }))
+  ) ?? [];
+  // --- MODIFICATION END ---
+
   const activeQuests = allQuests.filter(q => q.status === 'InProgress');
   const completedQuests = allQuests.filter(q => q.status === 'Completed');
   const availableQuests = allQuests.filter(q => q.status === 'NotStarted');

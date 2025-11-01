@@ -5,6 +5,10 @@ export interface QuestSummary {
   title: string;
   status: 'NotStarted' | 'InProgress' | 'Completed';
   sequenceOrder: number;
+  // ADDED: The ID of the parent Learning Path.
+  learningPathId: string;
+  // ADDED: The ID of the parent Quest Chapter.
+  chapterId: string;
 }
 
 // Represents a chapter within a learning path.

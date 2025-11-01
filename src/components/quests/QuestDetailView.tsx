@@ -1,26 +1,25 @@
+// roguelearn-web/src/components/quests/QuestDetailView.tsx
 "use client";
 
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { CheckCircle, Circle, ArrowLeft, Play, BookOpen, Trophy, Clock, Target, Loader2, Sparkles } from "lucide-react";
+import { CheckCircle, ArrowLeft, Play, BookOpen, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useEffect, useRef, useState } from "react";
 import { gsap } from "gsap";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { LearningPath, QuestChapter, QuestSummary } from "@/types/quest";
+import { LearningPath, QuestChapter } from "@/types/quest";
 import academicApi from "@/api/academicApi";
 
 interface QuestDetailViewProps {
   learningPath: LearningPath;
   chapter: QuestChapter;
-  
 }
 
 export function QuestDetailView({ learningPath, chapter }: QuestDetailViewProps) {
   const router = useRouter();
   const headerRef = useRef<HTMLDivElement>(null);
-  const progressRef = useRef<HTMLDivElement>(null);
   const modulesRef = useRef<HTMLDivElement>(null);
   const [generatingQuestId, setGeneratingQuestId] = useState<string | null>(null);
 
@@ -36,11 +35,6 @@ export function QuestDetailView({ learningPath, chapter }: QuestDetailViewProps)
           opacity: 0, y: -30, duration: 0.5, stagger: 0.1, ease: "power2.out", clearProps: "all"
         });
       }
-      if (progressRef.current) {
-        gsap.from(progressRef.current, {
-          opacity: 0, scale: 0.95, duration: 0.6, delay: 0.2, ease: "power2.out", clearProps: "all"
-        });
-      }
       if (modulesRef.current) {
         const cards = modulesRef.current.querySelectorAll('.module-card');
         if (cards.length > 0) {
@@ -53,23 +47,24 @@ export function QuestDetailView({ learningPath, chapter }: QuestDetailViewProps)
     return () => ctx.revert();
   }, [chapter.id]);
 
-  const handleStartQuest = async (event: React.MouseEvent, questId: string) => {
+  // MODIFICATION: Renamed for clarity. Its purpose is to enter the quest view.
+  const handleEnterQuest = async (event: React.MouseEvent, questId: string) => {
     event.preventDefault();
     event.stopPropagation();
     setGeneratingQuestId(questId);
     try {
+      // This call is idempotent. If steps exist, it returns them. If not, it generates them.
       const response = await academicApi.generateQuestSteps(questId);
       if (response.isSuccess && response.data && response.data.length > 0) {
-        const firstStep = response.data[0];
+        // Navigate to the quest's learning view (which shows the steps).
         router.push(`/quests/${learningPath.id}/${chapter.id}/${questId}`);
-        // The above navigation is simplified. It should navigate to the first step's specific page if the URL structure supports it.
-        // E.g., `/quests/${learningPath.id}/${chapter.id}/${questId}/${firstStep.id}`
       } else {
-        alert('Failed to generate quest steps. Please try again.');
+        // This handles cases where steps fail to generate.
+        alert('Failed to generate or retrieve quest steps. The ancient syllabus might be missing or corrupted. Please try again.');
       }
     } catch (error) {
-      console.error('Error generating quest steps:', error);
-      alert('An error occurred while starting the quest.');
+      console.error('Error entering quest:', error);
+      alert('A mystical interference occurred while entering the quest. Please try again.');
     } finally {
       setGeneratingQuestId(null);
     }
@@ -90,29 +85,21 @@ export function QuestDetailView({ learningPath, chapter }: QuestDetailViewProps)
               <h1 className="text-4xl font-semibold text-white md:text-5xl">{chapter.title}</h1>
             </div>
           </div>
+          <div className="mt-6">
+            <div className="flex items-center justify-between text-sm uppercase tracking-[0.3em] text-foreground/60 mb-2">
+                <span>Chapter Progress</span>
+                <span className="font-semibold text-white">{progressPercentage.toFixed(0)}%</span>
+            </div>
+            <Progress value={progressPercentage} className="h-3 bg-white/10" />
+          </div>
         </section>
 
-        <div className="grid gap-8 lg:grid-cols-[minmax(0,2.5fr)_minmax(0,1.5fr)]">
-          <Card ref={progressRef} className="overflow-hidden rounded-[32px] border border-accent/40 bg-gradient-to-br from-accent/15 via-accent/5 to-transparent shadow-[0_26px_70px_rgba(210,49,135,0.35)]">
-            <CardContent className="p-8">
-              <div className="flex flex-col gap-6">
-                <div className="flex flex-wrap items-center justify-between gap-4">
-                  <h2 className="text-2xl font-semibold text-white flex items-center gap-2">
-                    <Target className="h-6 w-6 text-accent" /> Chapter Progress
-                  </h2>
-                  <span className="text-4xl font-semibold text-accent">{progressPercentage.toFixed(0)}%</span>
-                </div>
-                <Progress value={progressPercentage} className="h-3 bg-white/10" />
-              </div>
-            </CardContent>
-          </Card>
-
-          <div ref={modulesRef} className="space-y-4">
-            <h2 className="text-2xl font-semibold text-white flex items-center gap-2 mb-2">
+        <div ref={modulesRef} className="space-y-4">
+            <h2 className="text-2xl font-semibold text-white flex items-center gap-2 mb-4">
               <BookOpen className="h-6 w-6 text-accent" /> Quests in this Chapter
             </h2>
             {quests.length === 0 ? (
-              <p className="text-center text-sm text-foreground/70">No quests defined for this chapter yet.</p>
+              <p className="text-center text-sm text-foreground/70 py-8">No quests have been forged for this chapter yet.</p>
             ) : (
               quests.map((quest) => (
                 <Card key={quest.id} className={`module-card overflow-hidden rounded-[20px] border transition-all duration-300 hover:border-accent/40 hover:shadow-[0_18px_45px_rgba(210,49,135,0.35)] ${quest.status === 'Completed' ? 'border-emerald-400/40 bg-emerald-500/10' : 'border-white/12 bg-black/45'
@@ -122,15 +109,24 @@ export function QuestDetailView({ learningPath, chapter }: QuestDetailViewProps)
                       <div className="flex flex-1 items-start gap-4">
                         <h3 className="text-lg font-semibold text-white">{quest.title}</h3>
                       </div>
+                      {/* --- MODIFICATION START --- */}
                       <Button
-                        onClick={(e) => handleStartQuest(e, quest.id)}
-                        disabled={generatingQuestId === quest.id || quest.status === 'Completed'}
-                        className="rounded-full px-5"
+                        onClick={(e) => handleEnterQuest(e, quest.id)}
+                        // MODIFIED: Logic removed. A quest is only disabled while its steps are being generated.
+                        disabled={generatingQuestId === quest.id}
+                        className="rounded-full px-5 w-40" // Set a fixed width for consistency
                       >
-                        {generatingQuestId === quest.id ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Forging...</>
-                          : quest.status === 'Completed' ? <><CheckCircle className="mr-2 h-4 w-4" /> Completed</>
-                            : <><Play className="mr-2 h-4 w-4" /> Start</>}
+                        {generatingQuestId === quest.id ? (
+                            <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Forging...</>
+                        ) : quest.status === 'Completed' ? (
+                            <><CheckCircle className="mr-2 h-4 w-4" /> Review Quest</>
+                        ) : quest.status === 'InProgress' ? (
+                            <><Play className="mr-2 h-4 w-4" /> Continue</>
+                        ) : (
+                            <><Play className="mr-2 h-4 w-4" /> Start Quest</>
+                        )}
                       </Button>
+                      {/* --- MODIFICATION END --- */}
                     </div>
                   </CardContent>
                 </Card>
@@ -139,6 +135,5 @@ export function QuestDetailView({ learningPath, chapter }: QuestDetailViewProps)
           </div>
         </div>
       </div>
-    </div>
   );
 }
