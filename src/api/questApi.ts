@@ -30,6 +30,15 @@ const questApi = {
    */
   updateQuestStepProgress: (questId: string, stepId: string, status: string) =>
     axiosClient.post(`/api/quests/${questId}/steps/${stepId}/progress`, { status }),
+    
+  // MODIFICATION: Added a new function to update the progress of an entire quest.
+  // This provides the manual override capability you requested.
+  /**
+   * Manually updates the status of an entire quest for the user (e.g., to "Completed").
+   * Corresponds to POST /api/quests/{questId}/progress
+   */
+  updateQuestProgress: (questId: string, status: 'Completed' | 'InProgress' | 'NotStarted') =>
+    axiosClient.post(`/api/quests/${questId}/progress`, { status }),
 };
 
 export default questApi;
