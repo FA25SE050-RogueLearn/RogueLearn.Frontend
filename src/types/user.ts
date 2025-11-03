@@ -1,18 +1,6 @@
-// roguelearn-web/src/types/user.ts
 /**
- * Represents the user profile data fetched from the User service.
- * This corresponds to the UserProfileDto from the backend.
+ * Backward-compatible alias for user profile types.
+ * This file exists to satisfy imports of `@/types/user` in legacy components.
+ * Prefer importing from `@/types/user-profile` directly in new code.
  */
-export interface UserProfile {
-  id: string;
-  authUserId: string;
-  username: string;
-  email: string;
-  firstName?: string;
-  lastName?: string;
-  level: number;
-  experiencePoints: number;
-  onboardingCompleted: boolean;
-  createdAt: string;
-  roles: string[];
-}
+export type { UserProfileDto as UserProfile } from "./user-profile";
