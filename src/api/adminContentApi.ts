@@ -1,7 +1,7 @@
 // roguelearn-web/src/api/adminContentApi.ts
 import axiosClient from './axiosClient';
 import { ApiResponse } from '../types/base/Api';
-import { CurriculumProgram } from '../types/curriculum';
+import { CurriculumProgram } from '@/types/curriculum';
 
 // This type would represent the response from the import endpoints
 // We'll define it based on the backend's CreateSubjectResponse and ImportCurriculumResponse

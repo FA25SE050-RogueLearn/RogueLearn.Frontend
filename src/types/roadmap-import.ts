@@ -1,4 +1,4 @@
-import type { ApiResponse } from "./base/Api";
+// Note: API modules wrap responses in ApiResponse; here we define raw payload shapes.
 /**
  * Feature: Learning Roadmap Import & Validation
  * Purpose: Command/response payloads for importing and validating learning roadmaps from raw text or structured definitions.
@@ -19,8 +19,8 @@ export interface ImportRoadmapCommandResponseData {
   warnings?: string[];
 }
 
-/** Standard API response wrapping import results. */
-export type ImportRoadmapCommandResponse = ApiResponse<ImportRoadmapCommandResponseData>;
+/** Raw payload returned after roadmap import. */
+export type ImportRoadmapCommandResponse = ImportRoadmapCommandResponseData;
 
 /** Validate a roadmap definition before import. */
 export interface ValidateRoadmapCommandRequest {
@@ -34,5 +34,5 @@ export interface ValidateRoadmapCommandResponseData {
   warnings?: string[];
 }
 
-/** Standard API response wrapping validation results. */
-export type ValidateRoadmapCommandResponse = ApiResponse<ValidateRoadmapCommandResponseData>;
+/** Raw payload returned after validating roadmap content. */
+export type ValidateRoadmapCommandResponse = ValidateRoadmapCommandResponseData;

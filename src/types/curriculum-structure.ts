@@ -25,6 +25,19 @@ export interface GetCurriculumStructureByVersionQueryRequest {
 }
 export type GetCurriculumStructureByVersionResponse = CurriculumStructureDto[];
 
+/** Command payload to add a subject into a curriculum version's structure. */
+export interface AddSubjectToCurriculumCommandRequest {
+  curriculumVersionId: string;
+  subjectId: string;
+  termNumber: number;
+  isMandatory: boolean;
+  prerequisiteSubjectIds?: string[] | null;
+  prerequisitesText?: string | null;
+}
+
+/** Response payload after adding a subject to curriculum structure. */
+export type AddSubjectToCurriculumResponse = CurriculumStructureDto;
+
 /** Command payload to update structure and prerequisites for a subject entry. */
 export interface UpdateCurriculumStructureCommandRequest {
   id: string;

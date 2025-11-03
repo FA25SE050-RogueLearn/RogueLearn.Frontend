@@ -1,4 +1,4 @@
-import type { ApiResponse } from "./base/Api";
+// Note: API modules wrap responses in ApiResponse; here we define raw payload shapes.
 /**
  * Feature: Curriculum Import & Validation
  * Purpose: Import full curricula and individual subjects from raw text, and validate definitions.
@@ -18,8 +18,8 @@ export interface ImportCurriculumCommandResponseData {
   warnings?: string[];
 }
 
-/** Standard API response wrapping import results. */
-export type ImportCurriculumCommandResponse = ApiResponse<ImportCurriculumCommandResponseData>;
+/** Raw payload returned after curriculum import. */
+export type ImportCurriculumCommandResponse = ImportCurriculumCommandResponseData;
 
 /** Import a single subject from raw text. */
 export interface ImportSubjectFromTextCommandRequest {
@@ -34,8 +34,8 @@ export interface ImportSubjectFromTextCommandResponseData {
   warnings?: string[];
 }
 
-/** Standard API response wrapping subject import results. */
-export type ImportSubjectFromTextCommandResponse = ApiResponse<ImportSubjectFromTextCommandResponseData>;
+/** Raw payload returned after importing a single subject. */
+export type ImportSubjectFromTextCommandResponse = ImportSubjectFromTextCommandResponseData;
 
 /** Validate a curriculum definition before import. */
 export interface ValidateCurriculumCommandRequest {
@@ -49,5 +49,5 @@ export interface ValidateCurriculumCommandResponseData {
   warnings?: string[];
 }
 
-/** Standard API response wrapping validation results. */
-export type ValidateCurriculumCommandResponse = ApiResponse<ValidateCurriculumCommandResponseData>;
+/** Raw payload returned after validating curriculum content. */
+export type ValidateCurriculumCommandResponse = ValidateCurriculumCommandResponseData;

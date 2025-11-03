@@ -26,3 +26,10 @@ export interface AssignRoleToUserCommandRequest {
   roleId: string;
 }
 export type AssignRoleToUserResponse = void;
+
+/** Command payload to remove a role from a user. */
+export interface RemoveRoleFromUserCommandRequest {
+  userId: string;
+  roleId: string;
+}
+export type RemoveRoleFromUserResponse = void;
