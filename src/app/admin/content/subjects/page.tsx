@@ -10,7 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ChevronLeft, Loader2, PlusCircle, AlertCircle } from "lucide-react";
 import adminContentApi from "@/api/adminContentApi";
-import { Subject } from "@/types/curriculum";
+import { Subject } from "@/types/subjects";
 import { AddSyllabusForm } from "./AddSyllabusForm";
 
 export default function SubjectsPage() {

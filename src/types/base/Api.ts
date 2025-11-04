@@ -1,15 +1,18 @@
-// roguelearn-web/src/types/base/Api.ts
 /**
- * A generic wrapper for all API responses from the backend.
- * This provides a consistent structure for handling data and errors.
+ * Feature: Base API Types
+ * Purpose: Provide a generic, consistent wrapper for all backend API responses so
+ *          frontend code can uniformly handle success, messages, and validation errors.
+ * References: Used by import/validation flows (e.g., curriculum-import, roadmap-import)
+ * Mapping: T is the generic payload type returned on success.
  * @template T The type of the data payload in a successful response.
  */
 export interface ApiResponse<T> {
-  // In a real application, the backend would wrap responses like this.
-  // For now, we will simulate this wrapper in the service layer.
-  // This structure is what we should aim for in the backend.
+  /** The data payload returned when the operation succeeds. */
   data: T;
+  /** Indicates whether the request completed successfully. */
   isSuccess: boolean;
+  /** Optional message, typically for user-facing feedback or debugging. */
   message?: string;
+  /** Optional structured validation errors (usually field-level). */
   validationErrors?: string[];
 }

@@ -9,21 +9,17 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Loader2, AlertCircle, CheckCircle, Sparkles, BookCopy } from 'lucide-react';
-import { UserProfile } from '@/types/user';
-import { CurriculumVersion } from '@/types/curriculum';
-import profileApi from '@/api/profileApi';
-import adminContentApi from '@/api/adminContentApi';
-import { ProcessAcademicRecordResponse } from '@/types/academic';
+import { getMyContext, processMyAcademicRecord } from '@/api/usersApi';
 
 type FlowStep = 'form' | 'processing' | 'complete';
+type VersionOption = { id: string; versionCode: string; effectiveYear: number };
 
 export default function ConnectFapPage() {
   const router = useRouter();
   const [step, setStep] = useState<FlowStep>('form');
   const [htmlContent, setHtmlContent] = useState('');
   const [error, setError] = useState<string | null>(null);
-  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
-  const [curriculumVersions, setCurriculumVersions] = useState<CurriculumVersion[]>([]);
+  const [curriculumVersions, setCurriculumVersions] = useState<VersionOption[]>([]);
   const [selectedVersionId, setSelectedVersionId] = useState<string>('');
   const [isLoading, setIsLoading] = useState(true);
 
@@ -31,19 +27,21 @@ export default function ConnectFapPage() {
     setIsLoading(true);
     setError(null);
     try {
-      // 1. Fetch user profile to get their program ID (route_id)
-      const profileResponse = await profileApi.getMyProfile();
-      if (!profileResponse.isSuccess || !profileResponse.data || !profileResponse.data.routeId) {
-        throw new Error("Could not load your user profile or you haven't selected an academic route. Please complete onboarding first.");
+      // Fetch consolidated user context to get current enrollment version
+      const contextResponse = await getMyContext();
+      const enrollment = contextResponse.data?.enrollment;
+      if (!contextResponse.isSuccess || !enrollment) {
+        throw new Error("Could not load your academic enrollment. Please complete onboarding to select your curriculum.");
       }
-      setUserProfile(profileResponse.data);
 
-      // 2. Fetch curriculum versions for the user's program
-      const versionsResponse = await adminContentApi.getCurriculumVersions(profileResponse.data.routeId);
-      if (!versionsResponse.isSuccess || !versionsResponse.data) {
-        throw new Error("Could not load curriculum versions for your program.");
-      }
-      setCurriculumVersions(versionsResponse.data);
+      // Pre-populate with the currently enrolled curriculum version
+      const versionOption: VersionOption = {
+        id: enrollment.versionId,
+        versionCode: enrollment.versionCode,
+        effectiveYear: enrollment.effectiveYear,
+      };
+      setCurriculumVersions([versionOption]);
+      setSelectedVersionId(enrollment.versionId);
     } catch (err: any) {
       setError(err.message || "An unexpected error occurred while loading page data.");
     } finally {
@@ -67,13 +65,11 @@ export default function ConnectFapPage() {
     setError(null);
     setStep('processing');
     try {
-      // This is a placeholder for the actual API call
-      // In a real implementation, you'd have an academicApi.processFapRecord method
-      const response: { isSuccess: boolean, data?: ProcessAcademicRecordResponse, message?: string } = await new Promise(resolve => setTimeout(() => {
-          console.log("Simulating API call to /api/users/me/process-academic-record with version:", selectedVersionId);
-          // Here you would call the actual API
-          resolve({ isSuccess: true, data: { learningPathId: "mock-lp-id" } as ProcessAcademicRecordResponse });
-      }, 3000));
+      const response = await processMyAcademicRecord({
+        fapHtmlContent: htmlContent,
+        curriculumVersionId: selectedVersionId,
+        authUserId: ''
+      });
 
       if (response.isSuccess && response.data) {
         setStep('complete');
@@ -82,7 +78,7 @@ export default function ConnectFapPage() {
           router.refresh();
         }, 3000);
       } else {
-        throw new Error(response.message || 'Failed to process your academic record.');
+        throw new Error('Failed to process your academic record.');
       }
     } catch (err: any) {
       const errorMessage = (err.response?.data?.error?.message || err.message) ?? "An unexpected error occurred during processing.";
