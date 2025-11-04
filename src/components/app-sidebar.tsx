@@ -94,42 +94,34 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const router = useRouter()
   const [userProfile, setUserProfile] = React.useState<UserProfile | null>(null);
   const [showCharacterWizard, setShowCharacterWizard] = React.useState(false)
-  const [showAlreadyOnboarded, setShowAlreadyOnboarded] = React.useState(false);
 
-  // NEW: Use an effect to listen for auth changes, this is the robust solution.
   React.useEffect(() => {
     const supabase = createClient();
     
-    // Define the function to fetch profile data
     const fetchProfile = async () => {
       const response = await profileApi.getMyProfile();
       if (response.isSuccess) {
         setUserProfile(response.data);
       } else {
-        // Handle cases where API fails but user is logged in
         console.error("Failed to fetch profile even though user is authenticated.");
         setUserProfile(null);
       }
     };
 
-    // Listen for changes in authentication state (SIGNED_IN, SIGNED_OUT, etc.)
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       if (session) {
-        // If a session exists, the user is logged in. Fetch their profile.
         console.log("Auth state changed: User is signed in. Fetching profile...");
         fetchProfile();
       } else {
-        // If the session is null, the user is logged out. Clear the profile.
         console.log("Auth state changed: User is signed out.");
         setUserProfile(null);
       }
     });
 
-    // The cleanup function runs when the component unmounts
     return () => {
       subscription?.unsubscribe();
     };
-  }, []); // The empty dependency array ensures this runs only once on mount
+  }, []);
 
   const handleLogout = async () => {
     const supabase = createClient()
@@ -138,10 +130,13 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     router.refresh()
   }
   
+  // MODIFICATION: This handler now decides where to send the user based on their onboarding status.
   const handleForgeClick = () => {
     if (userProfile?.onboardingCompleted) {
-      setShowAlreadyOnboarded(true);
+      // If user is already onboarded, send them to the FAP sync page to update their progress.
+      router.push('/onboarding/connect-fap');
     } else {
+      // If they are a new user, open the character creation wizard.
       setShowCharacterWizard(true);
     }
   };
@@ -207,20 +202,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             </div>
           </div>
         </DialogContent>
-      </Dialog>
-      
-      <Dialog open={showAlreadyOnboarded} onOpenChange={setShowAlreadyOnboarded}>
-          <DialogContent>
-              <DialogHeader>
-                  <DialogTitle className="font-heading text-2xl text-white">Character Already Forged</DialogTitle>
-                  <DialogDescription className="text-foreground/70 pt-2">
-                      You have already completed the character creation process. In the future, this is where you&apos;ll be able to edit your character&apos;s path.
-                  </DialogDescription>
-              </DialogHeader>
-              <Button onClick={() => setShowAlreadyOnboarded(false)} className="mt-4 bg-accent text-accent-foreground">
-                  Close
-              </Button>
-          </DialogContent>
       </Dialog>
     </>
   )

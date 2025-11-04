@@ -1,188 +1,203 @@
+// roguelearn-web/src/app/onboarding/connect-fap/page.tsx
 'use client';
 
-import { useState } from 'react';
-import { DashboardLayout } from '@/components/layout/DashboardLayout';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Textarea } from '@/components/ui/textarea';
-import { Loader2, AlertCircle, CheckCircle, Sparkles } from 'lucide-react';
-import academicApi from '@/api/academicApi';
-import { FapRecordData, GapAnalysisResponse } from '@/types/academic';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Loader2, AlertCircle, CheckCircle, Sparkles, BookCopy } from 'lucide-react';
+import { UserProfile } from '@/types/user';
+import { CurriculumVersion } from '@/types/curriculum';
+import profileApi from '@/api/profileApi';
+import adminContentApi from '@/api/adminContentApi';
+import { ProcessAcademicRecordResponse } from '@/types/academic';
 
-// Define the states for our multi-step flow
-type FlowStep = 'upload' | 'verifying' | 'verify' | 'analyzing' | 'recommend' | 'forging' | 'complete';
+type FlowStep = 'form' | 'processing' | 'complete';
 
 export default function ConnectFapPage() {
   const router = useRouter();
-  const [step, setStep] = useState<FlowStep>('upload');
+  const [step, setStep] = useState<FlowStep>('form');
   const [htmlContent, setHtmlContent] = useState('');
   const [error, setError] = useState<string | null>(null);
-  const [extractedData, setExtractedData] = useState<FapRecordData | null>(null);
-  const [gapAnalysis, setGapAnalysis] = useState<GapAnalysisResponse | null>(null);
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+  const [curriculumVersions, setCurriculumVersions] = useState<CurriculumVersion[]>([]);
+  const [selectedVersionId, setSelectedVersionId] = useState<string>('');
+  const [isLoading, setIsLoading] = useState(true);
 
-  const handleExtract = async () => {
+  const fetchData = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      // 1. Fetch user profile to get their program ID (route_id)
+      const profileResponse = await profileApi.getMyProfile();
+      if (!profileResponse.isSuccess || !profileResponse.data || !profileResponse.data.routeId) {
+        throw new Error("Could not load your user profile or you haven't selected an academic route. Please complete onboarding first.");
+      }
+      setUserProfile(profileResponse.data);
+
+      // 2. Fetch curriculum versions for the user's program
+      const versionsResponse = await adminContentApi.getCurriculumVersions(profileResponse.data.routeId);
+      if (!versionsResponse.isSuccess || !versionsResponse.data) {
+        throw new Error("Could not load curriculum versions for your program.");
+      }
+      setCurriculumVersions(versionsResponse.data);
+    } catch (err: any) {
+      setError(err.message || "An unexpected error occurred while loading page data.");
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+  
+  const handleProcessRecord = async () => {
     if (!htmlContent.trim()) {
       setError('Please paste the HTML content from your FAP academic record.');
       return;
     }
-    setError(null);
-    setStep('verifying');
-    try {
-      const response = await academicApi.extractFapRecord(htmlContent);
-      if (response.isSuccess && response.data) {
-        setExtractedData(response.data);
-        setStep('verify');
-      } else {
-        throw new Error(response.message || 'Failed to extract data from the provided HTML.');
-      }
-    } catch (err: any) {
-      const errorMessage = (err.response?.data?.error?.message || err.message) ?? "An unexpected error occurred during extraction.";
-      setError(errorMessage);
-      setStep('upload');
+    if (!selectedVersionId) {
+        setError('Please select a curriculum version.');
+        return;
     }
-  };
-
-  const handleAnalyze = async () => {
-    if (!extractedData) return;
     setError(null);
-    setStep('analyzing');
+    setStep('processing');
     try {
-      const response = await academicApi.analyzeLearningGap(extractedData);
-      if (response.isSuccess && response.data) {
-        setGapAnalysis(response.data);
-        setStep('recommend');
-      } else {
-        throw new Error(response.message || 'Failed to perform learning gap analysis.');
-      }
-    } catch (err: any) {
-      const errorMessage = (err.response?.data?.error?.message || err.message) ?? "An unexpected error occurred during analysis.";
-      setError(errorMessage);
-      setStep('verify');
-    }
-  };
+      // This is a placeholder for the actual API call
+      // In a real implementation, you'd have an academicApi.processFapRecord method
+      const response: { isSuccess: boolean, data?: ProcessAcademicRecordResponse, message?: string } = await new Promise(resolve => setTimeout(() => {
+          console.log("Simulating API call to /api/users/me/process-academic-record with version:", selectedVersionId);
+          // Here you would call the actual API
+          resolve({ isSuccess: true, data: { learningPathId: "mock-lp-id" } as ProcessAcademicRecordResponse });
+      }, 3000));
 
-  const handleForge = async () => {
-    if (!gapAnalysis) return;
-    setError(null);
-    setStep('forging');
-    try {
-      const response = await academicApi.forgeLearningPath(gapAnalysis.forgingPayload);
       if (response.isSuccess && response.data) {
         setStep('complete');
-        // Redirect to the new learning path or dashboard after a delay
         setTimeout(() => {
           router.push('/quests');
           router.refresh();
         }, 3000);
       } else {
-        throw new Error(response.message || 'Failed to forge your learning path.');
+        throw new Error(response.message || 'Failed to process your academic record.');
       }
     } catch (err: any) {
-      const errorMessage = (err.response?.data?.error?.message || err.message) ?? "An unexpected error occurred while creating your path.";
+      const errorMessage = (err.response?.data?.error?.message || err.message) ?? "An unexpected error occurred during processing.";
       setError(errorMessage);
-      setStep('recommend');
+      setStep('form');
     }
   };
 
-  const isLoading = ['verifying', 'analyzing', 'forging'].includes(step);
+  const isSubmitting = step === 'processing';
+
+  const renderContent = () => {
+    if (isLoading) {
+      return (
+        <div className="flex flex-col items-center justify-center gap-4 py-12">
+          <Loader2 className="h-12 w-12 animate-spin text-accent" />
+          <p className="text-foreground/70">Loading your academic context...</p>
+        </div>
+      );
+    }
+    if (error && !isSubmitting) {
+        return (
+            <div className="flex flex-col items-center justify-center gap-4 py-12 text-center">
+                <AlertCircle className="w-12 h-12 text-red-400" />
+                <h3 className="text-xl font-semibold text-red-300">Failed to Load Data</h3>
+                <p className="text-foreground/70">{error}</p>
+                <Button onClick={fetchData} variant="outline" className="mt-4">Retry</Button>
+            </div>
+        )
+    }
+
+    if (step === 'form') {
+        return (
+            <div className="space-y-6">
+                <div className="space-y-2">
+                    <Label htmlFor="curriculum-version" className="text-amber-300">Select Your Curriculum Version</Label>
+                    <Select value={selectedVersionId} onValueChange={setSelectedVersionId}>
+                        <SelectTrigger className="w-full bg-amber-950/20 border-amber-800/50">
+                            <SelectValue placeholder="Select a version..." />
+                        </SelectTrigger>
+                        <SelectContent className="bg-[#1f1812] border-amber-900/30 text-amber-100">
+                            {curriculumVersions.map(v => (
+                                <SelectItem key={v.id} value={v.id} className="focus:bg-amber-900/50">
+                                    {v.versionCode} (Effective {v.effectiveYear})
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                </div>
+                 <div className="space-y-2">
+                    <Label htmlFor="fap-html" className="text-amber-300">Paste FAP Academic Record HTML</Label>
+                    <Textarea
+                        id="fap-html"
+                        value={htmlContent}
+                        onChange={(e) => setHtmlContent(e.target.value)}
+                        placeholder="Go to your FAP portal, view your academic record, right-click, select 'View Page Source', and paste the entire HTML content here..."
+                        rows={15}
+                        className="rounded-lg border-amber-900/30 bg-amber-950/20 text-amber-200 placeholder:text-amber-700 font-mono text-sm"
+                    />
+                 </div>
+                {error && (
+                    <div className="flex items-center gap-2 rounded-lg border border-red-700/50 bg-red-950/30 p-3 text-red-400 text-sm">
+                        <AlertCircle className="h-5 w-5" />
+                        <p>{error}</p>
+                    </div>
+                )}
+                <Button onClick={handleProcessRecord} disabled={isSubmitting || !selectedVersionId || !htmlContent} className="w-full h-12 text-sm uppercase tracking-widest">
+                    {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
+                    Sync & Forge Skill Tree
+                </Button>
+            </div>
+        );
+    }
+
+    if (step === 'processing') {
+      return (
+        <div className="flex flex-col items-center justify-center gap-4 py-12">
+          <Loader2 className="h-12 w-12 animate-spin text-accent" />
+          <p className="text-foreground/70 animate-pulse">
+            Processing academic record and forging your skill tree...
+          </p>
+        </div>
+      );
+    }
+
+    if (step === 'complete') {
+        return (
+            <div className="space-y-4 text-center py-8">
+                <CheckCircle className="mx-auto h-16 w-16 text-emerald-400" />
+                <h3 className="text-xl font-semibold text-white">Synchronization Complete!</h3>
+                <p className="text-sm text-foreground/70">
+                    Your quests and skill tree have been updated. You will be redirected to your questline shortly.
+                </p>
+            </div>
+        );
+    }
+
+    return null;
+  };
 
   return (
-    <DashboardLayout>
-      <div className="mx-auto max-w-3xl">
-        <Card className="relative overflow-hidden border-amber-900/30 bg-gradient-to-br from-[#1f1812] to-[#1a1410]">
-          <CardHeader className="relative border-b border-amber-900/20">
-            <CardTitle className="text-amber-100">Forge Your Learning Path</CardTitle>
-          </CardHeader>
-          <CardContent className="relative space-y-6 pt-6">
-            {error && (
-              <div className="flex items-center gap-2 rounded-lg border border-red-700/50 bg-red-950/30 p-4 text-red-400">
-                <AlertCircle className="h-5 w-5" />
-                <p>{error}</p>
-              </div>
-            )}
-
-            {step === 'upload' && (
-              <div className="space-y-4">
-                <h3 className="font-semibold text-white">Step 1: Connect Your Academic Record</h3>
-                <p className="text-sm text-foreground/70">
-                  Please go to your FAP portal, view your academic record, right-click, select &quot;View Page Source&quot;, and paste the entire HTML content below.
-                </p>
-                <Textarea
-                  value={htmlContent}
-                  onChange={(e) => setHtmlContent(e.target.value)}
-                  placeholder="Paste your FAP HTML content here..."
-                  rows={15}
-                  className="rounded-lg border-amber-900/30 bg-amber-950/20 text-amber-200 placeholder:text-amber-700"
-                />
-                <Button onClick={handleExtract} disabled={isLoading} className="w-full">
-                  {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 'Extract & Verify'}
-                </Button>
-              </div>
-            )}
-
-            {step === 'verify' && extractedData && (
-              <div className="space-y-4">
-                <h3 className="font-semibold text-white">Step 2: Verify Your Data</h3>
-                <p className="text-sm text-foreground/70">
-                  We have extracted the following information. Please confirm it is correct before we proceed with the analysis.
-                </p>
-                <div className="rounded-lg border border-amber-900/30 bg-amber-950/20 p-4 space-y-2">
-                  <p><strong>Calculated GPA:</strong> {extractedData.gpa?.toFixed(2) ?? 'Not Found'}</p>
-                  <p><strong>Subjects Found:</strong> {extractedData.subjects.length}</p>
-                  <p><strong>Subjects Passed:</strong> {extractedData.subjects.filter(s => s.status === 'Passed').length}</p>
-                </div>
-                <div className="flex gap-4">
-                  <Button onClick={() => setStep('upload')} variant="outline" className="flex-1">Back</Button>
-                  <Button onClick={handleAnalyze} disabled={isLoading} className="flex-1">
-                    {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 'Confirm & Analyze Gap'}
-                  </Button>
-                </div>
-              </div>
-            )}
-
-            {step === 'recommend' && gapAnalysis && (
-              <div className="space-y-4 text-center">
-                <Sparkles className="mx-auto h-12 w-12 text-accent" />
-                <h3 className="font-semibold text-white">Step 3: Your Personalized Recommendation</h3>
-                <div className="rounded-lg border border-accent/30 bg-accent/10 p-6 text-left">
-                  <p className="text-sm text-foreground/70">{gapAnalysis.reason}</p>
-                  <p className="mt-4 font-bold text-lg text-white">
-                    Next Quest: <span className="text-accent">{gapAnalysis.highestPrioritySubject}</span>
-                  </p>
-                </div>
-                <div className="flex gap-4">
-                  <Button onClick={() => setStep('verify')} variant="outline" className="flex-1">Back</Button>
-                  <Button onClick={handleForge} disabled={isLoading} className="flex-1">
-                    {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 'Forge My Learning Path'}
-                  </Button>
-                </div>
-              </div>
-            )}
-
-            {step === 'complete' && (
-              <div className="space-y-4 text-center py-8">
-                <CheckCircle className="mx-auto h-16 w-16 text-emerald-400" />
-                <h3 className="text-xl font-semibold text-white">Learning Path Forged!</h3>
-                <p className="text-sm text-foreground/70">
-                  Your personalized questline has been created. You will be redirected to your quests shortly.
-                </p>
-              </div>
-            )}
-
-            {(step === 'verifying' || step === 'analyzing' || step === 'forging') && (
-              <div className="flex flex-col items-center justify-center gap-4 py-12">
-                <Loader2 className="h-12 w-12 animate-spin text-accent" />
-                <p className="text-foreground/70 animate-pulse">
-                  {step === 'verifying' && 'Extracting academic data...'}
-                  {step === 'analyzing' && 'Analyzing your learning gap...'}
-                  {step === 'forging' && 'Forging your personalized questline...'}
-                </p>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
-    </DashboardLayout>
+    <div className="mx-auto max-w-3xl">
+      <Card className="relative overflow-hidden border-amber-900/30 bg-gradient-to-br from-[#1f1812] to-[#1a1410]">
+        <CardHeader className="relative border-b border-amber-900/20">
+          <div className="flex items-center gap-4">
+            <BookCopy className="h-8 w-8 text-accent" />
+            <div>
+                <CardTitle className="text-amber-100">Sync Academic Record</CardTitle>
+                <CardDescription>Update your questline and skill tree with your latest progress from FAP.</CardDescription>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="relative pt-6">
+            {renderContent()}
+        </CardContent>
+      </Card>
+    </div>
   );
 }

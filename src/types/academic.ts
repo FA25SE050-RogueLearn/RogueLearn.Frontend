@@ -43,3 +43,11 @@ export interface ForgedLearningPath {
     description: string;
     // Other relevant fields from the LearningPath entity.
 }
+export interface ProcessAcademicRecordResponse {
+    isSuccess: boolean;
+    message: string;
+    learningPathId: string; // Guid
+    subjectsProcessed: number;
+    questsGenerated: number;
+    calculatedGpa: number;
+}

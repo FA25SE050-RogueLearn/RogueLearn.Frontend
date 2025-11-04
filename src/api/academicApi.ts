@@ -19,7 +19,7 @@ const academicApi = {
     const formData = new FormData();
     formData.append('fapHtmlContent', htmlContent);
     // The backend is expecting multipart/form-data, so we send it as such.
-    return axiosClient.post('/academic-records/extract', formData, {
+    return axiosClient.post('api/academic-records/extract', formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
     }).then(res => ({
       isSuccess: true,
@@ -34,7 +34,7 @@ const academicApi = {
    * @param recordData The verified academic data from the previous step.
    */
   analyzeLearningGap: (recordData: FapRecordData): Promise<ApiResponse<GapAnalysisResponse>> =>
-    axiosClient.post('/learning-paths/analyze-gap', recordData).then(res => ({
+    axiosClient.post('api/learning-paths/analyze-gap', recordData).then(res => ({
       isSuccess: true,
       data: res.data,
     })),
@@ -46,7 +46,7 @@ const academicApi = {
    * @param forgingPayload The payload received from the gap analysis step.
    */
   forgeLearningPath: (forgingPayload: any): Promise<ApiResponse<ForgedLearningPath>> =>
-    axiosClient.post('/learning-paths/forge', forgingPayload).then(res => ({
+    axiosClient.post('api/learning-paths/forge', forgingPayload).then(res => ({
       isSuccess: true,
       data: res.data,
     })),
