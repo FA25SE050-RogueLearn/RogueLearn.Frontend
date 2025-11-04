@@ -17,7 +17,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 
-// Helper function to map skill domains to icons
+// Helper function to map skill domains to icons for visual representation.
 const getSkillIcon = (skillName: string) => {
     const lowerName = skillName.toLowerCase();
     if (lowerName.includes('sql') || lowerName.includes('database')) return <Database className="h-6 w-6" />;
@@ -29,7 +29,8 @@ const getSkillIcon = (skillName: string) => {
     return <Code className="h-6 w-6" />;
 };
 
-// Helper function to calculate XP progress for the current level
+// Helper function to calculate XP progress for the current level.
+// This assumes a simple progression of 1000 XP per level.
 const calculateLevelProgress = (xp: number) => {
     const xpPerLevel = 1000;
     const currentLevelXp = xp % xpPerLevel;
@@ -39,6 +40,7 @@ const calculateLevelProgress = (xp: number) => {
 }
 
 export default async function SkillsPage() {
+    // Fetches user skills from the backend on the server.
     const { coreApiClient } = await createServerApiClients();
     let userSkills: UserSkill[] = [];
     
@@ -47,9 +49,10 @@ export default async function SkillsPage() {
         userSkills = response.data.skills;
     } catch (error) {
         console.error("Failed to fetch user skills:", error);
-        // Page will render with empty state
+        // The page will render with an empty state if the API call fails.
     }
 
+    // Calculate aggregate stats for the header.
     const totalSkills = userSkills.length;
     const totalXp = userSkills.reduce((sum, skill) => sum + skill.experiencePoints, 0);
     const highestLevel = userSkills.length > 0 ? Math.max(...userSkills.map(s => s.level)) : 0;
@@ -93,14 +96,14 @@ export default async function SkillsPage() {
                     </div>
                 </section>
 
-                {/* Skill Grid Section */}
+                {/* Skill Grid Section - Renders the fetched skills or an empty state message. */}
                 <section>
                     {userSkills.length > 0 ? (
                         <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
                             {userSkills.map((skill) => {
                                 const { currentLevelXp, nextLevelXp, progressPercentage } = calculateLevelProgress(skill.experiencePoints);
                                 return (
-                                <Card key={skill.skillName} className="relative flex h-full flex-col overflow-hidden rounded-[26px] border border-white/12 bg-gradient-to-br from-[#2a140f]/90 via-[#160b08]/92 to-[#0a0503]/95 p-6 shadow-[0_24px_60px_rgba(32,8,12,0.55)] transition-transform duration-300 hover:-translate-y-1 hover:shadow-[0_30px_70px_rgba(210,49,135,0.35)]">
+                                <Card key={skill.skillId} className="relative flex h-full flex-col overflow-hidden rounded-[26px] border border-white/12 bg-gradient-to-br from-[#2a140f]/90 via-[#160b08]/92 to-[#0a0503]/95 p-6 shadow-[0_24px_60px_rgba(32,8,12,0.55)] transition-transform duration-300 hover:-translate-y-1 hover:shadow-[0_30px_70px_rgba(210,49,135,0.35)]">
                                     <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(240,177,90,0.25),_transparent_72%)] opacity-45" />
                                     <CardContent className="relative z-10 flex flex-1 flex-col justify-between gap-6 p-0">
                                         <div className="flex items-start justify-between">
