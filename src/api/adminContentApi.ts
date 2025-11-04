@@ -1,58 +1,55 @@
 // roguelearn-web/src/api/adminContentApi.ts
 import axiosClient from './axiosClient';
 import { ApiResponse } from '../types/base/Api';
-import { CurriculumProgram } from '../types/curriculum';
-
-// This type would represent the response from the import endpoints
-// We'll define it based on the backend's CreateSubjectResponse and ImportCurriculumResponse
-interface ImportResponse {
-    id: string;
-    programName?: string; // From curriculum import
-    subjectName?: string; // From subject import
-    // ... other relevant fields
-}
+import { CurriculumProgram, CurriculumVersion } from '../types/curriculum'; // Added CurriculumVersion
 
 const adminContentApi = {
-  /**
-   * Fetches all curriculum programs from the backend.
-   * Corresponds to GET /api/admin/programs
-   */
-  getCurriculumPrograms: () =>
-    // The backend returns the array directly, so we wrap it in an ApiResponse for consistency.
-    axiosClient.get<CurriculumProgram[]>('/api/admin/programs').then(res => ({
+  getCurriculumPrograms: (): Promise<ApiResponse<CurriculumProgram[]>> =>
+    axiosClient.get('/api/admin/programs').then(res => ({
         isSuccess: true,
         data: res.data
-    }) as ApiResponse<CurriculumProgram[]>),
+    })),
 
-  /**
-   * Imports a full curriculum from raw text.
-   * Corresponds to POST /api/admin/curriculum
-   */
-  importCurriculum: (rawText: string) => {
-    const formData = new FormData();
-    formData.append('rawText', rawText);
-    return axiosClient.post<ApiResponse<ImportResponse>>('/api/admin/curriculum', formData);
-  },
+  // ADDED: New function to get versions for a specific program.
+  getCurriculumVersions: (programId: string): Promise<ApiResponse<CurriculumVersion[]>> =>
+    axiosClient.get(`/api/admin/programs/${programId}/versions`).then(res => ({
+        isSuccess: true,
+        data: res.data
+    })),
 
-  /**
-   * Imports a single subject from raw text.
-   * Corresponds to POST /api/admin/subjects/import-from-text
-   */
-  importSubject: (rawText: string) => {
-    const formData = new FormData();
-    formData.append('rawText', rawText);
-    return axiosClient.post<ApiResponse<ImportResponse>>('/api/admin/subjects/import-from-text', formData);
-  },
+  importCurriculum: (rawText: string): Promise<ApiResponse<any>> =>
+    axiosClient.post('/api/admin/curriculum', { rawText }, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+    }).then(res => ({
+        isSuccess: true,
+        data: res.data
+    })),
 
-  /**
-   * Validates raw curriculum text without importing.
-   * Corresponds to POST /api/admin/curriculum/validate
-   */
-  validateCurriculum: (rawText: string) => {
-    const formData = new FormData();
-    formData.append('rawText', rawText);
-    return axiosClient.post<ApiResponse<any>>('/api/admin/curriculum/validate', formData);
-  }
+  importSubject: (rawText: string): Promise<ApiResponse<any>> =>
+    axiosClient.post('/api/admin/subjects/import-from-text', { rawText }, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+    }).then(res => ({
+        isSuccess: true,
+        data: res.data
+    })),
+
+  createSyllabusVersion: (payload: {
+    subjectId: string;
+    versionNumber: number;
+    effectiveDate: string;
+    content: string;
+    isActive: boolean;
+  }): Promise<ApiResponse<any>> =>
+    axiosClient.post('/api/admin/syllabus-versions', payload).then(res => ({
+        isSuccess: true,
+        data: res.data,
+    })),
+
+  getSubjects: (): Promise<ApiResponse<any[]>> => // Replace 'any' with a Subject type
+    axiosClient.get('/api/admin/subjects').then(res => ({
+        isSuccess: true,
+        data: res.data,
+    })),
 };
 
 export default adminContentApi;

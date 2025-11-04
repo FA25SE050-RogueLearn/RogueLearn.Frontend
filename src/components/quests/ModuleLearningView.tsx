@@ -11,10 +11,11 @@ import {
   CheckCircle, 
   XCircle,
   Loader2, 
-  Link as LinkIcon
+  Link as LinkIcon,
+  Sparkles
 } from "lucide-react";
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { 
   LearningPath, 
   QuestChapter, 
@@ -37,7 +38,8 @@ const ReadingStepContent = ({ content }: { content: ReadingContent }) => (
             <CardTitle>{content.articleTitle || 'Reading Material'}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4 prose prose-invert max-w-none prose-p:text-foreground/80 prose-headings:text-white">
-            <p className="whitespace-pre-wrap font-body">{content.summary || content.readingMaterial}</p>
+            {/* MODIFICATION: Removed optional chaining as summary is now guaranteed by the type */}
+            <p className="whitespace-pre-wrap font-body">{content.summary}</p>
             {content.url && (
                 <Button asChild variant="outline" className="border-accent/40 bg-accent/10 text-accent hover:bg-accent/20">
                     <a href={content.url} target="_blank" rel="noopener noreferrer">
@@ -46,26 +48,14 @@ const ReadingStepContent = ({ content }: { content: ReadingContent }) => (
                     </a>
                 </Button>
             )}
-            {content.recommendedExercises && (
-                <div>
-                    <h4 className="font-semibold mb-2">Recommended Exercises</h4>
-                    <p className="whitespace-pre-wrap font-body text-foreground/80">{content.recommendedExercises}</p>
-                </div>
-            )}
         </CardContent>
     </Card>
 );
 
 const InteractiveStepContent = ({ content }: { content: InteractiveContent }) => {
-    // State for handling question-based interactions (Step 2)
+    // State for handling question-based interactions
     const [selectedAnswers, setSelectedAnswers] = useState<Record<number, string>>({});
     const [submitted, setSubmitted] = useState(false);
-    
-    // State for handling backlog selection (Step 3)
-    const [selectedBacklogItems, setSelectedBacklogItems] = useState<Set<string>>(new Set());
-    
-    // State for handling user story ranking (Step 4)
-    const [rankedStories, setRankedStories] = useState<string[]>([]);
 
     // Handler for question selection
     const handleQuestionSelect = (qIndex: number, option: string) => {
@@ -78,42 +68,6 @@ const InteractiveStepContent = ({ content }: { content: InteractiveContent }) =>
         setSubmitted(true);
     };
 
-    // Handler for backlog item selection
-    const toggleBacklogItem = (itemId: string) => {
-        setSelectedBacklogItems(prev => {
-            const newSet = new Set(prev);
-            if (newSet.has(itemId)) {
-                newSet.delete(itemId);
-            } else {
-                newSet.add(itemId);
-            }
-            return newSet;
-        });
-    };
-
-    // Calculate total effort for selected backlog items
-    const getTotalEffort = () => {
-        if (!content.backlogItems) return 0;
-        return content.backlogItems
-            .filter(item => selectedBacklogItems.has(item.id))
-            .reduce((sum, item) => sum + item.effortEstimate, 0);
-    };
-
-    // Handler for user story ranking
-    const handleRankStory = (storyId: string, rank: number) => {
-        setRankedStories(prev => {
-            const newRanked = [...prev];
-            // Remove the story if it's already ranked
-            const currentIndex = newRanked.indexOf(storyId);
-            if (currentIndex !== -1) {
-                newRanked.splice(currentIndex, 1);
-            }
-            // Insert at the new position (rank-1 because array is 0-indexed)
-            newRanked.splice(rank - 1, 0, storyId);
-            return newRanked;
-        });
-    };
-
     return (
         <Card className="bg-muted/30 border-white/10">
             <CardHeader><CardTitle>Challenge</CardTitle></CardHeader>
@@ -122,12 +76,11 @@ const InteractiveStepContent = ({ content }: { content: InteractiveContent }) =>
                     <p className="whitespace-pre-wrap font-body text-foreground/80">{content.challenge}</p>
                 )}
                 
-                {/* Question-based interaction (Step 2) */}
+                {/* Question-based interaction */}
                 {content.questions && (
                     <div className="space-y-6">
                         {content.questions.map((q, index) => {
                             const selectedAnswer = selectedAnswers[index];
-                            const isCorrect = selectedAnswer === q.answer;
                             
                             return (
                                 <div key={index} className="p-4 rounded-lg border border-white/10 bg-black/20">
@@ -141,7 +94,7 @@ const InteractiveStepContent = ({ content }: { content: InteractiveContent }) =>
                                             if (submitted) {
                                                 if (isCorrectOption) {
                                                     buttonClass = "justify-start bg-green-500/20 border-green-500 text-white hover:bg-green-500/30";
-                                                } else if (isSelected && !isCorrect) {
+                                                } else if (isSelected && !isCorrectOption) {
                                                     buttonClass = "justify-start bg-red-500/20 border-red-500 text-white hover:bg-red-500/30";
                                                 }
                                             } else if (isSelected) {
@@ -159,7 +112,7 @@ const InteractiveStepContent = ({ content }: { content: InteractiveContent }) =>
                                                     {submitted && isCorrectOption && (
                                                         <CheckCircle className="w-4 h-4 mr-2 text-green-400" />
                                                     )}
-                                                    {submitted && isSelected && !isCorrect && (
+                                                    {submitted && isSelected && !isCorrectOption && (
                                                         <XCircle className="w-4 h-4 mr-2 text-red-400" />
                                                     )}
                                                     {opt}
@@ -188,121 +141,6 @@ const InteractiveStepContent = ({ content }: { content: InteractiveContent }) =>
                                 </p>
                             </div>
                         )}
-                    </div>
-                )}
-
-                {/* Backlog item selection (Step 3) */}
-                {content.backlogItems && (
-                    <div>
-                        <h4 className="font-semibold mb-3 text-white">Backlog Items</h4>
-                        <p className="text-sm text-foreground/60 mb-4">
-                            Select items for your sprint (Target: ~20 points | Current: {getTotalEffort()} points)
-                        </p>
-                        <div className="space-y-3">
-                            {content.backlogItems.map(item => {
-                                const isSelected = selectedBacklogItems.has(item.id);
-                                return (
-                                    <div
-                                        key={item.id}
-                                        className={`p-4 rounded-lg border cursor-pointer transition-all ${
-                                            isSelected
-                                                ? 'border-accent bg-accent/10'
-                                                : 'border-white/10 bg-black/20 hover:bg-black/30'
-                                        }`}
-                                        onClick={() => toggleBacklogItem(item.id)}
-                                    >
-                                        <div className="flex justify-between items-start">
-                                            <div className="flex-1">
-                                                <div className="flex items-start gap-2">
-                                                    <input
-                                                        type="checkbox"
-                                                        checked={isSelected}
-                                                        onChange={() => {}}
-                                                        className="mt-1"
-                                                    />
-                                                    <p className="text-foreground/80">{item.story}</p>
-                                                </div>
-                                            </div>
-                                            <div className="text-right ml-4">
-                                                <p className="text-xs text-foreground/60">
-                                                    Priority: <span className="font-bold text-white/80">{item.priority}</span>
-                                                </p>
-                                                <p className="text-xs text-foreground/60">
-                                                    Effort: <span className="font-bold text-white/80">{item.effortEstimate} pts</span>
-                                                </p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                );
-                            })}
-                        </div>
-                    </div>
-                )}
-
-                {/* User story ranking (Step 4) */}
-                {content.userStories && (
-                    <div>
-                        <h4 className="font-semibold mb-3 text-white">User Stories to Prioritize</h4>
-                        <p className="text-sm text-foreground/60 mb-4">
-                            Click a rank button (1-5) next to each story to set its priority
-                        </p>
-                        <div className="space-y-3">
-                            {content.userStories.map(item => {
-                                const currentRank = rankedStories.indexOf(item.id) + 1;
-                                
-                                return (
-                                    <div
-                                        key={item.id}
-                                        className="p-4 rounded-lg border border-white/10 bg-black/20"
-                                    >
-                                        <div className="flex justify-between items-start gap-4">
-                                            <div className="flex-1">
-                                                <p className="text-foreground/80">{item.story}</p>
-                                                <div className="flex gap-4 mt-2">
-                                                    <p className="text-xs text-foreground/60">
-                                                        Value: <span className="font-bold text-white/80">{item.value}</span>
-                                                    </p>
-                                                    <p className="text-xs text-foreground/60">
-                                                        Effort: <span className="font-bold text-white/80">{item.effort}</span>
-                                                    </p>
-                                                </div>
-                                            </div>
-                                            <div className="flex flex-col gap-2">
-                                                <div className="flex gap-1">
-                                                    {[1, 2, 3, 4, 5].map(rank => (
-                                                        <Button
-                                                            key={rank}
-                                                            variant="outline"
-                                                            size="sm"
-                                                            className={`w-8 h-8 p-0 ${
-                                                                currentRank === rank
-                                                                    ? 'bg-accent border-accent text-white'
-                                                                    : 'border-white/20'
-                                                            }`}
-                                                            onClick={() => handleRankStory(item.id, rank)}
-                                                        >
-                                                            {rank}
-                                                        </Button>
-                                                    ))}
-                                                </div>
-                                                {currentRank > 0 && (
-                                                    <p className="text-xs text-center text-accent">Rank: {currentRank}</p>
-                                                )}
-                                            </div>
-                                        </div>
-                                    </div>
-                                );
-                            })}
-                        </div>
-                    </div>
-                )}
-
-                {/* Guidance section */}
-                {(content.guidance || content.task || content.answerExplanation) && (
-                    <div className="mt-4 p-4 rounded-lg border border-amber-300/20 bg-amber-400/10 text-amber-200/80 text-sm">
-                        {content.guidance && <p><strong>Guidance:</strong> {content.guidance}</p>}
-                        {content.task && <p className="mt-2"><strong>Task:</strong> {content.task}</p>}
-                        {content.answerExplanation && <p className="mt-2"><strong>Hint:</strong> {content.answerExplanation}</p>}
                     </div>
                 )}
             </CardContent>
@@ -395,12 +233,6 @@ const SubmissionStepContent = ({ content }: { content: SubmissionContent }) => (
         <CardContent className="space-y-4">
             <h4 className="font-semibold text-white">Challenge</h4>
             <p className="whitespace-pre-wrap font-body">{content.challenge}</p>
-            {content.exampleUserStory && (
-                <div>
-                    <h4 className="font-semibold text-white">Example User Story</h4>
-                    <p className="whitespace-pre-wrap font-body text-foreground/80 italic">&quot;{content.exampleUserStory}&quot;</p>
-                </div>
-            )}
             <h4 className="font-semibold text-white">Submission Format</h4>
             <p className="whitespace-pre-wrap font-body text-foreground/80">{content.submissionFormat}</p>
             <Textarea placeholder="Enter your submission here..." rows={8} className="mt-4 bg-background/50 border-white/20" />
@@ -440,16 +272,18 @@ interface ModuleLearningViewProps {
 
 export function ModuleLearningView({ learningPath, chapter, questDetails }: ModuleLearningViewProps) {
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
-  const [stepProgress, setStepProgress] = useState<Record<string, 'Completed' | 'Pending'>>(() => {
+  const [stepProgress, setStepProgress] = useState<Record<string, 'Completed' | 'Pending'>>({});
+  const [isCompleting, setIsCompleting] = useState<string | null>(null);
+
+  useEffect(() => {
     const initialProgress: Record<string, 'Completed' | 'Pending'> = {};
     if (questDetails && questDetails.steps) {
         questDetails.steps.forEach(step => {
             initialProgress[step.id] = 'Pending';
         });
     }
-    return initialProgress;
-  });
-  const [isCompleting, setIsCompleting] = useState<string | null>(null);
+    setStepProgress(initialProgress);
+  }, [questDetails]);
 
   const currentStep = questDetails?.steps?.[currentStepIndex];
 
@@ -469,6 +303,7 @@ export function ModuleLearningView({ learningPath, chapter, questDetails }: Modu
     setIsCompleting(stepId);
     try {
       await academicApi.updateQuestStepProgress(questDetails.id, stepId, 'Completed');
+      
       setStepProgress(prev => ({...prev, [stepId]: 'Completed'}));
       
       if (questDetails && currentStepIndex < questDetails.steps.length - 1) {
@@ -536,12 +371,19 @@ export function ModuleLearningView({ learningPath, chapter, questDetails }: Modu
       <Card className="border-white/10 bg-black/20">
         <CardHeader>
           <CardTitle className="flex items-center justify-between text-white">
-            <span>Step {currentStep.stepNumber}: {currentStep.title}</span>
-            {stepProgress[currentStep.id] === 'Completed' && (
-                <span className="flex items-center gap-2 text-sm text-emerald-400">
-                    <CheckCircle className="w-4 h-4" /> Completed
-                </span>
-            )}
+            <span className="flex-1">Step {currentStep.stepNumber}: {currentStep.title}</span>
+            <div className="flex items-center gap-4">
+                {currentStep.experiencePoints > 0 && (
+                    <span className="flex items-center gap-2 text-sm font-semibold text-amber-300 bg-amber-900/50 border border-amber-700/30 rounded-full px-3 py-1">
+                        <Sparkles className="w-4 h-4" /> +{currentStep.experiencePoints} XP
+                    </span>
+                )}
+                {stepProgress[currentStep.id] === 'Completed' && (
+                    <span className="flex items-center gap-2 text-sm text-emerald-400">
+                        <CheckCircle className="w-4 h-4" /> Completed
+                    </span>
+                )}
+            </div>
           </CardTitle>
         </CardHeader>
         <CardContent>

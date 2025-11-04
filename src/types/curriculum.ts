@@ -1,7 +1,7 @@
 // roguelearn-web/src/types/curriculum.ts
 /**
- * Represents a full Curriculum Program.
- * Derived from the backend CurriculumProgram.cs entity.
+ * Represents a full Curriculum Program, such as "Bachelor of Software Engineering".
+ * Corresponds to the backend CurriculumProgram.cs entity.
  */
 export interface CurriculumProgram {
   id: string; // Guid
@@ -16,8 +16,8 @@ export interface CurriculumProgram {
 }
 
 /**
- * Represents a version of a curriculum.
- * Derived from the backend CurriculumVersion.cs entity.
+ * Represents a specific version of a curriculum, e.g., "K18A".
+ * Corresponds to the backend CurriculumVersion.cs entity.
  */
 export interface CurriculumVersion {
   id: string; // Guid
@@ -30,8 +30,8 @@ export interface CurriculumVersion {
 }
 
 /**
- * Represents a single academic subject.
- * Derived from the backend Subject.cs entity.
+ * Represents a single academic subject, e.g., "PRJ301".
+ * Corresponds to the backend Subject.cs entity.
  */
 export interface Subject {
   id: string; // Guid
@@ -44,8 +44,8 @@ export interface Subject {
 }
 
 /**
- * Represents the placement of a subject within a curriculum version.
- * Derived from the backend CurriculumStructure.cs entity.
+ * Represents the placement of a subject within a curriculum version, defining its semester.
+ * Corresponds to the backend CurriculumStructure.cs entity.
  */
 export interface CurriculumStructure {
   id: string; // Guid
@@ -56,4 +56,19 @@ export interface CurriculumStructure {
   prerequisiteSubjectIds: string[] | null; // Guid[]
   prerequisitesText: string | null;
   createdAt: string; // DateTimeOffset
+}
+
+/**
+ * Represents a version of a syllabus for a subject.
+ * Corresponds to the backend SyllabusVersion.cs entity.
+ */
+export interface SyllabusVersion {
+    id: string; // Guid
+    subjectId: string; // Guid
+    versionNumber: number;
+    content: string; // This will be a JSON string
+    effectiveDate: string; // Format: "YYYY-MM-DD"
+    isActive: boolean;
+    createdBy: string | null; // Guid
+    createdAt: string; // DateTimeOffset
 }
