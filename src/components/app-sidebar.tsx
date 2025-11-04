@@ -33,7 +33,7 @@ import { createClient } from "@/utils/supabase/client"
 import { useRouter } from "next/navigation"
 import { CharacterCreationWizard } from "@/components/features/character-creation/CharacterCreationWizard"
 import profileApi from "@/api/profileApi"
-import { UserProfile } from "@/types/user"
+import { UserProfileDto } from "@/types/user-profile"
 import { Button } from "./ui/button"
 
 const data = {
@@ -92,7 +92,7 @@ const data = {
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const router = useRouter()
-  const [userProfile, setUserProfile] = React.useState<UserProfile | null>(null);
+  const [userProfile, setUserProfile] = React.useState<UserProfileDto | null>(null);
   const [showCharacterWizard, setShowCharacterWizard] = React.useState(false)
 
   React.useEffect(() => {

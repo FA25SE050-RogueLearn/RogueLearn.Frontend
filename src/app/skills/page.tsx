@@ -4,7 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { createServerApiClients } from "@/lib/api-server";
-import { UserSkill } from "@/types/user";
+import { UserSkillDto, GetUserSkillsResponse } from "@/types/user-skills";
 import { 
     BrainCircuit, 
     Code, 
@@ -42,10 +42,10 @@ const calculateLevelProgress = (xp: number) => {
 export default async function SkillsPage() {
     // Fetches user skills from the backend on the server.
     const { coreApiClient } = await createServerApiClients();
-    let userSkills: UserSkill[] = [];
+    let userSkills: UserSkillDto[] = [];
     
     try {
-        const response = await coreApiClient.get<{ skills: UserSkill[] }>('/api/users/me/skills');
+        const response = await coreApiClient.get<GetUserSkillsResponse>('/api/users/me/skills');
         userSkills = response.data.skills;
     } catch (error) {
         console.error("Failed to fetch user skills:", error);
@@ -103,7 +103,7 @@ export default async function SkillsPage() {
                             {userSkills.map((skill) => {
                                 const { currentLevelXp, nextLevelXp, progressPercentage } = calculateLevelProgress(skill.experiencePoints);
                                 return (
-                                <Card key={skill.skillId} className="relative flex h-full flex-col overflow-hidden rounded-[26px] border border-white/12 bg-gradient-to-br from-[#2a140f]/90 via-[#160b08]/92 to-[#0a0503]/95 p-6 shadow-[0_24px_60px_rgba(32,8,12,0.55)] transition-transform duration-300 hover:-translate-y-1 hover:shadow-[0_30px_70px_rgba(210,49,135,0.35)]">
+                                <Card key={skill.skillName} className="relative flex h-full flex-col overflow-hidden rounded-[26px] border border-white/12 bg-gradient-to-br from-[#2a140f]/90 via-[#160b08]/92 to-[#0a0503]/95 p-6 shadow-[0_24px_60px_rgba(32,8,12,0.55)] transition-transform duration-300 hover:-translate-y-1 hover:shadow-[0_30px_70px_rgba(210,49,135,0.35)]">
                                     <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(240,177,90,0.25),_transparent_72%)] opacity-45" />
                                     <CardContent className="relative z-10 flex flex-1 flex-col justify-between gap-6 p-0">
                                         <div className="flex items-start justify-between">

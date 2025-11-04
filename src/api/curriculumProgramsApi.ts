@@ -8,7 +8,7 @@ import {
   CreateCurriculumProgramResponse,
   UpdateCurriculumProgramCommandRequest,
   UpdateCurriculumProgramResponse,
-} from '@/types/curriculum';
+} from '@/types/curriculum-programs';
 
 const curriculumProgramsApi = {
   /** GET /api/admin/programs */

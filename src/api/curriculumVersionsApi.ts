@@ -6,7 +6,7 @@ import {
   CreateCurriculumVersionCommandRequest,
   CreateCurriculumVersionResponse,
   ActivateCurriculumVersionResponse,
-} from '@/types/curriculum';
+} from '@/types/curriculum-versions';
 
 const curriculumVersionsApi = {
   /** GET /api/admin/programs/{programId}/versions */

@@ -1,12 +1,10 @@
 // roguelearn-web/src/api/skillsApi.ts
 import axiosClient from './axiosClient';
 import { ApiResponse } from '../types/base/Api';
-import { UserSkill } from '../types/user';
+import { UserSkillDto, GetUserSkillsResponse } from '@/types/user-skills';
 
 // The response from the backend will be a list of UserSkill objects.
-interface GetMySkillsResponse {
-    skills: UserSkill[];
-}
+type GetMySkillsResponse = GetUserSkillsResponse;
 
 const skillsApi = {
   /**
@@ -14,7 +12,7 @@ const skillsApi = {
    * Corresponds to GET /api/users/me/skills
    */
   getMySkills: (): Promise<ApiResponse<GetMySkillsResponse>> =>
-    axiosClient.get('/api/users/me/skills').then(res => ({
+    axiosClient.get<GetMySkillsResponse>('/api/users/me/skills').then(res => ({
         isSuccess: true,
         data: res.data
     })),

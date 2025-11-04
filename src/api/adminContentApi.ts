@@ -1,18 +1,20 @@
 // roguelearn-web/src/api/adminContentApi.ts
 import axiosClient from './axiosClient';
 import { ApiResponse } from '../types/base/Api';
-import { CurriculumProgram, CurriculumVersion } from '../types/curriculum'; // Added CurriculumVersion
+import { CurriculumProgramDto } from '@/types/curriculum-programs';
+import { CurriculumVersionDto } from '@/types/curriculum-versions';
+import { Subject } from '@/types/subjects';
 
 const adminContentApi = {
-  getCurriculumPrograms: (): Promise<ApiResponse<CurriculumProgram[]>> =>
-    axiosClient.get('/api/admin/programs').then(res => ({
+  getCurriculumPrograms: (): Promise<ApiResponse<CurriculumProgramDto[]>> =>
+    axiosClient.get<CurriculumProgramDto[]>('/api/admin/programs').then(res => ({
         isSuccess: true,
         data: res.data
     })),
 
   // ADDED: New function to get versions for a specific program.
-  getCurriculumVersions: (programId: string): Promise<ApiResponse<CurriculumVersion[]>> =>
-    axiosClient.get(`/api/admin/programs/${programId}/versions`).then(res => ({
+  getCurriculumVersions: (programId: string): Promise<ApiResponse<CurriculumVersionDto[]>> =>
+    axiosClient.get<CurriculumVersionDto[]>(`/api/admin/programs/${programId}/versions`).then(res => ({
         isSuccess: true,
         data: res.data
     })),
@@ -45,8 +47,8 @@ const adminContentApi = {
         data: res.data,
     })),
 
-  getSubjects: (): Promise<ApiResponse<any[]>> => // Replace 'any' with a Subject type
-    axiosClient.get('/api/admin/subjects').then(res => ({
+  getSubjects: (): Promise<ApiResponse<Subject[]>> =>
+    axiosClient.get<Subject[]>('/api/admin/subjects').then(res => ({
         isSuccess: true,
         data: res.data,
     })),

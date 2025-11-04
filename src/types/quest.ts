@@ -66,7 +66,6 @@ export interface ReadingContent {
     url?: string;
 }
 
-/** Content for an interactive step (questions, backlog items, user stories). */
 export interface InteractiveContent {
     skillTag: string;
     challenge: string;
@@ -79,7 +78,6 @@ export interface InteractiveQuestion {
     answer: string;
 }
 
-/** Content for a quiz step made up of multiple questions. */
 export interface QuizContent {
     skillTag: string;
     questions: QuizQuestion[];
@@ -99,7 +97,6 @@ export interface CodingContent {
     expectedOutput: string;
 }
 
-/** Content for a submission step where learners submit artifacts for review. */
 export interface SubmissionContent {
     skillTag: string;
     challenge: string;

@@ -11,10 +11,10 @@ import Link from "next/link";
 import { useState, useEffect, useCallback } from "react";
 // MODIFIED: Import the new API object and the complete CurriculumProgram type
 import adminContentApi from "@/api/adminContentApi";
-import { CurriculumProgram } from "@/types/curriculum";
+import { CurriculumProgramDto } from "@/types/curriculum-programs";
 
 // A smaller type for what the UI component needs to display
-interface ProgramDisplayData extends CurriculumProgram {
+interface ProgramDisplayData extends CurriculumProgramDto {
   version?: string;
   status?: 'synced' | 'update-available';
   updated?: string;

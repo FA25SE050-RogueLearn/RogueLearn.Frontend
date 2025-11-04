@@ -7,7 +7,7 @@ import {
   AddSubjectToCurriculumResponse,
   UpdateCurriculumStructureCommandRequest,
   UpdateCurriculumStructureResponse,
-} from '@/types/curriculum';
+} from '@/types/curriculum-structure';
 
 const curriculumStructureApi = {
   /** GET /api/admin/curriculum-structure/version/{versionId} */

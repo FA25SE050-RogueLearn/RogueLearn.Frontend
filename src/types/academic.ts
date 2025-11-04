@@ -1,11 +1,6 @@
 /**
- * Feature: Academic Record Processing
- * Purpose: Types representing parsed academic records (FAP), gap analysis results, and forged learning path outputs.
- * Flow References: Transaction 1 (FAP parse), Transaction 2 (Gap analysis), Transaction 3 (Forge learning path).
- */
-/**
  * Represents the structured data extracted from the FAP HTML.
- * Returned by the backend after Transaction 1.
+ * This is returned by the backend after Transaction 1.
  */
 export interface FapRecordData {
   gpa: number | null;
@@ -20,7 +15,7 @@ export interface FapSubjectData {
 
 /**
  * Represents the personalized recommendation from the gap analysis.
- * Returned by the backend after Transaction 2.
+ * This is returned by the backend after Transaction 2.
  */
 export interface GapAnalysisResponse {
   recommendedFocus: string;
@@ -35,7 +30,7 @@ export interface GapAnalysisResponse {
 
 /**
  * Represents the successfully created Learning Path structure.
- * Returned by the backend after Transaction 3.
+ * This is returned by the backend after Transaction 3.
  */
 export interface ForgedLearningPath {
     id: string;
