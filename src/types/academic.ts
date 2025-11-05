@@ -1,3 +1,4 @@
+// roguelearn-web/src/types/academic.ts
 /**
  * Represents the structured data extracted from the FAP HTML.
  * This is returned by the backend after Transaction 1.
@@ -45,4 +46,11 @@ export interface ProcessAcademicRecordResponse {
     subjectsProcessed: number;
     questsGenerated: number;
     calculatedGpa: number;
+}
+
+// MODIFICATION: Add type for the new user progress API response.
+export interface UserQuestProgress {
+    questId: string;
+    questStatus: 'NotStarted' | 'InProgress' | 'Completed' | 'Abandoned';
+    stepStatuses: Record<string, 'NotStarted' | 'InProgress' | 'Completed' | 'Skipped'>;
 }

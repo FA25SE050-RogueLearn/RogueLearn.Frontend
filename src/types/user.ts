@@ -15,7 +15,6 @@ export interface UserProfile {
   onboardingCompleted: boolean;
   createdAt: string;
   roles: string[];
-  routeId?: string;
 }
 
 /**
@@ -23,7 +22,6 @@ export interface UserProfile {
  * This corresponds to the UserSkillDto from the backend.
  */
 export interface UserSkill {
-    skillId: string;
     skillName: string;
     level: number;
     experiencePoints: number;

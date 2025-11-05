@@ -4,33 +4,33 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { 
-  ArrowLeft, 
-  ArrowRight, 
-  BookOpen, 
-  CheckCircle, 
-  XCircle,
-  Loader2, 
-  Link as LinkIcon,
-  Sparkles
+import {
+    ArrowLeft,
+    ArrowRight,
+    BookOpen,
+    CheckCircle,
+    XCircle,
+    Loader2,
+    Link as LinkIcon,
+    Sparkles
 } from "lucide-react";
 import Link from "next/link";
 import { useState, useEffect } from "react";
-import { 
-  LearningPath, 
-  QuestChapter, 
-  QuestDetails, 
-  QuestStep, 
-  ReadingContent, 
-  InteractiveContent, 
-  CodingContent, 
-  QuizContent, 
-  SubmissionContent, 
-  ReflectionContent 
+import {
+    LearningPath,
+    QuestChapter,
+    QuestDetails,
+    QuestStep,
+    ReadingContent,
+    InteractiveContent,
+    CodingContent,
+    QuizContent,
+    SubmissionContent,
+    ReflectionContent
 } from "@/types/quest";
 import academicApi from "@/api/academicApi";
 
-// --- Sub-components for each Step Type ---
+// --- Sub-components (UNCHANGED) ---
 
 const ReadingStepContent = ({ content }: { content: ReadingContent }) => (
     <Card className="bg-muted/30 border-white/10">
@@ -38,7 +38,6 @@ const ReadingStepContent = ({ content }: { content: ReadingContent }) => (
             <CardTitle>{content.articleTitle || 'Reading Material'}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4 prose prose-invert max-w-none prose-p:text-foreground/80 prose-headings:text-white">
-            {/* MODIFICATION: Removed optional chaining as summary is now guaranteed by the type */}
             <p className="whitespace-pre-wrap font-body">{content.summary}</p>
             {content.url && (
                 <Button asChild variant="outline" className="border-accent/40 bg-accent/10 text-accent hover:bg-accent/20">
@@ -53,17 +52,14 @@ const ReadingStepContent = ({ content }: { content: ReadingContent }) => (
 );
 
 const InteractiveStepContent = ({ content }: { content: InteractiveContent }) => {
-    // State for handling question-based interactions
     const [selectedAnswers, setSelectedAnswers] = useState<Record<number, string>>({});
     const [submitted, setSubmitted] = useState(false);
 
-    // Handler for question selection
     const handleQuestionSelect = (qIndex: number, option: string) => {
         if (submitted) return;
-        setSelectedAnswers(prev => ({...prev, [qIndex]: option}));
+        setSelectedAnswers(prev => ({ ...prev, [qIndex]: option }));
     };
 
-    // Handler for submitting question answers
     const handleSubmitQuestions = () => {
         setSubmitted(true);
     };
@@ -75,13 +71,12 @@ const InteractiveStepContent = ({ content }: { content: InteractiveContent }) =>
                 {content.challenge && (
                     <p className="whitespace-pre-wrap font-body text-foreground/80">{content.challenge}</p>
                 )}
-                
-                {/* Question-based interaction */}
+
                 {content.questions && (
                     <div className="space-y-6">
                         {content.questions.map((q, index) => {
                             const selectedAnswer = selectedAnswers[index];
-                            
+
                             return (
                                 <div key={index} className="p-4 rounded-lg border border-white/10 bg-black/20">
                                     <p className="font-semibold text-white/90 mb-3">{q.task}</p>
@@ -89,7 +84,7 @@ const InteractiveStepContent = ({ content }: { content: InteractiveContent }) =>
                                         {q.options.map(opt => {
                                             const isSelected = selectedAnswer === opt;
                                             const isCorrectOption = q.answer === opt;
-                                            
+
                                             let buttonClass = "justify-start border-white/20 hover:bg-white/10";
                                             if (submitted) {
                                                 if (isCorrectOption) {
@@ -100,7 +95,7 @@ const InteractiveStepContent = ({ content }: { content: InteractiveContent }) =>
                                             } else if (isSelected) {
                                                 buttonClass = "justify-start bg-accent/20 border-accent text-white hover:bg-accent/30";
                                             }
-                                            
+
                                             return (
                                                 <Button
                                                     key={opt}
@@ -123,7 +118,7 @@ const InteractiveStepContent = ({ content }: { content: InteractiveContent }) =>
                                 </div>
                             );
                         })}
-                        
+
                         {!submitted && (
                             <Button
                                 onClick={handleSubmitQuestions}
@@ -133,7 +128,7 @@ const InteractiveStepContent = ({ content }: { content: InteractiveContent }) =>
                                 Submit Answers
                             </Button>
                         )}
-                        
+
                         {submitted && (
                             <div className="mt-4 p-4 rounded-md bg-black/20 text-center">
                                 <p className="text-lg font-bold text-white">
@@ -154,13 +149,13 @@ const QuizStepContent = ({ content }: { content: QuizContent }) => {
 
     const handleSelect = (qIndex: number, option: string) => {
         if (submitted) return;
-        setSelectedAnswers(prev => ({...prev, [qIndex]: option}));
+        setSelectedAnswers(prev => ({ ...prev, [qIndex]: option }));
     }
 
     const checkAnswers = () => {
         setSubmitted(true);
     }
-    
+
     const correctCount = content.questions.filter((q, i) => selectedAnswers[i] === q.correctAnswer).length;
 
     return (
@@ -177,12 +172,12 @@ const QuizStepContent = ({ content }: { content: QuizContent }) => {
                                 const buttonClass = submitted
                                     ? (isCorrect ? 'bg-green-500/20 border-green-500 text-white' : isSelected ? 'bg-red-500/20 border-red-500 text-white' : 'bg-transparent border-white/10')
                                     : (isSelected ? 'bg-accent/20 border-accent' : 'bg-transparent border-white/10');
-                                
+
                                 return (
-                                    <Button 
-                                        key={opt} 
-                                        variant="outline" 
-                                        className={`w-full justify-start text-left h-auto py-2 whitespace-normal ${buttonClass}`} 
+                                    <Button
+                                        key={opt}
+                                        variant="outline"
+                                        className={`w-full justify-start text-left h-auto py-2 whitespace-normal ${buttonClass}`}
                                         onClick={() => handleSelect(i, opt)}
                                     >
                                         {opt}
@@ -194,8 +189,8 @@ const QuizStepContent = ({ content }: { content: QuizContent }) => {
                     </div>
                 ))}
                 {!submitted && (
-                    <Button 
-                        onClick={checkAnswers} 
+                    <Button
+                        onClick={checkAnswers}
                         className="bg-accent text-accent-foreground hover:bg-accent/90"
                         disabled={Object.keys(selectedAnswers).length !== content.questions.length}
                     >
@@ -265,174 +260,229 @@ const PlaceholderContent = ({ type }: { type: string }) => (
 // --- Main Component ---
 
 interface ModuleLearningViewProps {
-  learningPath: LearningPath;
-  chapter: QuestChapter;
-  questDetails: QuestDetails;
+    learningPath: LearningPath;
+    chapter: QuestChapter;
+    questDetails: QuestDetails;
 }
 
-export function ModuleLearningView({ learningPath, chapter, questDetails }: ModuleLearningViewProps) {
-  const [currentStepIndex, setCurrentStepIndex] = useState(0);
-  const [stepProgress, setStepProgress] = useState<Record<string, 'Completed' | 'Pending'>>({});
-  const [isCompleting, setIsCompleting] = useState<string | null>(null);
+export function ModuleLearningView({ learningPath, chapter, questDetails: initialQuestDetails }: ModuleLearningViewProps) {
+    const [questDetails, setQuestDetails] = useState(initialQuestDetails);
+    const [isLoading, setIsLoading] = useState(true);
+    const [currentStepIndex, setCurrentStepIndex] = useState(0);
+    const [stepProgress, setStepProgress] = useState<Record<string, 'Completed' | 'NotStarted'>>({});
+    const [isCompleting, setIsCompleting] = useState<string | null>(null);
 
-  useEffect(() => {
-    const initialProgress: Record<string, 'Completed' | 'Pending'> = {};
-    if (questDetails && questDetails.steps) {
-        questDetails.steps.forEach(step => {
-            initialProgress[step.id] = 'Pending';
-        });
-    }
-    setStepProgress(initialProgress);
-  }, [questDetails]);
+    useEffect(() => {
+        const initializeAndFetchProgress = async () => {
+            let currentDetails = questDetails;
+            // Step 1: Generate steps if they don't exist.
+            if (!currentDetails.steps || currentDetails.steps.length === 0) {
+                setIsLoading(true);
+                try {
+                    const response = await academicApi.generateQuestSteps(currentDetails.id);
+                    if (response.isSuccess && response.data) {
+                        currentDetails = { ...currentDetails, steps: response.data };
+                        setQuestDetails(currentDetails);
+                    } else {
+                        throw new Error("Failed to generate quest steps.");
+                    }
+                } catch (error) {
+                    console.error("Error generating quest steps:", error);
+                    alert("Could not load quest steps. Please try again.");
+                    setIsLoading(false);
+                    return;
+                }
+            }
 
-  const currentStep = questDetails?.steps?.[currentStepIndex];
+            // Step 2: Always fetch the latest user progress for this quest.
+            try {
+                const progressResponse = await academicApi.getUserQuestProgress(currentDetails.id);
+                const progressData = progressResponse.data;
 
-  const handleNextStep = () => {
-    if (questDetails && currentStepIndex < questDetails.steps.length - 1) {
-      setCurrentStepIndex(currentStepIndex + 1);
-    }
-  };
+                const newStepProgress: Record<string, 'Completed' | 'NotStarted'> = {};
+                currentDetails.steps.forEach(step => {
+                    const status = progressData?.stepStatuses[step.id];
+                    newStepProgress[step.id] = status === 'Completed' ? 'Completed' : 'NotStarted';
+                });
+                setStepProgress(newStepProgress);
 
-  const handlePrevStep = () => {
-    if (currentStepIndex > 0) {
-      setCurrentStepIndex(currentStepIndex - 1);
-    }
-  };
+            } catch (error) {
+                console.warn("Could not fetch user progress, defaulting all steps to NotStarted:", error);
+                // If progress fetch fails, default all to NotStarted.
+                const defaultProgress: Record<string, 'Completed' | 'NotStarted'> = {};
+                currentDetails.steps.forEach(step => {
+                    defaultProgress[step.id] = 'NotStarted';
+                });
+                setStepProgress(defaultProgress);
+            } finally {
+                setIsLoading(false);
+            }
+        };
 
-  const handleCompleteStep = async (stepId: string) => {
-    setIsCompleting(stepId);
-    try {
-      await academicApi.updateQuestStepProgress(questDetails.id, stepId, 'Completed');
-      
-      setStepProgress(prev => ({...prev, [stepId]: 'Completed'}));
-      
-      if (questDetails && currentStepIndex < questDetails.steps.length - 1) {
-        setTimeout(() => { handleNextStep(); }, 500);
-      }
-    } catch (error) {
-      console.error("Failed to mark step as complete:", error);
-      alert("There was an error saving your progress. Please try again.");
-    } finally {
-      setIsCompleting(null);
-    }
-  };
+        initializeAndFetchProgress();
+    }, [questDetails.id]);
 
-  const renderStepContent = (step: QuestStep) => {
-    if (!step.content) {
-        return <PlaceholderContent type={`${step.stepType} (No Content)`} />;
-    }
+    const currentStep = questDetails?.steps?.[currentStepIndex];
 
-    switch (step.stepType) {
-        case 'Reading':
-            return <ReadingStepContent content={step.content as ReadingContent} />;
-        case 'Interactive':
-            return <InteractiveStepContent content={step.content as InteractiveContent} />;
-        case 'Quiz':
-            return <QuizStepContent content={step.content as QuizContent} />;
-        case 'Coding':
-            return <CodingStepContent content={step.content as CodingContent} />;
-        case 'Submission':
-            return <SubmissionStepContent content={step.content as SubmissionContent} />;
-        case 'Reflection':
-            return <ReflectionStepContent content={step.content as ReflectionContent} />;
-        case 'Video':
-            return <PlaceholderContent type="Video" />;
-        case 'Discussion':
-            return <PlaceholderContent type="Discussion" />;
-        default:
-            return <p>Unknown step type: {step.stepType}</p>;
-    }
-  };
+    const handleNextStep = () => {
+        if (questDetails && currentStepIndex < questDetails.steps.length - 1) {
+            setCurrentStepIndex(currentStepIndex + 1);
+        }
+    };
 
-  if (!currentStep) {
-    return <div>Step not found or quest data is loading.</div>;
-  }
+    const handlePrevStep = () => {
+        if (currentStepIndex > 0) {
+            setCurrentStepIndex(currentStepIndex - 1);
+        }
+    };
 
-  return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <div className="flex items-center gap-2 text-sm text-foreground/60 mb-2">
-            <Link href={`/quests/${learningPath.id}`} className="hover:text-accent">
-              {learningPath.name}
-            </Link>
-            <span>/</span>
-            <Link href={`/quests/${learningPath.id}/${chapter.id}`} className="hover:text-accent">
-              {chapter.title}
-            </Link>
-          </div>
-          <h1 className="text-4xl font-bold font-heading flex items-center gap-3 text-white">
-            <BookOpen className="w-10 h-10 text-accent" />
-            {questDetails.title}
-          </h1>
-        </div>
-      </div>
+    const handleCompleteStep = async (stepId: string) => {
+        setIsCompleting(stepId);
+        try {
+            await academicApi.updateQuestStepProgress(questDetails.id, stepId, 'Completed');
 
-      <Card className="border-white/10 bg-black/20">
-        <CardHeader>
-          <CardTitle className="flex items-center justify-between text-white">
-            <span className="flex-1">Step {currentStep.stepNumber}: {currentStep.title}</span>
-            <div className="flex items-center gap-4">
-                {currentStep.experiencePoints > 0 && (
-                    <span className="flex items-center gap-2 text-sm font-semibold text-amber-300 bg-amber-900/50 border border-amber-700/30 rounded-full px-3 py-1">
-                        <Sparkles className="w-4 h-4" /> +{currentStep.experiencePoints} XP
-                    </span>
-                )}
-                {stepProgress[currentStep.id] === 'Completed' && (
-                    <span className="flex items-center gap-2 text-sm text-emerald-400">
-                        <CheckCircle className="w-4 h-4" /> Completed
-                    </span>
-                )}
+            setStepProgress(prev => ({ ...prev, [stepId]: 'Completed' }));
+
+            if (questDetails && currentStepIndex < questDetails.steps.length - 1) {
+                setTimeout(() => { handleNextStep(); }, 500);
+            }
+        } catch (error) {
+            console.error("Failed to mark step as complete:", error);
+            alert("There was an error saving your progress. Please try again.");
+        } finally {
+            setIsCompleting(null);
+        }
+    };
+
+    const renderStepContent = (step: QuestStep) => {
+        if (!step.content) {
+            return <PlaceholderContent type={`${step.stepType} (No Content)`} />;
+        }
+        switch (step.stepType) {
+            case 'Reading':
+                return <ReadingStepContent content={step.content as ReadingContent} />;
+            case 'Interactive':
+                return <InteractiveStepContent content={step.content as InteractiveContent} />;
+            case 'Quiz':
+                return <QuizStepContent content={step.content as QuizContent} />;
+            case 'Coding':
+                return <CodingStepContent content={step.content as CodingContent} />;
+            case 'Submission':
+                return <SubmissionStepContent content={step.content as SubmissionContent} />;
+            case 'Reflection':
+                return <ReflectionStepContent content={step.content as ReflectionContent} />;
+            case 'Video':
+                return <PlaceholderContent type="Video" />;
+            case 'Discussion':
+                return <PlaceholderContent type="Discussion" />;
+            default:
+                return <p>Unknown step type: {step.stepType}</p>;
+        }
+    };
+
+    if (isLoading) {
+        return (
+            <div className="flex flex-col items-center justify-center min-h-[400px] gap-4">
+                <Loader2 className="w-16 h-16 text-accent animate-spin" />
+                <p className="text-xl text-foreground/70">Loading Quest Content...</p>
             </div>
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-foreground/80 leading-relaxed mb-6">{currentStep.description}</p>
-          {renderStepContent(currentStep)}
-        </CardContent>
-      </Card>
+        );
+    }
 
-      <div className="flex items-center justify-between pt-8 border-t border-white/10">
-        <Button 
-          variant="outline" 
-          size="lg" 
-          onClick={handlePrevStep} 
-          disabled={currentStepIndex === 0} 
-          className="border-white/20 bg-white/5 hover:bg-white/10 text-white"
-        >
-          <ArrowLeft className="w-5 h-5 mr-2" /> Previous Step
-        </Button>
-        
-        {stepProgress[currentStep.id] !== 'Completed' ? (
-            <Button 
-              size="lg" 
-              className="bg-gradient-to-r from-accent to-amber-400 text-primary-foreground font-bold" 
-              onClick={() => handleCompleteStep(currentStep.id)} 
-              disabled={isCompleting === currentStep.id}
-            >
-                {isCompleting === currentStep.id ? (
-                  <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+    if (!currentStep) {
+        return (
+            <div className="flex flex-col items-center justify-center min-h-[400px] gap-4">
+                <XCircle className="w-16 h-16 text-red-500" />
+                <p className="text-xl text-foreground/70">Could not load quest steps.</p>
+            </div>
+        );
+    }
+
+    return (
+        <div className="space-y-6">
+            <div className="flex items-center justify-between">
+                <div>
+                    <div className="flex items-center gap-2 text-sm text-foreground/60 mb-2">
+                        <Link href={`/quests/${learningPath.id}`} className="hover:text-accent">
+                            {learningPath.name}
+                        </Link>
+                        <span>/</span>
+                        <Link href={`/quests/${learningPath.id}/${chapter.id}`} className="hover:text-accent">
+                            {chapter.title}
+                        </Link>
+                    </div>
+                    <h1 className="text-4xl font-bold font-heading flex items-center gap-3 text-white">
+                        <BookOpen className="w-10 h-10 text-accent" />
+                        {questDetails.title}
+                    </h1>
+                </div>
+            </div>
+
+            <Card className="border-white/10 bg-black/20">
+                <CardHeader>
+                    <CardTitle className="flex items-center justify-between text-white">
+                        <span className="flex-1">Step {currentStep.stepNumber}: {currentStep.title}</span>
+                        <div className="flex items-center gap-4">
+                            {currentStep.experiencePoints > 0 && (
+                                <span className="flex items-center gap-2 text-sm font-semibold text-amber-300 bg-amber-900/50 border border-amber-700/30 rounded-full px-3 py-1">
+                                    <Sparkles className="w-4 h-4" /> +{currentStep.experiencePoints} XP
+                                </span>
+                            )}
+                            {stepProgress[currentStep.id] === 'Completed' && (
+                                <span className="flex items-center gap-2 text-sm text-emerald-400">
+                                    <CheckCircle className="w-4 h-4" /> Completed
+                                </span>
+                            )}
+                        </div>
+                    </CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <p className="text-foreground/80 leading-relaxed mb-6">{currentStep.description}</p>
+                    {renderStepContent(currentStep)}
+                </CardContent>
+            </Card>
+
+            <div className="flex items-center justify-between pt-8 border-t border-white/10">
+                <Button
+                    variant="outline"
+                    size="lg"
+                    onClick={handlePrevStep}
+                    disabled={currentStepIndex === 0}
+                    className="border-white/20 bg-white/5 hover:bg-white/10 text-white"
+                >
+                    <ArrowLeft className="w-5 h-5 mr-2" /> Previous Step
+                </Button>
+
+                {stepProgress[currentStep.id] !== 'Completed' ? (
+                    <Button
+                        size="lg"
+                        className="bg-gradient-to-r from-accent to-amber-400 text-primary-foreground font-bold"
+                        onClick={() => handleCompleteStep(currentStep.id)}
+                        disabled={isCompleting === currentStep.id}
+                    >
+                        {isCompleting === currentStep.id ? (
+                            <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                        ) : (
+                            <CheckCircle className="w-5 h-5 mr-2" />
+                        )}
+                        Mark as Complete
+                    </Button>
                 ) : (
-                  <CheckCircle className="w-5 h-5 mr-2" />
+                    <div className="flex items-center gap-2 text-emerald-400 font-semibold px-4">
+                        <CheckCircle className="w-5 h-5" /> Step Completed
+                    </div>
                 )}
-                Mark as Complete
-            </Button>
-        ) : (
-            <div className="flex items-center gap-2 text-emerald-400 font-semibold px-4">
-                <CheckCircle className="w-5 h-5" /> Step Completed
+
+                <Button
+                    variant="outline"
+                    size="lg"
+                    onClick={handleNextStep}
+                    disabled={!questDetails || currentStepIndex === questDetails.steps.length - 1}
+                    className="border-white/20 bg-white/5 hover:bg-white/10 text-white"
+                >
+                    Next Step <ArrowRight className="w-5 h-5 ml-2" />
+                </Button>
             </div>
-        )}
-        
-        <Button 
-          variant="outline" 
-          size="lg" 
-          onClick={handleNextStep} 
-          disabled={!questDetails || currentStepIndex === questDetails.steps.length - 1} 
-          className="border-white/20 bg-white/5 hover:bg-white/10 text-white"
-        >
-          Next Step <ArrowRight className="w-5 h-5 ml-2" />
-        </Button>
-      </div>
-    </div>
-  );
+        </div>
+    );
 }

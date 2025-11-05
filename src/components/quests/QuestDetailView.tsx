@@ -21,7 +21,8 @@ export function QuestDetailView({ learningPath, chapter }: QuestDetailViewProps)
   const router = useRouter();
   const headerRef = useRef<HTMLDivElement>(null);
   const modulesRef = useRef<HTMLDivElement>(null);
-  const [generatingQuestId, setGeneratingQuestId] = useState<string | null>(null);
+  // This state is no longer needed here, as the generation logic is moved.
+  // const [generatingQuestId, setGeneratingQuestId] = useState<string | null>(null);
 
   const quests = chapter.quests || [];
   const completedQuests = quests.filter(q => q.status === 'Completed').length;
@@ -46,29 +47,6 @@ export function QuestDetailView({ learningPath, chapter }: QuestDetailViewProps)
     });
     return () => ctx.revert();
   }, [chapter.id]);
-
-  // MODIFICATION: Renamed for clarity. Its purpose is to enter the quest view.
-  const handleEnterQuest = async (event: React.MouseEvent, questId: string) => {
-    event.preventDefault();
-    event.stopPropagation();
-    setGeneratingQuestId(questId);
-    try {
-      // This call is idempotent. If steps exist, it returns them. If not, it generates them.
-      const response = await academicApi.generateQuestSteps(questId);
-      if (response.isSuccess && response.data && response.data.length > 0) {
-        // Navigate to the quest's learning view (which shows the steps).
-        router.push(`/quests/${learningPath.id}/${chapter.id}/${questId}`);
-      } else {
-        // This handles cases where steps fail to generate.
-        alert('Failed to generate or retrieve quest steps. The ancient syllabus might be missing or corrupted. Please try again.');
-      }
-    } catch (error) {
-      console.error('Error entering quest:', error);
-      alert('A mystical interference occurred while entering the quest. Please try again.');
-    } finally {
-      setGeneratingQuestId(null);
-    }
-  };
 
   return (
     <div className="relative overflow-hidden rounded-[36px] border border-white/12 bg-gradient-to-br from-[#241012]/92 via-[#13080e]/95 to-[#060307]/98 p-8 pb-20 shadow-[0_32px_110px_rgba(18,5,10,0.7)]">
@@ -110,21 +88,17 @@ export function QuestDetailView({ learningPath, chapter }: QuestDetailViewProps)
                         <h3 className="text-lg font-semibold text-white">{quest.title}</h3>
                       </div>
                       {/* --- MODIFICATION START --- */}
-                      <Button
-                        onClick={(e) => handleEnterQuest(e, quest.id)}
-                        // MODIFIED: Logic removed. A quest is only disabled while its steps are being generated.
-                        disabled={generatingQuestId === quest.id}
-                        className="rounded-full px-5 w-40" // Set a fixed width for consistency
-                      >
-                        {generatingQuestId === quest.id ? (
-                            <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Forging...</>
-                        ) : quest.status === 'Completed' ? (
-                            <><CheckCircle className="mr-2 h-4 w-4" /> Review Quest</>
-                        ) : quest.status === 'InProgress' ? (
-                            <><Play className="mr-2 h-4 w-4" /> Continue</>
-                        ) : (
-                            <><Play className="mr-2 h-4 w-4" /> Start Quest</>
-                        )}
+                      {/* The button is now a Link component for direct navigation */}
+                      <Button asChild className="rounded-full px-5 w-40">
+                        <Link href={`/quests/${learningPath.id}/${chapter.id}/${quest.id}`}>
+                            {quest.status === 'Completed' ? (
+                                <><CheckCircle className="mr-2 h-4 w-4" /> Review Quest</>
+                            ) : quest.status === 'InProgress' ? (
+                                <><Play className="mr-2 h-4 w-4" /> Continue</>
+                            ) : (
+                                <><Play className="mr-2 h-4 w-4" /> Start Quest</>
+                            )}
+                        </Link>
                       </Button>
                       {/* --- MODIFICATION END --- */}
                     </div>
