@@ -1,39 +1,38 @@
 import { Button } from '@/components/ui/button'
-import { Mail, SendHorizonal } from 'lucide-react'
 
 export default function CallToAction() {
     return (
-        <section className="py-16 md:py-32">
-            <div className="mx-auto max-w-5xl px-6">
-                <div className="text-center">
-                    <h2 className="text-balance text-4xl font-semibold lg:text-5xl">Start Building</h2>
-                    <p className="mt-4">Libero sapiente aliquam quibusdam aspernatur.</p>
+        <section className="relative bg-gradient-to-b from-background to-muted/30 py-24 md:py-32">
+            <div className="mx-auto max-w-3xl px-6 text-center">
+                {/* Wizard Avatar Circle */}
+                <div className="mx-auto mb-8 flex h-32 w-32 items-center justify-center rounded-full border-[3px] border-foreground bg-background shadow-[0_8px_32px_rgba(210,49,135,0.15)]">
+                    <span className="text-6xl" role="img" aria-label="Wizard encouraging action">
+                        🧙‍♂️
+                    </span>
+                </div>
 
-                    <form
-                        action=""
-                        className="mx-auto mt-10 max-w-sm lg:mt-12">
-                        <div className="bg-background has-[input:focus]:ring-muted relative grid grid-cols-[1fr_auto] items-center rounded-[calc(var(--radius)+0.75rem)] border pr-3 shadow shadow-zinc-950/5 has-[input:focus]:ring-2">
-                            <Mail className="text-caption pointer-events-none absolute inset-y-0 left-5 my-auto size-5" />
+                {/* Main Heading - Playful tone matching reference */}
+                <h2 className="font-heading text-4xl font-bold tracking-tight text-foreground sm:text-5xl md:text-6xl">
+                    Dude, you&apos;re at the bottom of our landing page.
+                </h2>
 
-                            <input
-                                placeholder="Your mail address"
-                                className="h-14 w-full bg-transparent pl-12 focus:outline-none"
-                                type="email"
-                            />
+                {/* Subtext */}
+                <p className="font-body mx-auto mt-6 max-w-xl text-lg leading-relaxed text-muted-foreground">
+                    Just get the free trial already if you&apos;re that interested.
+                    <br />
+                    You scrolled all the way here.
+                </p>
 
-                            <div className="md:pr-1.5 lg:pr-0">
-                                <Button
-                                    aria-label="submit"
-                                    className="rounded-(--radius)">
-                                    <span className="hidden md:block">Get Started</span>
-                                    <SendHorizonal
-                                        className="relative mx-auto size-5 md:hidden"
-                                        strokeWidth={2}
-                                    />
-                                </Button>
-                            </div>
-                        </div>
-                    </form>
+                {/* CTA Button with subtext */}
+                <div className="mt-12 flex flex-col items-center gap-2">
+                    <Button
+                        asChild
+                        size="lg"
+                        className="rounded-full border-2 border-foreground bg-background px-12 py-6 text-lg font-semibold text-foreground shadow-[0_8px_24px_rgba(0,0,0,0.12)] transition-all hover:-translate-y-1 hover:bg-foreground hover:text-background hover:shadow-[0_12px_32px_rgba(210,49,135,0.25)]"
+                    >
+                        <a href="/signup">Come on, click on this</a>
+                    </Button>
+                    <span className="font-body text-sm text-muted-foreground/70">Don&apos;t make me beg</span>
                 </div>
             </div>
         </section>

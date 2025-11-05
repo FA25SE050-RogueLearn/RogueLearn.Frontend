@@ -157,69 +157,129 @@ export default async function DashboardPage() {
 
   return (
     <DashboardLayout>
-      <div className="flex flex-col gap-10">
-        {/* The components now receive live data fetched from the backend */}
+      <div className="flex flex-col gap-8">
+        {/* Enhanced User Header with better visual hierarchy */}
         <UserHeader userProfile={userProfile} />
 
-        <section className="grid gap-4 md:grid-cols-3">
+        {/* Reliquary Stats - Refined with better gradients and shadows */}
+        <section className="grid gap-6 md:grid-cols-3">
           {reliquary.map((item) => (
             <div
               key={item.label}
-              className="relative overflow-hidden rounded-[22px] border border-[#f5c16c]/18 bg-[#1f0d09]/85 p-5 text-white shadow-[0_15px_45px_rgba(36,12,6,0.55)]"
+              className="group relative overflow-hidden rounded-3xl border border-[#f5c16c]/20 bg-gradient-to-br from-[#1f0d09]/95 to-[#08040a]/95 p-6 text-white shadow-2xl shadow-black/40 transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_20px_60px_rgba(245,193,108,0.15)]"
             >
-              <div className={`absolute inset-0 bg-gradient-to-br ${item.gradient}`} />
-              <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(18,6,4,0.45),_transparent_70%)]" />
-              <div className="relative z-10">
-                <p className="text-[11px] uppercase tracking-[0.45em] text-[#2b130f]/75">{item.label}</p>
-                <p className="mt-4 text-3xl font-semibold text-white">{item.value}</p>
-                <p className="mt-1 text-xs uppercase tracking-[0.35em] text-[#2b130f]/70">{item.detail}</p>
+              {/* Animated gradient background */}
+              <div className={`absolute inset-0 bg-gradient-to-br ${item.gradient} opacity-60 transition-opacity duration-300 group-hover:opacity-75`} />
+
+              {/* Radial overlay for depth */}
+              <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,_rgba(245,193,108,0.08),_transparent_60%)]" />
+
+              {/* Subtle texture overlay */}
+              <div
+                className="absolute inset-0 opacity-[0.03] pointer-events-none"
+                style={{
+                  backgroundImage: `url('https://www.transparenttextures.com/patterns/dark-embroidery.png')`,
+                }}
+              />
+
+              {/* Glow effect on hover */}
+              <div className="absolute -inset-1 bg-gradient-to-br from-[#f5c16c]/0 via-[#f5c16c]/0 to-[#f5c16c]/0 opacity-0 blur-xl transition-opacity duration-300 group-hover:opacity-20" />
+
+              <div className="relative z-10 space-y-4">
+                <p className="text-xs font-medium uppercase tracking-[0.2em] text-white/60">{item.label}</p>
+                <p className="text-4xl font-bold tracking-tight text-white">{item.value}</p>
+                <p className="text-sm font-medium tracking-wide text-white/50">{item.detail}</p>
               </div>
             </div>
           ))}
         </section>
 
-        <div className="grid gap-8 xl:grid-cols-[minmax(0,7fr)_minmax(0,3fr)]">
+        {/* Main Content Grid */}
+        <div className="grid gap-8 xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
           <div className="space-y-8">
-            <div className="grid gap-8 lg:grid-cols-2">
+            {/* Character Stats & Active Quest */}
+            <div className="grid gap-6 lg:grid-cols-2">
               <CharacterStats userProfile={userProfile} />
               <ActiveQuest quest={adaptedQuestForComponent} />
             </div>
 
-            <div className="rounded-[24px] border border-[#f5c16c]/18 bg-[#1a0b08]/80 p-6 text-sm uppercase tracking-[0.35em] text-[#f5c16c]/70">
-              <p className="text-[#f5c16c]/60">Codex Update</p>
-              <div className="mt-4 grid gap-4 md:grid-cols-3">
-                <div className="rounded-2xl border border-[#f5c16c]/22 bg-[#d23187]/15 p-4 text-center text-white">
-                  <p className="text-xs text-[#f9d9eb]/70">New Artifact</p>
-                  <p className="mt-3 text-lg font-semibold">Forgotten Compiler</p>
+            {/* Codex Update - Enhanced design */}
+            <div className="group relative overflow-hidden rounded-3xl border border-[#f5c16c]/20 bg-gradient-to-br from-[#1a0b08]/95 to-[#08040a]/90 p-8 shadow-2xl shadow-black/40">
+              {/* Subtle texture */}
+              <div
+                className="absolute inset-0 opacity-[0.02] pointer-events-none"
+                style={{
+                  backgroundImage: `url('https://www.transparenttextures.com/patterns/dark-embroidery.png')`,
+                }}
+              />
+
+              {/* Decorative glow */}
+              <div className="absolute -top-24 -right-24 h-48 w-48 rounded-full bg-[#d23187]/10 blur-3xl" />
+
+              <div className="relative">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="h-1 w-12 rounded-full bg-gradient-to-r from-[#d23187] to-[#f5c16c]" />
+                  <h3 className="text-sm font-bold uppercase tracking-[0.2em] text-[#f5c16c]/80">Codex Update</h3>
                 </div>
-                <div className="rounded-2xl border border-[#f5c16c]/22 bg-[#1f0d09]/85 p-4 text-center text-white">
-                  <p className="text-xs text-[#f5c16c]/70">Raid Window</p>
-                  <p className="mt-3 text-lg font-semibold">Opens in 02:41:36</p>
-                </div>
-                <div className="rounded-2xl border border-[#f5c16c]/22 bg-[#d67b54]/25 p-4 text-center">
-                  <p className="text-xs text-[#2b130f]/70">Guild Directive</p>
-                  <p className="mt-3 text-lg font-semibold text-[#2b130f]">Clear 3 Elite Dungeons</p>
+
+                <div className="grid gap-4 md:grid-cols-3">
+                  <div className="relative overflow-hidden rounded-2xl border border-[#d23187]/30 bg-gradient-to-br from-[#d23187]/20 to-[#d23187]/5 p-6 text-center backdrop-blur-sm transition-all duration-300 hover:border-[#d23187]/50 hover:shadow-lg hover:shadow-[#d23187]/20">
+                    <p className="text-xs font-medium uppercase tracking-wider text-white/60">New Artifact</p>
+                    <p className="mt-3 text-lg font-bold text-white">Forgotten Compiler</p>
+                    <div className="absolute top-0 right-0 h-20 w-20 rounded-full bg-[#d23187]/20 blur-2xl" />
+                  </div>
+
+                  <div className="relative overflow-hidden rounded-2xl border border-[#f5c16c]/30 bg-gradient-to-br from-[#f5c16c]/15 to-[#f5c16c]/5 p-6 text-center backdrop-blur-sm transition-all duration-300 hover:border-[#f5c16c]/50 hover:shadow-lg hover:shadow-[#f5c16c]/20">
+                    <p className="text-xs font-medium uppercase tracking-wider text-white/60">Raid Window</p>
+                    <p className="mt-3 text-lg font-bold text-white">Opens in 02:41:36</p>
+                    <div className="absolute top-0 right-0 h-20 w-20 rounded-full bg-[#f5c16c]/20 blur-2xl" />
+                  </div>
+
+                  <div className="relative overflow-hidden rounded-2xl border border-[#d67b54]/30 bg-gradient-to-br from-[#d67b54]/20 to-[#d67b54]/5 p-6 text-center backdrop-blur-sm transition-all duration-300 hover:border-[#d67b54]/50 hover:shadow-lg hover:shadow-[#d67b54]/20">
+                    <p className="text-xs font-medium uppercase tracking-wider text-white/60">Guild Directive</p>
+                    <p className="mt-3 text-lg font-bold text-white">Clear 3 Elite Dungeons</p>
+                    <div className="absolute top-0 right-0 h-20 w-20 rounded-full bg-[#d67b54]/20 blur-2xl" />
+                  </div>
                 </div>
               </div>
             </div>
           </div>
 
+          {/* Sidebar - Enhanced */}
           <aside className="space-y-6">
             <UpcomingEvents />
-            <div className="overflow-hidden rounded-[24px] border border-[#f5c16c]/20 bg-[#1c0c08]/85 p-6 text-xs uppercase tracking-[0.4em] text-[#f5c16c]/70">
-              <p className="text-[#f5c16c]/60">Realm Weather</p>
-              <div className="mt-4 space-y-3">
-                <div className="flex items-center justify-between rounded-2xl border border-[#f5c16c]/22 bg-[#d23187]/15 px-4 py-3 text-white">
-                  <span>Nebula Storms</span>
-                  <span className="text-[#f5c16c]">+15% XP</span>
+
+            {/* Realm Weather - Refined */}
+            <div className="relative overflow-hidden rounded-3xl border border-[#f5c16c]/20 bg-gradient-to-br from-[#1c0c08]/95 to-[#08040a]/90 p-6 shadow-2xl shadow-black/40">
+              {/* Subtle texture */}
+              <div
+                className="absolute inset-0 opacity-[0.02] pointer-events-none"
+                style={{
+                  backgroundImage: `url('https://www.transparenttextures.com/patterns/dark-embroidery.png')`,
+                }}
+              />
+
+              <div className="relative">
+                <div className="flex items-center gap-3 mb-5">
+                  <div className="h-1 w-10 rounded-full bg-gradient-to-r from-[#f5c16c] to-[#d67b54]" />
+                  <h3 className="text-xs font-bold uppercase tracking-[0.2em] text-[#f5c16c]/80">Realm Weather</h3>
                 </div>
-                <div className="flex items-center justify-between rounded-2xl border border-[#f5c16c]/22 bg-[#1f0d09]/85 px-4 py-3 text-white">
-                  <span>Arcane Winds</span>
-                  <span className="text-[#f5c16c]">Fewer traps</span>
-                </div>
-                <div className="flex items-center justify-between rounded-2xl border border-[#f5c16c]/22 bg-[#d67b54]/20 px-4 py-3 text-[#2b130f]">
-                  <span>Shadow Veil</span>
-                  <span className="text-[#7a2d25]">Stealth bonus</span>
+
+                <div className="space-y-3">
+                  <div className="group/item flex items-center justify-between rounded-2xl border border-[#d23187]/30 bg-gradient-to-r from-[#d23187]/20 to-[#d23187]/5 px-4 py-3.5 text-sm font-medium text-white backdrop-blur-sm transition-all duration-300 hover:border-[#d23187]/50 hover:shadow-lg hover:shadow-[#d23187]/20">
+                    <span className="tracking-wide">Nebula Storms</span>
+                    <span className="font-bold text-[#f5c16c]">+15% XP</span>
+                  </div>
+
+                  <div className="group/item flex items-center justify-between rounded-2xl border border-[#f5c16c]/30 bg-gradient-to-r from-[#f5c16c]/15 to-[#f5c16c]/5 px-4 py-3.5 text-sm font-medium text-white backdrop-blur-sm transition-all duration-300 hover:border-[#f5c16c]/50 hover:shadow-lg hover:shadow-[#f5c16c]/20">
+                    <span className="tracking-wide">Arcane Winds</span>
+                    <span className="font-bold text-[#f5c16c]">Fewer traps</span>
+                  </div>
+
+                  <div className="group/item flex items-center justify-between rounded-2xl border border-[#d67b54]/30 bg-gradient-to-r from-[#d67b54]/20 to-[#d67b54]/5 px-4 py-3.5 text-sm font-medium text-white backdrop-blur-sm transition-all duration-300 hover:border-[#d67b54]/50 hover:shadow-lg hover:shadow-[#d67b54]/20">
+                    <span className="tracking-wide">Shadow Veil</span>
+                    <span className="font-bold text-[#d67b54]">Stealth bonus</span>
+                  </div>
                 </div>
               </div>
             </div>

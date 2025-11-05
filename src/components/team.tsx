@@ -3,54 +3,54 @@ import Link from 'next/link'
 
 const members = [
     {
-        name: 'Liam Brown',
-        role: 'Founder - CEO',
-        avatar: 'https://alt.tailus.io/images/team/member-one.webp',
+        name: 'Alex Rodriguez',
+        role: 'Lead Game Designer',
+        avatar: 'https://i.pravatar.cc/400?img=33',
         link: '#',
     },
     {
-        name: 'Elijah Jones',
-        role: 'Co-Founder - CTO',
-        avatar: 'https://alt.tailus.io/images/team/member-two.webp',
+        name: 'Maya Patel',
+        role: 'Chief Learning Officer',
+        avatar: 'https://i.pravatar.cc/400?img=47',
         link: '#',
     },
     {
-        name: 'Isabella Garcia',
-        role: 'Sales Manager',
-        avatar: 'https://alt.tailus.io/images/team/member-three.webp',
+        name: 'Jordan Kim',
+        role: 'Senior Developer',
+        avatar: 'https://i.pravatar.cc/400?img=13',
         link: '#',
     },
     {
-        name: 'Henry Lee',
-        role: 'UX Engeneer',
-        avatar: 'https://alt.tailus.io/images/team/member-four.webp',
+        name: 'Samantha Chen',
+        role: 'Quest Architect',
+        avatar: 'https://i.pravatar.cc/400?img=44',
         link: '#',
     },
     {
-        name: 'Ava Williams',
-        role: 'Interaction Designer',
-        avatar: 'https://alt.tailus.io/images/team/member-five.webp',
+        name: 'Marcus Johnson',
+        role: 'Community Manager',
+        avatar: 'https://i.pravatar.cc/400?img=12',
         link: '#',
     },
     {
-        name: 'Olivia Miller',
-        role: 'Visual Designer',
-        avatar: 'https://alt.tailus.io/images/team/member-six.webp',
+        name: 'Elena Volkov',
+        role: 'UX Engineer',
+        avatar: 'https://i.pravatar.cc/400?img=45',
         link: '#',
     },
 ]
 
 export default function TeamSection() {
     return (
-        <section className="bg-gray-50 py-16 md:py-32 dark:bg-transparent">
-            <div className="mx-auto max-w-5xl border-t px-6">
-                <span className="text-caption -ml-6 -mt-3.5 block w-max bg-gray-50 px-6 dark:bg-transparent">Team</span>
+        <section className="py-16 md:py-32">
+            <div className="mx-auto max-w-5xl border-t border-border px-6">
+                <span className="font-body text-sm font-medium text-muted-foreground -ml-6 -mt-3.5 block w-max bg-background px-6 uppercase tracking-wider">The Party</span>
                 <div className="mt-12 gap-4 sm:grid sm:grid-cols-2 md:mt-24">
                     <div className="sm:w-2/5">
-                        <h2 className="text-3xl font-bold sm:text-4xl">Our dream team</h2>
+                        <h2 className="font-heading text-3xl font-bold sm:text-4xl text-foreground">Meet Our <span className="text-primary">Guild</span></h2>
                     </div>
                     <div className="mt-6 sm:mt-0">
-                        <p>During the working process, we perform regular fitting with the client because he is the only person who can feel whether a new suit fits or not.</p>
+                        <p className="font-body text-muted-foreground">A diverse team of developers, educators, and game designers united by one mission: making programming education engaging, effective, and accessible through gamification.</p>
                     </div>
                 </div>
                 <div className="mt-12 md:mt-24">
@@ -68,16 +68,16 @@ export default function TeamSection() {
                                 />
                                 <div className="px-2 pt-2 sm:pb-0 sm:pt-4">
                                     <div className="flex justify-between">
-                                        <h3 className="text-base font-medium transition-all duration-500 group-hover:tracking-wider">{member.name}</h3>
-                                        <span className="text-xs">_0{index + 1}</span>
+                                        <h3 className="font-heading text-base font-semibold text-foreground transition-all duration-500 group-hover:tracking-wider">{member.name}</h3>
+                                        <span className="font-body text-xs text-muted-foreground">Lv.{index + 10}</span>
                                     </div>
                                     <div className="mt-1 flex items-center justify-between">
-                                        <span className="text-muted-foreground inline-block translate-y-6 text-sm opacity-0 transition duration-300 group-hover:translate-y-0 group-hover:opacity-100">{member.role}</span>
+                                        <span className="font-body text-muted-foreground inline-block translate-y-6 text-sm opacity-0 transition duration-300 group-hover:translate-y-0 group-hover:opacity-100">{member.role}</span>
                                         <Link
                                             href={member.link}
-                                            className="group-hover:text-primary-600 dark:group-hover:text-primary-400 inline-block translate-y-8 text-sm tracking-wide opacity-0 transition-all duration-500 hover:underline group-hover:translate-y-0 group-hover:opacity-100">
+                                            className="font-body text-primary inline-block translate-y-8 text-sm tracking-wide opacity-0 transition-all duration-500 hover:underline group-hover:translate-y-0 group-hover:opacity-100">
                                             {' '}
-                                            Linktree
+                                            Profile
                                         </Link>
                                     </div>
                                 </div>

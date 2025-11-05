@@ -90,66 +90,102 @@ export default function AdminDashboard() {
   return (
     <AdminLayout>
       <div className="space-y-8">
-        {/* RPG-styled Header */}
+        {/* Enhanced RPG Header */}
         <div className="relative">
-          <div className="absolute inset-0 bg-gradient-to-r from-amber-900/20 via-transparent to-amber-900/20 rounded-lg blur-xl" />
-          <div className="relative flex items-center gap-4 p-6 rounded-lg border border-amber-900/30 bg-gradient-to-br from-amber-950/30 to-transparent">
-            <div className="flex h-16 w-16 items-center justify-center rounded-lg bg-gradient-to-br from-amber-600 to-amber-800 shadow-lg shadow-amber-900/50">
-              <Shield className="h-8 w-8 text-amber-50" />
-            </div>
-            <div>
-              <h1 className="text-3xl font-bold tracking-tight text-amber-100">Command Center</h1>
-              <p className="text-amber-700">
-                Master overview and realm control
-              </p>
+          <div className="absolute inset-0 bg-gradient-to-r from-amber-900/20 via-amber-600/10 to-amber-900/20 rounded-2xl blur-2xl" />
+          <div className="relative overflow-hidden rounded-2xl border border-amber-900/30 bg-gradient-to-br from-amber-950/40 to-transparent p-8 shadow-2xl shadow-black/40">
+            {/* Texture overlay */}
+            <div
+              className="absolute inset-0 opacity-[0.03] pointer-events-none"
+              style={{
+                backgroundImage: `url('https://www.transparenttextures.com/patterns/dark-embroidery.png')`,
+              }}
+            />
+
+            {/* Decorative glow */}
+            <div className="absolute -top-20 -right-20 h-40 w-40 rounded-full bg-amber-600/20 blur-3xl" />
+
+            <div className="relative flex items-center gap-6">
+              {/* Icon with enhanced glow */}
+              <div className="relative">
+                <div className="absolute -inset-2 rounded-xl bg-gradient-to-br from-amber-600/50 to-amber-800/50 opacity-50 blur-lg" />
+                <div className="relative flex h-20 w-20 items-center justify-center rounded-xl bg-gradient-to-br from-amber-600 to-amber-800 shadow-2xl shadow-amber-900/50">
+                  <Shield className="h-10 w-10 text-amber-50" />
+                </div>
+              </div>
+
+              <div className="flex-1">
+                <h1 className="text-4xl font-bold tracking-tight text-amber-100">Command Center</h1>
+                <p className="mt-2 text-base text-amber-700">
+                  Master overview and realm control
+                </p>
+              </div>
+
+              {/* Status indicator */}
+              <div className="hidden lg:flex items-center gap-3 rounded-xl border border-amber-900/30 bg-amber-950/30 px-4 py-3">
+                <div className="flex items-center gap-2">
+                  <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+                  <span className="text-sm font-medium text-amber-200">All Systems Operational</span>
+                </div>
+              </div>
             </div>
           </div>
         </div>
 
-        {/* Metrics Grid with RPG styling */}
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        {/* Enhanced Metrics Grid */}
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
           {metrics.map((metric) => {
             const Icon = metric.icon;
             return (
-              <Card key={metric.label} className="relative overflow-hidden border-amber-900/30 bg-gradient-to-br from-[#1f1812] to-[#1a1410]">
-                <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/dark-embroidery.png')] opacity-5 pointer-events-none" />
-                <CardHeader className="relative flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium text-amber-200">
+              <Card key={metric.label} className="group relative overflow-hidden border-amber-900/30 bg-gradient-to-br from-[#1f1812] to-[#1a1410] shadow-xl shadow-black/20 transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl hover:shadow-amber-900/20">
+                {/* Texture overlay */}
+                <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/dark-embroidery.png')] opacity-[0.03] pointer-events-none" />
+
+                {/* Glow effect on hover */}
+                <div className="absolute -inset-1 bg-gradient-to-br from-amber-600/0 via-amber-600/0 to-amber-600/0 opacity-0 blur-xl transition-opacity duration-300 group-hover:opacity-20" />
+
+                <CardHeader className="relative flex flex-row items-center justify-between space-y-0 pb-3">
+                  <CardTitle className="text-sm font-semibold uppercase tracking-wider text-amber-200/80">
                     {metric.label}
                   </CardTitle>
-                  <div className={`rounded-lg bg-gradient-to-br ${metric.bgGradient} p-2`}>
+                  <div className={`rounded-lg bg-gradient-to-br ${metric.bgGradient} p-2.5 shadow-lg`}>
                     <Icon className={`h-4 w-4 ${metric.color}`} />
                   </div>
                 </CardHeader>
                 <CardContent className="relative">
-                  <div className="text-2xl font-bold text-amber-100">{metric.value}</div>
-                  <p className="text-xs text-amber-700">{metric.trend}</p>
+                  <div className="text-3xl font-bold tracking-tight text-amber-100">{metric.value}</div>
+                  <p className="mt-1 text-xs font-medium text-amber-700">{metric.trend}</p>
                 </CardContent>
               </Card>
             );
           })}
         </div>
 
-        <div className="grid gap-4 md:grid-cols-2">
-          {/* Recent Activity - RPG styled */}
-          <Card className="border-amber-900/30 bg-gradient-to-br from-[#1f1812] to-[#1a1410]">
-            <CardHeader className="border-b border-amber-900/20">
-              <div className="flex items-center gap-2">
-                <Scroll className="h-5 w-5 text-amber-600" />
-                <CardTitle className="text-amber-100">Recent Chronicles</CardTitle>
+        <div className="grid gap-6 lg:grid-cols-2">
+          {/* Enhanced Recent Activity */}
+          <Card className="relative overflow-hidden border-amber-900/30 bg-gradient-to-br from-[#1f1812] to-[#1a1410] shadow-xl shadow-black/20">
+            {/* Texture overlay */}
+            <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/dark-embroidery.png')] opacity-[0.02] pointer-events-none" />
+
+            <CardHeader className="relative border-b border-amber-900/20">
+              <div className="flex items-center gap-3">
+                <div className="rounded-lg bg-gradient-to-br from-amber-950/50 to-amber-900/30 p-2">
+                  <Scroll className="h-5 w-5 text-amber-600" />
+                </div>
+                <CardTitle className="text-lg font-bold text-amber-100">Recent Chronicles</CardTitle>
               </div>
             </CardHeader>
-            <CardContent className="space-y-4 pt-6">
+            <CardContent className="relative space-y-3 pt-6">
               {recentActivity.map((item, index) => {
                 const Icon = item.icon;
                 return (
-                  <div key={index} className="flex items-start gap-4 rounded-lg border border-amber-900/20 bg-amber-950/20 p-3">
-                    <div className={`rounded-md bg-gradient-to-br from-amber-950/50 to-amber-900/30 p-2 ${item.iconColor}`}>
+                  <div key={index} className="group/item flex items-start gap-4 rounded-xl border border-amber-900/20 bg-gradient-to-r from-amber-950/20 to-transparent p-4 transition-all duration-300 hover:border-amber-900/40 hover:bg-amber-950/30">
+                    <div className={`rounded-lg bg-gradient-to-br from-amber-950/60 to-amber-900/40 p-2.5 ${item.iconColor} shadow-lg`}>
                       <Icon className="h-4 w-4" />
                     </div>
                     <div className="flex-1 space-y-1">
-                      <p className="text-sm font-medium text-amber-200">{item.action}</p>
-                      <p className="text-xs text-amber-600">{item.target}</p>
+                      <p className="text-sm font-semibold text-amber-200">{item.action}</p>
+                      <p className="text-xs font-medium text-amber-600">{item.target}</p>
                       <p className="text-xs text-amber-800">{item.time}</p>
                     </div>
                   </div>
@@ -158,39 +194,47 @@ export default function AdminDashboard() {
             </CardContent>
           </Card>
 
-          {/* Pending Tasks - RPG styled */}
-          <Card className="border-amber-900/30 bg-gradient-to-br from-[#1f1812] to-[#1a1410]">
-            <CardHeader className="border-b border-amber-900/20">
-              <div className="flex items-center gap-2">
-                <Sword className="h-5 w-5 text-amber-600" />
-                <CardTitle className="text-amber-100">Active Missions</CardTitle>
+          {/* Enhanced Pending Tasks */}
+          <Card className="relative overflow-hidden border-amber-900/30 bg-gradient-to-br from-[#1f1812] to-[#1a1410] shadow-xl shadow-black/20">
+            {/* Texture overlay */}
+            <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/dark-embroidery.png')] opacity-[0.02] pointer-events-none" />
+
+            {/* Decorative glow */}
+            <div className="absolute -top-20 -right-20 h-40 w-40 rounded-full bg-amber-600/10 blur-3xl" />
+
+            <CardHeader className="relative border-b border-amber-900/20">
+              <div className="flex items-center gap-3">
+                <div className="rounded-lg bg-gradient-to-br from-amber-950/50 to-amber-900/30 p-2">
+                  <Sword className="h-5 w-5 text-amber-600" />
+                </div>
+                <CardTitle className="text-lg font-bold text-amber-100">Active Missions</CardTitle>
               </div>
             </CardHeader>
-            <CardContent className="space-y-3 pt-6">
+            <CardContent className="relative space-y-3 pt-6">
               {pendingTasks.map((item, index) => (
                 <div
                   key={index}
-                  className="flex items-start justify-between rounded-lg border border-amber-900/30 bg-gradient-to-r from-amber-950/30 to-transparent p-3"
+                  className="group/item flex items-start justify-between gap-4 rounded-xl border border-amber-900/30 bg-gradient-to-r from-amber-950/30 to-transparent p-4 transition-all duration-300 hover:border-amber-900/50 hover:bg-amber-950/40"
                 >
                   <div className="flex-1">
-                    <p className="text-sm font-medium text-amber-200">{item.task}</p>
-                    <div className="mt-1 flex items-center gap-2 text-xs text-amber-700">
+                    <p className="text-sm font-semibold text-amber-200">{item.task}</p>
+                    <div className="mt-2 flex items-center gap-2 text-xs">
                       <span
-                        className={`font-semibold rounded px-1.5 py-0.5 ${
+                        className={`font-bold rounded-md px-2 py-1 ${
                           item.priority === "High"
-                            ? "bg-red-950/50 text-red-400"
+                            ? "bg-red-950/60 text-red-400 border border-red-900/30"
                             : item.priority === "Medium"
-                            ? "bg-orange-950/50 text-orange-400"
-                            : "bg-amber-950/50 text-amber-500"
+                            ? "bg-orange-950/60 text-orange-400 border border-orange-900/30"
+                            : "bg-amber-950/60 text-amber-500 border border-amber-900/30"
                         }`}
                       >
                         {item.priority}
                       </span>
-                      <span>•</span>
-                      <span>{item.deadline}</span>
+                      <span className="text-amber-800">•</span>
+                      <span className="font-medium text-amber-700">{item.deadline}</span>
                     </div>
                   </div>
-                  <AlertCircle className="h-4 w-4 text-amber-600" />
+                  <AlertCircle className="h-5 w-5 text-amber-600 opacity-60 group-hover/item:opacity-100 transition-opacity" />
                 </div>
               ))}
             </CardContent>

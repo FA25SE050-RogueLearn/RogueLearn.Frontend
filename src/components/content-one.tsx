@@ -10,23 +10,23 @@ export default function ContentSection() {
             <div className="bg-muted/50 py-24">
                 <div className="mx-auto w-full max-w-5xl px-6">
                     <div>
-                        <span className="text-primary">Smart Editor</span>
-                        <h2 className="text-foreground mt-4 text-4xl font-semibold">Ask Tailark to Edit anything</h2>
-                        <p className="text-muted-foreground mb-12 mt-4 text-lg">Efficient content creation is our mission. With Tailark, you can effortlessly edit text, generate code snippets, format documents, create visualizations from data, and seamlessly integrate with your existing workflow.</p>
+                        <span className="font-body text-sm font-semibold uppercase tracking-wider text-primary">Interactive Learning</span>
+                        <h2 className="font-heading text-foreground mt-4 text-4xl font-bold">Master Code Through <span className="text-primary">Adventure</span></h2>
+                        <p className="font-body text-muted-foreground mb-12 mt-4 text-lg">RogueLearn transforms programming education into an epic quest. Battle through dungeons of algorithms, unlock powerful coding abilities, and level up your skills in real-time combat scenarios.</p>
                     </div>
 
-                    <div className="border-foreground/5 space-y-6 [--color-border:color-mix(in_oklab,var(--color-foreground)10%,transparent)] sm:space-y-0 sm:divide-y">
-                        <div className="grid sm:grid-cols-5 sm:divide-x">
+                    <div className="border-border space-y-6 sm:space-y-0 sm:divide-y divide-border">
+                        <div className="grid sm:grid-cols-5 sm:divide-x divide-border">
                             <CodeIllustration className="sm:col-span-2" />
-                            <div className="mt-6 sm:col-span-3 sm:mt-0 sm:border-l sm:pl-12">
-                                <h3 className="text-foreground text-xl font-semibold">Marketing Campaigns</h3>
-                                <p className="text-muted-foreground mt-4 text-lg">We&apos;ll put together your schedule on automatically. You&apos;ll keep app deadlines, and will work on the highest priority items first.</p>
+                            <div className="mt-6 sm:col-span-3 sm:mt-0 sm:border-l border-border sm:pl-12">
+                                <h3 className="font-heading text-foreground text-xl font-bold">Real Code Challenges</h3>
+                                <p className="font-body text-muted-foreground mt-4 text-lg">Face authentic programming challenges disguised as epic quests. Each victory strengthens your understanding and unlocks advanced techniques.</p>
                             </div>
                         </div>
-                        <div className="grid sm:grid-cols-5 sm:divide-x">
-                            <div className="pt-12 sm:col-span-3 sm:border-r sm:pr-12">
-                                <h3 className="text-foreground text-xl font-semibold">AI Meeting Scheduler</h3>
-                                <p className="text-muted-foreground mt-4 text-lg">Ask the chat to create or update your events. Ask it how much time you&apos;ve spent on demo calls last week. Or have it prepare today&apos;s agendas.</p>
+                        <div className="grid sm:grid-cols-5 sm:divide-x divide-border">
+                            <div className="pt-12 sm:col-span-3 sm:border-r border-border sm:pr-12">
+                                <h3 className="font-heading text-foreground text-xl font-bold">Progressive Skill Trees</h3>
+                                <p className="font-body text-muted-foreground mt-4 text-lg">Customize your learning journey. Choose your class, unlock abilities, and specialize in languages that match your career goals.</p>
                             </div>
                             <div className="row-start-1 flex items-center justify-center pt-12 sm:col-span-2 sm:row-start-auto">
                                 <ScheduleIllustation className="pt-8" />
@@ -103,10 +103,10 @@ export const CodeIllustration = ({ className }: { className?: string }) => {
     return (
         <div className={cn('[mask-image:radial-gradient(ellipse_50%_50%_at_50%_50%,#000_50%,transparent_100%)]', className)}>
             <ul className="text-muted-foreground mx-auto w-fit font-mono text-2xl font-medium">
-                {['Images', 'Variables', 'Pages', 'Components', 'Styles'].map((item, index) => (
+                {['Classes', 'Functions', 'Variables', 'Arrays', 'Objects'].map((item, index) => (
                     <li
                         key={index}
-                        className={cn(index == 2 && "text-foreground before:absolute before:-translate-x-[110%] before:text-orange-500 before:content-['Import']")}>
+                        className={cn(index == 2 && "text-foreground before:absolute before:-translate-x-[110%] before:text-primary before:content-['Master']")}>
                         {item}
                     </li>
                 ))}

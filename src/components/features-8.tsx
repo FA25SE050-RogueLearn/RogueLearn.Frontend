@@ -4,11 +4,33 @@ import Image from 'next/image'
 
 export default function FeaturesSection() {
     return (
-        <section className="bg-gray-50 py-16 md:py-32 dark:bg-transparent">
-            <div className="mx-auto max-w-5xl px-6">
+        <section id="features" className="relative py-24 md:py-32">
+            {/* Subtle Background Pattern */}
+            <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_110%)]" />
+
+            <div className="relative mx-auto max-w-7xl px-6 lg:px-8">
+                {/* Section Header */}
+                <div className="mx-auto max-w-3xl text-center mb-20">
+                    <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-4 py-2">
+                        <span className="font-body text-sm font-semibold text-foreground">
+                            Game-Changing Features
+                        </span>
+                    </div>
+                    <h2 className="font-heading text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight text-foreground mb-6">
+                        Level Up Your{" "}
+                        <span className="text-primary">
+                            Coding Skills
+                        </span>
+                    </h2>
+                    <p className="font-body text-lg md:text-xl text-muted-foreground">
+                        RogueLearn combines RPG mechanics with real programming challenges.
+                        Learn, battle, and conquer your way to mastery.
+                    </p>
+                </div>
+
                 <div className="relative">
-                    <div className="relative z-10 grid grid-cols-6 gap-3">
-                        <Card className="relative col-span-full flex overflow-hidden lg:col-span-2">
+                    <div className="relative z-10 grid grid-cols-6 gap-6">
+                        <Card className="group relative col-span-full flex overflow-hidden lg:col-span-2 border-white/10 bg-gradient-to-br from-white/5 to-transparent backdrop-blur-xl transition-all hover:border-[#d23187]/30 hover:shadow-2xl hover:shadow-[#d23187]/20">
                             <CardContent className="relative m-auto size-fit pt-6">
                                 <div className="relative flex h-24 w-56 items-center">
                                     <svg
@@ -23,10 +45,11 @@ export default function FeaturesSection() {
                                     </svg>
                                     <span className="mx-auto block w-fit text-5xl font-semibold">100%</span>
                                 </div>
-                                <h2 className="mt-6 text-center text-3xl font-semibold">Customizable</h2>
+                                <h2 className="font-heading mt-6 text-center text-3xl font-bold text-foreground">Quest-Based Learning</h2>
+                                <p className="font-body mt-3 text-center text-sm text-muted-foreground">Complete coding quests and build your skills through engaging RPG-style adventures</p>
                             </CardContent>
                         </Card>
-                        <Card className="relative col-span-full overflow-hidden sm:col-span-3 lg:col-span-2">
+                        <Card className="group relative col-span-full overflow-hidden sm:col-span-3 lg:col-span-2 border-white/10 bg-gradient-to-br from-white/5 to-transparent backdrop-blur-xl transition-all hover:border-[#f061a6]/30 hover:shadow-2xl hover:shadow-[#f061a6]/20">
                             <CardContent className="pt-6">
                                 <div className="relative mx-auto flex aspect-square size-32 rounded-full border before:absolute before:-inset-2 before:rounded-full before:border dark:border-white/10 dark:before:border-white/5">
                                     <svg
@@ -82,12 +105,12 @@ export default function FeaturesSection() {
                                     </svg>
                                 </div>
                                 <div className="relative z-10 mt-6 space-y-2 text-center">
-                                    <h2 className="group-hover:text-secondary-950 text-lg font-medium transition dark:text-white">Secure by default</h2>
-                                    <p className="text-foreground">Provident fugit and vero voluptate. magnam magni doloribus dolores voluptates a sapiente nisi.</p>
+                                    <h2 className="font-heading text-xl font-bold text-foreground">Battle Bugs</h2>
+                                    <p className="font-body text-muted-foreground">Debug code in real-time combat scenarios. Each bug defeated strengthens your programming prowess.</p>
                                 </div>
                             </CardContent>
                         </Card>
-                        <Card className="relative col-span-full overflow-hidden sm:col-span-3 lg:col-span-2">
+                        <Card className="group relative col-span-full overflow-hidden sm:col-span-3 lg:col-span-2 border-white/10 bg-gradient-to-br from-white/5 to-transparent backdrop-blur-xl transition-all hover:border-[#f5c16c]/30 hover:shadow-2xl hover:shadow-[#f5c16c]/20">
                             <CardContent className="pt-6">
                                 <div className="pt-6 lg:px-6">
                                     <svg
@@ -174,12 +197,12 @@ export default function FeaturesSection() {
                                     </svg>
                                 </div>
                                 <div className="relative z-10 mt-14 space-y-2 text-center">
-                                    <h2 className="text-lg font-medium transition">Faster than light</h2>
-                                    <p className="text-foreground">Provident fugit vero voluptate. magnam magni doloribus dolores voluptates inventore nisi.</p>
+                                    <h2 className="font-heading text-xl font-bold text-foreground">Real-Time Execution</h2>
+                                    <p className="font-body text-muted-foreground">Test your code instantly. See results in real-time as you fight through dungeons of algorithms.</p>
                                 </div>
                             </CardContent>
                         </Card>
-                        <Card className="card variant-outlined relative col-span-full overflow-hidden lg:col-span-3">
+                        <Card className="group card variant-outlined relative col-span-full overflow-hidden lg:col-span-3 border-white/10 bg-gradient-to-br from-white/5 to-transparent backdrop-blur-xl transition-all hover:border-[#d23187]/30 hover:shadow-2xl hover:shadow-[#d23187]/20">
                             <CardContent className="grid pt-6 sm:grid-cols-2">
                                 <div className="relative z-10 flex flex-col justify-between space-y-12 lg:space-y-6">
                                     <div className="relative flex aspect-square size-12 rounded-full border before:absolute before:-inset-2 before:rounded-full before:border dark:border-white/10 dark:before:border-white/5">
@@ -189,8 +212,8 @@ export default function FeaturesSection() {
                                         />
                                     </div>
                                     <div className="space-y-2">
-                                        <h2 className="group-hover:text-secondary-950 text-lg font-medium text-zinc-800 transition dark:text-white">Faster than light</h2>
-                                        <p className="text-foreground">Provident fugit vero voluptate. Voluptates a sapiente inventore nisi.</p>
+                                        <h2 className="font-heading text-xl font-bold text-foreground">Skill Trees & XP</h2>
+                                        <p className="font-body text-muted-foreground">Unlock new abilities as you level up. Master different programming languages and frameworks through skill progression.</p>
                                     </div>
                                 </div>
                                 <div className="rounded-tl-(--radius) relative -mb-6 -mr-6 mt-6 h-fit border-l border-t p-6 py-6 sm:ml-6">
@@ -240,7 +263,7 @@ export default function FeaturesSection() {
                                 </div>
                             </CardContent>
                         </Card>
-                        <Card className="card variant-outlined relative col-span-full overflow-hidden lg:col-span-3">
+                        <Card className="group card variant-outlined relative col-span-full overflow-hidden lg:col-span-3 border-white/10 bg-gradient-to-br from-white/5 to-transparent backdrop-blur-xl transition-all hover:border-[#f5c16c]/30 hover:shadow-2xl hover:shadow-[#f5c16c]/20">
                             <CardContent className="grid h-full pt-6 sm:grid-cols-2">
                                 <div className="relative z-10 flex flex-col justify-between space-y-12 lg:space-y-6">
                                     <div className="relative flex aspect-square size-12 rounded-full border before:absolute before:-inset-2 before:rounded-full before:border dark:border-white/10 dark:before:border-white/5">
@@ -250,8 +273,8 @@ export default function FeaturesSection() {
                                         />
                                     </div>
                                     <div className="space-y-2">
-                                        <h2 className="text-lg font-medium transition">Keep your loved ones safe</h2>
-                                        <p className="text-foreground">Voluptate. magnam magni doloribus dolores voluptates a sapiente inventore nisi.</p>
+                                        <h2 className="font-heading text-xl font-bold text-foreground">Guild System</h2>
+                                        <p className="font-body text-muted-foreground">Form or join guilds with fellow developers. Tackle raids together and compete in leaderboards.</p>
                                     </div>
                                 </div>
                                 <div className="before:bg-(--color-border) relative mt-6 before:absolute before:inset-0 before:mx-auto before:w-px sm:-my-6 sm:-mr-6">

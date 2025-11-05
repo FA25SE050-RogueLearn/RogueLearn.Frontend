@@ -56,7 +56,8 @@ export default function HeroSection() {
         />
       </div>
       <main className="overflow-x-hidden">
-        <section className="relative">
+        {/* Redesigned Hero Section */}
+        <section className="relative min-h-screen flex items-center">
           {/* PixelBlast Background */}
           <div className="absolute inset-0 w-full h-full">
             <PixelBlast
@@ -75,114 +76,179 @@ export default function HeroSection() {
             />
           </div>
 
+          {/* Dark Gradient Overlays - More Neutral */}
+          <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/40 to-black/60" />
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_transparent_0%,_rgba(0,0,0,0.5)_100%)]" />
+
           {/* Content overlay */}
-          <div className="relative z-10 pb-24 pt-12 md:pb-32 lg:pb-56 lg:pt-44">
-            <div className="relative mx-auto flex max-w-6xl flex-col px-6 lg:block">
-              <div className="mx-auto max-w-lg text-center lg:ml-0 lg:w-1/2 lg:text-left">
-                {/* Simple blur background for hero text */}
-                <div
-                  className="p-8 backdrop-blur-md bg-white/10 rounded-[32px] border border-white/20"
-                  style={{
-                    boxShadow: '0 25px 50px rgba(0, 0, 0, 0.25)',
-                  }}
-                >
-                  <h1 className="mt-8 max-w-2xl text-balance text-5xl font-medium md:text-6xl lg:mt-16 xl:text-7xl font-tilt-neon text-white">
-                    Learn Programming Through Adventure
-                  </h1>
-                  <p className="mt-8 max-w-2xl text-pretty text-lg font-tilt-neon text-white/90">
-                    Master coding concepts through an immersive rogue-like game
-                    experience. Battle bugs, solve puzzles, and level up your
-                    programming skills in an engaging virtual world.
-                  </p>
+          <div className="relative z-10 w-full py-20 md:py-32 lg:py-40">
+            <div className="mx-auto max-w-7xl px-6 lg:px-8">
+              <div className="mx-auto max-w-4xl text-center">
+                {/* Subtle Badge */}
+                <div className="mb-8 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 backdrop-blur-sm">
+                  <div className="h-2 w-2 rounded-full bg-primary animate-pulse" />
+                  <span className="text-sm font-medium text-white/80">
+                    Now in Open Beta
+                  </span>
                 </div>
 
-                <div className="mt-12 flex flex-col items-center justify-center gap-2 sm:flex-row lg:justify-start">
-                  <Button asChild size="lg" className="px-5 text-base">
-                    <Link href="/dashboard">
-                      <span className="text-nowrap">Open Dashboard</span>
-                    </Link>
-                  </Button>
+                {/* Main Heading - Using Lora Font */}
+                <h1 className="font-heading text-6xl md:text-7xl lg:text-8xl font-bold tracking-tight text-white leading-[1.1]">
+                  Learn Programming
+                  <br />
+                  <span className="text-muted-foreground">
+                    Through Adventure
+                  </span>
+                </h1>
+
+                {/* Subheading - Using Nunito Sans */}
+                <p className="font-body mt-8 text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
+                  Master coding concepts through an immersive roguelike game experience.
+                  Battle bugs, solve puzzles, and level up your programming skills.
+                </p>
+
+                {/* CTA Buttons - More Subtle */}
+                <div className="mt-12 flex flex-col sm:flex-row items-center justify-center gap-4">
                   <Button
-                    key={2}
                     asChild
                     size="lg"
-                    variant="ghost"
-                    className="px-5 text-base"
+                    className="px-8 py-6 text-base font-semibold shadow-xl"
                   >
-                    <Link href="#features">
-                      <span className="text-nowrap">Learn More</span>
+                    <Link href="/dashboard">
+                      <span className="relative z-10">Start Your Quest</span>
                     </Link>
                   </Button>
+
+                  <Button
+                    asChild
+                    size="lg"
+                    variant="outline"
+                    className="border-border bg-background/50 px-8 py-6 text-base font-semibold backdrop-blur-sm hover:bg-background/80"
+                  >
+                    <Link href="#features">
+                      <span>Explore Features</span>
+                    </Link>
+                  </Button>
+                </div>
+
+                {/* Stats - Minimal Design */}
+                <div className="mt-20 grid grid-cols-3 gap-8 max-w-2xl mx-auto">
+                  <div className="text-center">
+                    <div className="font-heading text-4xl font-bold text-foreground">
+                      1,000<span className="text-primary">+</span>
+                    </div>
+                    <div className="mt-2 font-body text-sm text-muted-foreground">
+                      Active Learners
+                    </div>
+                  </div>
+
+                  <div className="text-center border-x border-border/50">
+                    <div className="font-heading text-4xl font-bold text-foreground">
+                      50<span className="text-primary">+</span>
+                    </div>
+                    <div className="mt-2 font-body text-sm text-muted-foreground">
+                      Coding Challenges
+                    </div>
+                  </div>
+
+                  <div className="text-center">
+                    <div className="font-heading text-4xl font-bold text-foreground">
+                      95<span className="text-primary">%</span>
+                    </div>
+                    <div className="mt-2 font-body text-sm text-muted-foreground">
+                      Success Rate
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
-        </section>
-        <section className="pb-16 md:pb-32">
-          <div className="group relative m-auto max-w-6xl px-6">
-            <div className="flex flex-col items-center md:flex-row">
-              <div className="md:max-w-44 md:border-r md:pr-6">
-                <p className="text-end text-sm">Trusted by educators</p>
+
+          {/* Minimal Scroll Indicator */}
+          <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-10">
+            <div className="flex flex-col items-center gap-2 animate-bounce opacity-50 hover:opacity-100 transition-opacity">
+              <span className="font-body text-xs font-medium text-muted-foreground uppercase tracking-wider">Scroll</span>
+              <div className="h-8 w-5 rounded-full border border-border flex items-start justify-center p-1">
+                <div className="h-1.5 w-1.5 rounded-full bg-muted-foreground" />
               </div>
-              <div className="relative py-6 md:w-[calc(100%-11rem)]">
+            </div>
+          </div>
+        </section>
+
+        {/* Trusted By Section - Cleaner */}
+        <section className="relative py-16 md:py-24 bg-muted/30">
+          <div className="mx-auto max-w-7xl px-6 lg:px-8">
+            <div className="flex flex-col items-center">
+              {/* Title */}
+              <div className="mb-12 text-center">
+                <p className="font-body text-sm font-medium uppercase tracking-wider text-muted-foreground">
+                  Trusted by educators worldwide
+                </p>
+              </div>
+
+              {/* Logos */}
+              <div className="relative w-full">
                 <InfiniteSlider speedOnHover={20} speed={40} gap={112}>
-                  <div className="flex">
+                  <div className="flex items-center justify-center px-8">
                     <Image
-                      className="mx-auto h-5 w-auto dark:invert"
+                      className="h-8 w-auto opacity-50 hover:opacity-100 transition-opacity dark:invert"
                       src="https://html.tailus.io/blocks/customers/github.svg"
                       alt="GitHub Logo"
-                      height={20}
+                      height={32}
                       width={120}
                     />
                   </div>
 
-                  <div className="flex">
+                  <div className="flex items-center justify-center px-8">
                     <Image
-                      className="mx-auto h-4 w-auto dark:invert"
+                      className="h-7 w-auto opacity-50 hover:opacity-100 transition-opacity dark:invert"
                       src="https://html.tailus.io/blocks/customers/laravel.svg"
                       alt="Laravel Logo"
-                      height={16}
+                      height={28}
                       width={120}
                     />
                   </div>
-                  <div className="flex">
+
+                  <div className="flex items-center justify-center px-8">
                     <Image
-                      className="mx-auto h-6 w-auto dark:invert"
+                      className="h-9 w-auto opacity-50 hover:opacity-100 transition-opacity dark:invert"
                       src="https://html.tailus.io/blocks/customers/openai.svg"
                       alt="OpenAI Logo"
-                      height={24}
+                      height={36}
                       width={120}
                     />
                   </div>
-                  <div className="flex">
+
+                  <div className="flex items-center justify-center px-8">
                     <Image
-                      className="mx-auto h-5 w-auto dark:invert"
+                      className="h-8 w-auto opacity-50 hover:opacity-100 transition-opacity dark:invert"
                       src="https://html.tailus.io/blocks/customers/nvidia.svg"
                       alt="Nvidia Logo"
-                      height={20}
+                      height={32}
                       width={120}
                     />
                   </div>
-                  <div className="flex">
+
+                  <div className="flex items-center justify-center px-8">
                     <Image
-                      className="mx-auto h-5 w-auto dark:invert"
+                      className="h-8 w-auto opacity-50 hover:opacity-100 transition-opacity dark:invert"
                       src="https://html.tailus.io/blocks/customers/lemonsqueezy.svg"
                       alt="Lemon Squeezy Logo"
-                      height={20}
+                      height={32}
                       width={120}
                     />
                   </div>
                 </InfiniteSlider>
 
                 <ProgressiveBlur
-                  className="pointer-events-none absolute left-0 top-0 h-full w-32"
+                  className="pointer-events-none absolute left-0 top-0 h-full w-40"
                   direction="left"
-                  blurIntensity={2}
+                  blurIntensity={3}
                 />
                 <ProgressiveBlur
-                  className="pointer-events-none absolute right-0 top-0 h-full w-32"
+                  className="pointer-events-none absolute right-0 top-0 h-full w-40"
                   direction="right"
-                  blurIntensity={2}
+                  blurIntensity={3}
                 />
               </div>
             </div>
