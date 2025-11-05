@@ -15,7 +15,7 @@ export async function DashboardLayout({ children }: { children: ReactNode }) {
   }
 
   return (
-    <div className="relative min-h-screen w-full overflow-hidden bg-[#08040a] text-foreground">
+    <div className="relative max-h-screen w-full overflow-hidden bg-[#08040a] text-foreground">
       <div className="pointer-events-none absolute inset-0">
         <div
           className="absolute inset-0 bg-cover bg-center opacity-60"

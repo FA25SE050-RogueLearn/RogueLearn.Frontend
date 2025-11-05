@@ -29,17 +29,14 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar"
+import { UserProfileDto } from "@/types/user-profile";
 
-export function NavUser({
-  user,
-}: {
-  user: {
-    name: string
-    email: string
-    avatar: string
-  }
-}) {
+export function NavUser({ user }: { user: UserProfileDto | null }) {
   const { isMobile } = useSidebar()
+
+  const displayName = user?.username ?? "Guest";
+  const displayEmail = user?.email ?? "";
+  const avatarUrl = user?.profileImageUrl ?? "";
 
   return (
     <SidebarMenu>
@@ -51,12 +48,12 @@ export function NavUser({
               className="data-[state=open]:bg-[#d23187]/25 data-[state=open]:text-[#f5c16c] hover:bg-[#d23187]/20 border border-[#f5c16c]/20"
             >
               <Avatar className="h-8 w-8 rounded-lg border-2 border-[#d23187]/50">
-                <AvatarImage src={user.avatar} alt={user.name} />
-                <AvatarFallback className="rounded-lg bg-gradient-to-br from-[#d23187] to-[#f5c16c] text-white">RS</AvatarFallback>
+                <AvatarImage src={avatarUrl} alt={displayName} />
+                <AvatarFallback className="rounded-lg bg-gradient-to-br from-[#d23187] to-[#f5c16c] text-white">{displayName.charAt(0)}</AvatarFallback>
               </Avatar>
               <div className="grid flex-1 text-left text-sm leading-tight">
-                <span className="truncate font-semibold text-[#f5c16c]">{user.name}</span>
-                <span className="truncate text-xs text-[#f5c16c]/70">{user.email}</span>
+                <span className="truncate font-semibold text-[#f5c16c]">{displayName}</span>
+                <span className="truncate text-xs text-[#f5c16c]/70">{displayEmail}</span>
               </div>
               <ChevronsUpDown className="ml-auto size-4 text-[#f5c16c]/70" />
             </SidebarMenuButton>
@@ -70,12 +67,12 @@ export function NavUser({
             <DropdownMenuLabel className="p-0 font-normal">
               <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
                 <Avatar className="h-8 w-8 rounded-lg border-2 border-[#d23187]/50">
-                  <AvatarImage src={user.avatar} alt={user.name} />
-                  <AvatarFallback className="rounded-lg bg-gradient-to-br from-[#d23187] to-[#f5c16c] text-white">RS</AvatarFallback>
+                  <AvatarImage src={avatarUrl} alt={displayName} />
+                  <AvatarFallback className="rounded-lg bg-gradient-to-br from-[#d23187] to-[#f5c16c] text-white">{displayName.charAt(0)}</AvatarFallback>
                 </Avatar>
                 <div className="grid flex-1 text-left text-sm leading-tight">
-                  <span className="truncate font-semibold text-[#f5c16c]">{user.name}</span>
-                  <span className="truncate text-xs text-[#f5c16c]/70">{user.email}</span>
+                  <span className="truncate font-semibold text-[#f5c16c]">{displayName}</span>
+                  <span className="truncate text-xs text-[#f5c16c]/70">{displayEmail}</span>
                 </div>
               </div>
             </DropdownMenuLabel>

@@ -1,6 +1,7 @@
 // roguelearn-web/src/api/axiosClient.ts
 import axios from 'axios';
 import { createClient } from '@/utils/supabase/client';
+import { toast } from 'sonner';
 
 /**
  * Creates and configures a single, centralized Axios instance for making client-side
@@ -30,5 +31,20 @@ const authInterceptor = async (config: any) => {
 
 // Apply the interceptor to the client.
 axiosClient.interceptors.request.use(authInterceptor);
+
+axiosClient.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    // Extracting the error message from the backend response
+    const errorMessage = error.response?.data?.message || error.message;
+
+    // Using toast to display the error message
+    toast.error(errorMessage, {
+      description: 'Please try again or contact support if the problem persists.',
+    });
+
+    return Promise.reject(error);
+  }
+);
 
 export default axiosClient;
