@@ -13,6 +13,7 @@ import {
   LogOut,
   Skull,
   Wand2,
+  Anvil,
 } from "lucide-react"
 
 import { NavMain } from "@/components/nav-main"
@@ -30,7 +31,7 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
 import { createClient } from "@/utils/supabase/client"
-import { useRouter } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation";
 import { CharacterCreationWizard } from "@/components/features/character-creation/CharacterCreationWizard"
 import profileApi from "@/api/profileApi"
 import { UserProfileDto } from "@/types/user-profile"
@@ -65,9 +66,14 @@ const data = {
       icon: Archive,
     },
     {
+      title: "Party",
+      url: "/party",
+      icon: Users,
+    },
+    {
       title: "Community",
       url: "/community",
-      icon: Users,
+      icon: Anvil,
     },
     {
       title: "Code Battle",
@@ -91,7 +97,8 @@ const data = {
 }
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
-  const router = useRouter()
+  const router = useRouter();
+  const pathname = usePathname();
   const [userProfile, setUserProfile] = React.useState<UserProfileDto | null>(null);
   const [showCharacterWizard, setShowCharacterWizard] = React.useState(false)
 
@@ -148,19 +155,10 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     setShowCharacterWizard(false);
   };
 
-  const navItems = React.useMemo(
-    () => [
-      ...data.navMain,
-      {
-        title: "Character Forge",
-        url: "#",
-        icon: Wand2,
-        onSelect: handleForgeClick,
-      },
-    ],
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [userProfile] 
-  )
+  const navItems = data.navMain.map(item => ({
+    ...item,
+    isActive: item.url === pathname,
+  }));
 
   return (
     <>
@@ -188,7 +186,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           <NavSecondary items={data.navSecondary} className="mt-auto" onClick={handleLogout} />
         </SidebarContent>
         <SidebarFooter className="border-t border-[#f5c16c]/15 bg-[#1a0b08]/60 backdrop-blur-xl">
-          <NavUser user={data.user} />
+          <NavUser user={userProfile} />
         </SidebarFooter>
       </Sidebar>
 

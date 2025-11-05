@@ -10,6 +10,8 @@ export type PartyType = 'StudyGroup' | 'ProjectTeam' | 'PeerReview' | 'Casual' |
 export type PartyRole = 'Leader' | 'CoLeader' | 'Member';
 /** Lifecycle status of a party invitation. */
 export type InvitationStatus = 'Pending' | 'Accepted' | 'Declined' | 'Expired' | 'Cancelled';
+/** Lifecycle status of a party member. */
+export type MemberStatus = 'Active' | 'Inactive' | 'Suspended' | 'Left';
 
 // DTOs
 /** Party entity with core metadata. */
@@ -30,8 +32,16 @@ export interface PartyMemberDto {
   partyId: string;
   authUserId: string;
   role: PartyRole;
-  status: 'Active' | 'Inactive' | 'Suspended' | 'Left';
+  status: MemberStatus;
   joinedAt: string; // ISO timestamp
+  username?: string | null;
+  email?: string | null;
+  firstName?: string | null;
+  lastName?: string | null;
+  profileImageUrl?: string | null;
+  level: number;
+  experiencePoints: number;
+  bio?: string | null;
 }
 
 /** Invitation sent from an inviter to an invitee to join a party. */
@@ -59,9 +69,15 @@ export interface PartyStashItemDto {
   updatedAt: string; // ISO timestamp
 }
 
+/** Represents a target for an invitation, can be a user ID or an email. */
+export interface InviteTarget {
+  userId?: string | null;
+  email?: string | null;
+}
+
 /** Payload for inviting a user to a party. */
 export interface InviteMemberRequest {
-  inviteeAuthUserId: string;
+  targets: InviteTarget[];
   message?: string | null;
   expiresAt?: string | null; // ISO timestamp
 }
@@ -92,6 +108,9 @@ export type GetPartyResourcesQueryResponse = PartyStashItemDto[];
 /** Query payload to list pending invitations for a party. */
 export interface GetPendingInvitationsQueryRequest { partyId: string }
 export type GetPendingInvitationsQueryResponse = PartyInvitationDto[];
+
+/** Query payload to list my pending invitations (invitee = current user). */
+export type GetMyPendingInvitationsQueryResponse = PartyInvitationDto[];
 
 /** Query payload to list roles for a specific party member. */
 export interface GetPartyMemberRolesQueryRequest {
@@ -151,3 +170,50 @@ export interface AddPartyResourceCommandRequest {
   tags: string[];
 }
 export type AddPartyResourceCommandResponse = PartyStashItemDto;
+
+/** Command payload to accept a party invitation. */
+export interface AcceptPartyInvitationCommandRequest {
+  partyId: string;
+  invitationId: string;
+  authUserId: string;
+}
+
+/** Command payload to decline a party invitation. */
+export interface DeclinePartyInvitationCommandRequest {
+  partyId: string;
+  invitationId: string;
+  authUserId: string;
+}
+
+/** Command payload to configure party settings. */
+export interface ConfigurePartySettingsCommandRequest {
+  partyId: string;
+  name: string;
+  description: string;
+  privacy: string;
+  maxMembers: number;
+}
+
+/** Command payload to delete a party. */
+export interface DeletePartyCommandRequest {
+  partyId: string;
+}
+
+/** Command payload to leave a party. */
+export interface LeavePartyCommandRequest {
+  partyId: string;
+  authUserId: string;
+}
+
+/** Command payload to remove a party member. */
+export interface RemovePartyMemberCommandRequest {
+  partyId: string;
+  memberId: string;
+  reason?: string;
+}
+
+/** Command payload to transfer party leadership. */
+export interface TransferPartyLeadershipCommandRequest {
+  partyId: string;
+  toUserId: string;
+}

@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { Lora, Nunito_Sans } from "next/font/google";
 import "./globals.css";
 import { cn } from "@/lib/utils";
+import { Toaster } from "@/components/ui/sonner";
 import { ReactNode } from "react";
 
 const fontHeading = Lora({ 
@@ -42,6 +43,8 @@ export default function RootLayout({
         suppressHydrationWarning={true}
       >
         {children}
+        {/* Global toast notifications */}
+        <Toaster richColors position="top-right" />
       </body>
     </html>
   );

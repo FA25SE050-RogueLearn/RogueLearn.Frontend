@@ -63,6 +63,17 @@ export interface GuildDashboardDto {
   maxMembers: number;
 }
 
+/** Target for invitations: can be a user id or an email address. */
+export interface InviteTarget {
+  userId?: string | null;
+  email?: string | null;
+}
+
+export interface InviteGuildMembersRequest {
+  targets: InviteTarget[];
+  message?: string | null;
+}
+
 // Queries
 /** Query payload to fetch a guild by id. */
 export interface GetGuildByIdQueryRequest { guildId: string }
@@ -115,11 +126,6 @@ export interface ConfigureGuildSettingsCommandRequest {
   maxMembers: number;
 }
 
-/** Target for invitations: can be a user id or an email address. */
-export interface InviteTarget {
-  userId?: string | null;
-  email?: string | null;
-}
 /** Command payload to invite one or more targets to a guild. */
 export interface InviteGuildMembersCommandRequest {
   guildId: string;

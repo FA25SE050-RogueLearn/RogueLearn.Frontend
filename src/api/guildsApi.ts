@@ -9,7 +9,6 @@ import {
   CreateGuildCommandRequest,
   CreateGuildResponse,
   ConfigureGuildSettingsCommandRequest,
-  InviteGuildMembersCommandRequest,
   InviteGuildMembersResponse,
   AcceptGuildInvitationCommandRequest,
   AssignGuildRoleCommandRequest,
@@ -17,6 +16,7 @@ import {
   RemoveGuildMemberCommandRequest,
   TransferGuildLeadershipCommandRequest,
   LeaveGuildCommandRequest,
+  InviteGuildMembersRequest,
 } from '@/types/guilds';
 
 const guildsApi = {
@@ -70,7 +70,7 @@ const guildsApi = {
     })),
 
   /** POST /api/guilds/{guildId}/invite */
-  inviteMembers: (guildId: string, payload: Omit<InviteGuildMembersCommandRequest, 'guildId'>): Promise<ApiResponse<InviteGuildMembersResponse>> =>
+  invite: (guildId: string, payload: InviteGuildMembersRequest): Promise<ApiResponse<InviteGuildMembersResponse>> =>
     axiosClient.post<InviteGuildMembersResponse>(`/api/guilds/${guildId}/invite`, payload).then(res => ({
       isSuccess: true,
       data: res.data,
