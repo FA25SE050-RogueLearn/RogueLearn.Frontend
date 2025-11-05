@@ -20,8 +20,9 @@ import type {
 import type {
   ProcessAcademicRecordResponse,
   GetAcademicStatusResponse,
+  InitializeUserSkillsResponse,
+  EstablishSkillDependenciesResponse,
 } from '@/types/student';
-import { InitializeUserSkillsResponse } from '@/types/student';
 
 /**
  * Processes the authenticated user's academic record.
@@ -51,10 +52,28 @@ export const processAcademicRecord = async (
 export const initializeSkills = async (
   curriculumVersionId: string
 ): Promise<ApiResponse<InitializeUserSkillsResponse>> =>
-  axiosClient.post(`api/users/me/academic-record/initialize-skills?curriculumVersionId=${curriculumVersionId}`).then(res => ({
+  axiosClient
+    .post(`/api/users/me/academic-record/initialize-skills?curriculumVersionId=${curriculumVersionId}`)
+    .then(res => ({
       isSuccess: true,
       data: res.data,
-  }));
+    }));
+
+/**
+ * Analyzes and establishes skill dependencies based on curriculum structure and AI analysis.
+ * This creates the prerequisite relationships needed for the skill tree visualization.
+ * Should be run after initializeSkills.
+ * POST /api/users/me/academic-record/establish-skill-dependencies
+ */
+export const establishSkillDependencies = async (
+  curriculumVersionId: string
+): Promise<ApiResponse<EstablishSkillDependenciesResponse>> =>
+  axiosClient
+    .post(`/api/users/me/academic-record/establish-skill-dependencies?curriculumVersionId=${curriculumVersionId}`)
+    .then(res => ({
+      isSuccess: true,
+      data: res.data,
+    }));
 
 /**
  * Retrieves the complete academic status for the authenticated user.

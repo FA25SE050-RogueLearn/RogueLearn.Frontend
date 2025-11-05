@@ -31,6 +31,21 @@ export interface InitializeUserSkillsResponse {
     missingFromCatalog: string[];
 }
 
+// ADDED: New interfaces for the establish skill dependencies endpoint.
+export interface EstablishSkillDependenciesResponse {
+    isSuccess: boolean;
+    message: string;
+    totalDependenciesCreated: number;
+    totalDependenciesSkipped: number;
+    dependencies: SkillDependencyInfo[];
+}
+
+export interface SkillDependencyInfo {
+    skillName: string;
+    prerequisiteSkillName: string;
+    relationshipType: string;
+}
+
 // NEW: Added types for the GetAcademicStatus endpoint response.
 export interface GetAcademicStatusResponse {
     enrollmentId: string | null;
