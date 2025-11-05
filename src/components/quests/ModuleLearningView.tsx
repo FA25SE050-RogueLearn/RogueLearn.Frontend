@@ -28,7 +28,9 @@ import {
     SubmissionContent,
     ReflectionContent
 } from "@/types/quest";
-import academicApi from "@/api/academicApi";
+// MODIFICATION: Removed incorrect import and added the correct API clients.
+import questApi from "@/api/questApi";
+import userQuestProgressApi from "@/api/userQuestProgressApi";
 
 // --- Sub-components (UNCHANGED) ---
 
@@ -279,7 +281,8 @@ export function ModuleLearningView({ learningPath, chapter, questDetails: initia
             if (!currentDetails.steps || currentDetails.steps.length === 0) {
                 setIsLoading(true);
                 try {
-                    const response = await academicApi.generateQuestSteps(currentDetails.id);
+                    // MODIFICATION: Call the correctly namespaced API function.
+                    const response = await questApi.generateQuestSteps(currentDetails.id);
                     if (response.isSuccess && response.data) {
                         currentDetails = { ...currentDetails, steps: response.data };
                         setQuestDetails(currentDetails);
@@ -296,7 +299,8 @@ export function ModuleLearningView({ learningPath, chapter, questDetails: initia
 
             // Step 2: Always fetch the latest user progress for this quest.
             try {
-                const progressResponse = await academicApi.getUserQuestProgress(currentDetails.id);
+                // MODIFICATION: Call the correctly namespaced API function.
+                const progressResponse = await userQuestProgressApi.getUserQuestProgress(currentDetails.id);
                 const progressData = progressResponse.data;
 
                 const newStepProgress: Record<string, 'Completed' | 'NotStarted'> = {};
@@ -320,7 +324,7 @@ export function ModuleLearningView({ learningPath, chapter, questDetails: initia
         };
 
         initializeAndFetchProgress();
-    }, [questDetails.id]);
+    }, [questDetails.id, questDetails]); // Added questDetails to dependency array to handle re-fetches if it changes.
 
     const currentStep = questDetails?.steps?.[currentStepIndex];
 
@@ -339,7 +343,8 @@ export function ModuleLearningView({ learningPath, chapter, questDetails: initia
     const handleCompleteStep = async (stepId: string) => {
         setIsCompleting(stepId);
         try {
-            await academicApi.updateQuestStepProgress(questDetails.id, stepId, 'Completed');
+            // MODIFICATION: Call the correctly namespaced API function.
+            await questApi.updateQuestStepProgress(questDetails.id, stepId, 'Completed');
 
             setStepProgress(prev => ({ ...prev, [stepId]: 'Completed' }));
 

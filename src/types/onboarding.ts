@@ -1,3 +1,4 @@
+// roguelearn-web/src/types/onboarding.ts
 /**
  * Feature: Onboarding
  * Purpose: Types for onboarding selections (academic routes and career classes) and completion command.
@@ -12,6 +13,16 @@ export interface AcademicRoute {
   programName: string;
   programCode: string;
   description?: string;
+}
+
+// ADDED: New type for the user-facing version selection.
+/**
+ * Represents a curriculum version for display during onboarding.
+ */
+export interface OnboardingVersion {
+  id: string;
+  versionCode: string;
+  effectiveYear: number;
 }
 
 /**

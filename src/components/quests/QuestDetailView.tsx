@@ -10,7 +10,6 @@ import { gsap } from "gsap";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { LearningPath, QuestChapter } from "@/types/quest";
-import academicApi from "@/api/academicApi";
 
 interface QuestDetailViewProps {
   learningPath: LearningPath;

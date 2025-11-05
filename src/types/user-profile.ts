@@ -1,3 +1,4 @@
+// roguelearn-web/src/types/user-profile.ts
 /**
  * Feature: User Profiles
  * Source: RogueLearn.User.Application Features/UserProfiles
@@ -26,6 +27,9 @@ export interface UserProfileDto {
   bio?: string | null;
   preferencesJson?: string | null; // JSON string for preferences
   roles: string[];
+  // MODIFICATION: Add the missing properties required by the onboarding flow.
+  classId?: string | null;
+  routeId?: string | null;
 }
 
 /** Command to record a newly registered/authenticated user in the system. */

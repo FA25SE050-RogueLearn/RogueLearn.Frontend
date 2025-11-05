@@ -1,7 +1,7 @@
 // roguelearn-web/src/api/onboardingApi.ts
 import axiosClient from './axiosClient';
 import { ApiResponse } from '../types/base/Api';
-import { AcademicRoute, CareerClass } from '../types/onboarding';
+import { AcademicRoute, CareerClass, OnboardingVersion } from '../types/onboarding';
 
 const onboardingApi = {
   /**
@@ -10,6 +10,17 @@ const onboardingApi = {
    */
   getRoutes: (): Promise<ApiResponse<AcademicRoute[]>> =>
     axiosClient.get<AcademicRoute[]>('/api/onboarding/routes').then(res => ({
+        isSuccess: true,
+        data: res.data
+    })),
+    
+  // ADDED: New function to fetch versions for a specific program.
+  /**
+   * Fetches all active curriculum versions for a given academic route (program).
+   * Corresponds to GET /api/onboarding/routes/{programId}/versions
+   */
+  getVersionsForProgram: (programId: string): Promise<ApiResponse<OnboardingVersion[]>> =>
+    axiosClient.get<OnboardingVersion[]>(`/api/onboarding/routes/${programId}/versions`).then(res => ({
         isSuccess: true,
         data: res.data
     })),

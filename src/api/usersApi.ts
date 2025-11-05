@@ -1,6 +1,7 @@
+// roguelearn-web/src/api/usersApi.ts
 /**
  * Feature: Users API
- * Purpose: Handle user profile management, context retrieval, and admin operations
+ * Purpose: Handle user profile management, context retrieval, academic processing, and admin operations.
  * Backend: UsersController.cs
  */
 
@@ -8,7 +9,6 @@ import axiosClient from './axiosClient';
 import type { ApiResponse } from '../types/base/Api';
 import type {
   UserContextDto,
-  GetUserContextByAuthIdQueryRequest,
   GetUserContextByAuthIdResponse,
 } from '@/types/user-context';
 import type {
@@ -18,28 +18,58 @@ import type {
   GetUserProfileByAuthIdResponse,
 } from '@/types/user-profile';
 import type {
-  ProcessAcademicRecordCommandRequest,
   ProcessAcademicRecordResponse,
+  GetAcademicStatusResponse,
 } from '@/types/student';
+import { InitializeUserSkillsResponse } from '@/types/student';
 
 /**
- * Process academic record for the current user
- * POST /api/users/me/process-academic-record
- * Content-Type: multipart/form-data
+ * Processes the authenticated user's academic record.
+ * This is the first, fast step of the onboarding/sync flow.
+ * POST /api/users/me/academic-record
  */
-export const processMyAcademicRecord = async (
-  request: ProcessAcademicRecordCommandRequest
+export const processAcademicRecord = async (
+  fapHtmlContent: string,
+  curriculumVersionId: string
 ): Promise<ApiResponse<ProcessAcademicRecordResponse>> => {
   const formData = new FormData();
-  formData.append('fapHtmlContent', request.fapHtmlContent);
-  formData.append('curriculumVersionId', request.curriculumVersionId);
+  formData.append('fapHtmlContent', fapHtmlContent);
+  formData.append('curriculumVersionId', curriculumVersionId);
 
   return axiosClient
-    .post<ProcessAcademicRecordResponse>('/api/users/me/process-academic-record', formData, {
+    .post<ProcessAcademicRecordResponse>('/api/users/me/academic-record', formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
     })
     .then(res => ({ isSuccess: true, data: res.data }));
 };
+
+/**
+ * Initializes skills for the authenticated user based on their curriculum.
+ * This is the second, slower step of the onboarding/sync flow.
+ * POST /api/users/me/academic-record/initialize-skills
+ */
+export const initializeSkills = async (
+  curriculumVersionId: string
+): Promise<ApiResponse<InitializeUserSkillsResponse>> =>
+  axiosClient.post(`api/users/me/academic-record/initialize-skills?curriculumVersionId=${curriculumVersionId}`).then(res => ({
+      isSuccess: true,
+      data: res.data,
+  }));
+
+/**
+ * Retrieves the complete academic status for the authenticated user.
+ * GET /api/users/me/academic-status
+ */
+export const getAcademicStatus = async (
+  curriculumVersionId?: string
+): Promise<ApiResponse<GetAcademicStatusResponse>> => {
+  const params = curriculumVersionId ? { curriculumVersionId } : {};
+  return axiosClient.get('/api/users/me/academic-status', { params }).then(res => ({
+      isSuccess: true,
+      data: res.data,
+  }));
+};
+
 
 /**
  * Get current user's context (profile, roles, class, enrollment, skills)

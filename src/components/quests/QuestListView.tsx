@@ -21,7 +21,8 @@ import {
   Loader2
 } from 'lucide-react';
 import { QuestSummary } from '@/types/quest';
-import academicApi from '@/api/academicApi';
+// MODIFICATION: Replaced the deleted 'academicApi' with the correct 'questApi'.
+import questApi from '@/api/questApi';
 
 interface QuestListViewProps {
   activeQuests: QuestSummary[];
@@ -76,9 +77,10 @@ export default function QuestListView({
     event.stopPropagation();
     setGeneratingQuestId(quest.id);
     try {
-      const response = await academicApi.generateQuestSteps(quest.id);
+      // MODIFICATION: Changed the call from the old API to the new, correct questApi.
+      const response = await questApi.generateQuestSteps(quest.id);
       if (response.isSuccess && response.data && response.data.length > 0) {
-        // MODIFIED: Use the correct, fully-formed URL for navigation.
+        // Use the correct, fully-formed URL for navigation.
         router.push(`/quests/${quest.learningPathId}/${quest.chapterId}/${quest.id}`);
       } else {
         alert('Failed to generate quest steps. Please try again.');
@@ -102,7 +104,7 @@ export default function QuestListView({
 
   const QuestCard = ({ quest, isLocked = false }: { quest: QuestSummary; isLocked?: boolean }) => (
     <Link
-      // MODIFIED: The Link now constructs the full, correct URL for navigation to the quest's detailed steps view.
+      // The Link now constructs the full, correct URL for navigation to the quest's detailed steps view.
       href={isLocked ? '#' : `/quests/${quest.learningPathId}/${quest.chapterId}/${quest.id}`}
       className={`quest-card group relative block transition ${isLocked ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'
         }`}

@@ -8,40 +8,62 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Loader2, AlertCircle, CheckCircle, Sparkles, BookCopy } from 'lucide-react';
-import { getMyContext, processMyAcademicRecord } from '@/api/usersApi';
+import { Loader2, AlertCircle, Sparkles, BookCopy, RefreshCw } from 'lucide-react';
+import { UserProfileDto } from '@/types/user-profile';
+// MODIFICATION: The curriculum version type is now the simpler onboarding-specific one.
+import { OnboardingVersion as CurriculumVersion } from '@/types/onboarding';
+import profileApi from '@/api/profileApi';
+// MODIFICATION: Replaced adminContentApi with the correct onboardingApi.
+import onboardingApi from '@/api/onboardingApi';
+import { processAcademicRecord, initializeSkills } from '@/api/usersApi';
 
-type FlowStep = 'form' | 'processing' | 'complete';
-type VersionOption = { id: string; versionCode: string; effectiveYear: number };
+type FlowStep = 'form' | 'processingRecord' | 'initializingSkills' | 'complete';
+type ProgressMessage = {
+    [key in FlowStep]?: string;
+};
+
+// User-facing messages for each step of the process.
+const progressMessages: ProgressMessage = {
+    processingRecord: 'Processing your academic record, forging quests...',
+    initializingSkills: 'Analyzing curriculum and initializing your skill tree...',
+    complete: 'Synchronization complete! Redirecting...'
+};
 
 export default function ConnectFapPage() {
   const router = useRouter();
   const [step, setStep] = useState<FlowStep>('form');
   const [htmlContent, setHtmlContent] = useState('');
   const [error, setError] = useState<string | null>(null);
-  const [curriculumVersions, setCurriculumVersions] = useState<VersionOption[]>([]);
+  const [userProfile, setUserProfile] = useState<UserProfileDto | null>(null);
+  const [curriculumVersions, setCurriculumVersions] = useState<CurriculumVersion[]>([]);
   const [selectedVersionId, setSelectedVersionId] = useState<string>('');
   const [isLoading, setIsLoading] = useState(true);
 
+  // Logic to determine if the user is updating or doing a first-time sync.
+  const isUpdateFlow = userProfile?.onboardingCompleted ?? false;
+
+  // Fetches the user profile and available curriculum versions on page load.
   const fetchData = useCallback(async () => {
     setIsLoading(true);
     setError(null);
     try {
-      // Fetch consolidated user context to get current enrollment version
-      const contextResponse = await getMyContext();
-      const enrollment = contextResponse.data?.enrollment;
-      if (!contextResponse.isSuccess || !enrollment) {
-        throw new Error("Could not load your academic enrollment. Please complete onboarding to select your curriculum.");
+      const profileResponse = await profileApi.getMyProfile();
+      if (!profileResponse.isSuccess || !profileResponse.data || !profileResponse.data.routeId) {
+        throw new Error("Could not load your user profile or you haven't selected an academic route. Please complete onboarding first.");
       }
+      setUserProfile(profileResponse.data);
 
-      // Pre-populate with the currently enrolled curriculum version
-      const versionOption: VersionOption = {
-        id: enrollment.versionId,
-        versionCode: enrollment.versionCode,
-        effectiveYear: enrollment.effectiveYear,
-      };
-      setCurriculumVersions([versionOption]);
-      setSelectedVersionId(enrollment.versionId);
+      // MODIFICATION: Switched from the admin API to the new, correct onboarding API.
+      const versionsResponse = await onboardingApi.getVersionsForProgram(profileResponse.data.routeId);
+      if (!versionsResponse.isSuccess || !versionsResponse.data) {
+        throw new Error("Could not load curriculum versions for your program.");
+      }
+      setCurriculumVersions(versionsResponse.data);
+      
+      // Default to the first version if available.
+      if (versionsResponse.data.length > 0) {
+        setSelectedVersionId(versionsResponse.data[0].id);
+      }
     } catch (err: any) {
       setError(err.message || "An unexpected error occurred while loading page data.");
     } finally {
@@ -53,7 +75,8 @@ export default function ConnectFapPage() {
     fetchData();
   }, [fetchData]);
   
-  const handleProcessRecord = async () => {
+  // Main handler for the two-phase onboarding/sync process.
+  const handleProcessAndInitialize = async () => {
     if (!htmlContent.trim()) {
       setError('Please paste the HTML content from your FAP academic record.');
       return;
@@ -63,23 +86,31 @@ export default function ConnectFapPage() {
         return;
     }
     setError(null);
-    setStep('processing');
-    try {
-      const response = await processMyAcademicRecord({
-        fapHtmlContent: htmlContent,
-        curriculumVersionId: selectedVersionId,
-        authUserId: ''
-      });
 
-      if (response.isSuccess && response.data) {
+    try {
+        // --- PHASE 1: Process Academic Record (Fast) ---
+        setStep('processingRecord');
+        const recordResult = await processAcademicRecord(htmlContent, selectedVersionId);
+        if (!recordResult.isSuccess || !recordResult.data) {
+            throw new Error(recordResult.message || 'Failed to process academic record.');
+        }
+        console.log(`✓ Processed ${recordResult.data.subjectsProcessed} subjects, GPA: ${recordResult.data.calculatedGpa}`);
+        
+        // --- PHASE 2: Initialize Skills (Slow) ---
+        setStep('initializingSkills');
+        const skillResult = await initializeSkills(selectedVersionId);
+        if (!skillResult.isSuccess || !skillResult.data) {
+            throw new Error(skillResult.message || 'Failed to initialize skills.');
+        }
+        console.log(`✓ Initialized ${skillResult.data.skillsInitialized} skills. Skipped ${skillResult.data.skillsSkipped} existing skills.`);
+        
+        // --- PHASE 3: Completion and Redirect ---
         setStep('complete');
         setTimeout(() => {
-          router.push('/quests');
-          router.refresh();
-        }, 3000);
-      } else {
-        throw new Error('Failed to process your academic record.');
-      }
+            router.push('/quests');
+            router.refresh();
+        }, 2000);
+
     } catch (err: any) {
       const errorMessage = (err.response?.data?.error?.message || err.message) ?? "An unexpected error occurred during processing.";
       setError(errorMessage);
@@ -87,8 +118,9 @@ export default function ConnectFapPage() {
     }
   };
 
-  const isSubmitting = step === 'processing';
+  const isSubmitting = step !== 'form';
 
+  // Renders different content based on the current step of the flow.
   const renderContent = () => {
     if (isLoading) {
       return (
@@ -109,6 +141,7 @@ export default function ConnectFapPage() {
         )
     }
 
+    // The main form for uploading the FAP HTML.
     if (step === 'form') {
         return (
             <div className="space-y-6">
@@ -144,37 +177,27 @@ export default function ConnectFapPage() {
                         <p>{error}</p>
                     </div>
                 )}
-                <Button onClick={handleProcessRecord} disabled={isSubmitting || !selectedVersionId || !htmlContent} className="w-full h-12 text-sm uppercase tracking-widest">
-                    {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
-                    Sync & Forge Skill Tree
+                <Button onClick={handleProcessAndInitialize} disabled={isSubmitting || !selectedVersionId || !htmlContent} className="w-full h-12 text-sm uppercase tracking-widest">
+                    {/* Differentiate button text for new vs. returning users. */}
+                    {isUpdateFlow ? <RefreshCw className="mr-2 h-4 w-4" /> : <Sparkles className="mr-2 h-4 w-4" />}
+                    {isUpdateFlow ? "Sync & Update Progress" : "Sync & Forge Skill Tree"}
                 </Button>
             </div>
         );
     }
 
-    if (step === 'processing') {
+    // The loading overlay shown during processing.
+    if (isSubmitting) {
       return (
         <div className="flex flex-col items-center justify-center gap-4 py-12">
           <Loader2 className="h-12 w-12 animate-spin text-accent" />
           <p className="text-foreground/70 animate-pulse">
-            Processing academic record and forging your skill tree...
+            {progressMessages[step]}
           </p>
         </div>
       );
     }
-
-    if (step === 'complete') {
-        return (
-            <div className="space-y-4 text-center py-8">
-                <CheckCircle className="mx-auto h-16 w-16 text-emerald-400" />
-                <h3 className="text-xl font-semibold text-white">Synchronization Complete!</h3>
-                <p className="text-sm text-foreground/70">
-                    Your quests and skill tree have been updated. You will be redirected to your questline shortly.
-                </p>
-            </div>
-        );
-    }
-
+    
     return null;
   };
 
@@ -185,8 +208,15 @@ export default function ConnectFapPage() {
           <div className="flex items-center gap-4">
             <BookCopy className="h-8 w-8 text-accent" />
             <div>
-                <CardTitle className="text-amber-100">Sync Academic Record</CardTitle>
-                <CardDescription>Update your questline and skill tree with your latest progress from FAP.</CardDescription>
+                {/* Differentiate title/description for new vs. returning users. */}
+                <CardTitle className="text-amber-100">
+                  {isUpdateFlow ? "Update Academic Record" : "Sync Academic Record"}
+                </CardTitle>
+                <CardDescription>
+                  {isUpdateFlow 
+                    ? "Update your questline and skill tree with your latest progress from FAP."
+                    : "Forge your personalized questline by connecting your FAP academic record."}
+                </CardDescription>
             </div>
           </div>
         </CardHeader>
