@@ -4,7 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { createServerApiClients } from "@/lib/api-server";
-import { UserSkill } from "@/types/user";
+import { UserSkillDto, GetUserSkillsResponse } from "@/types/user-skills";
 import { 
     BrainCircuit, 
     Code, 
@@ -40,10 +40,10 @@ const calculateLevelProgress = (xp: number) => {
 
 export default async function SkillsPage() {
     const { coreApiClient } = await createServerApiClients();
-    let userSkills: UserSkill[] = [];
+    let userSkills: UserSkillDto[] = [];
     
     try {
-        const response = await coreApiClient.get<{ skills: UserSkill[] }>('/api/users/me/skills');
+        const response = await coreApiClient.get<GetUserSkillsResponse>('/api/users/me/skills');
         userSkills = response.data.skills;
     } catch (error) {
         console.error("Failed to fetch user skills:", error);
