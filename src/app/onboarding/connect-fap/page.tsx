@@ -8,24 +8,25 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Loader2, AlertCircle, Sparkles, BookCopy, RefreshCw } from 'lucide-react';
+import { Loader2, AlertCircle, Sparkles, BookCopy, RefreshCw, GitBranch } from 'lucide-react'; // Added GitBranch icon
 import { UserProfileDto } from '@/types/user-profile';
-// MODIFICATION: The curriculum version type is now the simpler onboarding-specific one.
 import { OnboardingVersion as CurriculumVersion } from '@/types/onboarding';
 import profileApi from '@/api/profileApi';
-// MODIFICATION: Replaced adminContentApi with the correct onboardingApi.
 import onboardingApi from '@/api/onboardingApi';
-import { processAcademicRecord, initializeSkills } from '@/api/usersApi';
+// UPDATED IMPORT: Added 'establishSkillDependencies'.
+import { processAcademicRecord, initializeSkills, establishSkillDependencies } from '@/api/usersApi';
 
-type FlowStep = 'form' | 'processingRecord' | 'initializingSkills' | 'complete';
+// MODIFICATION: Added a new step to the flow state.
+type FlowStep = 'form' | 'processingRecord' | 'initializingSkills' | 'buildingTree' | 'complete';
 type ProgressMessage = {
     [key in FlowStep]?: string;
 };
 
-// User-facing messages for each step of the process.
 const progressMessages: ProgressMessage = {
     processingRecord: 'Processing your academic record, forging quests...',
     initializingSkills: 'Analyzing curriculum and initializing your skill tree...',
+    // ADDED: Message for the new step.
+    buildingTree: 'Establishing skill dependencies and building your skill tree...',
     complete: 'Synchronization complete! Redirecting...'
 };
 
@@ -39,10 +40,8 @@ export default function ConnectFapPage() {
   const [selectedVersionId, setSelectedVersionId] = useState<string>('');
   const [isLoading, setIsLoading] = useState(true);
 
-  // Logic to determine if the user is updating or doing a first-time sync.
   const isUpdateFlow = userProfile?.onboardingCompleted ?? false;
 
-  // Fetches the user profile and available curriculum versions on page load.
   const fetchData = useCallback(async () => {
     setIsLoading(true);
     setError(null);
@@ -53,14 +52,12 @@ export default function ConnectFapPage() {
       }
       setUserProfile(profileResponse.data);
 
-      // MODIFICATION: Switched from the admin API to the new, correct onboarding API.
       const versionsResponse = await onboardingApi.getVersionsForProgram(profileResponse.data.routeId);
       if (!versionsResponse.isSuccess || !versionsResponse.data) {
         throw new Error("Could not load curriculum versions for your program.");
       }
       setCurriculumVersions(versionsResponse.data);
       
-      // Default to the first version if available.
       if (versionsResponse.data.length > 0) {
         setSelectedVersionId(versionsResponse.data[0].id);
       }
@@ -75,20 +72,14 @@ export default function ConnectFapPage() {
     fetchData();
   }, [fetchData]);
   
-  // Main handler for the two-phase onboarding/sync process.
   const handleProcessAndInitialize = async () => {
-    if (!htmlContent.trim()) {
-      setError('Please paste the HTML content from your FAP academic record.');
+    if (!htmlContent.trim() || !selectedVersionId) {
+      setError('Please select a version and paste the HTML content from your FAP academic record.');
       return;
-    }
-    if (!selectedVersionId) {
-        setError('Please select a curriculum version.');
-        return;
     }
     setError(null);
 
     try {
-        // --- PHASE 1: Process Academic Record (Fast) ---
         setStep('processingRecord');
         const recordResult = await processAcademicRecord(htmlContent, selectedVersionId);
         if (!recordResult.isSuccess || !recordResult.data) {
@@ -96,7 +87,6 @@ export default function ConnectFapPage() {
         }
         console.log(`✓ Processed ${recordResult.data.subjectsProcessed} subjects, GPA: ${recordResult.data.calculatedGpa}`);
         
-        // --- PHASE 2: Initialize Skills (Slow) ---
         setStep('initializingSkills');
         const skillResult = await initializeSkills(selectedVersionId);
         if (!skillResult.isSuccess || !skillResult.data) {
@@ -104,10 +94,20 @@ export default function ConnectFapPage() {
         }
         console.log(`✓ Initialized ${skillResult.data.skillsInitialized} skills. Skipped ${skillResult.data.skillsSkipped} existing skills.`);
         
-        // --- PHASE 3: Completion and Redirect ---
+        // --- ADDED: PHASE 3 - Establish Skill Dependencies ---
+        setStep('buildingTree');
+        const dependencyResult = await establishSkillDependencies(selectedVersionId);
+        if (!dependencyResult.isSuccess || !dependencyResult.data) {
+            // This is a non-critical step, so we log a warning but don't block the user.
+            console.warn(dependencyResult.message || 'Failed to establish skill dependencies.');
+        } else {
+            console.log(`✓ Established ${dependencyResult.data.totalDependenciesCreated} skill dependencies.`);
+        }
+
+        // --- PHASE 4: Completion and Redirect ---
         setStep('complete');
         setTimeout(() => {
-            router.push('/quests');
+            router.push('/skills'); // MODIFICATION: Redirect to the skill tree page.
             router.refresh();
         }, 2000);
 
@@ -120,8 +120,8 @@ export default function ConnectFapPage() {
 
   const isSubmitting = step !== 'form';
 
-  // Renders different content based on the current step of the flow.
   const renderContent = () => {
+    // ... (rest of the renderContent function is unchanged) ...
     if (isLoading) {
       return (
         <div className="flex flex-col items-center justify-center gap-4 py-12">
@@ -141,7 +141,6 @@ export default function ConnectFapPage() {
         )
     }
 
-    // The main form for uploading the FAP HTML.
     if (step === 'form') {
         return (
             <div className="space-y-6">
@@ -178,15 +177,13 @@ export default function ConnectFapPage() {
                     </div>
                 )}
                 <Button onClick={handleProcessAndInitialize} disabled={isSubmitting || !selectedVersionId || !htmlContent} className="w-full h-12 text-sm uppercase tracking-widest">
-                    {/* Differentiate button text for new vs. returning users. */}
-                    {isUpdateFlow ? <RefreshCw className="mr-2 h-4 w-4" /> : <Sparkles className="mr-2 h-4 w-4" />}
-                    {isUpdateFlow ? "Sync & Update Progress" : "Sync & Forge Skill Tree"}
+                    {isUpdateFlow ? <RefreshCw className="mr-2 h-4 w-4" /> : <GitBranch className="mr-2 h-4 w-4" />}
+                    {isUpdateFlow ? "Sync & Update Progress" : "Sync & Build Skill Tree"}
                 </Button>
             </div>
         );
     }
 
-    // The loading overlay shown during processing.
     if (isSubmitting) {
       return (
         <div className="flex flex-col items-center justify-center gap-4 py-12">
@@ -208,7 +205,6 @@ export default function ConnectFapPage() {
           <div className="flex items-center gap-4">
             <BookCopy className="h-8 w-8 text-accent" />
             <div>
-                {/* Differentiate title/description for new vs. returning users. */}
                 <CardTitle className="text-amber-100">
                   {isUpdateFlow ? "Update Academic Record" : "Sync Academic Record"}
                 </CardTitle>
