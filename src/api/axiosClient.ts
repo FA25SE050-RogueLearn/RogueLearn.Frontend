@@ -1,7 +1,8 @@
 // roguelearn-web/src/api/axiosClient.ts
-import axios from 'axios';
+import axios, { AxiosError } from 'axios';
 import { createClient } from '@/utils/supabase/client';
 import { toast } from 'sonner';
+import { ApiErrorPayload, NormalizedApiErrorInfo } from '@/types/base/Error';
 
 /**
  * Creates and configures a single, centralized Axios instance for making client-side
@@ -35,13 +36,30 @@ axiosClient.interceptors.request.use(authInterceptor);
 axiosClient.interceptors.response.use(
   (response) => response,
   (error) => {
-    // Extracting the error message from the backend response
-    const errorMessage = error.response?.data?.message || error.message;
+    // Enhanced error normalization and user feedback based on backend contract
+    const normalizeApiError = (err: AxiosError): NormalizedApiErrorInfo => {
+      const status = err.response?.status;
+      const payload = err.response?.data as ApiErrorPayload | undefined;
+      // Show ONLY the backend-provided message when available; avoid axios generic messages
+      const message = payload?.error?.message ?? 'Request failed';
+      const details = payload?.error?.details;
+      return { status, message, details };
+    };
 
-    // Using toast to display the error message
-    toast.error(errorMessage, {
-      description: 'Please try again or contact support if the problem persists.',
-    });
+    if (axios.isAxiosError(error)) {
+      const { status, message, details } = normalizeApiError(error);
+
+      // Show only the message (no description) for all statuses
+      toast.error(message);
+
+      // Attach normalized info for downstream consumers (e.g., forms)
+      (error as any).normalized = { status, message, details } as NormalizedApiErrorInfo;
+    } else {
+      // Network or unexpected error
+      toast.error('Unexpected error', {
+        description: String(error),
+      });
+    }
 
     return Promise.reject(error);
   }

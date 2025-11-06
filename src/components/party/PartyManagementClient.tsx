@@ -5,6 +5,7 @@ import PartyCreationWizard from "./PartyCreationWizard";
 import { PartyDto } from "@/types/parties";
 import partiesApi from "@/api/partiesApi";
 import { useEffect } from "react";
+import PublicPartiesCard from "./PublicPartiesCard";
 
 export default function PartyManagementClient() {
   const [selectedParty, setSelectedParty] = useState<PartyDto | null>(null);
@@ -107,6 +108,8 @@ export default function PartyManagementClient() {
           <div className="rounded-lg border border-white/10 bg-white/5 p-3">
             <PartyListClient onSelectParty={setSelectedParty} />
           </div>
+          {/* Public parties discovery moved to its own card */}
+          <PublicPartiesCard onJoinedNavigate={true} />
         </div>
       </aside>
 
