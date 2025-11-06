@@ -10,6 +10,8 @@ export type GuildRole = 'GuildMaster' | 'Officer' | 'Veteran' | 'Member' | 'Recr
 export type MemberStatus = 'Active' | 'Inactive' | 'Suspended' | 'Left';
 /** Status of a guild invitation. */
 export type InvitationStatus = 'Pending' | 'Accepted' | 'Declined' | 'Expired' | 'Cancelled';
+/** Status of a request to join a guild. */
+export type GuildJoinRequestStatus = 'Pending' | 'Accepted' | 'Declined' | 'Expired' | 'Cancelled';
 
 /** Guild details used by list/detail views and dashboard. */
 export interface GuildDto {
@@ -32,6 +34,15 @@ export interface GuildMemberDto {
   joinedAt: string; // ISO timestamp
   leftAt?: string | null; // ISO timestamp
   status: MemberStatus;
+  // Enriched user profile fields (optional, may not be present on some endpoints)
+  username?: string | null;
+  email?: string | null;
+  firstName?: string | null;
+  lastName?: string | null;
+  profileImageUrl?: string | null;
+  level?: number | null;
+  experiencePoints?: number | null;
+  bio?: string | null;
 }
 
 /** Invitation record to join a guild; includes legacy and expanded fields for queries. */
@@ -51,6 +62,18 @@ export interface GuildInvitationDto {
   status: InvitationStatus;
   createdAt: string; // ISO timestamp
   respondedAt?: string | null; // ISO timestamp
+}
+
+/** Join request record for a user applying to a guild. */
+export interface GuildJoinRequestDto {
+  id: string;
+  guildId: string;
+  requesterId: string;
+  status: GuildJoinRequestStatus;
+  message?: string | null;
+  createdAt: string; // ISO timestamp
+  respondedAt?: string | null; // ISO timestamp
+  expiresAt?: string | null; // ISO timestamp
 }
 
 /** Aggregated dashboard stats for a guild. */
@@ -74,17 +97,37 @@ export interface InviteGuildMembersRequest {
   message?: string | null;
 }
 
+/** Request payload to apply to join a guild. */
+export interface ApplyGuildJoinRequestRequest {
+  message?: string | null;
+}
+
 // Queries
 /** Query payload to fetch a guild by id. */
-export interface GetGuildByIdQueryRequest { guildId: string }
+export type GetGuildByIdQueryRequest = { guildId: string }
 export type GetGuildByIdQueryResponse = GuildDto;
+
+/** Query payload to fetch all public guilds. */
+export interface ListAllPublicGuildsQueryRequest {
+  search?: string;
+  page?: number;
+  pageSize?: number;
+}
+export type ListAllPublicGuildsQueryResponse = GuildDto[];
 
 /** Query payload to fetch members of a guild. */
 export interface GetGuildMembersQueryRequest { guildId: string }
 export type GetGuildMembersQueryResponse = GuildMemberDto[];
 
+/** Query payload to fetch join requests for a guild. */
+export interface GetGuildJoinRequestsQueryRequest {
+  guildId: string;
+  pendingOnly?: boolean;
+}
+export type GetGuildJoinRequestsQueryResponse = GuildJoinRequestDto[];
+
 /** Query payload to fetch invitations for a guild. */
-export interface GetGuildInvitationsQueryRequest { guildId: string }
+export interface GetGuildInvitationsQueryRequest { guildId:string }
 export type GetGuildInvitationsQueryResponse = GuildInvitationDto[];
 
 /** Query payload to fetch dashboard stats for a guild. */
@@ -101,6 +144,12 @@ export type GetGuildMemberRolesQueryResponse = GuildRole[];
 /** Query payload to fetch the guild associated with the current user. */
 export interface GetMyGuildQueryRequest { authUserId: string }
 export type GetMyGuildQueryResponse = GuildDto | null;
+
+/** Query payload to fetch the current user's pending join requests. */
+export interface GetMyJoinRequestsQueryRequest {
+  pendingOnly?: boolean;
+}
+export type GetMyJoinRequestsQueryResponse = GuildJoinRequestDto[];
 
 // Commands
 /** Command payload to create a new guild. */
@@ -140,6 +189,34 @@ export interface AcceptGuildInvitationCommandRequest {
   guildId: string;
   invitationId: string;
   authUserId: string;
+}
+
+/** Command payload to decline a guild invitation. */
+export interface DeclineGuildInvitationCommandRequest {
+  guildId: string;
+  invitationId: string;
+  authUserId: string;
+}
+
+/** Command payload to apply to join a guild. */
+export interface ApplyGuildJoinRequestCommandRequest {
+  guildId: string;
+  authUserId: string;
+  message?: string | null;
+}
+
+/** Command payload to approve a guild join request. */
+export interface ApproveGuildJoinRequestCommandRequest {
+  guildId: string;
+  requestId: string;
+  actorAuthUserId: string;
+}
+
+/** Command payload to decline a guild join request. */
+export interface DeclineGuildJoinRequestCommandRequest {
+  guildId: string;
+  requestId: string;
+  actorAuthUserId: string;
 }
 
 /** Command payload to assign a role within a guild to a member. */

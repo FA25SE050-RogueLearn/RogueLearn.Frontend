@@ -6,20 +6,29 @@ import {
   GuildMemberDto,
   GuildInvitationDto,
   GuildDashboardDto,
+  GuildJoinRequestDto,
+  GuildRole,
   CreateGuildCommandRequest,
   CreateGuildResponse,
   ConfigureGuildSettingsCommandRequest,
   InviteGuildMembersResponse,
-  AcceptGuildInvitationCommandRequest,
+  ApplyGuildJoinRequestRequest,
   AssignGuildRoleCommandRequest,
   RevokeGuildRoleCommandRequest,
   RemoveGuildMemberCommandRequest,
   TransferGuildLeadershipCommandRequest,
-  LeaveGuildCommandRequest,
   InviteGuildMembersRequest,
+  ListAllPublicGuildsQueryRequest,
 } from '@/types/guilds';
 
 const guildsApi = {
+  /** GET /api/guilds */
+  listAllPublic: (params: ListAllPublicGuildsQueryRequest): Promise<ApiResponse<GuildDto[]>> =>
+    axiosClient.get<GuildDto[]>('/api/guilds', { params }).then(res => ({
+      isSuccess: true,
+      data: res.data,
+    })),
+
   /** GET /api/guilds/{guildId} */
   getById: (guildId: string): Promise<ApiResponse<GuildDto>> =>
     axiosClient.get<GuildDto>(`/api/guilds/${guildId}`).then(res => ({
@@ -48,11 +57,33 @@ const guildsApi = {
       data: res.data,
     })),
 
+  /** GET /api/guilds/{guildId}/members/{memberAuthUserId}/roles */
+  getMemberRoles: (guildId: string, memberAuthUserId: string): Promise<ApiResponse<GuildRole[]>> =>
+    axiosClient.get<GuildRole[]>(`/api/guilds/${guildId}/members/${memberAuthUserId}/roles`).then(res => ({
+      isSuccess: true,
+      data: res.data,
+    })),
+
+  /** GET /api/guilds/{guildId}/join-requests */
+  getJoinRequests: (guildId: string, pendingOnly = true): Promise<ApiResponse<GuildJoinRequestDto[]>> =>
+    axiosClient.get<GuildJoinRequestDto[]>(`/api/guilds/${guildId}/join-requests`, { params: { pendingOnly } }).then(res => ({
+      isSuccess: true,
+      data: res.data,
+    })),
+
+  /** GET /api/guilds/join-requests/me */
+  getMyJoinRequests: (pendingOnly = true): Promise<ApiResponse<GuildJoinRequestDto[]>> =>
+    axiosClient.get<GuildJoinRequestDto[]>(`/api/guilds/join-requests/me`, { params: { pendingOnly } }).then(res => ({
+      isSuccess: true,
+      data: res.data,
+    })),
+
   /** GET /api/guilds/me */
   getMyGuild: (): Promise<ApiResponse<GuildDto | null>> =>
     axiosClient.get<GuildDto | null>(`/api/guilds/me`).then(res => ({
       isSuccess: true,
-      data: res.data,
+      // Backend may return 204 No Content when user is not in a guild
+      data: (res.status === 204 || res.data == null) ? null : res.data,
     })),
 
   /** POST /api/guilds */
@@ -63,11 +94,8 @@ const guildsApi = {
     })),
 
   /** PUT /api/guilds/{guildId}/settings */
-  configureSettings: (guildId: string, payload: Omit<ConfigureGuildSettingsCommandRequest, 'guildId'>): Promise<ApiResponse<GuildDto>> =>
-    axiosClient.put<GuildDto>(`/api/guilds/${guildId}/settings`, payload).then(res => ({
-      isSuccess: true,
-      data: res.data,
-    })),
+  configureSettings: (guildId: string, payload: Omit<ConfigureGuildSettingsCommandRequest, 'guildId'>): Promise<void> =>
+    axiosClient.put<void>(`/api/guilds/${guildId}/settings`, payload).then(() => {}),
 
   /** POST /api/guilds/{guildId}/invite */
   invite: (guildId: string, payload: InviteGuildMembersRequest): Promise<ApiResponse<InviteGuildMembersResponse>> =>
@@ -76,9 +104,25 @@ const guildsApi = {
       data: res.data,
     })),
 
-  /** POST /api/guilds/{guildId}/invitations/accept */
-  acceptInvitation: (guildId: string, payload: Omit<AcceptGuildInvitationCommandRequest, 'guildId'>): Promise<void> =>
-    axiosClient.post<void>(`/api/guilds/${guildId}/invitations/accept`, payload).then(() => {}),
+  /** POST /api/guilds/{guildId}/invitations/{invitationId}/accept */
+  acceptInvitation: (guildId: string, invitationId: string): Promise<void> =>
+    axiosClient.post<void>(`/api/guilds/${guildId}/invitations/${invitationId}/accept`).then(() => {}),
+
+  /** POST /api/guilds/{guildId}/invitations/{invitationId}/decline */
+  declineInvitation: (guildId: string, invitationId: string): Promise<void> =>
+    axiosClient.post<void>(`/api/guilds/${guildId}/invitations/${invitationId}/decline`).then(() => {}),
+
+  /** POST /api/guilds/{guildId}/join-requests/apply */
+  applyToJoin: (guildId: string, payload: ApplyGuildJoinRequestRequest): Promise<void> =>
+    axiosClient.post<void>(`/api/guilds/${guildId}/join-requests/apply`, payload).then(() => {}),
+
+  /** POST /api/guilds/{guildId}/join-requests/{requestId}/approve */
+  approveJoinRequest: (guildId: string, requestId: string): Promise<void> =>
+    axiosClient.post<void>(`/api/guilds/${guildId}/join-requests/${requestId}/approve`).then(() => {}),
+
+  /** POST /api/guilds/{guildId}/join-requests/{requestId}/decline */
+  declineJoinRequest: (guildId: string, requestId: string): Promise<void> =>
+    axiosClient.post<void>(`/api/guilds/${guildId}/join-requests/${requestId}/decline`).then(() => {}),
 
   /** POST /api/guilds/{guildId}/roles/assign */
   assignRole: (guildId: string, payload: Omit<AssignGuildRoleCommandRequest, 'guildId'>): Promise<void> =>
@@ -88,17 +132,17 @@ const guildsApi = {
   revokeRole: (guildId: string, payload: Omit<RevokeGuildRoleCommandRequest, 'guildId'>): Promise<void> =>
     axiosClient.post<void>(`/api/guilds/${guildId}/roles/revoke`, payload).then(() => {}),
 
-  /** DELETE /api/guilds/{guildId}/members */
-  removeMember: (guildId: string, payload: Omit<RemoveGuildMemberCommandRequest, 'guildId'>): Promise<void> =>
-    axiosClient.request<void>({ method: 'DELETE', url: `/api/guilds/${guildId}/members`, data: payload }).then(() => {}),
+  /** POST /api/guilds/{guildId}/members/{memberId}/remove */
+  removeMember: (guildId: string, memberId: string, payload: { reason?: string | null }): Promise<void> =>
+    axiosClient.post<void>(`/api/guilds/${guildId}/members/${memberId}/remove`, payload).then(() => {}),
 
   /** POST /api/guilds/{guildId}/transfer-leadership */
   transferLeadership: (guildId: string, payload: Omit<TransferGuildLeadershipCommandRequest, 'guildId'>): Promise<void> =>
     axiosClient.post<void>(`/api/guilds/${guildId}/transfer-leadership`, payload).then(() => {}),
 
   /** POST /api/guilds/{guildId}/leave */
-  leaveGuild: (guildId: string, payload: Omit<LeaveGuildCommandRequest, 'guildId'>): Promise<void> =>
-    axiosClient.post<void>(`/api/guilds/${guildId}/leave`, payload).then(() => {}),
+  leaveGuild: (guildId: string): Promise<void> =>
+    axiosClient.post<void>(`/api/guilds/${guildId}/leave`).then(() => {}),
 
   /** DELETE /api/guilds/{guildId} */
   deleteGuild: (guildId: string): Promise<void> =>
