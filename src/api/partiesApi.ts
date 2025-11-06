@@ -175,7 +175,7 @@ const partiesApi = {
     partyId: string,
     payload: ConfigurePartySettingsCommandRequest
   ): Promise<void> =>
-    axiosClient.put(`/api/parties/${partyId}/settings`, payload).then(() => {}),
+    axiosClient.put(`/api/parties/${partyId}`, payload).then(() => {}),
 
   /** DELETE /api/parties/{partyId} - Delete a party */
   delete: (partyId: string): Promise<void> =>

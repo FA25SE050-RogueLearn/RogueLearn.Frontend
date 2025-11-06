@@ -16,14 +16,9 @@ export default function PartyListClient({ onSelectParty }: PartyListClientProps)
   const [parties, setParties] = useState<PartyDto[]>([]);
   const [search, setSearch] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [publicParties, setPublicParties] = useState<PartyDto[]>([]);
-  const [loadingPublic, setLoadingPublic] = useState(false);
-  const [joinBusyId, setJoinBusyId] = useState<string | null>(null);
-  const [selectedPublic, setSelectedPublic] = useState<PartyDto | null>(null);
   const [myInvites, setMyInvites] = useState<PartyInvitationDto[]>([]);
   const [loadingInvites, setLoadingInvites] = useState(false);
   const [authUserId, setAuthUserId] = useState<string | null>(null);
-  const [publicSearch, setPublicSearch] = useState<string>("");
   const [partyNameMap, setPartyNameMap] = useState<Record<string, string>>({});
 
   useEffect(() => {
@@ -45,21 +40,6 @@ export default function PartyListClient({ onSelectParty }: PartyListClientProps)
       }
     };
     fetchParties();
-    // Load public parties discovery
-    (async () => {
-      try {
-        setLoadingPublic(true);
-        const res = await partiesApi.getAll();
-        if (!mounted) return;
-        setPublicParties((res.data ?? []).filter(p => p.isPublic));
-      } catch {
-        if (!mounted) return;
-        setPublicParties([]);
-      } finally {
-        if (!mounted) return;
-        setLoadingPublic(false);
-      }
-    })();
     // Load my pending invitations
     (async () => {
       try {
@@ -106,7 +86,7 @@ export default function PartyListClient({ onSelectParty }: PartyListClientProps)
     let mounted = true;
     (async () => {
       const currentMap: Record<string, string> = { ...partyNameMap };
-      const knownParties = [...parties, ...publicParties];
+      const knownParties = [...parties];
       const missingIds = new Set<string>();
       myInvites.forEach(inv => {
         const known = knownParties.find(p => p.id === inv.partyId);
@@ -126,22 +106,9 @@ export default function PartyListClient({ onSelectParty }: PartyListClientProps)
       if (mounted) setPartyNameMap(currentMap);
     })();
     return () => { mounted = false; };
-  }, [myInvites, parties, publicParties]);
+  }, [myInvites, parties]);
 
-  const handleJoin = async (partyIdToJoin: string) => {
-    try {
-      setJoinBusyId(partyIdToJoin);
-      await partiesApi.joinPublic(partyIdToJoin);
-      toast.success("Joined party successfully.");
-      // Refresh my parties
-      const resMine = await partiesApi.getMine();
-      setParties(resMine.data ?? []);
-    } catch (e: any) {
-      toast.error(e?.message ?? "Failed to join party");
-    } finally {
-      setJoinBusyId(null);
-    }
-  };
+  // Public party discovery moved to a separate card component
 
   return (
     <div className="flex h-full flex-col gap-3">
@@ -226,71 +193,7 @@ export default function PartyListClient({ onSelectParty }: PartyListClientProps)
         )}
       </div>
 
-      {/* Discover Public Parties Panel */}
-      <div className="mt-6 rounded-lg border border-white/10 bg-[#0a0710] p-4">
-        <div className="mb-3 flex items-center justify-between">
-          <h4 className="text-sm font-semibold text-white">Discover Public Parties</h4>
-          {loadingPublic && <span className="text-xs text-white/60">Loading...</span>}
-        </div>
-        <div className="mb-3">
-          <input
-            type="text"
-            placeholder="Search public parties..."
-            value={publicSearch}
-            onChange={(e) => setPublicSearch(e.target.value)}
-            className="w-full rounded-md border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder:text-white/50 focus:border-fuchsia-500/60 focus:outline-none"
-          />
-        </div>
-        {publicParties.filter(p => p.name.toLowerCase().includes(publicSearch.toLowerCase())).length === 0 ? (
-          <div className="text-xs text-white/60">No public parties available right now.</div>
-        ) : (
-          <ul className="space-y-2">
-            {publicParties.filter(p => p.name.toLowerCase().includes(publicSearch.toLowerCase())).map(p => (
-              <li key={p.id} className="flex items-center justify-between rounded bg-white/5 p-3">
-                <button className="text-left" onClick={() => setSelectedPublic(p)}>
-                  <div className="text-sm font-medium text-white">{p.name}</div>
-                  <div className="text-xs text-white/60">{p.description}</div>
-                  <div className="text-[11px] text-white/50">Max {p.maxMembers} • {p.isPublic ? 'Public' : 'Private'}</div>
-                </button>
-                <button
-                  className="rounded bg-fuchsia-600 px-3 py-1.5 text-xs text-white disabled:opacity-50"
-                  disabled={!p.isPublic || joinBusyId === p.id}
-                  onClick={() => handleJoin(p.id)}
-                >
-                  {joinBusyId === p.id ? 'Joining...' : 'Join'}
-                </button>
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
-
-      {/* Public Party Detail Modal */}
-      {selectedPublic && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
-          <div className="w-full max-w-lg rounded-lg border border-white/10 bg-[#08040a] p-6 shadow-lg">
-            <h3 className="mb-4 text-lg font-semibold text-white">{selectedPublic.name}</h3>
-            <div className="space-y-3">
-              <div className="text-sm text-white/70">{selectedPublic.description}</div>
-              <div className="text-xs text-white/50">Type: {selectedPublic.partyType}</div>
-              <div className="text-xs text-white/50">Max Members: {selectedPublic.maxMembers}</div>
-              <div className="text-xs text-white/50">Created: {new Date(selectedPublic.createdAt).toLocaleString()}</div>
-            </div>
-            <div className="mt-6 flex justify-end gap-3">
-              <button onClick={() => setSelectedPublic(null)} className="rounded bg-white/10 px-4 py-2 text-sm">
-                Close
-              </button>
-              <button
-                onClick={() => handleJoin(selectedPublic.id)}
-                disabled={joinBusyId === selectedPublic.id}
-                className="rounded bg-fuchsia-600 px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
-              >
-                {joinBusyId === selectedPublic.id ? "Joining..." : "Join Party"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Public party discovery moved to PublicPartiesCard component */}
     </div>
   );
 }
