@@ -12,6 +12,7 @@ export default function PartyDashboard({ partyId }: { partyId: string }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Load dashboard data
   useEffect(() => {
     let mounted = true;
     const load = async () => {
@@ -51,6 +52,14 @@ export default function PartyDashboard({ partyId }: { partyId: string }) {
     return () => { mounted = false; };
   }, [partyId]);
 
+  const refreshMembers = async () => {
+    try {
+      const m = await partiesApi.getMembers(partyId);
+      setMembers(m.data ?? []);
+    } catch {
+      // swallow
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -60,7 +69,7 @@ export default function PartyDashboard({ partyId }: { partyId: string }) {
       <PartyStats members={members.length} invites={invites.length} resources={stashCount} />
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-        <PartyMembersList members={members} />
+        <PartyMembersList partyId={partyId} members={members} onRefresh={refreshMembers} />
         <InvitationManagement invites={invites} />
       </div>
 
