@@ -22,7 +22,8 @@ export interface CreatedTag {
 
 /** Query payload to suggest tags for a note or raw text. */
 export interface SuggestNoteTagsQueryRequest {
-  authUserId: string;
+  // Server derives authUserId from the authenticated user; frontend may omit.
+  authUserId?: string;
   noteId?: string;
   rawText?: string;
   maxTags?: number; // default 10 on backend
@@ -30,7 +31,8 @@ export interface SuggestNoteTagsQueryRequest {
 
 /** Request payload to suggest tags for uploaded content. */
 export interface SuggestNoteTagsFromUploadRequest {
-  authUserId: string;
+  // Server derives authUserId from the authenticated user; frontend should omit for uploads.
+  authUserId?: string;
   // Frontend will send file bytes via multipart; provide a File/Blob
   fileContent: Blob | File | ArrayBuffer | Uint8Array;
   contentType?: string;
@@ -45,7 +47,8 @@ export interface SuggestNoteTagsResponse {
 
 /** Command payload to commit selected/created tags for a note. */
 export interface CommitNoteTagSelectionsCommandRequest {
-  authUserId: string;
+  // Server derives authUserId from the authenticated user; frontend may omit.
+  authUserId?: string;
   noteId: string;
   selectedTagIds?: string[]; // IDs of existing tags selected by the user
   newTagNames?: string[]; // names of new tags to create and attach
@@ -61,7 +64,8 @@ export interface CommitNoteTagSelectionsResponse {
 
 /** Command payload for combined note creation with AI tag suggestions. */
 export interface CreateNoteWithAiTagsCommandRequest {
-  authUserId: string;
+  // Server derives authUserId from the authenticated user; frontend may omit.
+  authUserId?: string;
   title?: string;
   // Raw text path
   rawText?: string;

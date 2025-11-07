@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import notesApi from "@/api/notesApi";
 import tagsApi from "@/api/tagsApi";
 import { NoteDto } from "@/types/notes";
+import { Tag } from "@/types/tags";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -25,6 +26,7 @@ type EditorState = {
 
 export default function NotesTab() {
   const [notes, setNotes] = useState<NoteDto[]>([]);
+  const [myTags, setMyTags] = useState<Tag[]>([]);
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState("");
   const [editorOpen, setEditorOpen] = useState(false);
@@ -49,8 +51,21 @@ export default function NotesTab() {
     }
   };
 
+  const fetchTags = async () => {
+    try {
+      const res = await tagsApi.getMyTags();
+      if (res.isSuccess) {
+        const incoming = (res.data as any)?.tags;
+        setMyTags(Array.isArray(incoming) ? incoming : []);
+      }
+    } catch (e) {
+      // error toast handled by interceptor
+    }
+  };
+
   useEffect(() => {
     fetchNotes();
+    fetchTags();
   }, []);
 
   const filteredNotes = useMemo(() => {
@@ -58,6 +73,12 @@ export default function NotesTab() {
     const q = search.toLowerCase();
     return notes.filter(n => n.title.toLowerCase().includes(q) || (n.content ?? "").toLowerCase().includes(q));
   }, [notes, search]);
+
+  const tagIndex = useMemo(() => {
+    const map = new Map<string, Tag>();
+    for (const t of myTags) map.set(t.id, t);
+    return map;
+  }, [myTags]);
 
   // Upload to create note with AI tags
   const [uploading, setUploading] = useState(false);
@@ -161,7 +182,7 @@ export default function NotesTab() {
     <div className="flex flex-col gap-6">
       <div className="flex items-center gap-3">
         <Input placeholder="Search notes..." value={search} onChange={(e) => setSearch(e.target.value)} className="max-w-sm" />
-        <input id={fileInputId} type="file" accept=".txt,.md,.pdf,.doc,.docx" className="hidden" onChange={onFileSelected} />
+        <input id={fileInputId} type="file" accept=".txt,.md,.pdf,.doc,.docx,.pptx,.ppt" className="hidden" onChange={onFileSelected} />
         <Button variant="secondary" onClick={onClickUpload} disabled={uploading}>
           {uploading ? "Uploading..." : "Upload file"}
         </Button>
@@ -186,6 +207,19 @@ export default function NotesTab() {
               </CardHeader>
               <CardContent className="relative z-10 flex flex-1 flex-col gap-4 p-5">
                 <p className="line-clamp-3 text-sm leading-relaxed text-foreground/70">{note.content || "No content"}</p>
+                {Array.isArray(note.tagIds) && note.tagIds.length > 0 && (
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {note.tagIds.map((tid) => {
+                      const t = tagIndex.get(tid);
+                      const label = t?.name ?? "Unknown";
+                      return (
+                        <span key={`${note.id}-${tid}`} className="rounded-full border border-accent/40 bg-accent/10 px-2 py-1 text-xs text-accent">
+                          {label}
+                        </span>
+                      );
+                    })}
+                  </div>
+                )}
               </CardContent>
               <CardFooter className="relative z-10 flex items-center gap-2 border-t border-white/10 p-4">
                 <Button size="sm" variant="secondary" onClick={() => openEditNote(note.id)}>Edit</Button>
