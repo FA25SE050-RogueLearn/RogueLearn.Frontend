@@ -17,9 +17,9 @@ import {
 const tagsApi = {
   /** GET /api/tags/me */
   getMyTags: (): Promise<ApiResponse<GetMyTagsResponse>> =>
-    axiosClient.get<Tag[]>(`/api/tags/me`).then(res => ({
+    axiosClient.get<GetMyTagsResponse>(`/api/tags/me`).then(res => ({
       isSuccess: true,
-      data: { tags: res.data },
+      data: res.data,
     })),
 
   /** POST /api/tags */
@@ -49,9 +49,9 @@ const tagsApi = {
 
   /** GET /api/notes/{noteId}/tags */
   getTagsForNote: (noteId: string): Promise<ApiResponse<GetTagsForNoteResponse>> =>
-    axiosClient.get<Tag[]>(`/api/notes/${noteId}/tags`).then(res => ({
+    axiosClient.get<GetTagsForNoteResponse>(`/api/notes/${noteId}/tags`).then(res => ({
       isSuccess: true,
-      data: { noteId, tags: res.data },
+      data: res.data,
     })),
 
   /** POST /api/notes/{noteId}/tags/create-and-attach */

@@ -20,7 +20,8 @@ export interface NoteDto {
 
 /** Command payload to create a note. */
 export interface CreateNoteCommandRequest {
-  authUserId: string;
+  // Server derives authUserId from the authenticated user; frontend may omit.
+  authUserId?: string;
   title: string;
   content?: string | null;
   isPublic?: boolean; // default false
@@ -43,7 +44,8 @@ export interface CreateNoteResponse {
 /** Command payload to update an existing note. */
 export interface UpdateNoteCommandRequest {
   id: string;
-  authUserId: string;
+  // Server derives authUserId from the authenticated user; frontend may omit.
+  authUserId?: string;
   title: string;
   content?: string | null;
   isPublic?: boolean; // default false
@@ -66,12 +68,14 @@ export interface UpdateNoteResponse {
 /** Command payload to delete a note. */
 export interface DeleteNoteCommandRequest {
   id: string;
-  authUserId: string;
+  // Server derives authUserId from the authenticated user; frontend may omit.
+  authUserId?: string;
 }
 
 /** Command payload to create a note from an uploaded file. */
 export interface CreateNoteFromUploadCommandRequest {
-  authUserId: string;
+  // Server derives authUserId from the authenticated user; frontend should omit for uploads.
+  authUserId?: string;
   file: File | Blob; // Frontend representation of the Stream
   fileName?: string;
   contentType?: string;
@@ -80,7 +84,8 @@ export interface CreateNoteFromUploadCommandRequest {
 // Queries
 /** Query payload to list notes for the authenticated user. */
 export interface GetMyNotesQueryRequest {
-  authUserId: string;
+  // Server derives authUserId from the authenticated user; frontend may omit.
+  authUserId?: string;
   search?: string;
 }
 

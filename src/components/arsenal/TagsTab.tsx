@@ -5,7 +5,7 @@ import tagsApi from "@/api/tagsApi";
 import { Tag } from "@/types/tags";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { createClient } from "@/utils/supabase/client";
 import { toast } from "sonner";
@@ -16,6 +16,7 @@ export default function TagsTab() {
   const [name, setName] = useState("");
   const [loading, setLoading] = useState(false);
   const [authUserId, setAuthUserId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   useEffect(() => {
     const supabase = createClient();
@@ -26,11 +27,8 @@ export default function TagsTab() {
     setLoading(true);
     try {
       const res = await tagsApi.getMyTags();
-      // Defensive: ensure we always set an array
-      if (res.isSuccess) {
-        const incoming = (res.data as any)?.tags;
-        setTags(Array.isArray(incoming) ? incoming : []);
-      }
+      const list = Array.isArray(res.data?.tags) ? res.data.tags : [];
+      setTags(list);
     } finally {
       setLoading(false);
     }
@@ -64,6 +62,19 @@ export default function TagsTab() {
     } catch (e) {}
   };
 
+  const deleteTag = async (tagId: string) => {
+    const confirm = window.confirm("Delete this tag? This cannot be undone.");
+    if (!confirm) return;
+    try {
+      setDeletingId(tagId);
+      await tagsApi.deleteTag(tagId);
+      toast.success("Tag deleted");
+      fetchTags();
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
   return (
     <div className="flex flex-col gap-6">
       <div className="flex items-center gap-3">
@@ -84,6 +95,11 @@ export default function TagsTab() {
               <CardContent>
                 <p className="text-xs text-foreground/60">Tag ID: {tag.id}</p>
               </CardContent>
+              <CardFooter className="flex items-center gap-2 border-t border-white/10">
+                <Button variant="destructive" size="sm" onClick={() => deleteTag(tag.id)} disabled={deletingId === tag.id}>
+                  {deletingId === tag.id ? "Deleting..." : "Delete"}
+                </Button>
+              </CardFooter>
             </Card>
           ))
         )}

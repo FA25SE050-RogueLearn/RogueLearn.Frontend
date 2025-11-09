@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { Lora, Nunito_Sans } from "next/font/google";
 import "./globals.css";
 import { cn } from "@/lib/utils";
+import Script from "next/script";
 import { Toaster } from "@/components/ui/sonner";
 import { ReactNode } from "react";
 
@@ -42,6 +43,8 @@ export default function RootLayout({
         className={cn("antialiased", fontHeading.variable, fontBody.variable)} 
         suppressHydrationWarning={true}
       >
+        {/* Google Identity Services for OAuth 2.0 (Meet API) */}
+        <Script src="https://accounts.google.com/gsi/client" strategy="afterInteractive" />
         {children}
         {/* Global toast notifications */}
         <Toaster richColors position="top-right" />

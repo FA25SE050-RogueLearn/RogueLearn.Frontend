@@ -89,6 +89,13 @@ export interface AddPartyResourceRequest {
   tags: string[];
 }
 
+/** Payload to update an existing shared resource in the party stash. */
+export interface UpdatePartyResourceRequest {
+  title?: string;
+  content?: Record<string, unknown>;
+  tags?: string[];
+}
+
 // Queries
 /** Response containing all parties visible to the requester. */
 export type GetAllPartiesQueryResponse = PartyDto[];
