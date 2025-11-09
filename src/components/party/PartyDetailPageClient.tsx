@@ -8,9 +8,12 @@ import PartyDashboard from "./PartyDashboard";
 import PartyStash from "./PartyStash";
 import MeetingScheduler from "./MeetingScheduler";
 import LiveMeeting from "./LiveMeeting";
+import MeetingManagement from "./MeetingManagement";
 import InviteMemberModal from "./InviteMemberModal";
+import { createClient } from "@/utils/supabase/client";
 
 export default function PartyDetailPageClient({ partyId }: { partyId: string }) {
+  const [authUserId, setAuthUserId] = useState<string | null>(null);
   const [party, setParty] = useState<PartyDto | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -25,6 +28,13 @@ export default function PartyDetailPageClient({ partyId }: { partyId: string }) 
   const [settingsMaxMembers, setSettingsMaxMembers] = useState<number>(6);
   const [isSavingSettings, setIsSavingSettings] = useState(false);
   const router = useRouter();
+
+  useEffect(() => {
+      const supabase = createClient();
+      supabase.auth
+        .getUser()
+        .then(({ data }) => setAuthUserId(data.user?.id ?? null));
+    }, []);
 
   useEffect(() => {
     let mounted = true;
@@ -86,9 +96,7 @@ export default function PartyDetailPageClient({ partyId }: { partyId: string }) 
     if (!party) return;
     setIsLeaving(true);
     try {
-      // FIXME: Get the real authUserId from user context
-      const authUserId = "00000000-0000-0000-0000-000000000000";
-      await partiesApi.leave(party.id, { partyId: party.id, authUserId });
+      await partiesApi.leave(party.id, { partyId: party.id, authUserId: authUserId! });
       router.push("/party");
     } catch (e: any) {
       setError(e?.message ?? "Failed to leave party");
@@ -144,6 +152,7 @@ export default function PartyDetailPageClient({ partyId }: { partyId: string }) 
           <Tabs active={activeTab} onChange={setActiveTab} />
           {activeTab === "dashboard" && party && <PartyDashboard partyId={party.id} />}
           {activeTab === "stash" && party && <PartyStash partyId={party.id} />}
+          {activeTab === "meetings" && party && <MeetingManagement partyId={party.id} />}
           {activeTab === "scheduler" && <MeetingScheduler />}
           {activeTab === "live" && <LiveMeeting />}
         </PartyDetailClient>

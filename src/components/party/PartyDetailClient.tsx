@@ -7,7 +7,7 @@ interface TabsProps {
 }
 
 export function Tabs({ active, onChange }: TabsProps) {
-  const tabs = ["dashboard", "stash", "scheduler", "live"];
+  const tabs = ["dashboard", "stash", "meetings", "scheduler", "live"];
   return (
     <div className="mb-4 flex gap-2">
       {tabs.map(t => (
@@ -21,6 +21,7 @@ export function Tabs({ active, onChange }: TabsProps) {
         >
           {t === "dashboard" && "Dashboard"}
           {t === "stash" && "Stash"}
+          {t === "meetings" && "Meetings"}
           {t === "scheduler" && "Scheduler"}
           {t === "live" && "Live Meeting"}
         </button>
