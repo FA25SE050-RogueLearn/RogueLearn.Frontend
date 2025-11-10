@@ -214,8 +214,8 @@ export default function ExercisesList({ apiBaseUrl, onSubmit }: ExercisesListPro
 
   return (
     <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-      <Card className="relative overflow-hidden rounded-[26px] border border-[#f5c16c]/18 bg-gradient-to-br from-[#26120d]/88 via-[#150908]/94 to-[#080404]/97 p-6 shadow-[0_22px_65px_rgba(52,18,9,0.55)]">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(210,49,135,0.4),_transparent_70%)] opacity-[0.35]" />
+      <Card className="relative overflow-hidden rounded-[26px] border border-[#f5c16c]/18 bg-linear-to-br from-[#26120d]/88 via-[#150908]/94 to-[#080404]/97 p-6 shadow-[0_22px_65px_rgba(52,18,9,0.55)]">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(210,49,135,0.4),transparent_70%)] opacity-[0.35]" />
         <CardHeader className="relative z-10 pb-4">
           <CardTitle className="flex items-center gap-3 text-lg font-semibold text-white">
             <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#d23187]/20 text-[#f5c16c]">
@@ -258,8 +258,8 @@ export default function ExercisesList({ apiBaseUrl, onSubmit }: ExercisesListPro
         </CardContent>
       </Card>
 
-      <Card className="relative overflow-hidden rounded-[26px] border border-[#f5c16c]/18 bg-gradient-to-br from-[#23110d]/88 via-[#140908]/94 to-[#080404]/97 p-6 shadow-[0_22px_65px_rgba(54,18,9,0.55)]">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(245,193,108,0.35),_transparent_70%)] opacity-[0.35]" />
+      <Card className="relative overflow-hidden rounded-[26px] border border-[#f5c16c]/18 bg-linear-to-br from-[#23110d]/88 via-[#140908]/94 to-[#080404]/97 p-6 shadow-[0_22px_65px_rgba(54,18,9,0.55)]">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(245,193,108,0.35),transparent_70%)] opacity-[0.35]" />
         <CardHeader className="relative z-10 pb-4">
           <CardTitle className="text-lg font-semibold text-white">
             {selectedProblem ? `Solving: ${selectedProblem.Title}` : 'Select a Problem'}
@@ -280,7 +280,7 @@ export default function ExercisesList({ apiBaseUrl, onSubmit }: ExercisesListPro
                 </select>
                 <Button
                   onClick={handleSubmit}
-                  className="flex items-center gap-2 rounded-full bg-gradient-to-r from-[#d23187] via-[#f5c16c] to-[#f5c16c] px-6 text-xs uppercase tracking-[0.35em] text-[#2b130f] shadow-[0_15px_40px_rgba(210,49,135,0.4)] hover:from-[#f061a6] hover:via-[#f5c16c] hover:to-[#f0b26a]"
+                  className="flex items-center gap-2 rounded-full bg-linear-to-r from-[#d23187] via-[#f5c16c] to-[#f5c16c] px-6 text-xs uppercase tracking-[0.35em] text-[#2b130f] shadow-[0_15px_40px_rgba(210,49,135,0.4)] hover:from-[#f061a6] hover:via-[#f5c16c] hover:to-[#f0b26a]"
                 >
                   <Play className="h-4 w-4" />
                   Run Trials

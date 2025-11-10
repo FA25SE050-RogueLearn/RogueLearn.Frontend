@@ -18,7 +18,7 @@ export default function TestimonialsSection() {
 
                     <blockquote className="relative">
                         {/* Decorative Quote */}
-                        <div className="absolute -left-4 -top-8 text-6xl text-primary/20 font-heading">"</div>
+                        <div className="absolute -left-4 -top-8 text-6xl text-primary/20 font-heading">&ldquo;</div>
 
                         <p className="font-body text-lg sm:text-xl md:text-2xl text-foreground leading-relaxed">
                             RogueLearn transformed how I approach programming. The quest system kept me engaged, and before I knew it, I&apos;d completed challenges I never thought I could tackle. It&apos;s like learning through an RPG adventure!

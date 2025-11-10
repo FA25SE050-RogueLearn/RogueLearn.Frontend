@@ -6,7 +6,7 @@ import { UpcomingEvents } from "@/components/dashboard/UpcomingEvents";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { createClient } from "@/utils/supabase/server";
 import { redirect } from "next/navigation";
-import { createServerApiClients } from "@/lib/api-server";
+import { createServerApiClients, checkApiHealth } from "@/lib/api-server";
 
 // Define interfaces for the data we expect from our backend APIs.
 // This provides type safety and clarity for our frontend code.
@@ -81,43 +81,52 @@ export default async function DashboardPage() {
   let userProfile: UserProfile | null = null;
   let activeQuest: QuestDetails | null = null;
 
-  try {
-    // 1. Fetch user profile from the consolidated core service API.
-    console.log(`Fetching profile for user: ${user.id}`);
-    const profileResponse = await coreApiClient.get(`/api/profiles/${user.id}`);
-    userProfile = profileResponse.data;
-  } catch (error) {
-    console.error("Failed to fetch user profile:", error);
-    // If this fails, userProfile will remain null and components will show a loading/error state.
+  // Quick health check before making API calls
+  const apiHealthy = await checkApiHealth(process.env.NEXT_PUBLIC_API_URL);
+
+  if (!apiHealthy) {
+    console.warn('API health check failed - skipping data fetching');
+  } else {
+    try {
+      // 1. Fetch user profile from the consolidated core service API.
+      console.log(`Fetching profile for user: ${user.id}`);
+      const profileResponse = await coreApiClient.get(`/api/profiles/${user.id}`);
+      userProfile = profileResponse.data;
+    } catch (error) {
+      console.error("Failed to fetch user profile:", error);
+      // If this fails, userProfile will remain null and components will show a loading/error state.
+    }
   }
 
-  try {
-    // 2. Fetch the user's active learning path from the consolidated core service API.
-    console.log(`Fetching learning path for user: ${user.id}`);
-    const learningPathResponse = await coreApiClient.get<LearningPath>('/api/learning-paths/me');
-    const learningPath = learningPathResponse.data;
+  if (apiHealthy) {
+    try {
+      // 2. Fetch the user's active learning path from the consolidated core service API.
+      console.log(`Fetching learning path for user: ${user.id}`);
+      const learningPathResponse = await coreApiClient.get<LearningPath>('/api/learning-paths/me');
+      const learningPath = learningPathResponse.data;
 
-    // 3. From the learning path, find the user's current quest.
-    // MODIFICATION START: Added a null check to prevent crashing when a new user
-    // with no learning path visits the dashboard. If learningPath or its quests
-    // array is null/undefined, currentQuestSummary will safely be null.
-    const currentQuestSummary =
-      (learningPath && learningPath.quests)
-        ? learningPath.quests.find(q => q.status === 'InProgress') ||
-          learningPath.quests.find(q => q.status === 'NotStarted')
-        : null;
-    // MODIFICATION END
+      // 3. From the learning path, find the user's current quest.
+      // MODIFICATION START: Added a null check to prevent crashing when a new user
+      // with no learning path visits the dashboard. If learningPath or its quests
+      // array is null/undefined, currentQuestSummary will safely be null.
+      const currentQuestSummary =
+        (learningPath && learningPath.quests)
+          ? learningPath.quests.find(q => q.status === 'InProgress') ||
+            learningPath.quests.find(q => q.status === 'NotStarted')
+          : null;
+      // MODIFICATION END
 
-    if (currentQuestSummary) {
-      // 4. If a current quest is identified, fetch its full details from the consolidated core service API.
-      console.log(`Fetching details for quest: ${currentQuestSummary.id}`);
-      const questDetailsResponse = await coreApiClient.get<QuestDetails>(`/api/quests/${currentQuestSummary.id}`);
-      activeQuest = questDetailsResponse.data;
+      if (currentQuestSummary) {
+        // 4. If a current quest is identified, fetch its full details from the consolidated core service API.
+        console.log(`Fetching details for quest: ${currentQuestSummary.id}`);
+        const questDetailsResponse = await coreApiClient.get<QuestDetails>(`/api/quests/${currentQuestSummary.id}`);
+        activeQuest = questDetailsResponse.data;
+      }
+    } catch (error) {
+      console.error("Failed to fetch quest data:", error);
+      // It's acceptable for this to fail if the user has no active quests.
+      // The ActiveQuest component is designed to handle a null value.
     }
-  } catch (error) {
-    console.error("Failed to fetch quest data:", error);
-    // It's acceptable for this to fail if the user has no active quests.
-    // The ActiveQuest component is designed to handle a null value.
   }
 
   // NOTE ON DATA ADAPTATION:

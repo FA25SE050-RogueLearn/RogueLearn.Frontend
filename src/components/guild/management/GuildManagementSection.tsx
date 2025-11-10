@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useCallback, startTransition } from "react";
 import guildsApi from "@/api/guildsApi";
 import profileApi from "@/api/profileApi";
 import type { GuildJoinRequestDto, GuildMemberDto, GuildRole } from "@/types/guilds";
@@ -21,9 +21,11 @@ export function GuildManagementSection({ guildId, onLeftGuild }: GuildManagement
   const [error, setError] = useState<string | null>(null);
   const [myAuthUserId, setMyAuthUserId] = useState<string | null>(null);
 
-  const reload = () => {
+  const reload = useCallback(() => {
     if (!guildId) return;
-    setLoading(true);
+    startTransition(() => {
+      setLoading(true);
+    });
     Promise.all([
       guildsApi.getMembers(guildId),
       guildsApi.getJoinRequests(guildId, true),
@@ -40,11 +42,11 @@ export function GuildManagementSection({ guildId, onLeftGuild }: GuildManagement
         setError("Failed to load management data.");
       })
       .finally(() => setLoading(false));
-  };
+  }, [guildId]);
 
   useEffect(() => {
     reload();
-  }, [guildId]);
+  }, [reload]);
 
   const approveRequest = async (requestId: string) => {
     if (!guildId) return;

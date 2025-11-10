@@ -54,16 +54,15 @@ const notesApi = {
 
   /** DELETE /api/notes/{id} */
   remove: (payload: DeleteNoteCommandRequest): Promise<void> =>
-    axiosClient.delete<void>(`/api/notes/${payload.id}`, { data: { authUserId: payload.authUserId } }).then(() => {}),
+    axiosClient.delete<void>(`/api/notes/${payload.id}`).then(() => {}),
 
-  /** POST /api/notes/upload */
+  /** POST /api/notes/upload-and-create */
   createFromUpload: (payload: CreateNoteFromUploadCommandRequest): Promise<ApiResponse<CreateNoteResponse>> => {
     const formData = new FormData();
-    formData.append('authUserId', payload.authUserId);
     formData.append('file', payload.file);
     if (payload.fileName) formData.append('fileName', payload.fileName);
     if (payload.contentType) formData.append('contentType', payload.contentType);
-    return axiosClient.post<CreateNoteResponse>('/api/notes/upload', formData).then(res => ({
+    return axiosClient.post<CreateNoteResponse>('/api/notes/upload-and-create', formData).then(res => ({
       isSuccess: true,
       data: res.data,
     }));
@@ -77,46 +76,39 @@ const notesApi = {
     })),
 
   // --- AI Tagging ---
-  /** POST /api/notes/ai/suggest */
-  suggestTags: (payload: SuggestNoteTagsQueryRequest): Promise<ApiResponse<SuggestNoteTagsResponse>> =>
-    axiosClient.post<SuggestNoteTagsResponse>('/api/notes/ai/suggest', payload).then(res => ({
-      isSuccess: true,
-      data: res.data,
-    })),
+  /** POST /api/ai/tagging/suggest */
+  suggestTags: async (payload: SuggestNoteTagsQueryRequest): Promise<ApiResponse<SuggestNoteTagsResponse>> => {
+    const res = await axiosClient.post<SuggestNoteTagsResponse>('/api/ai/tagging/suggest', payload);
+    return { isSuccess: true, data: res.data };
+  },
 
-  /** POST /api/notes/ai/suggest/upload (multipart) */
-  suggestTagsFromUpload: (payload: SuggestNoteTagsFromUploadRequest): Promise<ApiResponse<SuggestNoteTagsResponse>> => {
+  /** POST /api/ai/tagging/suggest-upload (multipart) */
+  suggestTagsFromUpload: async (payload: SuggestNoteTagsFromUploadRequest): Promise<ApiResponse<SuggestNoteTagsResponse>> => {
     const formData = new FormData();
-    formData.append('authUserId', payload.authUserId);
     const fileBlob = payload.fileContent instanceof Blob ? payload.fileContent : new Blob([payload.fileContent as any]);
     formData.append('file', fileBlob);
     if (payload.fileName) formData.append('fileName', payload.fileName);
     if (payload.contentType) formData.append('contentType', payload.contentType);
     if (payload.maxTags != null) formData.append('maxTags', String(payload.maxTags));
-    return axiosClient.post<SuggestNoteTagsResponse>('/api/notes/ai/suggest/upload', formData, { headers: { 'Content-Type': 'multipart/form-data' } }).then(res => ({
-      isSuccess: true,
-      data: res.data,
-    }));
+    const res = await axiosClient.post<SuggestNoteTagsResponse>('/api/ai/tagging/suggest-upload', formData, { headers: { 'Content-Type': 'multipart/form-data' } });
+    return { isSuccess: true, data: res.data };
   },
 
-  /** POST /api/notes/ai/commit */
-  commitTagSelections: (payload: CommitNoteTagSelectionsCommandRequest): Promise<ApiResponse<CommitNoteTagSelectionsResponse>> =>
-    axiosClient.post<CommitNoteTagSelectionsResponse>('/api/notes/ai/commit', payload).then(res => ({
-      isSuccess: true,
-      data: res.data,
-    })),
+  /** POST /api/ai/tagging/commit */
+  commitTagSelections: async (payload: CommitNoteTagSelectionsCommandRequest): Promise<ApiResponse<CommitNoteTagSelectionsResponse>> => {
+    const res = await axiosClient.post<CommitNoteTagSelectionsResponse>('/api/ai/tagging/commit', payload);
+    return { isSuccess: true, data: res.data };
+  },
 
-  /** POST /api/notes/ai/create-with-tags */
-  createWithAiTagsFromText: (payload: Omit<CreateNoteWithAiTagsCommandRequest, 'fileContent' | 'fileName' | 'contentType'>): Promise<ApiResponse<CreateNoteWithAiTagsResponse>> =>
-    axiosClient.post<CreateNoteWithAiTagsResponse>('/api/notes/ai/create-with-tags', payload).then(res => ({
-      isSuccess: true,
-      data: res.data,
-    })),
+  /** POST /api/notes/create-with-ai-tags */
+  createWithAiTagsFromText: async (payload: Omit<CreateNoteWithAiTagsCommandRequest, 'fileContent' | 'fileName' | 'contentType'>): Promise<ApiResponse<CreateNoteWithAiTagsResponse>> => {
+    const res = await axiosClient.post<CreateNoteWithAiTagsResponse>('/api/notes/create-with-ai-tags', payload);
+    return { isSuccess: true, data: res.data };
+  },
 
-  /** POST /api/notes/ai/create-with-tags/upload (multipart) */
-  createWithAiTagsFromUpload: (payload: CreateNoteWithAiTagsCommandRequest): Promise<ApiResponse<CreateNoteWithAiTagsResponse>> => {
+  /** POST /api/notes/create-with-ai-tags/upload (multipart) */
+  createWithAiTagsFromUpload: async (payload: CreateNoteWithAiTagsCommandRequest): Promise<ApiResponse<CreateNoteWithAiTagsResponse>> => {
     const formData = new FormData();
-    formData.append('authUserId', payload.authUserId);
     if (payload.title) formData.append('title', payload.title);
     if (payload.isPublic != null) formData.append('isPublic', String(payload.isPublic));
     if (payload.maxTags != null) formData.append('maxTags', String(payload.maxTags));
@@ -127,10 +119,8 @@ const notesApi = {
     }
     if (payload.fileName) formData.append('fileName', payload.fileName);
     if (payload.contentType) formData.append('contentType', payload.contentType);
-    return axiosClient.post<CreateNoteWithAiTagsResponse>('/api/notes/ai/create-with-tags/upload', formData, { headers: { 'Content-Type': 'multipart/form-data' } }).then(res => ({
-      isSuccess: true,
-      data: res.data,
-    }));
+    const res = await axiosClient.post<CreateNoteWithAiTagsResponse>('/api/notes/create-with-ai-tags/upload', formData, { headers: { 'Content-Type': 'multipart/form-data' } });
+    return { isSuccess: true, data: res.data };
   },
 };
 

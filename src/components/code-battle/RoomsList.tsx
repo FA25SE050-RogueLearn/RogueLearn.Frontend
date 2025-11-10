@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, startTransition } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Users } from 'lucide-react';
 import { mockRooms, Room } from '@/lib/mockCodeBattleData';
@@ -34,7 +34,9 @@ export default function RoomsList({ apiBaseUrl, eventId, onRoomSelect, selectedR
 
   useEffect(() => {
     if (!eventId) {
-      setRooms([]);
+      startTransition(() => {
+        setRooms([]);
+      });
       return;
     }
 
@@ -67,8 +69,8 @@ export default function RoomsList({ apiBaseUrl, eventId, onRoomSelect, selectedR
   }, [apiBaseUrl, eventId]);
 
   return (
-    <Card className="relative overflow-hidden rounded-[26px] border border-[#f5c16c]/18 bg-gradient-to-br from-[#24110d]/88 via-[#130906]/94 to-[#070403]/98 p-6 shadow-[0_20px_60px_rgba(45,16,8,0.55)]">
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(245,193,108,0.35),_transparent_70%)] opacity-[0.35]" />
+    <Card className="relative overflow-hidden rounded-[26px] border border-[#f5c16c]/18 bg-linear-to-br from-[#24110d]/88 via-[#130906]/94 to-[#070403]/98 p-6 shadow-[0_20px_60px_rgba(45,16,8,0.55)]">
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(245,193,108,0.35),transparent_70%)] opacity-[0.35]" />
       <CardHeader className="relative z-10 pb-4">
         <CardTitle className="flex items-center gap-3 text-lg font-semibold text-white">
           <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#d23187]/20 text-[#f5c16c]">

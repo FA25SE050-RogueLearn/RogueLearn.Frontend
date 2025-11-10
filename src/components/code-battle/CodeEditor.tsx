@@ -118,7 +118,7 @@ export default function CodeEditor({ code, setCode, language, setLanguage, onSub
         </select>
         <Button
           onClick={onSubmit}
-          className="flex items-center gap-2 rounded-full bg-gradient-to-r from-[#d23187] via-[#f5c16c] to-[#f5c16c] px-6 text-xs uppercase tracking-[0.35em] text-[#2b130f] shadow-[0_15px_40px_rgba(210,49,135,0.4)] hover:from-[#f061a6] hover:via-[#f5c16c] hover:to-[#f0b26a]"
+          className="flex items-center gap-2 rounded-full bg-linear-to-r from-[#d23187] via-[#f5c16c] to-[#f5c16c] px-6 text-xs uppercase tracking-[0.35em] text-[#2b130f] shadow-[0_15px_40px_rgba(210,49,135,0.4)] hover:from-[#f061a6] hover:via-[#f5c16c] hover:to-[#f0b26a]"
         >
           <Play className="h-4 w-4" />
           Submit Invocation

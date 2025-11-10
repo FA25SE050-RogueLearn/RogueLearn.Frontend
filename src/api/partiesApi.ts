@@ -18,6 +18,7 @@ import {
   CreatePartyResponse,
   InviteMemberRequest,
   AddPartyResourceRequest,
+  UpdatePartyResourceRequest,
   AcceptPartyInvitationCommandRequest,
   DeclinePartyInvitationCommandRequest,
   ConfigurePartySettingsCommandRequest,
@@ -63,6 +64,17 @@ const partiesApi = {
         isSuccess: true,
         data: res.data,
       })),
+
+  /** GET /api/parties/{partyId}/stash/{stashItemId} - Get a stash item by id */
+  getResourceById: (
+    partyId: string,
+    stashItemId: string
+  ): Promise<ApiResponse<PartyStashItemDto | null>> =>
+    axiosClient
+      .get<PartyStashItemDto | null>(
+        `/api/parties/${partyId}/stash/${stashItemId}`
+      )
+      .then((res) => ({ isSuccess: true, data: res.data })),
 
   /** GET /api/parties/{partyId}/invitations/pending - Get pending invitations for a party (Party Leader only) */
   getPendingInvitations: (
@@ -144,6 +156,22 @@ const partiesApi = {
         data: res.data,
       })),
 
+  /** PUT /api/parties/{partyId}/stash/{stashItemId} - Update a stash item (Party Leader only) */
+  updateResource: (
+    partyId: string,
+    stashItemId: string,
+    payload: UpdatePartyResourceRequest
+  ): Promise<void> =>
+    axiosClient
+      .put(`/api/parties/${partyId}/stash/${stashItemId}`, payload)
+      .then(() => {}),
+
+  /** DELETE /api/parties/{partyId}/stash/{stashItemId} - Delete a stash item (Party Leader only) */
+  deleteResource: (partyId: string, stashItemId: string): Promise<void> =>
+    axiosClient
+      .delete(`/api/parties/${partyId}/stash/${stashItemId}`)
+      .then(() => {}),
+
   /** POST /api/parties/{partyId}/invitations/{invitationId}/accept - Accept a party invitation */
   acceptInvitation: (
     partyId: string,
@@ -190,9 +218,13 @@ const partiesApi = {
     axiosClient.post(`/api/parties/${partyId}/join`, {}).then(() => {}),
 
   /** DELETE /api/parties/{partyId}/members/{memberId} - Remove a party member */
-  removeMember: (partyId: string, memberId: string): Promise<void> =>
+  removeMember: (
+    partyId: string,
+    memberId: string,
+    payload: { reason?: string }
+  ): Promise<void> =>
     axiosClient
-      .delete(`/api/parties/${partyId}/members/${memberId}`)
+      .post(`/api/parties/${partyId}/members/${memberId}/remove`, payload)
       .then(() => {}),
 
   /** POST /api/parties/{partyId}/transfer-leadership - Transfer party leadership */
@@ -300,6 +332,22 @@ const partiesApi = {
           `/api/admin/parties/${partyId}/members/${memberAuthUserId}/roles/revoke`,
           { role }
         )
+        .then(() => {}),
+
+    /** PUT /api/admin/parties/{partyId}/stash/{stashItemId} - Admin-only: Update a party stash item */
+    updateResource: (
+      partyId: string,
+      stashItemId: string,
+      payload: UpdatePartyResourceRequest
+    ): Promise<void> =>
+      axiosClient
+        .put(`/api/admin/parties/${partyId}/stash/${stashItemId}`, payload)
+        .then(() => {}),
+
+    /** DELETE /api/admin/parties/{partyId}/stash/{stashItemId} - Admin-only: Delete a party stash item */
+    deleteResource: (partyId: string, stashItemId: string): Promise<void> =>
+      axiosClient
+        .delete(`/api/admin/parties/${partyId}/stash/${stashItemId}`)
         .then(() => {}),
   },
 };

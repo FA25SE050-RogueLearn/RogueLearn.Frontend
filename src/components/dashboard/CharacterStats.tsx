@@ -35,8 +35,8 @@ export function CharacterStats({ userProfile }: { userProfile: UserProfile }) {
   };
 
   return (
-    <Card className="relative col-span-1 overflow-hidden rounded-[24px] border border-[#f5c16c]/18 bg-[#1d0d0b]/80 p-6 shadow-[0_18px_55px_rgba(32,10,6,0.55)]">
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(210,49,135,0.28),_transparent_70%)]" />
+    <Card className="relative col-span-1 overflow-hidden rounded-3xl border border-[#f5c16c]/18 bg-[#1d0d0b]/80 p-6 shadow-[0_18px_55px_rgba(32,10,6,0.55)]">
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(210,49,135,0.28),transparent_70%)]" />
       <div className="relative z-10">
         <CardHeader className="mb-6 border-b border-[#f5c16c]/25 pb-4">
           <CardTitle className="text-lg uppercase tracking-[0.35em] text-[#f5c16c]/80">Character Codex</CardTitle>
