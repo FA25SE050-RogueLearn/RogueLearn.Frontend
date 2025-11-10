@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import notesApi from "@/api/notesApi";
 import tagsApi from "@/api/tagsApi";
@@ -15,10 +15,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { createClient } from "@/utils/supabase/client";
-import { Loader2, Sparkles } from "lucide-react";
+import { Loader2 } from "lucide-react";
 
 // BlockNote imports
-import { BlockNoteEditor, PartialBlock } from "@blocknote/core";
+import { PartialBlock } from "@blocknote/core";
 import { en } from "@blocknote/core/locales";
 import "@blocknote/core/fonts/inter.css";
 import { BlockNoteView } from "@blocknote/shadcn";
@@ -42,8 +42,20 @@ import {
 import { en as aiEn } from "@blocknote/xl-ai/locales";
 import "@blocknote/xl-ai/style.css";
 import { DefaultChatTransport } from "ai";
+import partiesApi from "@/api/partiesApi";
+import { PartyDto } from "@/types/parties";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
-type EditorStatus = "loading" | "ready" | "saving";
+type EditorStatus = "loading" | "ready" | "saving" | "dirty";
 
 export default function NoteEditorPage() {
   const router = useRouter();
@@ -72,6 +84,14 @@ export default function NoteEditorPage() {
     }[]
   >([]);
   const [aiLoading, setAiLoading] = useState(false);
+  const saveTimerRef = useRef<number | null>(null);
+
+  // Share to Party Stash modal state
+  const [shareOpen, setShareOpen] = useState(false);
+  const [myParties, setMyParties] = useState<PartyDto[]>([]);
+  const [sharePartyId, setSharePartyId] = useState<string | null>(null);
+  const [shareTitle, setShareTitle] = useState<string>("");
+  const [shareTags, setShareTags] = useState<string>("");
 
   useEffect(() => {
     const supabase = createClient();
@@ -91,18 +111,37 @@ export default function NoteEditorPage() {
           setNote(n);
           setTitle(n.title);
           setIsPublic(n.isPublic);
-          // Try to parse JSON blocks; fallback to simple paragraph block
+          // Parse content which may be a JSON string or an object already
           let blocks: PartialBlock[] | undefined = undefined;
-          if (n.content) {
-            try {
-              const parsed = JSON.parse(n.content);
-              if (Array.isArray(parsed)) blocks = parsed as PartialBlock[];
-            } catch {
-              // fallback to a paragraph block with the content as text
-              blocks = [{ type: "paragraph", content: n.content ?? "" }];
+          const raw = n.content as any;
+          if (raw) {
+            if (typeof raw === "string") {
+              try {
+                const parsed = JSON.parse(raw);
+                if (Array.isArray(parsed)) {
+                  blocks = parsed as PartialBlock[];
+                } else if (parsed && typeof parsed === "object" && Array.isArray((parsed as any).blocks)) {
+                  blocks = (parsed as any).blocks as PartialBlock[];
+                }
+              } catch {
+                // Ignore parse errors
+              }
+            } else if (typeof raw === "object") {
+              if (Array.isArray(raw)) {
+                blocks = raw as PartialBlock[];
+              } else if (Array.isArray((raw as any).blocks)) {
+                blocks = (raw as any).blocks as PartialBlock[];
+              }
             }
           }
-          setInitialBlocks(blocks);
+          // Provide a valid fallback block if content is empty or parsing failed
+          const fallback: PartialBlock[] = [
+            {
+              type: "paragraph",
+              content: [{ type: "text", text: n.title ?? "", styles: {} }],
+            },
+          ];
+          setInitialBlocks(blocks && blocks.length > 0 ? blocks : fallback);
         }
       } finally {
         setStatus("ready");
@@ -114,6 +153,8 @@ export default function NoteEditorPage() {
         if (my.isSuccess) setMyTags((my.data as any)?.tags ?? []);
         const nt = await tagsApi.getTagsForNote(noteId);
         if (nt.isSuccess) setNoteTags(nt.data.tags);
+        const parties = await partiesApi.getMine();
+        if (parties.isSuccess) setMyParties(parties.data);
       } catch {}
     };
     load();
@@ -122,9 +163,8 @@ export default function NoteEditorPage() {
 
   const AI_BASE_URL = process.env.NEXT_PUBLIC_BLOCKNOTE_AI_SERVER_BASE_URL;
 
-  const editor = useMemo(() => {
-    if (status === "loading") return undefined as unknown as BlockNoteEditor;
-    return BlockNoteEditor.create({
+  const editor = useCreateBlockNote(
+    {
       initialContent: initialBlocks,
       dictionary: AI_BASE_URL ? ({ ...en, ai: aiEn } as any) : undefined,
       extensions: AI_BASE_URL
@@ -136,18 +176,32 @@ export default function NoteEditorPage() {
             }),
           ]
         : undefined,
-    });
-  }, [status, initialBlocks, AI_BASE_URL]);
+    },
+    [initialBlocks, AI_BASE_URL]
+  );
 
   // Autosave title & public toggle
   useEffect(() => {
     if (!noteId || !authUserId) return;
+    // Immediately mark as dirty to reflect unsaved changes
+    const existingContentNow = editor
+      ? JSON.stringify(editor.document)
+      : typeof note?.content === "string" && note.content.length > 0
+        ? note.content
+        : null;
+    if (existingContentNow != null) {
+      setStatus("dirty");
+    }
     const handle = setTimeout(async () => {
+      // Only autosave title/public when we can safely include content
+      const existingContent = editor
+        ? JSON.stringify(editor.document)
+        : typeof note?.content === "string" && note.content.length > 0
+          ? note.content
+          : null;
+      if (existingContent == null) return; // avoid overwriting with empty content
       setStatus("saving");
       try {
-        // Backend validator requires non-empty content on update.
-        // When autosaving title/public, include current or last-known content.
-        const existingContent = note?.content ?? "[]";
         await notesApi.update(noteId, {
           authUserId,
           title: title.trim(),
@@ -157,23 +211,42 @@ export default function NoteEditorPage() {
       } finally {
         setStatus("ready");
       }
-    }, 500);
+    }, 1000);
     return () => clearTimeout(handle);
   }, [title, isPublic, noteId, authUserId]);
 
   // Save content on change (debounced by BlockNoteView onChange frequency)
-  const onEditorChange = async () => {
+  const onEditorChange = () => {
     if (!noteId || !authUserId || !editor) return;
-    try {
-      const json = editor.document; // Block[]
-      await notesApi.update(noteId, {
-        authUserId,
-        content: JSON.stringify(json),
-        isPublic: isPublic,
-        title: title.trim(),
-      });
-    } catch {}
+    // Debounce saves to avoid spamming the API and to make status updates visible
+    if (saveTimerRef.current) {
+      clearTimeout(saveTimerRef.current);
+    }
+    // Show unsaved changes immediately on keystroke
+    setStatus("dirty");
+    saveTimerRef.current = window.setTimeout(async () => {
+      setStatus("saving");
+      try {
+        const json = editor.document; // Block[]
+        await notesApi.update(noteId, {
+          authUserId,
+          content: JSON.stringify(json),
+          isPublic: isPublic,
+          title: title.trim(),
+        });
+      } finally {
+        setStatus("ready");
+      }
+    }, 2000);
   };
+
+  useEffect(() => {
+    return () => {
+      if (saveTimerRef.current) {
+        clearTimeout(saveTimerRef.current);
+      }
+    };
+  }, []);
 
   const requestAiTags = async () => {
     if (!authUserId || !noteId) return;
@@ -223,7 +296,7 @@ export default function NoteEditorPage() {
     if (nt.isSuccess) setNoteTags(nt.data.tags);
   };
 
-  if (status === "loading" || !editor) {
+  if (status === "loading") {
     return (
       <DashboardFrame>
         <div className="flex h-[60vh] items-center justify-center">
@@ -254,8 +327,121 @@ export default function NoteEditorPage() {
                 Public
               </Label>
               <span className="text-xs text-foreground/60">
-                {status === "saving" ? "Saving..." : "Saved"}
+                {status === "saving"
+                  ? "Saving..."
+                  : status === "dirty"
+                    ? "Unsaved changes"
+                    : "Saved"}
               </span>
+              {/* Share to Party Stash */}
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Dialog open={shareOpen} onOpenChange={setShareOpen}>
+                      <DialogTrigger asChild>
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          disabled={!isPublic}
+                        >
+                          Share to Party Stash
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent>
+                        <DialogHeader>
+                          <DialogTitle>Share to Party Stash</DialogTitle>
+                        </DialogHeader>
+                        <div className="space-y-3">
+                          {!isPublic && (
+                            <div className="rounded-md border border-yellow-600/40 bg-yellow-900/20 p-2 text-xs text-yellow-200">
+                              Note must be public to share.
+                            </div>
+                          )}
+                          <div className="grid grid-cols-2 gap-2 items-center">
+                            <Label className="text-xs">Party</Label>
+                            <Select
+                              onValueChange={(v) => setSharePartyId(v)}
+                              value={sharePartyId ?? undefined}
+                            >
+                              <SelectTrigger className="h-8">
+                                <SelectValue placeholder="Select a party" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {myParties.map((p) => (
+                                  <SelectItem key={p.id} value={p.id}>
+                                    {p.name}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div className="grid grid-cols-2 gap-2 items-center">
+                            <Label className="text-xs">Title</Label>
+                            <Input
+                              value={shareTitle || title}
+                              onChange={(e) => setShareTitle(e.target.value)}
+                              placeholder="Stash item title"
+                            />
+                          </div>
+                          <div className="grid grid-cols-2 gap-2 items-center">
+                            <Label className="text-xs">Tags</Label>
+                            <Input
+                              value={shareTags}
+                              onChange={(e) => setShareTags(e.target.value)}
+                              placeholder="Comma-separated tags"
+                            />
+                          </div>
+                        </div>
+                        <DialogFooter>
+                          <Button
+                            onClick={async () => {
+                              if (!isPublic) {
+                                toast.error("Note must be public to share.");
+                                return;
+                              }
+                              if (!sharePartyId) {
+                                toast.error("Please select a party.");
+                                return;
+                              }
+                              try {
+                                const tags = shareTags
+                                  .split(",")
+                                  .map((t) => t.trim())
+                                  .filter((t) => t.length > 0);
+                                // provenance tag
+                                if (noteId) tags.push(`source:note:${noteId}`);
+                                // Share raw BlockNote document array (no wrapper), same as note content
+                                const contentArray = (editor?.document ?? initialBlocks ?? []) as any[];
+                                const res = await partiesApi.addResource(sharePartyId, {
+                                  title: (shareTitle || title).trim(),
+                                  content: contentArray,
+                                  tags,
+                                  originalNoteId: noteId,
+                                });
+                                if (res.isSuccess) {
+                                  toast.success("Shared to party stash");
+                                  setShareOpen(false);
+                                  setShareTags("");
+                                  setSharePartyId(null);
+                                }
+                              } catch (e: any) {
+                                toast.error(e?.response?.status === 403 ? "Permission denied" : "Failed to share");
+                              }
+                            }}
+                          >
+                            Share
+                          </Button>
+                        </DialogFooter>
+                      </DialogContent>
+                    </Dialog>
+                  </TooltipTrigger>
+                  {!isPublic && (
+                    <TooltipContent>
+                      Make note public to enable sharing
+                    </TooltipContent>
+                  )}
+                </Tooltip>
+              </TooltipProvider>
             </div>
           </div>
           <Separator className="my-3" />

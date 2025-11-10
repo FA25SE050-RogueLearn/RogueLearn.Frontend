@@ -14,6 +14,17 @@ const axiosClient = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_URL,
 });
 
+// Developer hint: warn when API base URL is missing to avoid sending requests to Next.js dev server
+if (!process.env.NEXT_PUBLIC_API_URL) {
+  // This toast helps diagnose 400s where backend doesn't receive the request (requests hit the Next dev server instead)
+  try {
+    toast.error('API base URL is not configured. Set NEXT_PUBLIC_API_URL in your .env.local');
+  } catch {}
+  // Also log to console for visibility in devtools
+  // eslint-disable-next-line no-console
+  console.warn('[axiosClient] NEXT_PUBLIC_API_URL is undefined. Requests will target the Next.js dev server origin.');
+}
+
 /**
  * An Axios interceptor that automatically attaches the user's JWT bearer token
  * to every outgoing request. This handles authentication for all API calls made

@@ -47,6 +47,17 @@ export default function MeetingManagement({ partyId }: Props) {
   const [loadingMeetings, setLoadingMeetings] = useState(false);
   const [partyMembers, setPartyMembers] = useState<PartyMemberDto[]>([]);
 
+  // Helper: derive a friendly display name for a party member
+  function getMemberDisplayName(m?: PartyMemberDto | null): string | undefined {
+    if (!m) return undefined;
+    const username = (m.username ?? "").trim();
+    if (username) return username;
+    const full = `${(m.firstName ?? "").trim()} ${(m.lastName ?? "").trim()}`.trim();
+    if (full) return full;
+    const email = (m.email ?? "").trim();
+    return email || undefined;
+  }
+
   useEffect(() => {
     const supabase = createClient();
     supabase.auth.getUser().then(({ data }) => setAuthUserId(data.user?.id ?? null));
@@ -143,7 +154,7 @@ export default function MeetingManagement({ partyId }: Props) {
     try {
       if (!activeMeeting.meeting?.meetingId) throw new Error("No active meeting to end");
       // 1) Use cached token if available; otherwise, request readonly token
-      const token = activeToken ?? (await requestToken(requiredReadonlyScopes));
+      const token = activeToken ?? (await requestToken(requiredCreateScopes));
       // Ensure we have party members loaded for mapping
       if (partyMembers.length === 0) {
         try {
@@ -216,13 +227,16 @@ export default function MeetingManagement({ partyId }: Props) {
       if (authUserId) {
         const already = mapped.some((mp) => mp.userId === authUserId);
         if (!already) {
+          // Derive a friendly display name for the organizer from party members
+          const organizerMember = partyMembers.find((m) => m.authUserId === authUserId);
+          const organizerDisplayName = getMemberDisplayName(organizerMember);
           mapped.push({
             userId: authUserId,
             roleInMeeting: "organizer",
             joinTime: activeMeeting.meeting?.actualStartTime ?? null,
             leaveTime: new Date().toISOString(),
             type: "signedin",
-            displayName: selectedMeetingDetails?.meeting?.title ?? undefined,
+            displayName: organizerDisplayName,
             meetingId: activeMeeting.meeting?.meetingId,
           });
         }
