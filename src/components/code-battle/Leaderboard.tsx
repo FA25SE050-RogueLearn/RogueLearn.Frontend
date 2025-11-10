@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, startTransition } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Trophy } from 'lucide-react';
 import { mockLeaderboards, LeaderboardEntry } from '@/lib/mockCodeBattleData';
@@ -22,7 +22,10 @@ export default function Leaderboard({ apiBaseUrl, eventId, roomId, eventSourceRe
     if (USE_MOCK_DATA && roomId) {
       // Load mock leaderboard for this room
       const mockData = mockLeaderboards[roomId] || [];
-      setEntries(mockData);
+      // Use startTransition to avoid cascading renders
+      startTransition(() => {
+        setEntries(mockData);
+      });
     }
   }, [roomId]);
 
@@ -55,8 +58,8 @@ export default function Leaderboard({ apiBaseUrl, eventId, roomId, eventSourceRe
   }, [eventSourceRef]);
 
   return (
-    <Card className="relative overflow-hidden rounded-[26px] border border-[#f5c16c]/18 bg-gradient-to-br from-[#24120d]/88 via-[#140a08]/94 to-[#070405]/97 p-6 shadow-[0_20px_60px_rgba(48,17,9,0.55)]">
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(245,193,108,0.38),_transparent_70%)] opacity-[0.35]" />
+    <Card className="relative overflow-hidden rounded-[26px] border border-[#f5c16c]/18 bg-linear-to-br from-[#24120d]/88 via-[#140a08]/94 to-[#070405]/97 p-6 shadow-[0_20px_60px_rgba(48,17,9,0.55)]">
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(245,193,108,0.38),transparent_70%)] opacity-[0.35]" />
       <CardHeader className="relative z-10 pb-4">
         <CardTitle className="flex items-center gap-3 text-lg font-semibold text-white">
           <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#d23187]/20 text-[#f5c16c]">

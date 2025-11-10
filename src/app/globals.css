@@ -1,92 +1,159 @@
 /* roguelearn-web/src/app/globals.css */
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
 
-@layer base {
-  :root {
-    /* Light Mode - Clean Default */
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
-    --radius: 0.5rem;
-    --sidebar-background: 0 0% 98%;
-    --sidebar-foreground: 240 5.3% 26.1%;
-    --sidebar-primary: 240 5.9% 10%;
-    --sidebar-primary-foreground: 0 0% 98%;
-    --sidebar-accent: 240 4.8% 95.9%;
-    --sidebar-accent-foreground: 240 5.9% 10%;
-    --sidebar-border: 220 13% 91%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+/* CSS Variables with hsl() inside */
+:root {
+  /* Light Mode - Clean Default */
+  --background: hsl(0 0% 100%);
+  --foreground: hsl(222.2 84% 4.9%);
+  --card: hsl(0 0% 100%);
+  --card-foreground: hsl(222.2 84% 4.9%);
+  --popover: hsl(0 0% 100%);
+  --popover-foreground: hsl(222.2 84% 4.9%);
+  --primary: hsl(222.2 47.4% 11.2%);
+  --primary-foreground: hsl(210 40% 98%);
+  --secondary: hsl(210 40% 96.1%);
+  --secondary-foreground: hsl(222.2 47.4% 11.2%);
+  --muted: hsl(210 40% 96.1%);
+  --muted-foreground: hsl(215.4 16.3% 46.9%);
+  --accent: hsl(210 40% 96.1%);
+  --accent-foreground: hsl(222.2 47.4% 11.2%);
+  --destructive: hsl(0 84.2% 60.2%);
+  --destructive-foreground: hsl(210 40% 98%);
+  --border: hsl(214.3 31.8% 91.4%);
+  --input: hsl(214.3 31.8% 91.4%);
+  --ring: hsl(222.2 84% 4.9%);
+  --radius: 0.5rem;
+  --sidebar-background: hsl(0 0% 98%);
+  --sidebar-foreground: hsl(240 5.3% 26.1%);
+  --sidebar-primary: hsl(240 5.9% 10%);
+  --sidebar-primary-foreground: hsl(0 0% 98%);
+  --sidebar-accent: hsl(240 4.8% 95.9%);
+  --sidebar-accent-foreground: hsl(240 5.9% 10%);
+  --sidebar-border: hsl(220 13% 91%);
+  --sidebar-ring: hsl(217.2 91.2% 59.8%);
+}
+
+/* Dark Mode - Baldur's Gate 3 Inspired (Brown/Gold Foundation) */
+.dark {
+  /* Deep rich brown backgrounds - like aged leather and wood */
+  --background: hsl(30 25% 13%); /* Deep earthy brown */
+  --foreground: hsl(40 30% 85%); /* Warm parchment text */
+
+  /* Cards - Elevated brown surfaces with warmth */
+  --card: hsl(28 35% 15%); /* Rich leather/wood tone */
+  --card-foreground: hsl(40 30% 85%);
+  --popover: hsl(28 35% 15%);
+  --popover-foreground: hsl(40 30% 85%);
+
+  /* Primary - Saturated warm brown (active/selected items) */
+  --primary: hsl(30 40% 25%); /* Deep amber-brown */
+  --primary-foreground: hsl(40 30% 95%);
+
+  /* Secondary - Reddish brown (like secondary panels in BG3) */
+  --secondary: hsl(15 40% 20%); /* Warm reddish-brown */
+  --secondary-foreground: hsl(40 30% 95%);
+
+  /* Muted - Subtle darker brown */
+  --muted: hsl(28 35% 20%);
+  --muted-foreground: hsl(40 30% 65%);
+
+  /* Accent - Bright magical gold (highlights, CTAs, progress bars) */
+  --accent: hsl(45 90% 58%); /* Vibrant gold like BG3's UI highlights */
+  --accent-foreground: hsl(30 25% 8%);
+
+  /* Destructive - Warm red (fire/danger) */
+  --destructive: hsl(0 65% 45%);
+  --destructive-foreground: hsl(40 30% 95%);
+
+  /* Success - Subtle green glow */
+  --success: hsl(150 45% 42%);
+  --success-foreground: hsl(40 30% 95%);
+
+  /* Borders - Subtle brown separation */
+  --border: hsl(30 25% 15%);
+  --input: hsl(30 25% 15%);
+  --ring: hsl(45 90% 58%); /* Gold focus ring */
+  --sidebar-background: hsl(240 5.9% 10%);
+  --sidebar-foreground: hsl(240 4.8% 95.9%);
+  --sidebar-primary: hsl(224.3 76.3% 48%);
+  --sidebar-primary-foreground: hsl(0 0% 100%);
+  --sidebar-accent: hsl(240 3.7% 15.9%);
+  --sidebar-accent-foreground: hsl(240 4.8% 95.9%);
+  --sidebar-border: hsl(240 3.7% 15.9%);
+  --sidebar-ring: hsl(217.2 91.2% 59.8%);
+}
+
+/* Connect CSS variables to Tailwind theme using @theme inline */
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  /* Sidebar colors */
+  --color-sidebar: var(--sidebar-background);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+
+  /* Border radius */
+  --radius-lg: var(--radius);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-sm: calc(var(--radius) - 4px);
+
+  /* Animations */
+  --animate-accordion-down: accordion-down 0.2s ease-out;
+  --animate-accordion-up: accordion-up 0.2s ease-out;
+
+  /* Keyframes */
+  @keyframes accordion-down {
+    from {
+      height: 0;
+    }
+    to {
+      height: var(--radix-accordion-content-height);
+    }
   }
- 
-  /* Dark Mode - Baldur's Gate 3 Inspired (Brown/Gold Foundation) */
-  .dark {
-    /* Deep rich brown backgrounds - like aged leather and wood */
-    --background: 30 25% 13%; /* Deep earthy brown */
-    --foreground: 40 30% 85%; /* Warm parchment text */
-    
-    /* Cards - Elevated brown surfaces with warmth */
-    --card: 28 35% 15%; /* Rich leather/wood tone */
-    --card-foreground: 40 30% 85%;
-    --popover: 28 35% 15%;
-    --popover-foreground: 40 30% 85%;
-    
-    /* Primary - Saturated warm brown (active/selected items) */
-    --primary: 30 40% 25%; /* Deep amber-brown */
-    --primary-foreground: 40 30% 95%;
-    
-    /* Secondary - Reddish brown (like secondary panels in BG3) */
-    --secondary: 15 40% 20%; /* Warm reddish-brown */
-    --secondary-foreground: 40 30% 95%;
-    
-    /* Muted - Subtle darker brown */
-    --muted: 28 35% 20%;
-    --muted-foreground: 40 30% 65%;
-    
-    /* Accent - Bright magical gold (highlights, CTAs, progress bars) */
-    --accent: 45 90% 58%; /* Vibrant gold like BG3's UI highlights */
-    --accent-foreground: 30 25% 8%;
-    
-    /* Destructive - Warm red (fire/danger) */
-    --destructive: 0 65% 45%;
-    --destructive-foreground: 40 30% 95%;
-    
-    /* Success - Subtle green glow */
-    --success: 150 45% 42%;
-    --success-foreground: 40 30% 95%;
-    
-    /* Borders - Subtle brown separation */
-    --border: 30 25% 15%;
-    --input: 30 25% 15%;
-    --ring: 45 90% 58%; /* Gold focus ring */ --sidebar-background: 240 5.9% 10%; --sidebar-foreground: 240 4.8% 95.9%; --sidebar-primary: 224.3 76.3% 48%; --sidebar-primary-foreground: 0 0% 100%; --sidebar-accent: 240 3.7% 15.9%; --sidebar-accent-foreground: 240 4.8% 95.9%; --sidebar-border: 240 3.7% 15.9%; --sidebar-ring: 217.2 91.2% 59.8%;
+
+  @keyframes accordion-up {
+    from {
+      height: var(--radix-accordion-content-height);
+    }
+    to {
+      height: 0;
+    }
   }
 }
  
 @layer base {
   * {
-    @apply border-border;
+    border-color: var(--border);
   }
   body {
-    @apply bg-background text-foreground;
+    background-color: var(--background);
+    color: var(--foreground);
   }
-  
+
   /* Optional: Subtle texture for aged material feel */
   body::before {
     content: '';

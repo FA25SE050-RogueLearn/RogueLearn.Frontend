@@ -15,7 +15,7 @@ const statusColors = {
 // Renders the list of guild members on the right sidebar.
 export function MembersList({ members }: MembersListProps) {
   return (
-    <div className="h-full rounded-2xl border border-white/12 bg-gradient-to-b from-white/12 via-white/5 to-transparent p-5 backdrop-blur-xl">
+    <div className="h-full rounded-2xl border border-white/12 bg-linear-to-b from-white/12 via-white/5 to-transparent p-5 backdrop-blur-xl">
       <h3 className="mb-4 font-heading text-lg font-semibold text-white">Members ({members.length})</h3>
       <ul className="space-y-3 text-foreground/80">
         {members.map(member => (

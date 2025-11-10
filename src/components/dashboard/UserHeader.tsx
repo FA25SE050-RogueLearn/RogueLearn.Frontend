@@ -16,7 +16,7 @@ export function UserHeader({ userProfile }: { userProfile: UserProfile }) {
     return (
       <div className="flex items-center gap-4 rounded-3xl border border-white/10 bg-white/5 p-6 animate-pulse">
         <div className="h-16 w-16 rounded-full bg-white/10" />
-        <div className="flex-grow space-y-2">
+        <div className="grow space-y-2">
           <div className="h-6 w-1/2 rounded bg-white/10" />
           <div className="h-4 w-1/4 rounded bg-white/10" />
         </div>
@@ -36,13 +36,13 @@ export function UserHeader({ userProfile }: { userProfile: UserProfile }) {
               "url('https://images.unsplash.com/photo-1618005198919-d3d4b5a92eee?auto=format&fit=crop&w=1400&q=80')",
           }}
         />
-        <div className="absolute inset-0 bg-gradient-to-r from-[#2d140f]/92 via-[#180a07]/92 to-transparent" />
+        <div className="absolute inset-0 bg-linear-to-r from-[#2d140f]/92 via-[#180a07]/92 to-transparent" />
         <div className="absolute inset-y-0 right-0 w-1/2 bg-[radial-gradient(circle_at_20%_30%,rgba(245,193,108,0.4),transparent)]" />
       </div>
 
       <div className="relative z-10 flex flex-col gap-6 lg:flex-row lg:items-center">
         <div className="flex items-center gap-4">
-          <div className="relative h-20 w-20 flex-shrink-0 overflow-hidden rounded-full border border-[#f5c16c]/55 bg-[#140806]/80">
+          <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-full border border-[#f5c16c]/55 bg-[#140806]/80">
             <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1542751371-adc38448a05e?auto=format&fit=crop&w=400&q=80')] bg-cover bg-center" />
             <div className="absolute inset-0 rounded-full border border-white/20" />
           </div>
@@ -68,7 +68,7 @@ export function UserHeader({ userProfile }: { userProfile: UserProfile }) {
             </div>
             <div className="mt-2 h-3 rounded-full bg-[#2d140f]/70">
               <div
-                className="h-full rounded-full bg-gradient-to-r from-[#d23187] via-[#f061a6] to-[#f5c16c] shadow-[0_0_16px_rgba(245,193,108,0.55)]"
+                className="h-full rounded-full bg-linear-to-r from-[#d23187] via-[#f061a6] to-[#f5c16c] shadow-[0_0_16px_rgba(245,193,108,0.55)]"
                 style={{ width: `${Math.min(100, xpPercentage)}%` }}
               />
             </div>

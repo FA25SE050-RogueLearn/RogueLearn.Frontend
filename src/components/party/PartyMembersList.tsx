@@ -69,7 +69,7 @@ export default function PartyMembersList({ partyId, members, onRefresh }: PartyM
     if (!confirmed) return;
     setBusyMemberId(member.id);
     try {
-      await partiesApi.removeMember(partyId, member.id);
+      await partiesApi.removeMember(partyId, member.id, {});
       toast.success("Member removed");
       await onRefresh?.();
     } catch (e: any) {

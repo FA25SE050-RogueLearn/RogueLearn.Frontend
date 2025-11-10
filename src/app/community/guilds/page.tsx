@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, startTransition } from "react";
 import Link from "next/link";
 import { DashboardFrame } from "@/components/layout/DashboardFrame";
 import { Input } from "@/components/ui/input";
@@ -21,7 +21,9 @@ export default function GuildDirectoryPage() {
 
   useEffect(() => {
     let cancelled = false;
-    setLoading(true);
+    startTransition(() => {
+      setLoading(true);
+    });
     guildsApi
       .listAllPublic({ search, page: 1, pageSize: 20 })
       .then((res) => {
@@ -43,7 +45,9 @@ export default function GuildDirectoryPage() {
   // Fetch the current user's guild once
   useEffect(() => {
     let cancelled = false;
-    setLoadingMyGuild(true);
+    startTransition(() => {
+      setLoadingMyGuild(true);
+    });
     guildsApi
       .getMyGuild()
       .then((res) => {

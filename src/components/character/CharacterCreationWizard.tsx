@@ -355,15 +355,15 @@ export function CharacterCreationWizard({
               setSelectedSpec(null);
             }}
             className={cn(
-              "group relative cursor-pointer overflow-hidden rounded-[24px] border border-white/12 bg-gradient-to-br from-[#2f1811]/88 via-[#1c0c11]/93 to-[#0a0407]/97 p-4 shadow-[0_16px_48px_rgba(24,6,12,0.45)] transition-transform duration-200 hover:-translate-y-[4px]",
+              "group relative cursor-pointer overflow-hidden rounded-3xl border border-white/12 bg-linear-to-br from-[#2f1811]/88 via-[#1c0c11]/93 to-[#0a0407]/97 p-4 shadow-[0_16px_48px_rgba(24,6,12,0.45)] transition-transform duration-200 hover:-translate-y-1",
               compact && "p-3.5",
               isActive
                 ? "border-accent/60 shadow-[0_24px_60px_rgba(210,49,135,0.4)]"
                 : "hover:shadow-[0_24px_60px_rgba(210,49,135,0.28)]",
             )}
           >
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(210,49,135,0.32),_transparent_70%)] opacity-55" />
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_bottom_right,_rgba(240,177,90,0.24),_transparent_72%)]" />
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(210,49,135,0.32),transparent_70%)] opacity-55" />
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_bottom_right,rgba(240,177,90,0.24),transparent_72%)]" />
             <CardContent
               className={cn(
                 "relative z-10 space-y-3 p-0",
@@ -436,15 +436,15 @@ export function CharacterCreationWizard({
             key={career.id}
             onClick={() => setSelectedClass(career.id)}
             className={cn(
-              "group relative cursor-pointer overflow-hidden rounded-[22px] border border-white/12 bg-gradient-to-br from-[#31170f]/88 via-[#1c0c10]/93 to-[#090407]/97 p-4 shadow-[0_16px_48px_rgba(24,6,12,0.45)] transition-transform duration-200 hover:-translate-y-[4px]",
+              "group relative cursor-pointer overflow-hidden rounded-[22px] border border-white/12 bg-linear-to-br from-[#31170f]/88 via-[#1c0c10]/93 to-[#090407]/97 p-4 shadow-[0_16px_48px_rgba(24,6,12,0.45)] transition-transform duration-200 hover:-translate-y-1",
               compact && "p-3.5",
               isActive
                 ? "border-accent/60 shadow-[0_24px_60px_rgba(210,49,135,0.38)]"
                 : "hover:shadow-[0_24px_60px_rgba(210,49,135,0.28)]",
             )}
           >
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(210,49,135,0.3),_transparent_70%)] opacity-55" />
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_bottom_left,_rgba(240,177,90,0.22),_transparent_72%)]" />
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(210,49,135,0.3),transparent_70%)] opacity-55" />
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_bottom_left,rgba(240,177,90,0.22),transparent_72%)]" />
             <CardContent
               className={cn(
                 "relative z-10 space-y-3 p-0",
@@ -508,15 +508,15 @@ export function CharacterCreationWizard({
             key={spec.id}
             onClick={() => setSelectedSpec(spec.id)}
             className={cn(
-              "group relative cursor-pointer overflow-hidden rounded-[22px] border border-white/12 bg-gradient-to-br from-[#31170f]/88 via-[#1b0b10]/94 to-[#090307]/97 p-4 shadow-[0_16px_48px_rgba(24,6,12,0.45)] transition-transform duration-200 hover:-translate-y-[4px]",
+              "group relative cursor-pointer overflow-hidden rounded-[22px] border border-white/12 bg-linear-to-br from-[#31170f]/88 via-[#1b0b10]/94 to-[#090307]/97 p-4 shadow-[0_16px_48px_rgba(24,6,12,0.45)] transition-transform duration-200 hover:-translate-y-1",
               compact && "p-3.5",
               isActive
                 ? "border-accent/60 shadow-[0_24px_60px_rgba(210,49,135,0.36)]"
                 : "hover:shadow-[0_24px_60px_rgba(210,49,135,0.26)]",
             )}
           >
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(210,49,135,0.28),_transparent_70%)] opacity-55" />
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_bottom_right,_rgba(240,177,90,0.22),_transparent_72%)]" />
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(210,49,135,0.28),transparent_70%)] opacity-55" />
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_bottom_right,rgba(240,177,90,0.22),transparent_72%)]" />
             <CardContent
               className={cn(
                 "relative z-10 space-y-3 p-0",
@@ -608,12 +608,12 @@ export function CharacterCreationWizard({
       >
         <Card
           className={cn(
-            "relative rounded-[30px] border border-white/12 bg-gradient-to-br from-[#351910]/88 via-[#1f0d11]/94 to-[#0b0508]/97 p-5 shadow-[0_24px_70px_rgba(26,8,12,0.55)]",
+            "relative rounded-[30px] border border-white/12 bg-linear-to-br from-[#351910]/88 via-[#1f0d11]/94 to-[#0b0508]/97 p-5 shadow-[0_24px_70px_rgba(26,8,12,0.55)]",
             compact && "p-4 max-h-[47vh] overflow-hidden",
           )}
         >
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(210,49,135,0.32),_transparent_70%)] opacity-60" />
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_bottom_left,_rgba(240,177,90,0.24),_transparent_72%)]" />
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(210,49,135,0.32),transparent_70%)] opacity-60" />
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_bottom_left,rgba(240,177,90,0.24),transparent_72%)]" />
           <CardContent
             className={cn(
               "relative z-10 space-y-5 p-0",
@@ -870,11 +870,11 @@ export function CharacterCreationWizard({
         <div className={cn("grid gap-5", compact && "gap-3 self-start")}>
           <Card
             className={cn(
-              "relative overflow-hidden rounded-[26px] border border-white/12 bg-gradient-to-br from-[#2d1510]/88 via-[#190a10]/94 to-[#090407]/97 p-5 shadow-[0_20px_60px_rgba(24,6,12,0.5)]",
+              "relative overflow-hidden rounded-[26px] border border-white/12 bg-linear-to-br from-[#2d1510]/88 via-[#190a10]/94 to-[#090407]/97 p-5 shadow-[0_20px_60px_rgba(24,6,12,0.5)]",
               compact && "p-3",
             )}
           >
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(210,49,135,0.28),_transparent_70%)] opacity-60" />
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(210,49,135,0.28),transparent_70%)] opacity-60" />
             <CardContent
               className={cn(
                 "relative z-10 space-y-4 p-0 text-sm text-foreground/70",
@@ -900,11 +900,11 @@ export function CharacterCreationWizard({
 
           <Card
             className={cn(
-              "relative overflow-hidden rounded-[26px] border border-white/12 bg-gradient-to-br from-[#2d1510]/88 via-[#190a10]/94 to-[#090407]/97 p-5 shadow-[0_20px_60px_rgba(24,6,12,0.5)]",
+              "relative overflow-hidden rounded-[26px] border border-white/12 bg-linear-to-br from-[#2d1510]/88 via-[#190a10]/94 to-[#090407]/97 p-5 shadow-[0_20px_60px_rgba(24,6,12,0.5)]",
               compact && "p-3",
             )}
           >
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(240,177,90,0.2),_transparent_70%)] opacity-60" />
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(240,177,90,0.2),transparent_70%)] opacity-60" />
             <CardContent
               className={cn(
                 "relative z-10 space-y-4 p-0 text-sm text-foreground/70",
@@ -957,12 +957,12 @@ export function CharacterCreationWizard({
     <div className={cn("flex flex-col gap-7", compact && "gap-5")}>
       <div
         className={cn(
-          "relative overflow-hidden rounded-[30px] border border-white/12 bg-gradient-to-br from-[#351910]/88 via-[#1e0d11]/94 to-[#0b0508]/97 p-8 shadow-[0_26px_76px_rgba(28,8,12,0.58)]",
+          "relative overflow-hidden rounded-[30px] border border-white/12 bg-linear-to-br from-[#351910]/88 via-[#1e0d11]/94 to-[#0b0508]/97 p-8 shadow-[0_26px_76px_rgba(28,8,12,0.58)]",
           compact && "p-6",
         )}
       >
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(210,49,135,0.35),_transparent_70%)] opacity-55" />
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_bottom_left,_rgba(240,177,90,0.22),_transparent_72%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(210,49,135,0.35),transparent_70%)] opacity-55" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_bottom_left,rgba(240,177,90,0.22),transparent_72%)]" />
         <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/dark-matter.png')] opacity-[0.15]" />
         <div className={cn("relative z-10 space-y-5", compact && "space-y-4")}>
           <div

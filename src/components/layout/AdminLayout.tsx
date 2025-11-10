@@ -16,12 +16,12 @@ export function AdminLayout({ children }: { children: ReactNode }) {
       />
       
       {/* Top accent border with dungeon aesthetic */}
-      <div className="fixed top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-amber-600/50 to-transparent z-50" />
+      <div className="fixed top-0 left-0 right-0 h-1 bg-linear-to-r from-transparent via-amber-600/50 to-transparent z-50" />
       
       <div className="flex min-h-screen relative z-10">
         <aside className="hidden w-64 border-r border-amber-900/30 bg-[#1f1812] lg:block relative">
           {/* Sidebar subtle glow */}
-          <div className="absolute inset-y-0 right-0 w-px bg-gradient-to-b from-transparent via-amber-600/20 to-transparent" />
+          <div className="absolute inset-y-0 right-0 w-px bg-linear-to-b from-transparent via-amber-600/20 to-transparent" />
           <AdminSidebarNav />
         </aside>
 
