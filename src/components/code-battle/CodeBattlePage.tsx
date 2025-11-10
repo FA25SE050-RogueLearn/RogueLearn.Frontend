@@ -241,8 +241,8 @@ export default function CodeBattlePage() {
 
   return (
     <div className="flex flex-col gap-10 pb-24">
-      <section className="relative overflow-hidden rounded-[32px] border border-[#f5c16c]/20 bg-gradient-to-br from-[#2c1712]/88 via-[#1a0d0a]/94 to-[#0b0504]/98 p-8 shadow-[0_30px_85px_rgba(52,18,9,0.65)]">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(210,49,135,0.4),_transparent_68%)]" />
+      <section className="relative overflow-hidden rounded-4xl border border-[#f5c16c]/20 bg-linear-to-br from-[#2c1712]/88 via-[#1a0d0a]/94 to-[#0b0504]/98 p-8 shadow-[0_30px_85px_rgba(52,18,9,0.65)]">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(210,49,135,0.4),transparent_68%)]" />
         <div className="absolute inset-0 opacity-20 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')]" />
         <div className="relative z-10 flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
           <div className="space-y-4">
@@ -285,13 +285,13 @@ export default function CodeBattlePage() {
         <TabsList className="relative mx-auto grid w-full max-w-xl grid-cols-2 rounded-full border border-[#f5c16c]/25 bg-[#140807]/80 p-1">
           <TabsTrigger
             value="battle"
-            className="rounded-full text-xs uppercase tracking-[0.35em] text-foreground/60 data-[state=active]:bg-gradient-to-r data-[state=active]:from-[#d23187] data-[state=active]:via-[#f5c16c] data-[state=active]:to-[#f5c16c] data-[state=active]:text-[#2b130f]"
+            className="rounded-full text-xs uppercase tracking-[0.35em] text-foreground/60 data-[state=active]:bg-linear-to-r data-[state=active]:from-[#d23187] data-[state=active]:via-[#f5c16c] data-[state=active]:to-[#f5c16c] data-[state=active]:text-[#2b130f]"
           >
             Battle Arena
           </TabsTrigger>
           <TabsTrigger
             value="practice"
-            className="rounded-full text-xs uppercase tracking-[0.35em] text-foreground/60 data-[state=active]:bg-gradient-to-r data-[state=active]:from-[#f5c16c] data-[state=active]:via-[#d23187] data-[state=active]:to-[#f38f5e] data-[state=active]:text-[#2b130f]"
+            className="rounded-full text-xs uppercase tracking-[0.35em] text-foreground/60 data-[state=active]:bg-linear-to-r data-[state=active]:from-[#f5c16c] data-[state=active]:via-[#d23187] data-[state=active]:to-[#f38f5e] data-[state=active]:text-[#2b130f]"
           >
             Practice Sanctum
           </TabsTrigger>
@@ -329,7 +329,7 @@ export default function CodeBattlePage() {
           </div>
 
           {selectedProblemId && (
-            <div className="rounded-[28px] border border-[#f5c16c]/22 bg-gradient-to-br from-[#21110d]/88 via-[#140908]/94 to-[#070304]/98 p-6 shadow-[0_24px_70px_rgba(45,15,9,0.5)]">
+            <div className="rounded-[28px] border border-[#f5c16c]/22 bg-linear-to-br from-[#21110d]/88 via-[#140908]/94 to-[#070304]/98 p-6 shadow-[0_24px_70px_rgba(45,15,9,0.5)]">
               <div className="mb-4 flex items-center justify-between">
                 <div>
                   <p className="text-xs uppercase tracking-[0.4em] text-foreground/50">Current Duel</p>

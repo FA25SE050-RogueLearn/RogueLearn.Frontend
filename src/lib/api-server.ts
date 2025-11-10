@@ -4,6 +4,30 @@ import { cookies } from 'next/headers';
 import https from 'https'; // Use the native Node.js https module on the server
 
 /**
+ * Quick health check for the API endpoint
+ * Returns true if healthy, false if unhealthy or timeout
+ */
+export async function checkApiHealth(baseURL: string | undefined): Promise<boolean> {
+    if (!baseURL) return false;
+
+    try {
+        const httpsAgent = new https.Agent({
+            rejectUnauthorized: process.env.NODE_ENV === 'production',
+        });
+
+        const response = await axios.get(`${baseURL}/health`, {
+            httpsAgent,
+            timeout: 2000, // Fast 2-second timeout for health check
+        });
+
+        return response.status === 200;
+    } catch (error) {
+        console.warn(`API health check failed for ${baseURL}:`, error instanceof Error ? error.message : 'Unknown error');
+        return false;
+    }
+}
+
+/**
  * Creates pre-configured Axios clients for making authenticated API calls from within Next.js Server Components.
  * It automatically retrieves the user's JWT from the secure cookie store and attaches it to every outgoing request.
  * This ensures that your microservices can securely identify and authorize the user for each server-side operation.
@@ -21,13 +45,17 @@ export async function createServerApiClients() {
     });
 
     const createClientInstance = (baseURL: string | undefined) => {
-        // Pass the httpsAgent to the axios instance.
-        const instance = axios.create({ baseURL, httpsAgent });
-        
+        // Pass the httpsAgent to the axios instance with timeout
+        const instance = axios.create({
+            baseURL,
+            httpsAgent,
+            timeout: 5000, // 5 second timeout instead of waiting for full Cloudflare timeout
+        });
+
         if (token) {
             instance.defaults.headers.common['Authorization'] = `Bearer ${token}`;
         }
-        
+
         return instance;
     };
     

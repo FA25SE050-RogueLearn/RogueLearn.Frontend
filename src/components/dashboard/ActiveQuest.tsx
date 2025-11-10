@@ -21,13 +21,13 @@ type Quest = {
 export function ActiveQuest({ quest }: { quest: Quest }) {
   if (!quest) {
     return (
-      <Card className="col-span-1 flex flex-col items-center justify-center overflow-hidden rounded-[24px] border border-dashed border-[#f5c16c]/35 bg-[#1a0c08]/80 p-6 text-center backdrop-blur">
+      <Card className="col-span-1 flex flex-col items-center justify-center overflow-hidden rounded-3xl border border-dashed border-[#f5c16c]/35 bg-[#1a0c08]/80 p-6 text-center backdrop-blur">
         <CardHeader className="mb-4">
           <CardTitle className="text-lg uppercase tracking-[0.35em] text-[#f5c16c]/70">No Active Quest</CardTitle>
         </CardHeader>
         <CardContent className="space-y-6 text-sm text-foreground/70">
           <p>Whispers echo through the empty halls. Seek the Guildmaster to claim your next challenge.</p>
-          <Button size="lg" className="w-full rounded-2xl bg-gradient-to-r from-[#d23187] via-[#f061a6] to-[#f5c16c] text-sm font-semibold uppercase tracking-[0.35em] text-[#2b130f] shadow-[0_12px_30px_rgba(210,49,135,0.35)] transition hover:from-[#f061a6] hover:via-[#f5c16c] hover:to-[#f2ac64]">
+          <Button size="lg" className="w-full rounded-2xl bg-linear-to-r from-[#d23187] via-[#f061a6] to-[#f5c16c] text-sm font-semibold uppercase tracking-[0.35em] text-[#2b130f] shadow-[0_12px_30px_rgba(210,49,135,0.35)] transition hover:from-[#f061a6] hover:via-[#f5c16c] hover:to-[#f2ac64]">
             Find a Quest
           </Button>
         </CardContent>
@@ -36,7 +36,7 @@ export function ActiveQuest({ quest }: { quest: Quest }) {
   }
 
   return (
-    <Card className="relative col-span-1 flex flex-col overflow-hidden rounded-[24px] border border-[#f5c16c]/22 bg-[#23110d]/85 p-6 shadow-[0_20px_65px_rgba(36,10,6,0.6)]">
+    <Card className="relative col-span-1 flex flex-col overflow-hidden rounded-3xl border border-[#f5c16c]/22 bg-[#23110d]/85 p-6 shadow-[0_20px_65px_rgba(36,10,6,0.6)]">
       <div className="absolute inset-0">
         <div
           className="absolute inset-0 bg-cover bg-center opacity-35"
@@ -45,8 +45,8 @@ export function ActiveQuest({ quest }: { quest: Quest }) {
               "url('https://images.unsplash.com/photo-1547703465-94f05b7abe13?auto=format&fit=crop&w=1200&q=80')",
           }}
         />
-        <div className="absolute inset-0 bg-gradient-to-br from-[#2d140f]/92 via-[#160807]/88 to-transparent" />
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(210,49,135,0.32),_transparent_68%)]" />
+        <div className="absolute inset-0 bg-linear-to-br from-[#2d140f]/92 via-[#160807]/88 to-transparent" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(210,49,135,0.32),transparent_68%)]" />
       </div>
 
       <div className="relative z-10 flex flex-col h-full">
@@ -84,7 +84,7 @@ export function ActiveQuest({ quest }: { quest: Quest }) {
             </div>
           </div>
 
-          <Button className="w-full rounded-2xl bg-gradient-to-r from-[#d23187] via-[#f061a6] to-[#f5c16c] text-sm font-semibold uppercase tracking-[0.35em] text-[#2b130f] shadow-[0_15px_40px_rgba(210,49,135,0.35)] transition hover:from-[#f061a6] hover:via-[#f5c16c] hover:to-[#f2ac64]">
+          <Button className="w-full rounded-2xl bg-linear-to-r from-[#d23187] via-[#f061a6] to-[#f5c16c] text-sm font-semibold uppercase tracking-[0.35em] text-[#2b130f] shadow-[0_15px_40px_rgba(210,49,135,0.35)] transition hover:from-[#f061a6] hover:via-[#f5c16c] hover:to-[#f2ac64]">
             Continue Quest
           </Button>
         </CardContent>

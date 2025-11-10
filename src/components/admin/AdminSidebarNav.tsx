@@ -25,9 +25,9 @@ export function AdminSidebarNav() {
     <nav className="flex h-full flex-col p-6">
       {/* RPG-styled header */}
       <div className="mb-8 flex items-center gap-3 pb-6 border-b border-amber-900/30">
-        <div className="relative flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-amber-600 to-amber-800 shadow-lg shadow-amber-900/50">
+        <div className="relative flex h-10 w-10 items-center justify-center rounded-lg bg-linear-to-br from-amber-600 to-amber-800 shadow-lg shadow-amber-900/50">
           <Shield className="h-5 w-5 text-amber-50" />
-          <div className="absolute -inset-0.5 rounded-lg bg-gradient-to-br from-amber-500/50 to-transparent opacity-50 blur-sm" />
+          <div className="absolute -inset-0.5 rounded-lg bg-linear-to-br from-amber-500/50 to-transparent opacity-50 blur-sm" />
         </div>
         <div>
           <h2 className="text-lg font-bold text-amber-100">Admin Sanctum</h2>
@@ -51,7 +51,7 @@ export function AdminSidebarNav() {
               }`}
             >
               {isActive && (
-                <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-gradient-to-b from-amber-500 via-amber-600 to-amber-700 rounded-r-full shadow-lg shadow-amber-600/50" />
+                <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-linear-to-b from-amber-500 via-amber-600 to-amber-700 rounded-r-full shadow-lg shadow-amber-600/50" />
               )}
               <Icon className={`h-4 w-4 ${isActive ? 'text-amber-500' : 'text-gray-500 group-hover:text-amber-600'}`} />
               <span>{item.label}</span>
@@ -61,7 +61,7 @@ export function AdminSidebarNav() {
       </div>
 
       {/* RPG-styled status footer */}
-      <div className="mt-auto rounded-lg border border-amber-900/40 bg-gradient-to-br from-amber-950/50 to-amber-900/20 p-3 relative overflow-hidden">
+      <div className="mt-auto rounded-lg border border-amber-900/40 bg-linear-to-br from-amber-950/50 to-amber-900/20 p-3 relative overflow-hidden">
         <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/dark-embroidery.png')] opacity-10" />
         <div className="relative z-10">
           <div className="flex items-center gap-2 mb-2">

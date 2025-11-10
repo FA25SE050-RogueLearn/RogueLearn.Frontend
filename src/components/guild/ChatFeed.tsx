@@ -11,7 +11,7 @@ export function ChatFeed({ messages }: ChatFeedProps) {
     <div className="h-full overflow-y-auto pr-4 space-y-6">
       {messages.map((msg) => (
         <div key={msg.id} className="flex items-start gap-4">
-          <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full border border-accent/40 bg-accent/15 font-bold text-accent">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-accent/40 bg-accent/15 font-bold text-accent">
             {msg.name.charAt(0)}
           </div>
           <div>

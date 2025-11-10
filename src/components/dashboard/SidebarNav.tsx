@@ -47,8 +47,8 @@ export function SidebarNav({ isCollapsed = false, onNavigate }: SidebarNavProps)
 
   if (isCollapsed) {
     return (
-      <div className="relative flex h-full w-full flex-col items-center overflow-hidden rounded-[30px] border border-[#f5c16c]/25 bg-gradient-to-br from-[#2a140f]/92 via-[#160b08]/94 to-[#080403]/96 p-4 shadow-[0_22px_70px_rgba(38,12,6,0.55)] backdrop-blur-xl">
-        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(210,49,135,0.25),_transparent_70%)]" />
+      <div className="relative flex h-full w-full flex-col items-center overflow-hidden rounded-[30px] border border-[#f5c16c]/25 bg-linear-to-br from-[#2a140f]/92 via-[#160b08]/94 to-[#080403]/96 p-4 shadow-[0_22px_70px_rgba(38,12,6,0.55)] backdrop-blur-xl">
+        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(210,49,135,0.25),transparent_70%)]" />
         <div className="relative z-10 flex h-full w-full flex-col items-center gap-6">
           <Link
             href="/dashboard"
@@ -93,8 +93,8 @@ export function SidebarNav({ isCollapsed = false, onNavigate }: SidebarNavProps)
   }
 
   return (
-    <div className="relative flex h-full flex-col overflow-hidden rounded-[30px] border border-[#f5c16c]/20 bg-gradient-to-br from-[#2a140f]/90 via-[#160b08]/92 to-[#0a0503]/95 p-6 shadow-[0_22px_70px_rgba(38,12,6,0.55)] backdrop-blur-xl">
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(210,49,135,0.25),_transparent_70%)]" />
+    <div className="relative flex h-full flex-col overflow-hidden rounded-[30px] border border-[#f5c16c]/20 bg-linear-to-br from-[#2a140f]/90 via-[#160b08]/92 to-[#0a0503]/95 p-6 shadow-[0_22px_70px_rgba(38,12,6,0.55)] backdrop-blur-xl">
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(210,49,135,0.25),transparent_70%)]" />
       <div className="relative z-10 flex flex-col gap-8">
         <div className="flex flex-col items-center text-center">
           <div
@@ -120,7 +120,7 @@ export function SidebarNav({ isCollapsed = false, onNavigate }: SidebarNavProps)
                 {...navLinkProps(item.href)}
                 className={cn(
                   "group relative flex items-center gap-4 overflow-hidden rounded-2xl border border-[#f5c16c]/12 bg-[#140806]/80 px-5 py-4 transition-all duration-300",
-                  "before:absolute before:inset-0 before:-translate-x-full before:bg-gradient-to-r before:from-[#d23187]/0 before:via-[#d23187]/15 before:to-[#f5c16c]/35 before:transition-transform before:duration-500 group-hover:before:translate-x-0",
+                  "before:absolute before:inset-0 before:-translate-x-full before:bg-linear-to-r before:from-[#d23187]/0 before:via-[#d23187]/15 before:to-[#f5c16c]/35 before:transition-transform before:duration-500 group-hover:before:translate-x-0",
                   isActive
                     ? "border-[#d23187]/45 bg-[#d23187]/20 shadow-[0_15px_40px_rgba(210,49,135,0.35)] text-white"
                     : "hover:border-[#d23187]/35 hover:bg-[#d23187]/15 hover:text-white"

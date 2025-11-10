@@ -61,8 +61,8 @@ export default function EventsList({ apiBaseUrl, onEventSelect, selectedEventId 
   }, [apiBaseUrl]);
 
   return (
-    <Card className="relative overflow-hidden rounded-[26px] border border-[#f5c16c]/18 bg-gradient-to-br from-[#26120e]/88 via-[#140908]/94 to-[#080404]/97 p-6 shadow-[0_20px_60px_rgba(54,18,9,0.55)]">
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(210,49,135,0.4),_transparent_70%)] opacity-[0.35]" />
+    <Card className="relative overflow-hidden rounded-[26px] border border-[#f5c16c]/18 bg-linear-to-br from-[#26120e]/88 via-[#140908]/94 to-[#080404]/97 p-6 shadow-[0_20px_60px_rgba(54,18,9,0.55)]">
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(210,49,135,0.4),transparent_70%)] opacity-[0.35]" />
       <CardHeader className="relative z-10 pb-4">
         <CardTitle className="flex items-center gap-3 text-lg font-semibold text-white">
           <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#d23187]/20 text-[#f5c16c]">

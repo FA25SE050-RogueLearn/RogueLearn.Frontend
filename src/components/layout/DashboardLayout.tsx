@@ -24,8 +24,8 @@ export async function DashboardLayout({ children }: { children: ReactNode }) {
               "url('https://images.unsplash.com/photo-1534447677768-be436bb09401?auto=format&fit=crop&w=1600&q=80')",
           }}
         />
-        <div className="absolute inset-0 bg-gradient-to-br from-[#0b0510]/95 via-[#1b0b19]/90 to-[#070b1c]/95" />
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(210,49,135,0.35),_transparent_60%)]" />
+        <div className="absolute inset-0 bg-linear-to-br from-[#0b0510]/95 via-[#1b0b19]/90 to-[#070b1c]/95" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(210,49,135,0.35),transparent_60%)]" />
         <div className="absolute inset-0 mix-blend-overlay opacity-[0.15]"
           style={{
             backgroundImage:
