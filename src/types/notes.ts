@@ -9,7 +9,9 @@ export interface NoteDto {
   id: string;
   authUserId: string;
   title: string;
-  content?: string | null;
+  // Backend stores rich editor content as an object; some endpoints may serialize to JSON string.
+  // Allow either shape on the frontend.
+  content?: any; // BlockNote/Tiptap JSON object or JSON string
   isPublic: boolean;
   createdAt: string; // ISO timestamp
   updatedAt: string; // ISO timestamp
@@ -20,10 +22,11 @@ export interface NoteDto {
 
 /** Command payload to create a note. */
 export interface CreateNoteCommandRequest {
-  // Server derives authUserId from the authenticated user; frontend may omit.
-  authUserId?: string;
+  // Backend validator requires AuthUserId on create.
+  authUserId: string;
   title: string;
-  content?: string | null;
+  // Backend validator requires Content to be not null on create.
+  content: any; // BlockNote/Tiptap JSON object or JSON string
   isPublic?: boolean; // default false
   tagIds?: string[] | null;
   skillIds?: string[] | null;
@@ -35,7 +38,7 @@ export interface CreateNoteResponse {
   id: string;
   authUserId: string;
   title: string;
-  content?: string | null;
+  content?: any; // BlockNote/Tiptap JSON object or JSON string
   isPublic: boolean;
   createdAt: string;
   updatedAt: string;
@@ -44,10 +47,11 @@ export interface CreateNoteResponse {
 /** Command payload to update an existing note. */
 export interface UpdateNoteCommandRequest {
   id: string;
-  // Server derives authUserId from the authenticated user; frontend may omit.
-  authUserId?: string;
-  title: string;
-  content?: string | null;
+  // Backend validator requires AuthUserId on update.
+  authUserId: string;
+  // Title is optional on update (validator only enforces max length).
+  title?: string;
+  content?: any; // BlockNote/Tiptap JSON object or JSON string
   isPublic?: boolean; // default false
   tagIds?: string[] | null;
   skillIds?: string[] | null;
@@ -59,7 +63,7 @@ export interface UpdateNoteResponse {
   id: string;
   authUserId: string;
   title: string;
-  content?: string | null;
+  content?: any; // BlockNote/Tiptap JSON object or JSON string
   isPublic: boolean;
   createdAt: string;
   updatedAt: string;
@@ -68,8 +72,8 @@ export interface UpdateNoteResponse {
 /** Command payload to delete a note. */
 export interface DeleteNoteCommandRequest {
   id: string;
-  // Server derives authUserId from the authenticated user; frontend may omit.
-  authUserId?: string;
+  // Backend validator requires AuthUserId on delete.
+  authUserId: string;
 }
 
 /** Command payload to create a note from an uploaded file. */

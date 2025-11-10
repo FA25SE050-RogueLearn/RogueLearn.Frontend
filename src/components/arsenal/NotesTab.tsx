@@ -16,6 +16,71 @@ import { toast } from "sonner";
 
 type SortMode = "updatedAt_desc" | "title_asc";
 
+// Safely extract plain text preview from note content which may be:
+// - a plain string
+// - a JSON string representing BlockNote blocks
+// - an array/object of blocks (in case backend returns JSON directly)
+function extractNotePreview(content: unknown): string {
+  if (content == null) return "";
+  // If content is a plain string, try to parse JSON if applicable; otherwise return as-is
+  if (typeof content === "string") {
+    const trimmed = content.trim();
+    if (trimmed.startsWith("[") || trimmed.startsWith("{")) {
+      try {
+        const parsed = JSON.parse(trimmed);
+        return extractNotePreview(parsed);
+      } catch {
+        return content;
+      }
+    }
+    return content;
+  }
+
+  // Helper to pull text from a BlockNote block's content array
+  const pullTextFromBlockContent = (bc: any): string[] => {
+    const out: string[] = [];
+    if (typeof bc === "string") {
+      out.push(bc);
+    } else if (Array.isArray(bc)) {
+      for (const n of bc) {
+        if (typeof n === "string") {
+          out.push(n);
+        } else if (n && typeof n.text === "string") {
+          out.push(n.text);
+        } else if (n && typeof n.content === "string") {
+          out.push(n.content);
+        }
+      }
+    }
+    return out;
+  };
+
+  // If content is an array of blocks (BlockNote document)
+  if (Array.isArray(content)) {
+    const texts: string[] = [];
+    for (const b of (content as any[]).slice(0, 5)) {
+      const bc = (b as any)?.content;
+      texts.push(...pullTextFromBlockContent(bc));
+    }
+    return texts.join(" ").trim();
+  }
+
+  // If content is an object, it might be { blocks: [...] } or a single block
+  if (typeof content === "object") {
+    const c: any = content as any;
+    if (Array.isArray(c.blocks)) {
+      return extractNotePreview(c.blocks);
+    }
+    if (Array.isArray(c.content)) {
+      return pullTextFromBlockContent(c.content).join(" ").trim();
+    }
+    if (typeof c.content === "string") return c.content;
+    return "";
+  }
+
+  return "";
+}
+
 export default function NotesTab() {
   const router = useRouter();
   const [notes, setNotes] = useState<NoteDto[]>([]);
@@ -64,7 +129,10 @@ export default function NotesTab() {
     let base = notes;
     if (search) {
       const q = search.toLowerCase();
-      base = base.filter(n => n.title.toLowerCase().includes(q) || (n.content ?? "").toLowerCase().includes(q));
+      base = base.filter(n => {
+        const preview = extractNotePreview(n.content as any).toLowerCase();
+        return n.title.toLowerCase().includes(q) || preview.includes(q);
+      });
     }
     if (filterTagId) {
       base = base.filter(n => Array.isArray(n.tagIds) && n.tagIds.includes(filterTagId));
@@ -115,7 +183,16 @@ export default function NotesTab() {
       return;
     }
     try {
-      const res = await notesApi.create({ authUserId, title: "Untitled note", content: "", isPublic: false });
+      // Initialize with a valid BlockNote document (single empty paragraph)
+      const initialDoc = [
+        { type: "paragraph", content: [{ type: "text", text: "", styles: {} }] },
+      ];
+      const res = await notesApi.create({
+        authUserId,
+        title: "Untitled note",
+        content: JSON.stringify(initialDoc),
+        isPublic: false,
+      });
       if (res.isSuccess) {
         const created = res.data;
         await fetchNotes();
@@ -179,7 +256,7 @@ export default function NotesTab() {
                 <CardTitle className="text-lg font-semibold text-white">{note.title}</CardTitle>
               </CardHeader>
               <CardContent className="relative z-10 flex flex-1 flex-col gap-4 p-5">
-                <p className="line-clamp-3 text-sm leading-relaxed text-foreground/70">{note.content || "No content"}</p>
+                <p className="line-clamp-3 text-sm leading-relaxed text-foreground/70">{extractNotePreview(note.content as any) || "No content"}</p>
                 {Array.isArray(note.tagIds) && note.tagIds.length > 0 && (
                   <div className="mt-2 flex flex-wrap gap-2">
                     {note.tagIds.map((tid) => {

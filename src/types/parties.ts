@@ -57,13 +57,16 @@ export interface PartyInvitationDto {
 }
 
 /** Shared note/resource stored in the party stash. */
+/** Shared note/resource stored in the party stash. */
 export interface PartyStashItemDto {
   id: string;
   partyId: string;
-  originalNoteId: string;
+  /** Optional provenance: original note id from Arsenal if shared */
+  originalNoteId?: string | null;
   sharedByUserId: string;
   title: string;
-  content: Record<string, unknown>;
+  /** BlockNote document (raw blocks array), same shape as note content */
+  content: Record<string, unknown>[];
   tags?: string[] | null;
   sharedAt: string; // ISO timestamp
   updatedAt: string; // ISO timestamp
@@ -85,15 +88,21 @@ export interface InviteMemberRequest {
 /** Payload to add a shared resource to the party stash. */
 export interface AddPartyResourceRequest {
   title: string;
-  content: Record<string, unknown>;
+  /** BlockNote document (raw blocks array), same shape as note content */
+  content: Record<string, unknown>[];
   tags: string[];
+  /** Optional provenance */
+  originalNoteId?: string | null;
 }
 
 /** Payload to update an existing shared resource in the party stash. */
 export interface UpdatePartyResourceRequest {
   title?: string;
-  content?: Record<string, unknown>;
+  /** BlockNote document (raw blocks array), same shape as note content */
+  content?: Record<string, unknown>[];
   tags?: string[];
+  /** Optional provenance */
+  originalNoteId?: string | null;
 }
 
 // Queries
