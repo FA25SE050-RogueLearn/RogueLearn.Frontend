@@ -60,12 +60,34 @@ export const googleMeetApi = {
     return res.json();
   },
   
+  // Helper to normalize any provided identifier (resource name or meeting code)
+  // into a canonical resource name: "spaces/{space}". This is necessary because
+  // some operations (e.g., endActiveConference) DO NOT accept the alias/meetingCode.
+  async normalizeSpaceName(token: string, nameOrCode: string): Promise<string> {
+    // Strip optional leading "spaces/" for analysis
+    const raw = nameOrCode.startsWith("spaces/") ? nameOrCode.slice("spaces/".length) : nameOrCode;
+    // Meeting codes typically include dashes (e.g., abc-def-ghi). If we detect that pattern,
+    // resolve it via GET spaces/{meetingCode} to obtain the canonical resource name.
+    const looksLikeMeetingCode = /[a-z0-9]+-[a-z0-9]+-[a-z0-9]+/i.test(raw);
+    if (looksLikeMeetingCode) {
+      const space = await this.getSpace(token, raw);
+      if (!space?.name) throw new Error("Failed to resolve meeting code to space name");
+      return space.name; // already in the form "spaces/{space}"
+    }
+    // If it already looks like a full resource name, return as-is; otherwise prefix.
+    return nameOrCode.startsWith("spaces/") ? nameOrCode : `spaces/${raw}`;
+  },
+  
   // End an active conference within a meeting space (requires meetings.space.created scope)
   async endActiveConference(token: string, spaceNameOrId: string): Promise<{}> {
-    const name = spaceNameOrId.startsWith("spaces/") ? spaceNameOrId : `spaces/${spaceNameOrId}`;
+    // IMPORTANT: This endpoint requires the canonical resource name (spaces/{space})
+    // and does NOT accept the meeting code alias. Normalize before calling.
+    const name = await this.normalizeSpaceName(token, spaceNameOrId);
     const res = await fetch(`${BASE}/${name}:endActiveConference`, {
       method: "POST",
       headers: authHeaders(token),
+      // Per Google Meet REST docs, this POST expects an empty JSON payload.
+      body: JSON.stringify({}),
     });
     if (!res.ok) throw new Error(`End active conference failed: ${res.status}`);
     return res.json(); // empty object on success
