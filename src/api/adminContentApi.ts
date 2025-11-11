@@ -2,56 +2,22 @@
 import axiosClient from './axiosClient';
 import { ApiResponse } from '../types/base/Api';
 import { CurriculumProgramDto } from '@/types/curriculum-programs';
-import { CurriculumVersionDto } from '@/types/curriculum-versions';
-import { Subject } from '@/types/subjects';
+// REMOVED: Obsolete imports
+// import { CurriculumVersionDto } from '@/types/curriculum-versions';
+// import { Subject } from '@/types/subjects';
 
 const adminContentApi = {
   getCurriculumPrograms: (): Promise<ApiResponse<CurriculumProgramDto[]>> =>
     axiosClient.get<CurriculumProgramDto[]>('/api/admin/programs').then(res => ({
-        isSuccess: true,
-        data: res.data
+      isSuccess: true,
+      data: res.data,
     })),
 
-  // ADDED: New function to get versions for a specific program.
-  getCurriculumVersions: (programId: string): Promise<ApiResponse<CurriculumVersionDto[]>> =>
-    axiosClient.get<CurriculumVersionDto[]>(`/api/admin/programs/${programId}/versions`).then(res => ({
-        isSuccess: true,
-        data: res.data
-    })),
+  // REMOVED: getCurriculumVersions is obsolete as versions are no longer a separate entity.
 
-  importCurriculum: (rawText: string): Promise<ApiResponse<any>> =>
-    axiosClient.post('/api/admin/curriculum', { rawText }, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-    }).then(res => ({
-        isSuccess: true,
-        data: res.data
-    })),
+  // REMOVED: importCurriculum and importSubject are now consolidated in curriculumImportApi.
 
-  importSubject: (rawText: string): Promise<ApiResponse<any>> =>
-    axiosClient.post('/api/admin/subjects/import-from-text', { rawText }, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-    }).then(res => ({
-        isSuccess: true,
-        data: res.data
-    })),
-
-  createSyllabusVersion: (payload: {
-    subjectId: string;
-    versionNumber: number;
-    effectiveDate: string;
-    content: string;
-    isActive: boolean;
-  }): Promise<ApiResponse<any>> =>
-    axiosClient.post('/api/admin/syllabus-versions', payload).then(res => ({
-        isSuccess: true,
-        data: res.data,
-    })),
-
-  getSubjects: (): Promise<ApiResponse<Subject[]>> =>
-    axiosClient.get<Subject[]>('/api/admin/subjects').then(res => ({
-        isSuccess: true,
-        data: res.data,
-    })),
+  // REMOVED: createSyllabusVersion is obsolete. Syllabus content is now part of the Subject.
 };
 
 export default adminContentApi;

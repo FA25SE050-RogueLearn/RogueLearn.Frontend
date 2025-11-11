@@ -1,7 +1,11 @@
-// roguelearn-web/src/types/academic.ts
+/**
+ * Feature: Academic Processing
+ * Purpose: Types related to processing student academic records and tracking progress.
+ */
+
 /**
  * Represents the structured data extracted from the FAP HTML.
- * This is returned by the backend after Transaction 1.
+ * This is the primary output of the FapExtractionPlugin.
  */
 export interface FapRecordData {
   gpa: number | null;
@@ -12,45 +16,28 @@ export interface FapSubjectData {
   subjectCode: string;
   status: 'Passed' | 'Failed' | 'Studying' | string;
   mark: number | null;
+  semester: number;
+  academicYear: string;
 }
 
 /**
- * Represents the personalized recommendation from the gap analysis.
- * This is returned by the backend after Transaction 2.
+ * Represents the response from the command that processes the academic record,
+ * syncs the gradebook, and initiates the learning path generation.
  */
-export interface GapAnalysisResponse {
-  recommendedFocus: string;
-  highestPrioritySubject: string;
-  reason: string;
-  // We'll pass this payload to the next step to forge the path.
-  forgingPayload: {
-    // This will likely contain the list of subject IDs that form the gap.
-    subjectGaps: string[]; 
-  };
-}
-
-/**
- * Represents the successfully created Learning Path structure.
- * This is returned by the backend after Transaction 3.
- */
-export interface ForgedLearningPath {
-    id: string;
-    name: string;
-    description: string;
-    // Other relevant fields from the LearningPath entity.
-}
 export interface ProcessAcademicRecordResponse {
-    isSuccess: boolean;
-    message: string;
-    learningPathId: string; // Guid
-    subjectsProcessed: number;
-    questsGenerated: number;
-    calculatedGpa: number;
+  isSuccess: boolean;
+  message: string;
+  learningPathId: string; // Guid of the generated or updated learning path
+  subjectsProcessed: number;
+  calculatedGpa: number;
 }
 
-// MODIFICATION: Add type for the new user progress API response.
+/**
+ * Represents the user's progress for a specific quest, including the status of each step.
+ * Corresponds to GetUserProgressForQuestResponse from the backend.
+ */
 export interface UserQuestProgress {
-    questId: string;
-    questStatus: 'NotStarted' | 'InProgress' | 'Completed' | 'Abandoned';
-    stepStatuses: Record<string, 'NotStarted' | 'InProgress' | 'Completed' | 'Skipped'>;
+  questId: string;
+  questStatus: 'NotStarted' | 'InProgress' | 'Completed' | 'Abandoned';
+  stepStatuses: Record<string, 'NotStarted' | 'InProgress' | 'Completed' | 'Skipped'>;
 }

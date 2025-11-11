@@ -1,4 +1,4 @@
-// src/api/subjectsApi.ts
+// roguelearn-web/src/api/subjectsApi.ts
 import axiosClient from './axiosClient';
 import { ApiResponse } from '../types/base/Api';
 import {
@@ -44,11 +44,19 @@ const subjectsApi = {
   /** DELETE /api/admin/subjects/{id} */
   remove: (id: string): Promise<void> => axiosClient.delete(`/api/admin/subjects/${id}`).then(() => {}),
 
-  /** POST /api/admin/subjects/import-from-text */
-  importFromText: (rawText: string): Promise<ImportSubjectFromTextCommandResponse> => {
+  /**
+   * POST /api/admin/subjects/import-from-text
+   * Imports a single subject's syllabus content from raw text.
+   */
+  importFromText: (rawText: string): Promise<ApiResponse<ImportSubjectFromTextCommandResponse>> => {
     const formData = new FormData();
     formData.append('rawText', rawText);
-    return axiosClient.post('/api/admin/subjects/import-from-text', formData);
+    return axiosClient.post<ImportSubjectFromTextCommandResponse>('/api/admin/subjects/import-from-text', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+    }).then(res => ({
+        isSuccess: true,
+        data: res.data,
+    }));
   },
 };
 

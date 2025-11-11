@@ -1,33 +1,30 @@
 // roguelearn-web/src/components/quests/QuestListView.tsx
 "use client";
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import gsap from 'gsap';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Progress } from '@/components/ui/progress';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 import {
   BookOpen,
   CheckCircle,
   Lock,
-  Clock,
-  Trophy,
   Sparkles,
   Flame,
   Target,
-  ArrowRight,
   Loader2
 } from 'lucide-react';
 import { QuestSummary } from '@/types/quest';
-// MODIFICATION: Replaced the deleted 'academicApi' with the correct 'questApi'.
 import questApi from '@/api/questApi';
 
 interface QuestListViewProps {
   activeQuests: QuestSummary[];
   completedQuests: QuestSummary[];
-  availableQuests: QuestSummary[];
+  notStartedQuests: QuestSummary[];
   userStats: {
     streak: number;
     totalQuests: number;
@@ -38,7 +35,7 @@ interface QuestListViewProps {
 export default function QuestListView({
   activeQuests,
   completedQuests,
-  availableQuests,
+  notStartedQuests,
   userStats
 }: QuestListViewProps) {
   const router = useRouter();
@@ -46,7 +43,40 @@ export default function QuestListView({
   const activeQuestsRef = useRef<HTMLDivElement>(null);
   const completedQuestsRef = useRef<HTMLDivElement>(null);
   const availableQuestsRef = useRef<HTMLDivElement>(null);
+  const lockedQuestsRef = useRef<HTMLDivElement>(null);
   const [generatingQuestId, setGeneratingQuestId] = useState<string | null>(null);
+
+  const [learningMode, setLearningMode] = useState<'structured' | 'free'>('structured');
+
+  const { availableQuests, lockedQuests } = useMemo(() => {
+    if (learningMode === 'free') {
+      return {
+        availableQuests: notStartedQuests,
+        lockedQuests: [],
+      };
+    }
+
+    const available: QuestSummary[] = [];
+    const locked: QuestSummary[] = [];
+    const completedIds = new Set(completedQuests.map(q => q.id));
+    const allSortedQuests = [...completedQuests, ...notStartedQuests].sort((a, b) => a.sequenceOrder - b.sequenceOrder);
+
+    notStartedQuests.forEach(quest => {
+      const questIndex = allSortedQuests.findIndex(q => q.id === quest.id);
+      if (questIndex === 0) {
+        available.push(quest);
+        return;
+      }
+      const previousQuest = allSortedQuests[questIndex - 1];
+      if (previousQuest && completedIds.has(previousQuest.id)) {
+        available.push(quest);
+      } else {
+        locked.push(quest);
+      }
+    });
+
+    return { availableQuests: available, lockedQuests: locked };
+  }, [learningMode, notStartedQuests, completedQuests]);
 
   useEffect(() => {
     const ctx = gsap.context(() => {
@@ -68,54 +98,69 @@ export default function QuestListView({
       animateCards(activeQuestsRef);
       animateCards(completedQuestsRef);
       animateCards(availableQuestsRef);
+      animateCards(lockedQuestsRef);
     });
     return () => ctx.revert();
-  }, []);
+  }, [availableQuests, lockedQuests]);
 
   const handleStartQuest = async (event: React.MouseEvent, quest: QuestSummary) => {
     event.preventDefault();
     event.stopPropagation();
     setGeneratingQuestId(quest.id);
+
     try {
-      // MODIFICATION: Changed the call from the old API to the new, correct questApi.
-      const response = await questApi.generateQuestSteps(quest.id);
-      if (response.isSuccess && response.data && response.data.length > 0) {
-        // Use the correct, fully-formed URL for navigation.
+      // First, try to get quest details to check if steps already exist.
+      const detailsResponse = await questApi.getQuestDetails(quest.id);
+
+      // If steps exist (Scenario A), navigate directly.
+      if (detailsResponse.isSuccess && detailsResponse.data?.steps && detailsResponse.data.steps.length > 0) {
+        console.log(`Quest steps for ${quest.title} already exist. Navigating directly.`);
         router.push(`/quests/${quest.learningPathId}/${quest.chapterId}/${quest.id}`);
       } else {
-        alert('Failed to generate quest steps. Please try again.');
-        setGeneratingQuestId(null);
+        // If steps do NOT exist (Scenario B), generate them now.
+        console.log(`Quest steps for ${quest.title} not found. Generating now...`);
+        const generateResponse = await questApi.generateQuestSteps(quest.id);
+
+        if (generateResponse.isSuccess && generateResponse.data && generateResponse.data.length > 0) {
+          // Generation was successful, now navigate.
+          router.push(`/quests/${quest.learningPathId}/${quest.chapterId}/${quest.id}`);
+        } else {
+          // Generation failed.
+          alert('Failed to generate new quest steps. Please try again.');
+        }
       }
     } catch (error) {
-      console.error('Error generating quest steps:', error);
-      alert('An error occurred while starting the quest.');
+      console.error('Error starting quest:', error);
+      alert('An error occurred while starting the quest. It might be locked by a prerequisite in the backend.');
+    } finally {
+      // This ensures the loading state is turned off regardless of success or failure.
       setGeneratingQuestId(null);
-    }
-  };
-
-  const getDifficultyColor = (difficulty: string) => {
-    switch (difficulty.toLowerCase()) {
-      case 'beginner': return 'text-green-500';
-      case 'intermediate': return 'text-yellow-500';
-      case 'advanced': return 'text-red-500';
-      default: return 'text-foreground';
     }
   };
 
   const QuestCard = ({ quest, isLocked = false }: { quest: QuestSummary; isLocked?: boolean }) => (
     <Link
-      // The Link now constructs the full, correct URL for navigation to the quest's detailed steps view.
       href={isLocked ? '#' : `/quests/${quest.learningPathId}/${quest.chapterId}/${quest.id}`}
-      className={`quest-card group relative block transition ${isLocked ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'
-        }`}
+      onClick={(e) => {
+        if (isLocked) {
+          e.preventDefault();
+          return;
+        }
+        // For available quests, we handle the logic in handleStartQuest instead of direct navigation
+        handleStartQuest(e, quest);
+      }}
+      className={`quest-card group relative block transition ${
+        isLocked ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'
+      }`}
     >
       <Card
-        className={`relative overflow-hidden rounded-[24px] border border-white/12 bg-gradient-to-br from-[#170b1d]/92 via-[#0f0815]/96 to-[#06030a]/98 shadow-[0_20px_50px_rgba(4,0,14,0.65)] transition-all duration-300 group-hover:-translate-y-1 group-hover:shadow-[0_28px_65px_rgba(210,49,135,0.35)] ${quest.status === 'InProgress'
+        className={`relative overflow-hidden rounded-[24px] border border-white/12 bg-gradient-to-br from-[#170b1d]/92 via-[#0f0815]/96 to-[#06030a]/98 shadow-[0_20px_50px_rgba(4,0,14,0.65)] transition-all duration-300 group-hover:-translate-y-1 group-hover:shadow-[0_28px_65px_rgba(210,49,135,0.35)] ${
+          quest.status === 'InProgress'
             ? 'border-accent/50'
             : quest.status === 'Completed'
-              ? 'border-emerald-400/50'
-              : 'border-white/12'
-          }`}
+            ? 'border-emerald-400/50'
+            : 'border-white/12'
+        }`}
       >
         <div className="absolute inset-0 opacity-40 bg-[radial-gradient(circle_at_top,_rgba(210,49,135,0.25),_transparent_70%)]" />
         <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/40 to-transparent" />
@@ -123,9 +168,11 @@ export default function QuestListView({
         <CardContent className="relative z-10 space-y-4 p-6">
           <div className="flex items-start justify-between">
             <div className="flex flex-1 gap-4">
-              <div className={`flex h-14 w-14 items-center justify-center rounded-2xl border border-white/20 bg-white/5 text-lg shadow-[0_8px_20px_rgba(210,49,135,0.35)] ${quest.status === 'Completed' ? 'border-emerald-400/40 bg-emerald-400/10 text-emerald-200'
+              <div className={`flex h-14 w-14 items-center justify-center rounded-2xl border border-white/20 bg-white/5 text-lg shadow-[0_8px_20px_rgba(210,49,135,0.35)] ${
+                quest.status === 'Completed' ? 'border-emerald-400/40 bg-emerald-400/10 text-emerald-200'
                   : quest.status === 'InProgress' ? 'border-accent/40 bg-accent/15 text-accent'
-                    : 'text-foreground/70'}`}>
+                    : 'text-foreground/70'
+              }`}>
                 {quest.status === 'Completed' ? <CheckCircle className="h-7 w-7" />
                   : isLocked ? <Lock className="h-7 w-7" />
                     : <BookOpen className="h-7 w-7" />}
@@ -141,22 +188,22 @@ export default function QuestListView({
 
           {(quest.status === 'InProgress' || quest.status === 'NotStarted') && !isLocked && (
             <Button
-              onClick={(e) => handleStartQuest(e, quest)}
+              // The button itself no longer needs an onClick, as the parent Link handles it.
               disabled={generatingQuestId === quest.id}
-              className="w-full bg-accent text-accent-foreground hover:bg-accent/90"
+              className="w-full bg-accent text-accent-foreground hover:bg-accent/90 pointer-events-none" // pointer-events-none makes it not interfere with the Link's click
             >
               {generatingQuestId === quest.id ? (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               ) : (
                 <Sparkles className="mr-2 h-4 w-4" />
               )}
-              {generatingQuestId === quest.id ? 'Forging Quest...' : 'Start Quest'}
+              {generatingQuestId === quest.id ? 'Forging Quest...' : (quest.status === 'InProgress' ? 'Continue Quest' : 'Start Quest')}
             </Button>
           )}
 
           {isLocked && (
             <div className="rounded-2xl border border-white/10 bg-black/40 p-4 text-xs uppercase tracking-[0.35em] text-foreground/50">
-              <Lock className="mr-2 inline h-3 w-3" /> Unlock previous chronicles to access
+              <Lock className="mr-2 inline h-3 w-3" /> Complete previous quests to unlock
             </div>
           )}
         </CardContent>
@@ -184,6 +231,19 @@ export default function QuestListView({
               <p className="text-sm uppercase tracking-[0.3em] text-foreground/60">
                 Records of every delve into the arcane labyrinth
               </p>
+            </div>
+            <div className="flex items-center space-x-3 rounded-full border border-white/10 bg-black/30 p-2">
+                <Label htmlFor="learning-mode" className="pl-2 text-xs font-semibold text-white/70">
+                    Structured Path
+                </Label>
+                <Switch
+                    id="learning-mode"
+                    checked={learningMode === 'free'}
+                    onCheckedChange={(checked) => setLearningMode(checked ? 'free' : 'structured')}
+                />
+                <Label htmlFor="learning-mode" className="pr-2 text-xs font-semibold text-white/70">
+                    Free Path
+                </Label>
             </div>
           </div>
           <div className="grid gap-4 text-xs uppercase tracking-[0.3em] text-foreground/60 sm:grid-cols-3">
@@ -239,6 +299,7 @@ export default function QuestListView({
           </div>
         </div>
       )}
+
       {completedQuests.length > 0 && (
         <div ref={completedQuestsRef}>
           <div className="mb-6 flex items-center justify-between rounded-2xl border border-white/12 bg-gradient-to-r from-green-400/15 via-transparent to-transparent px-6 py-4">
@@ -254,6 +315,7 @@ export default function QuestListView({
           </div>
         </div>
       )}
+
       {availableQuests.length > 0 && (
         <div ref={availableQuestsRef}>
           <div className="mb-6 flex items-center justify-between rounded-2xl border border-white/12 bg-gradient-to-r from-blue-400/15 via-transparent to-transparent px-6 py-4">
@@ -263,9 +325,31 @@ export default function QuestListView({
               </div>
               Available Quests
             </h2>
+            <span className="text-xs uppercase tracking-[0.35em] text-foreground/60">
+              {availableQuests.length} ready to start
+            </span>
           </div>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {availableQuests.map((quest) => <QuestCard key={quest.id} quest={quest} isLocked={true} />)}
+            {availableQuests.map((quest) => <QuestCard key={quest.id} quest={quest} isLocked={false} />)}
+          </div>
+        </div>
+      )}
+
+      {lockedQuests.length > 0 && (
+        <div ref={lockedQuestsRef}>
+          <div className="mb-6 flex items-center justify-between rounded-2xl border border-white/12 bg-gradient-to-r from-gray-400/15 via-transparent to-transparent px-6 py-4">
+            <h2 className="flex items-center gap-3 text-2xl font-semibold text-white">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gray-500/20 text-gray-300 shadow-[0_0_20px_rgba(156,163,175,0.45)]">
+                <Lock className="h-5 w-5" />
+              </div>
+              Locked Quests
+            </h2>
+            <span className="text-xs uppercase tracking-[0.35em] text-foreground/60">
+              {lockedQuests.length} awaiting unlock
+            </span>
+          </div>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {lockedQuests.map((quest) => <QuestCard key={quest.id} quest={quest} isLocked={true} />)}
           </div>
         </div>
       )}

@@ -4,8 +4,6 @@ import { createClient } from "@/utils/supabase/server";
 import { redirect } from "next/navigation";
 import { ReactNode } from "react";
 
-// The DashboardLayout has been refactored to use Flexbox for a more robust structure.
-// This ensures the sidebar has a fixed height and the main content area is scrollable.
 export async function DashboardLayout({ children }: { children: ReactNode }) {
   const supabase = await createClient();
   const { data, error } = await supabase.auth.getUser();
@@ -15,8 +13,8 @@ export async function DashboardLayout({ children }: { children: ReactNode }) {
   }
 
   return (
-    <div className="relative max-h-screen w-full overflow-hidden bg-[#08040a] text-foreground">
-      <div className="pointer-events-none absolute inset-0">
+    <div className="relative min-h-screen w-full bg-[#08040a] text-foreground">
+      <div className="pointer-events-none fixed inset-0">
         <div
           className="absolute inset-0 bg-cover bg-center opacity-60"
           style={{
@@ -34,7 +32,9 @@ export async function DashboardLayout({ children }: { children: ReactNode }) {
         />
       </div>
 
-      <DashboardFrame>{children}</DashboardFrame>
+      <div className="relative z-10">
+        <DashboardFrame>{children}</DashboardFrame>
+      </div>
     </div>
   );
 }

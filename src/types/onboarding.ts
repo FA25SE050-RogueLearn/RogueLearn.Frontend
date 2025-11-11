@@ -4,6 +4,7 @@
  * Purpose: Types for onboarding selections (academic routes and career classes) and completion command.
  * Source: User service DTOs used during the onboarding flow.
  */
+
 /**
  * Represents an academic route (Curriculum Program) a user can select during onboarding.
  * Corresponds to RouteDto from the User service.
@@ -13,16 +14,6 @@ export interface AcademicRoute {
   programName: string;
   programCode: string;
   description?: string;
-}
-
-// ADDED: New type for the user-facing version selection.
-/**
- * Represents a curriculum version for display during onboarding.
- */
-export interface OnboardingVersion {
-  id: string;
-  versionCode: string;
-  effectiveYear: number;
 }
 
 /**

@@ -24,29 +24,26 @@ export default async function QuestsPage() {
     console.error("Failed to fetch learning path:", error);
   }
 
-  // --- MODIFICATION START ---
-  // The original logic `learningPath?.chapters.flatMap(c => c.quests) ?? []`
-  // lost the parent context. This new logic iterates through each chapter and
-  // explicitly adds the `learningPathId` and `chapterId` to each quest object
-  // as it flattens the array. This ensures the full context is preserved.
+  // Flatten all quests with their parent context
   const allQuests: QuestSummary[] = learningPath?.chapters.flatMap(chapter =>
     chapter.quests.map(quest => ({
       ...quest,
-      learningPathId: learningPath.id, // Explicitly pass down the Learning Path ID
-      chapterId: chapter.id             // Explicitly pass down the Chapter ID
+      learningPathId: learningPath.id,
+      chapterId: chapter.id
     }))
   ) ?? [];
-  // --- MODIFICATION END ---
 
+  // Categorize quests on the server
   const activeQuests = allQuests.filter(q => q.status === 'InProgress');
   const completedQuests = allQuests.filter(q => q.status === 'Completed');
-  const availableQuests = allQuests.filter(q => q.status === 'NotStarted');
+  // Pass ALL NotStarted quests to the client. The client will handle the logic for available vs. locked.
+  const notStartedQuests = allQuests.filter(q => q.status === 'NotStarted');
 
-  // These would also come from the backend in a real app, but we'll simulate for now.
+  // Calculate user stats
   userStats = {
     streak: 7,
     totalQuests: allQuests.length,
-    totalXP: completedQuests.length * 100 // simplified calculation
+    totalXP: completedQuests.length * 100
   };
 
   return (
@@ -54,7 +51,7 @@ export default async function QuestsPage() {
       <QuestListView
         activeQuests={activeQuests}
         completedQuests={completedQuests}
-        availableQuests={availableQuests}
+        notStartedQuests={notStartedQuests} // Pass the combined list
         userStats={userStats}
       />
     </DashboardLayout>
