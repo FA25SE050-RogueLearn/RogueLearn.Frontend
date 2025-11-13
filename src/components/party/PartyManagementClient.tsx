@@ -67,7 +67,7 @@ export default function PartyManagementClient() {
           </div>
         </div>
         <a
-          href={`/party/${selectedParty.id}`}
+          href={`/parties/${selectedParty.id}`}
           className="rounded bg-fuchsia-600 px-3 py-2 text-xs font-medium text-white"
         >
           Open Full Dashboard
@@ -123,7 +123,7 @@ export default function PartyManagementClient() {
         onClose={() => setShowWizard(false)}
         onCreated={(id) => {
           // After creation, auto-navigate to the new party page.
-          window.location.href = `/party/${id}`;
+          window.location.href = `/parties/${id}`;
         }}
       />
     </div>
