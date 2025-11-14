@@ -7,7 +7,6 @@ import Script from "next/script";
 import { Toaster } from "@/components/ui/sonner";
 import { ReactNode } from "react";
 import { TransitionProvider } from "@/components/layout/TransitionProvider";
-import { LiveblocksProviders } from "@/components/liveblocks/liveblocks-providers";
 
 const fontHeading = Lora({
   subsets: ["latin"],
@@ -50,9 +49,7 @@ export default function RootLayout({
           src="https://accounts.google.com/gsi/client"
           strategy="afterInteractive"
         />
-        <TransitionProvider>
-          <LiveblocksProviders>{children}</LiveblocksProviders>
-        </TransitionProvider>
+        <TransitionProvider>{children}</TransitionProvider>
         {/* Global toast notifications */}
         <Toaster richColors position="top-right" />
       </body>

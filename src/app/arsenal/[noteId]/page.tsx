@@ -112,27 +112,28 @@ export default function NoteEditorPage() {
           setTitle(n.title);
           setIsPublic(n.isPublic);
           // Parse content which may be a JSON string or an object already
-          let blocks = n.content as PartialBlock[] | undefined;
-          // if (raw) {
-          //   if (typeof raw === "string") {
-          //     try {
-          //       const parsed = JSON.parse(raw);
-          //       if (Array.isArray(parsed)) {
-          //         blocks = parsed as PartialBlock[];
-          //       } else if (parsed && typeof parsed === "object" && Array.isArray((parsed as any).blocks)) {
-          //         blocks = (parsed as any).blocks as PartialBlock[];
-          //       }
-          //     } catch {
-          //       // Ignore parse errors
-          //     }
-          //   } else if (typeof raw === "object") {
-          //     if (Array.isArray(raw)) {
-          //       blocks = raw as PartialBlock[];
-          //     } else if (Array.isArray((raw as any).blocks)) {
-          //       blocks = (raw as any).blocks as PartialBlock[];
-          //     }
-          //   }
-          // }
+          let blocks: PartialBlock[] | undefined = undefined;
+          const raw = n.content;
+          if (raw) {
+            if (typeof raw === "string") {
+              try {
+                const parsed = JSON.parse(raw);
+                if (Array.isArray(parsed)) {
+                  blocks = parsed as PartialBlock[];
+                } else if (parsed && typeof parsed === "object" && Array.isArray((parsed as any).blocks)) {
+                  blocks = (parsed as any).blocks as PartialBlock[];
+                }
+              } catch {
+                // Ignore parse errors
+              }
+            } else if (typeof raw === "object") {
+              if (Array.isArray(raw)) {
+                blocks = raw as PartialBlock[];
+              } else if (Array.isArray((raw as any).blocks)) {
+                blocks = (raw as any).blocks as PartialBlock[];
+              }
+            }
+          }
           // Provide a valid fallback block if content is empty or parsing failed
           const fallback: PartialBlock[] = [
             {
@@ -308,7 +309,7 @@ export default function NoteEditorPage() {
   return (
     <DashboardFrame>
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6 pb-24">
-        <section className="rounded-2xl border border-white/12 bg-gradient-to-br from-[#251017]/88 via-[#13070b]/92 to-[#070307]/96 p-4">
+        <section className="rounded-2xl border border-white/12 bg-linear-to-br from-[#251017]/88 via-[#13070b]/92 to-[#070307]/96 p-4">
           <div className="flex items-center gap-3">
             <Input
               value={title}
