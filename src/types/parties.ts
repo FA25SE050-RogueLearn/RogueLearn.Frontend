@@ -66,7 +66,7 @@ export interface PartyStashItemDto {
   sharedByUserId: string;
   title: string;
   /** BlockNote document (raw blocks array), same shape as note content */
-  content: Record<string, unknown>[];
+  content: any;
   tags?: string[] | null;
   sharedAt: string; // ISO timestamp
   updatedAt: string; // ISO timestamp
@@ -89,7 +89,7 @@ export interface InviteMemberRequest {
 export interface AddPartyResourceRequest {
   title: string;
   /** BlockNote document (raw blocks array), same shape as note content */
-  content: Record<string, unknown>[];
+  content: any;
   tags: string[];
   /** Optional provenance */
   originalNoteId?: string | null;
@@ -99,7 +99,7 @@ export interface AddPartyResourceRequest {
 export interface UpdatePartyResourceRequest {
   title?: string;
   /** BlockNote document (raw blocks array), same shape as note content */
-  content?: Record<string, unknown>[];
+  content?: any;
   tags?: string[];
   /** Optional provenance */
   originalNoteId?: string | null;

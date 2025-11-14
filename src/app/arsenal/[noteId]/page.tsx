@@ -113,7 +113,7 @@ export default function NoteEditorPage() {
           setIsPublic(n.isPublic);
           // Parse content which may be a JSON string or an object already
           let blocks: PartialBlock[] | undefined = undefined;
-          const raw = n.content as any;
+          const raw = n.content;
           if (raw) {
             if (typeof raw === "string") {
               try {
@@ -309,7 +309,7 @@ export default function NoteEditorPage() {
   return (
     <DashboardFrame>
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6 pb-24">
-        <section className="rounded-2xl border border-white/12 bg-gradient-to-br from-[#251017]/88 via-[#13070b]/92 to-[#070307]/96 p-4">
+        <section className="rounded-2xl border border-white/12 bg-linear-to-br from-[#251017]/88 via-[#13070b]/92 to-[#070307]/96 p-4">
           <div className="flex items-center gap-3">
             <Input
               value={title}

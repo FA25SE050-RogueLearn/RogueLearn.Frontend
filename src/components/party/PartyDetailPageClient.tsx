@@ -97,7 +97,7 @@ export default function PartyDetailPageClient({ partyId }: { partyId: string }) 
     setIsLeaving(true);
     try {
       await partiesApi.leave(party.id, { partyId: party.id, authUserId: authUserId! });
-      router.push("/party");
+      router.push("/parties");
     } catch (e: any) {
       setError(e?.message ?? "Failed to leave party");
     } finally {

@@ -76,7 +76,7 @@ export default function PublicPartiesCard({ onJoinedNavigate = true }: PublicPar
       await partiesApi.joinPublic(partyIdToJoin);
       toast.success("Joined party successfully.");
       if (onJoinedNavigate) {
-        window.location.href = `/party/${partyIdToJoin}`;
+        window.location.href = `/parties/${partyIdToJoin}`;
       }
     } catch (e: any) {
       toast.error(e?.message ?? "Failed to join party");
@@ -115,7 +115,7 @@ export default function PublicPartiesCard({ onJoinedNavigate = true }: PublicPar
         <ul className="space-y-2">
           {filtered.map((p) => (
             <li key={p.id} className="flex items-start justify-between rounded bg-white/5 p-3">
-              <button className="text-left" onClick={() => (window.location.href = `/party/${p.id}`)}>
+              <button className="text-left" onClick={() => (window.location.href = `/parties/${p.id}`)}>
                 <div className="text-sm font-medium text-white">{p.name}</div>
                 {p.description && (
                   <div className="mt-0.5 line-clamp-2 text-xs text-white/70">{p.description}</div>
@@ -130,7 +130,7 @@ export default function PublicPartiesCard({ onJoinedNavigate = true }: PublicPar
               </button>
               <div className="ml-4 flex items-center gap-2">
                 <a
-                  href={`/party/${p.id}`}
+                  href={`/parties/${p.id}`}
                   className="rounded bg-white/10 px-3 py-1.5 text-xs text-white"
                 >
                   Open
