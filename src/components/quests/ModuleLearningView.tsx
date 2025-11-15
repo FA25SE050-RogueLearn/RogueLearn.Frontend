@@ -28,7 +28,6 @@ import {
     SubmissionContent,
     ReflectionContent
 } from "@/types/quest";
-// MODIFICATION: Removed incorrect import and added the correct API clients.
 import questApi from "@/api/questApi";
 import userQuestProgressApi from "@/api/userQuestProgressApi";
 
@@ -213,13 +212,27 @@ const CodingStepContent = ({ content }: { content: CodingContent }) => (
     <Card className="bg-muted/30 border-white/10">
         <CardHeader><CardTitle>Coding Challenge</CardTitle></CardHeader>
         <CardContent className="space-y-4">
-            <p className="whitespace-pre-wrap font-body">{content.challenge}</p>
-            <h4 className="font-semibold text-white">Code Template:</h4>
-            <pre className="bg-black/50 p-4 rounded-md text-sm font-mono overflow-x-auto text-white/90">
-                <code>{content.template}</code>
-            </pre>
-            <h4 className="font-semibold text-white">Expected Outcome:</h4>
-            <p className="whitespace-pre-wrap font-body text-foreground/80">{content.expectedOutput}</p>
+            <div className="flex items-center gap-4 mb-4">
+                <span className="px-3 py-1 rounded-full bg-blue-500/20 border border-blue-500/40 text-blue-300 text-sm font-semibold">
+                    {content.language}
+                </span>
+                <span className="px-3 py-1 rounded-full bg-purple-500/20 border border-purple-500/40 text-purple-300 text-sm font-semibold">
+                    {content.difficulty}
+                </span>
+            </div>
+            <div>
+                <h4 className="font-semibold text-white mb-2">Topic:</h4>
+                <p className="text-foreground/80">{content.topic}</p>
+            </div>
+            <div className="p-4 rounded-lg bg-amber-500/10 border border-amber-500/30">
+                <p className="text-sm text-amber-200">
+                    This coding challenge will be generated dynamically when you start working on it. 
+                    The challenge will be tailored to the <strong>{content.topic}</strong> topic at a <strong>{content.difficulty}</strong> level using <strong>{content.language}</strong>.
+                </p>
+            </div>
+            <Button className="w-full bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white font-semibold">
+                Start Coding Challenge
+            </Button>
         </CardContent>
     </Card>
 );
@@ -281,7 +294,6 @@ export function ModuleLearningView({ learningPath, chapter, questDetails: initia
             if (!currentDetails.steps || currentDetails.steps.length === 0) {
                 setIsLoading(true);
                 try {
-                    // MODIFICATION: Call the correctly namespaced API function.
                     const response = await questApi.generateQuestSteps(currentDetails.id);
                     if (response.isSuccess && response.data) {
                         currentDetails = { ...currentDetails, steps: response.data };
@@ -299,7 +311,6 @@ export function ModuleLearningView({ learningPath, chapter, questDetails: initia
 
             // Step 2: Always fetch the latest user progress for this quest.
             try {
-                // MODIFICATION: Call the correctly namespaced API function.
                 const progressResponse = await userQuestProgressApi.getUserQuestProgress(currentDetails.id);
                 const progressData = progressResponse.data;
 
@@ -312,7 +323,6 @@ export function ModuleLearningView({ learningPath, chapter, questDetails: initia
 
             } catch (error) {
                 console.warn("Could not fetch user progress, defaulting all steps to NotStarted:", error);
-                // If progress fetch fails, default all to NotStarted.
                 const defaultProgress: Record<string, 'Completed' | 'NotStarted'> = {};
                 currentDetails.steps.forEach(step => {
                     defaultProgress[step.id] = 'NotStarted';
@@ -324,32 +334,38 @@ export function ModuleLearningView({ learningPath, chapter, questDetails: initia
         };
 
         initializeAndFetchProgress();
-    }, [questDetails.id, questDetails]); // Added questDetails to dependency array to handle re-fetches if it changes.
+    }, [questDetails.id]); // Removed questDetails from dependencies to prevent infinite loops
 
-    const currentStep = questDetails?.steps?.[currentStepIndex];
-
+    // CRITICAL FIX: Simpler navigation without useCallback dependencies
     const handleNextStep = () => {
-        if (questDetails && currentStepIndex < questDetails.steps.length - 1) {
-            setCurrentStepIndex(currentStepIndex + 1);
-        }
+        setCurrentStepIndex(prev => {
+            const maxIndex = (questDetails?.steps?.length || 1) - 1;
+            const nextIndex = prev + 1;
+            console.log('handleNextStep - current:', prev, 'next:', nextIndex, 'max:', maxIndex);
+            return nextIndex <= maxIndex ? nextIndex : prev;
+        });
     };
 
     const handlePrevStep = () => {
-        if (currentStepIndex > 0) {
-            setCurrentStepIndex(currentStepIndex - 1);
-        }
+        setCurrentStepIndex(prev => {
+            const prevIndex = prev - 1;
+            console.log('handlePrevStep - current:', prev, 'prev:', prevIndex);
+            return prevIndex >= 0 ? prevIndex : 0;
+        });
     };
 
     const handleCompleteStep = async (stepId: string) => {
         setIsCompleting(stepId);
         try {
-            // MODIFICATION: Call the correctly namespaced API function.
             await questApi.updateQuestStepProgress(questDetails.id, stepId, 'Completed');
 
             setStepProgress(prev => ({ ...prev, [stepId]: 'Completed' }));
 
+            // Auto-advance to next step after completion
             if (questDetails && currentStepIndex < questDetails.steps.length - 1) {
-                setTimeout(() => { handleNextStep(); }, 500);
+                setTimeout(() => { 
+                    handleNextStep(); 
+                }, 500);
             }
         } catch (error) {
             console.error("Failed to mark step as complete:", error);
@@ -385,6 +401,12 @@ export function ModuleLearningView({ learningPath, chapter, questDetails: initia
         }
     };
 
+    // Get current step safely
+    const currentStep = questDetails?.steps?.[currentStepIndex];
+    const totalSteps = questDetails?.steps?.length || 0;
+    const isFirstStep = currentStepIndex === 0;
+    const isLastStep = currentStepIndex === totalSteps - 1;
+
     if (isLoading) {
         return (
             <div className="flex flex-col items-center justify-center min-h-[400px] gap-4">
@@ -404,7 +426,7 @@ export function ModuleLearningView({ learningPath, chapter, questDetails: initia
     }
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-6 pb-32">
             <div className="flex items-center justify-between">
                 <div>
                     <div className="flex items-center gap-2 text-sm text-foreground/60 mb-2">
@@ -420,6 +442,9 @@ export function ModuleLearningView({ learningPath, chapter, questDetails: initia
                         <BookOpen className="w-10 h-10 text-accent" />
                         {questDetails.title}
                     </h1>
+                    <p className="text-sm text-foreground/60 mt-2">
+                        Step {currentStepIndex + 1} of {totalSteps}
+                    </p>
                 </div>
             </div>
 
@@ -452,8 +477,8 @@ export function ModuleLearningView({ learningPath, chapter, questDetails: initia
                     variant="outline"
                     size="lg"
                     onClick={handlePrevStep}
-                    disabled={currentStepIndex === 0}
-                    className="border-white/20 bg-white/5 hover:bg-white/10 text-white"
+                    disabled={isFirstStep}
+                    className="border-white/20 bg-white/5 hover:bg-white/10 text-white disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                     <ArrowLeft className="w-5 h-5 mr-2" /> Previous Step
                 </Button>
@@ -482,8 +507,8 @@ export function ModuleLearningView({ learningPath, chapter, questDetails: initia
                     variant="outline"
                     size="lg"
                     onClick={handleNextStep}
-                    disabled={!questDetails || currentStepIndex === questDetails.steps.length - 1}
-                    className="border-white/20 bg-white/5 hover:bg-white/10 text-white"
+                    disabled={isLastStep}
+                    className="border-white/20 bg-white/5 hover:bg-white/10 text-white disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                     Next Step <ArrowRight className="w-5 h-5 ml-2" />
                 </Button>
