@@ -61,6 +61,13 @@ const meetingsApi = {
     axiosClient
       .get<MeetingDto[]>(`/api/meetings/party/${partyId}`)
       .then((res) => ({ isSuccess: true, data: res.data })),
+
+  getGuildMeetings: (
+    guildId: string
+  ): Promise<ApiResponse<MeetingDto[]>> =>
+    axiosClient
+      .get<MeetingDto[]>(`/api/meetings/guild/${guildId}`)
+      .then((res) => ({ isSuccess: true, data: res.data })),
 };
 
 export default meetingsApi;
