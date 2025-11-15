@@ -70,6 +70,13 @@ export function DungeonNav() {
     })
     return () => subscription?.unsubscribe()
   }, [])
+  // CRITICAL FIX: Automatically trigger onboarding wizard for users who haven't completed it
+  React.useEffect(() => {
+    if (userProfile && !userProfile.onboardingCompleted) {
+      setShowCharacterWizard(true)
+    }
+  }, [userProfile])
+
 
   // Subtle entrance animation - fade in only
   React.useEffect(() => {
@@ -302,121 +309,121 @@ export function DungeonNav() {
 
               {/* Navigation Items - not clipped */}
               <div className="relative flex items-center justify-center gap-10 px-6 py-4">
-                  {navItems.map((item, index) => {
-                    const Icon = item.icon
-                    const isActive = index === activeIndex
+                {navItems.map((item, index) => {
+                  const Icon = item.icon
+                  const isActive = index === activeIndex
 
-                    return (
-                      <button
-                        key={item.url}
-                        onClick={(e) => {
-                          e.preventDefault()
-                          if (pathname !== item.url) {
-                            navigateTo(item.url)
-                          }
-                        }}
-                        className="group relative shrink-0"
-                        onMouseEnter={() => handleMouseEnter(index)}
-                        onMouseLeave={() => handleMouseLeave(index)}
+                  return (
+                    <button
+                      key={item.url}
+                      onClick={(e) => {
+                        e.preventDefault()
+                        if (pathname !== item.url) {
+                          navigateTo(item.url)
+                        }
+                      }}
+                      className="group relative shrink-0"
+                      onMouseEnter={() => handleMouseEnter(index)}
+                      onMouseLeave={() => handleMouseLeave(index)}
+                    >
+                      <div
+                        ref={(el) => { itemRefs.current[index] = el }}
+                        className="nav-icon relative"
+                        style={{ transformOrigin: 'bottom center' }}
                       >
-                        <div
-                          ref={(el) => { itemRefs.current[index] = el }}
-                          className="nav-icon relative"
-                          style={{ transformOrigin: 'bottom center' }}
-                        >
-                          {/* Outer rotating ring */}
-                          <div className={cn(
-                            "absolute inset-0 rounded-full transition-all duration-500",
-                            isActive && "animate-spin"
-                          )} style={{
-                            animationDuration: '20s',
-                            background: `conic-gradient(from 0deg, transparent, ${isActive ? '#f5c16c' : 'transparent'}, transparent)`
-                          }} />
+                        {/* Outer rotating ring */}
+                        <div className={cn(
+                          "absolute inset-0 rounded-full transition-all duration-500",
+                          isActive && "animate-spin"
+                        )} style={{
+                          animationDuration: '20s',
+                          background: `conic-gradient(from 0deg, transparent, ${isActive ? '#f5c16c' : 'transparent'}, transparent)`
+                        }} />
 
-                          {/* Spell circle frame */}
+                        {/* Spell circle frame */}
+                        <div className={cn(
+                          "relative flex size-20 items-center justify-center rounded-full transition-all duration-300",
+                          "before:absolute before:inset-0 before:rounded-full before:border-2 before:transition-all before:duration-300",
+                          "after:absolute after:inset-1 after:rounded-full after:border after:transition-all after:duration-300",
+                          isActive
+                            ? "before:border-[#f5c16c] before:shadow-[0_0_20px_rgba(245,193,108,0.6)] after:border-white/20"
+                            : "before:border-[#f5c16c]/20 group-hover:before:border-[#f5c16c]/50 after:border-[#f5c16c]/10"
+                        )}>
+                          {/* Pulsing glow */}
                           <div className={cn(
-                            "relative flex size-20 items-center justify-center rounded-full transition-all duration-300",
-                            "before:absolute before:inset-0 before:rounded-full before:border-2 before:transition-all before:duration-300",
-                            "after:absolute after:inset-1 after:rounded-full after:border after:transition-all after:duration-300",
+                            "icon-glow absolute inset-0 rounded-full bg-linear-to-br opacity-0 blur-xl transition-all duration-300",
+                            item.color,
+                            isActive ? "opacity-60" : "group-hover:opacity-40"
+                          )} />
+
+                          {/* Inner rune circle */}
+                          <div className={cn(
+                            "absolute inset-3 rounded-full border border-dashed transition-all duration-300",
                             isActive
-                              ? "before:border-[#f5c16c] before:shadow-[0_0_20px_rgba(245,193,108,0.6)] after:border-white/20"
-                              : "before:border-[#f5c16c]/20 group-hover:before:border-[#f5c16c]/50 after:border-[#f5c16c]/10"
-                          )}>
-                            {/* Pulsing glow */}
-                            <div className={cn(
-                              "icon-glow absolute inset-0 rounded-full bg-linear-to-br opacity-0 blur-xl transition-all duration-300",
-                              item.color,
-                              isActive ? "opacity-60" : "group-hover:opacity-40"
-                            )} />
+                              ? "border-[#f5c16c]/40 animate-spin"
+                              : "border-[#f5c16c]/10 group-hover:border-[#f5c16c]/30"
+                          )} style={{ animationDuration: '15s', animationDirection: 'reverse' }} />
 
-                            {/* Inner rune circle */}
-                            <div className={cn(
-                              "absolute inset-3 rounded-full border border-dashed transition-all duration-300",
-                              isActive
-                                ? "border-[#f5c16c]/40 animate-spin"
-                                : "border-[#f5c16c]/10 group-hover:border-[#f5c16c]/30"
-                            )} style={{ animationDuration: '15s', animationDirection: 'reverse' }} />
-
-                            {/* Background with mystical gradient */}
-                            <div className={cn(
-                              "absolute inset-2 rounded-full transition-all duration-300",
-                              isActive
-                                ? `bg-linear-to-br ${item.color} shadow-[inset_0_0_20px_rgba(255,255,255,0.2)]`
-                                : "bg-linear-to-br from-[#1a0b08]/90 to-[#0c0308]/90 group-hover:from-[#1a0b08]/70 group-hover:to-[#0c0308]/70"
-                            )} />
-
-                            {/* Icon with enhanced glow */}
-                            <Icon className={cn(
-                              "relative size-8 transition-all duration-300 filter",
-                              isActive
-                                ? "text-white drop-shadow-[0_0_16px_rgba(255,255,255,1)] scale-110"
-                                : "text-[#f5c16c]/60 group-hover:text-[#f5c16c] group-hover:scale-110 group-hover:drop-shadow-[0_0_12px_rgba(245,193,108,0.8)]"
-                            )} />
-
-                            {/* Active state - orbital dots */}
-                            {isActive && (
-                              <>
-                                <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1 size-2 rounded-full bg-white shadow-[0_0_8px_rgba(255,255,255,0.8)] animate-ping" />
-                                <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1 size-2 rounded-full bg-white shadow-[0_0_8px_rgba(255,255,255,0.8)] animate-ping" style={{ animationDelay: '0.5s' }} />
-                              </>
-                            )}
-
-                            {/* Level indicator mini badge */}
-                            <div className={cn(
-                              "absolute -top-1 -right-1 size-5 rounded-full border transition-all duration-300 flex items-center justify-center text-[9px] font-bold",
-                              isActive
-                                ? "bg-linear-to-br from-amber-400 to-orange-500 border-white/40 text-white shadow-[0_0_12px_rgba(251,191,36,0.8)]"
-                                : "bg-[#0c0308] border-[#f5c16c]/30 text-[#f5c16c]/60"
-                            )}>
-                              {index + 1}
-                            </div>
-                          </div>
-
-                          {/* Enhanced tooltip with rune styling */}
+                          {/* Background with mystical gradient */}
                           <div className={cn(
-                            "absolute -top-20 left-1/2 -translate-x-1/2 transition-all duration-300",
-                            hoveredIndex === index
-                              ? "opacity-100 translate-y-0"
-                              : "opacity-0 translate-y-4 pointer-events-none"
+                            "absolute inset-2 rounded-full transition-all duration-300",
+                            isActive
+                              ? `bg-linear-to-br ${item.color} shadow-[inset_0_0_20px_rgba(255,255,255,0.2)]`
+                              : "bg-linear-to-br from-[#1a0b08]/90 to-[#0c0308]/90 group-hover:from-[#1a0b08]/70 group-hover:to-[#0c0308]/70"
+                          )} />
+
+                          {/* Icon with enhanced glow */}
+                          <Icon className={cn(
+                            "relative size-8 transition-all duration-300 filter",
+                            isActive
+                              ? "text-white drop-shadow-[0_0_16px_rgba(255,255,255,1)] scale-110"
+                              : "text-[#f5c16c]/60 group-hover:text-[#f5c16c] group-hover:scale-110 group-hover:drop-shadow-[0_0_12px_rgba(245,193,108,0.8)]"
+                          )} />
+
+                          {/* Active state - orbital dots */}
+                          {isActive && (
+                            <>
+                              <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1 size-2 rounded-full bg-white shadow-[0_0_8px_rgba(255,255,255,0.8)] animate-ping" />
+                              <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1 size-2 rounded-full bg-white shadow-[0_0_8px_rgba(255,255,255,0.8)] animate-ping" style={{ animationDelay: '0.5s' }} />
+                            </>
+                          )}
+
+                          {/* Level indicator mini badge */}
+                          <div className={cn(
+                            "absolute -top-1 -right-1 size-5 rounded-full border transition-all duration-300 flex items-center justify-center text-[9px] font-bold",
+                            isActive
+                              ? "bg-linear-to-br from-amber-400 to-orange-500 border-white/40 text-white shadow-[0_0_12px_rgba(251,191,36,0.8)]"
+                              : "bg-[#0c0308] border-[#f5c16c]/30 text-[#f5c16c]/60"
                           )}>
-                            <div className="relative px-5 py-2.5 bg-linear-to-br from-[#0c0308]/98 to-[#1a0b08]/98 backdrop-blur-xl border-2 border-[#f5c16c]/40 shadow-[0_0_30px_rgba(210,49,135,0.6)] rounded-lg">
-                              {/* Tooltip decorative corners */}
-                              <div className="absolute -top-1 -left-1 size-3 border-t-2 border-l-2 border-[#f5c16c]" />
-                              <div className="absolute -top-1 -right-1 size-3 border-t-2 border-r-2 border-[#f5c16c]" />
-
-                              <div className="absolute -bottom-3 left-1/2 -translate-x-1/2">
-                                <div className="size-0 border-x-[6px] border-x-transparent border-t-[6px] border-t-[#f5c16c]/40" />
-                              </div>
-
-                              <span className="relative text-sm font-bold text-[#f5c16c] whitespace-nowrap uppercase tracking-[0.2em] drop-shadow-[0_0_8px_rgba(245,193,108,0.8)]">
-                                {item.title}
-                              </span>
-                            </div>
+                            {index + 1}
                           </div>
                         </div>
-                      </button>
-                    )
-                  })}
+
+                        {/* Enhanced tooltip with rune styling */}
+                        <div className={cn(
+                          "absolute -top-20 left-1/2 -translate-x-1/2 transition-all duration-300",
+                          hoveredIndex === index
+                            ? "opacity-100 translate-y-0"
+                            : "opacity-0 translate-y-4 pointer-events-none"
+                        )}>
+                          <div className="relative px-5 py-2.5 bg-linear-to-br from-[#0c0308]/98 to-[#1a0b08]/98 backdrop-blur-xl border-2 border-[#f5c16c]/40 shadow-[0_0_30px_rgba(210,49,135,0.6)] rounded-lg">
+                            {/* Tooltip decorative corners */}
+                            <div className="absolute -top-1 -left-1 size-3 border-t-2 border-l-2 border-[#f5c16c]" />
+                            <div className="absolute -top-1 -right-1 size-3 border-t-2 border-r-2 border-[#f5c16c]" />
+
+                            <div className="absolute -bottom-3 left-1/2 -translate-x-1/2">
+                              <div className="size-0 border-x-[6px] border-x-transparent border-t-[6px] border-t-[#f5c16c]/40" />
+                            </div>
+
+                            <span className="relative text-sm font-bold text-[#f5c16c] whitespace-nowrap uppercase tracking-[0.2em] drop-shadow-[0_0_8px_rgba(245,193,108,0.8)]">
+                              {item.title}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </button>
+                  )
+                })}
               </div>
             </div>
 

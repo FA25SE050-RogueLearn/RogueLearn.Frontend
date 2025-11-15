@@ -1,3 +1,4 @@
+// roguelearn-web/src/components/features/character-creation/CharacterCreationWizard.tsx
 "use client";
 
 import { useState, useEffect } from "react";
@@ -84,7 +85,9 @@ export function CharacterCreationWizard({ onOnboardingComplete }: CharacterCreat
     setIsSubmitting(true);
     setError(null);
     try {
-      await onboardingApi.completeOnboarding(selectedRoute.id, selectedClass.id);
+      // ARCHITECTURAL FIX: Await the API call to ensure onboarding is complete before redirecting.
+      // This prevents a race condition where the next page loads before the user's profile is updated.
+      await onboardingApi.completeOnboarding({ curriculumProgramId: selectedRoute.id, careerRoadmapId: selectedClass.id });
 
       onOnboardingComplete();
 
