@@ -68,12 +68,12 @@ export default function GuildDetailPage() {
     };
   }, [guildId]);
 
-  // Sync tabs with hash (#home, #posts, #manage)
+  // Sync tabs with hash (#home, #posts, #meetings, #manage)
   useEffect(() => {
     const applyHash = () => {
       const hash = typeof window !== "undefined" ? window.location.hash.replace(/^#/, "") : "";
       const canManage = myRole === "GuildMaster"; // Only GuildMaster can manage
-      if (hash === "home" || hash === "posts") {
+      if (hash === "home" || hash === "posts" || hash === "meetings") {
         setActiveTab(hash);
       } else if (hash === "manage") {
         setActiveTab(canManage ? "manage" : "home");
@@ -103,15 +103,15 @@ export default function GuildDetailPage() {
   };
 
   return (
-    <div className="relative max-h-screen w-full overflow-hidden bg-[#08040a] text-foreground">
-      <div className="pointer-events-none absolute inset-0">
+    <div className="relative min-h-screen w-full overflow-auto bg-[#08040a] text-foreground">
+      <div className="pointer-events-none absolute inset-0 -z-10">
         <div className="absolute inset-0 bg-cover bg-center opacity-60" style={{ backgroundImage: "url('https://images.unsplash.com/photo-1534447677768-be436bb09401?auto=format&fit=crop&w=1600&q=80')" }} />
         <div className="absolute inset-0 bg-gradient-to-br from-[#0b0510]/95 via-[#1b0b19]/90 to-[#070b1c]/95" />
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(210,49,135,0.35),_transparent_60%)]" />
         <div className="absolute inset-0 mix-blend-overlay opacity-[0.15]" style={{ backgroundImage: "url('https://www.transparenttextures.com/patterns/dark-matter.png')" }} />
       </div>
       <DashboardFrame>
-      <div className="flex flex-col gap-6 pb-16">
+      <div className="flex flex-col gap-6 pb-16 z-20">
         {loading && (
           <Card className="rounded-2xl border-white/12 bg-white/5">
             <CardHeader>
@@ -174,6 +174,7 @@ export default function GuildDetailPage() {
             <TabsList>
               <TabsTrigger value="home">Home</TabsTrigger>
               <TabsTrigger value="posts">Posts</TabsTrigger>
+              {isMember && <TabsTrigger value="meetings">Meetings</TabsTrigger>}
               {canManage && <TabsTrigger value="manage">Manage</TabsTrigger>}
             </TabsList>
             <TabsContent value="home" className="space-y-4">
@@ -182,6 +183,11 @@ export default function GuildDetailPage() {
             <TabsContent value="posts" className="space-y-4">
               <GuildPostsSection guildId={guild.id} />
             </TabsContent>
+            {isMember && (
+              <TabsContent value="meetings" className="space-y-4">
+                <GuildMeetingsSection guildId={guild.id} />
+              </TabsContent>
+            )}
             {canManage && (
               <TabsContent value="manage" className="space-y-4">
                 <GuildManagementSection guildId={guild.id} />
@@ -196,3 +202,4 @@ export default function GuildDetailPage() {
 }
 import { GuildPostsSection } from "@/components/guild/posts/GuildPostsSection";
 import { GuildManagementSection } from "@/components/guild/management/GuildManagementSection";
+import GuildMeetingsSection from "@/components/guild/meetings/GuildMeetingsSection";
