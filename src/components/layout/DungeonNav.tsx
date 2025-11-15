@@ -40,7 +40,7 @@ const navItems = [
   { title: "Quests", url: "/quests", icon: ScrollText, color: "from-amber-500 to-orange-500" },
   { title: "Skills", url: "/skills", icon: Network, color: "from-blue-500 to-cyan-500" },
   { title: "Arsenal", url: "/arsenal", icon: Archive, color: "from-green-500 to-emerald-500" },
-  { title: "Party", url: "/party", icon: Users, color: "from-pink-500 to-rose-500" },
+  { title: "Party", url: "/parties", icon: Users, color: "from-pink-500 to-rose-500" },
   { title: "Community", url: "/community", icon: Anvil, color: "from-orange-500 to-red-500" },
   { title: "Battle", url: "/code-battle", icon: Sword, color: "from-red-500 to-rose-600" },
   { title: "Adventure", url: "/game", icon: Compass, color: "from-indigo-500 to-purple-500" },
