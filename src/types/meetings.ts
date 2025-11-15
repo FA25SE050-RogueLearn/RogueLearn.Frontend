@@ -11,8 +11,10 @@ export interface MeetingDto {
   meetingId?: string;
   /** Backend: Guid OrganizerId */
   organizerId: string;
-  /** Backend: Guid PartyId (required) */
-  partyId: string;
+  /** Backend: Guid PartyId */
+  partyId: string | null;
+  /** Backend: Guid GuildId */
+  guildId?: string | null;
   /** Backend: string Title (required) */
   title: string;
   /** Backend: DateTimeOffset ScheduledStartTime */
