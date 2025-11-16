@@ -1,5 +1,4 @@
 "use client";
-import React from "react";
 import { useParams } from "next/navigation";
 import PartyDetailPageClient from "@/components/party/PartyDetailPageClient";
 
