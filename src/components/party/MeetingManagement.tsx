@@ -7,6 +7,9 @@ import partiesApi from "@/api/partiesApi";
 import type { PartyMemberDto } from "@/types/parties";
 import { MeetingDto, MeetingParticipantDto, ArtifactInputDto, MeetingDetailsDto } from "@/types/meetings";
 import { createClient } from "@/utils/supabase/client";
+import { datetimeLocalBangkok, formatBangkok } from "@/utils/time";
+import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
+import { usePartyRole } from "@/hooks/usePartyRole";
 
 interface Props {
   partyId: string;
@@ -43,9 +46,12 @@ export default function MeetingManagement({ partyId }: Props) {
   }>({ meeting: null, google: null });
 
   const [partyMeetings, setPartyMeetings] = useState<MeetingDto[]>([]);
-  const [selectedMeetingDetails, setSelectedMeetingDetails] = useState<MeetingDetailsDto | null>(null);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [detailsById, setDetailsById] = useState<Record<string, MeetingDetailsDto | null>>({});
+  const [detailsLoading, setDetailsLoading] = useState<Record<string, boolean>>({});
   const [loadingMeetings, setLoadingMeetings] = useState(false);
   const [partyMembers, setPartyMembers] = useState<PartyMemberDto[]>([]);
+  const { role } = usePartyRole(partyId);
 
   // Helper: derive a friendly display name for a party member
   function getMemberDisplayName(m?: PartyMemberDto | null): string | undefined {
@@ -80,6 +86,12 @@ export default function MeetingManagement({ partyId }: Props) {
         const res = await meetingsApi.getPartyMeetings(partyId);
         if (!mounted) return;
         setPartyMeetings(res.data ?? []);
+        const active = detectActiveMeeting(res.data ?? []);
+        if (active) {
+          setActiveMeeting({ meeting: active, google: null });
+        } else {
+          setActiveMeeting({ meeting: null, google: null });
+        }
         // Also load party members for participant mapping
         try {
           const memRes = await partiesApi.getMembers(partyId);
@@ -153,8 +165,20 @@ export default function MeetingManagement({ partyId }: Props) {
     setEnding(true);
     try {
       if (!activeMeeting.meeting?.meetingId) throw new Error("No active meeting to end");
-      // 1) Use cached token if available; otherwise, request readonly token
-      const token = activeToken ?? (await requestToken(requiredCreateScopes));
+      // 1) Use cached token if available; otherwise, request token with both scopes
+      const token = activeToken ?? (await requestToken(requiredBothScopes));
+      // Attempt to end the active Google Meet conference to finalize records
+      try {
+        const link = activeMeeting.meeting?.meetingLink ?? null;
+        const codeMatch = link ? link.match(/meet\.google\.com\/(?:lookup\/)?([a-z0-9\-]+)/i) : null;
+        const code = codeMatch?.[1] ?? activeMeeting.google?.spaceId ?? null;
+        if (code) {
+          await googleMeetApi.endActiveConference(token, code);
+        }
+      } catch (endErr) {
+        console.warn("[GoogleMeet] endActiveConference failed or not applicable:", (endErr as any)?.message ?? endErr);
+        // proceed to fetch records; in many cases conference ends automatically
+      }
       // Ensure we have party members loaded for mapping
       if (partyMembers.length === 0) {
         try {
@@ -291,10 +315,6 @@ export default function MeetingManagement({ partyId }: Props) {
       const updated: MeetingDto = { ...activeMeeting.meeting, actualEndTime: new Date().toISOString() } as MeetingDto;
       setActiveMeeting((prev) => ({ ...prev, meeting: updated }));
 
-      const detailsRes = await meetingsApi.getMeetingDetails(meetingId);
-      console.log("[Backend] meeting details response:", detailsRes);
-      setSelectedMeetingDetails(detailsRes.data ?? null);
-
       // Refresh list
       const listRes = await meetingsApi.getPartyMeetings(partyId);
       setPartyMeetings(listRes.data ?? []);
@@ -309,12 +329,17 @@ export default function MeetingManagement({ partyId }: Props) {
     }
   }
 
-  async function loadDetails(meetingId: string) {
+  async function loadDetailsIfNeeded(meetingId: string) {
+    if (!meetingId) return;
+    if (detailsById[meetingId] || detailsLoading[meetingId]) return;
+    setDetailsLoading((prev) => ({ ...prev, [meetingId]: true }));
     try {
       const res = await meetingsApi.getMeetingDetails(meetingId);
-      setSelectedMeetingDetails(res.data ?? null);
-    } catch (e) {
-      // ignore
+      setDetailsById((prev) => ({ ...prev, [meetingId]: res.data ?? null }));
+    } catch (e: any) {
+      setDetailsById((prev) => ({ ...prev, [meetingId]: null }));
+    } finally {
+      setDetailsLoading((prev) => ({ ...prev, [meetingId]: false }));
     }
   }
 
@@ -326,6 +351,7 @@ export default function MeetingManagement({ partyId }: Props) {
       </div>
 
       {/* Create meeting section */}
+      {role && role !== "Member" && (
       <div className="rounded border border-white/10 bg-white/5 p-4">
         <h5 className="mb-3 text-xs font-semibold">Create a meeting</h5>
         <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
@@ -340,29 +366,29 @@ export default function MeetingManagement({ partyId }: Props) {
             />
           </div>
           <div>
-            <label className="block text-[11px] text-white/70">Start</label>
-            <input
-              type="datetime-local"
-              value={new Date(createState.start).toISOString().slice(0,16)}
-              onChange={(e) => {
-                const dt = new Date(e.target.value);
-                setCreateState((s) => ({ ...s, start: new Date(dt).toISOString() }));
-              }}
-              className="w-full rounded border border-white/20 bg-white/10 p-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-fuchsia-500"
-            />
-          </div>
-          <div>
-            <label className="block text-[11px] text-white/70">End</label>
-            <input
-              type="datetime-local"
-              value={new Date(createState.end).toISOString().slice(0,16)}
-              onChange={(e) => {
-                const dt = new Date(e.target.value);
-                setCreateState((s) => ({ ...s, end: new Date(dt).toISOString() }));
-              }}
-              className="w-full rounded border border-white/20 bg-white/10 p-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-fuchsia-500"
-            />
-          </div>
+          <label className="block text-[11px] text-white/70">Start</label>
+          <input
+            type="datetime-local"
+            value={datetimeLocalBangkok(createState.start)}
+            onChange={(e) => {
+              const dt = new Date(e.target.value);
+              setCreateState((s) => ({ ...s, start: new Date(dt).toISOString() }));
+            }}
+            className="w-full rounded border border-white/20 bg-white/10 p-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-fuchsia-500"
+          />
+        </div>
+        <div>
+          <label className="block text-[11px] text-white/70">End</label>
+          <input
+            type="datetime-local"
+            value={datetimeLocalBangkok(createState.end)}
+            onChange={(e) => {
+              const dt = new Date(e.target.value);
+              setCreateState((s) => ({ ...s, end: new Date(dt).toISOString() }));
+            }}
+            className="w-full rounded border border-white/20 bg-white/10 p-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-fuchsia-500"
+          />
+        </div>
         </div>
         <div className="mt-3 flex items-center gap-3">
           <button
@@ -384,6 +410,7 @@ export default function MeetingManagement({ partyId }: Props) {
           )}
         </div>
       </div>
+      )}
 
       {/* Active meeting controls */}
       {activeMeeting.meeting && (
@@ -397,19 +424,20 @@ export default function MeetingManagement({ partyId }: Props) {
               )}
             </div>
             <div className="flex items-center gap-2">
-              <button
-                onClick={handleEndMeeting}
-                disabled={ending}
-                className="rounded bg-red-600 px-4 py-2 text-xs font-medium text-white disabled:opacity-50"
-              >
-                {ending ? "Ending..." : "End Meeting"}
-              </button>
+              {role && role !== "Member" && (
+                <button
+                  onClick={handleEndMeeting}
+                  disabled={ending}
+                  className="rounded bg-red-600 px-4 py-2 text-xs font-medium text-white disabled:opacity-50"
+                >
+                  {ending ? "Ending..." : "End Meeting"}
+                </button>
+              )}
             </div>
           </div>
         </div>
       )}
 
-      {/* Past meetings list */}
       <div className="rounded border border-white/10 bg-white/5 p-4">
         <div className="mb-2 flex items-center justify-between">
           <h5 className="text-xs font-semibold">Past Meetings</h5>
@@ -418,61 +446,82 @@ export default function MeetingManagement({ partyId }: Props) {
         {partyMeetings.length === 0 ? (
           <div className="text-xs text-white/60">No meetings yet.</div>
         ) : (
-          <ul className="divide-y divide-white/10">
-            {partyMeetings.map((m) => (
-              <li key={(m.meetingId ?? m.title) + m.scheduledStartTime} className="py-3">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="text-sm font-medium text-white">{m.title}</div>
-                    <div className="text-[11px] text-white/60">
-                      {new Date(m.scheduledStartTime).toLocaleString()} – {new Date(m.scheduledEndTime).toLocaleString()}
+          <Accordion type="single" collapsible value={expandedId ?? undefined} onValueChange={(val) => {
+            const v = typeof val === "string" ? val : null;
+            setExpandedId(v ?? null);
+            if (v) loadDetailsIfNeeded(v);
+          }}>
+            {partyMeetings.map((m) => {
+              const id = m.meetingId ?? `${m.title}-${m.scheduledStartTime}`;
+              const details = m.meetingId ? detailsById[m.meetingId] : null;
+              const isLoading = m.meetingId ? detailsLoading[m.meetingId] : false;
+              return (
+                <AccordionItem key={id} value={m.meetingId ?? id}>
+                  <AccordionTrigger>
+                    <div className="flex w-full items-center justify-between">
+                      <div>
+                        <div className="text-sm font-medium text-white">{m.title}</div>
+                        <div className="text-[11px] text-white/60">
+                          {formatBangkok(m.scheduledStartTime, { includeSeconds: false, separator: " " })} – {formatBangkok(m.scheduledEndTime, { includeSeconds: false, separator: " " })}
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {m.meetingId && (
-                      <button
-                        onClick={() => loadDetails(m.meetingId!)}
-                        className="rounded bg-white/10 px-3 py-2 text-[11px] text-white"
-                      >
-                        View Details
-                      </button>
+                  </AccordionTrigger>
+                  <AccordionContent>
+                    {!m.meetingId ? (
+                      <div className="text-[11px] text-white/60">Details unavailable</div>
+                    ) : isLoading ? (
+                      <div className="text-[11px] text-white/60">Loading details…</div>
+                    ) : !details ? (
+                      <div className="text-[11px] text-white/60">No details available.</div>
+                    ) : (
+                      <div className="space-y-2">
+                        <div className="text-sm font-medium text-white">{details.meeting?.title}</div>
+                        <div className="text-xs text-white/70">Participants ({details.participants?.length ?? 0})</div>
+                        <ul className="grid grid-cols-1 gap-2 md:grid-cols-2">
+                          {details.participants?.map((p, idx) => (
+                            <li key={(p.userId ?? String(idx)) + (p.joinTime ?? "")} className="rounded border border-white/10 bg-white/5 p-2">
+                              <div className="text-xs text-white">
+                                {p.displayName ?? p.userId}
+                                <span className="ml-2 text-white/60">{p.roleInMeeting ?? "participant"}</span>
+                              </div>
+                              <div className="text-[11px] text-white/60">
+                                {p.joinTime ? formatBangkok(p.joinTime, { includeSeconds: false, separator: " " }) : ""}
+                                {p.leaveTime ? ` → ${formatBangkok(p.leaveTime, { includeSeconds: false, separator: " " })}` : ""}
+                              </div>
+                            </li>
+                          ))}
+                        </ul>
+                        <div className="text-xs text-white/70">Summary</div>
+                        <div className="whitespace-pre-wrap rounded border border-white/10 bg-white/5 p-3 text-xs text-white/80">
+                          {details.summaryText ?? "No summary available."}
+                        </div>
+                      </div>
                     )}
-                  </div>
-                </div>
-              </li>
-            ))}
-          </ul>
+                  </AccordionContent>
+                </AccordionItem>
+              );
+            })}
+          </Accordion>
         )}
       </div>
 
-      {/* Selected meeting details */}
-      {selectedMeetingDetails && (
-        <div className="rounded border border-white/10 bg-white/5 p-4">
-          <h5 className="mb-2 text-xs font-semibold">Meeting Details</h5>
-          <div className="space-y-2">
-            <div className="text-sm font-medium text-white">{selectedMeetingDetails.meeting?.title}</div>
-            <div className="text-xs text-white/70">Participants ({selectedMeetingDetails.participants?.length ?? 0})</div>
-            <ul className="grid grid-cols-1 gap-2 md:grid-cols-2">
-              {selectedMeetingDetails.participants?.map((p, idx) => (
-                <li key={(p.userId ?? String(idx)) + (p.joinTime ?? "")} className="rounded border border-white/10 bg-white/5 p-2">
-                  <div className="text-xs text-white">
-                    {p.displayName ?? p.userId}
-                    <span className="ml-2 text-white/60">{p.roleInMeeting ?? "participant"}</span>
-                  </div>
-                  <div className="text-[11px] text-white/60">
-                    {p.joinTime ? new Date(p.joinTime).toLocaleTimeString() : ""}
-                    {p.leaveTime ? ` → ${new Date(p.leaveTime).toLocaleTimeString()}` : ""}
-                  </div>
-                </li>
-              ))}
-            </ul>
-            <div className="text-xs text-white/70">Summary</div>
-            <div className="whitespace-pre-wrap rounded border border-white/10 bg-white/5 p-3 text-xs text-white/80">
-              {selectedMeetingDetails.summaryText ?? "No summary available."}
-            </div>
-          </div>
-        </div>
-      )}
+      
     </div>
   );
 }
+  function detectActiveMeeting(list: MeetingDto[]): MeetingDto | null {
+    const now = Date.now();
+    const byActualStart = list
+      .filter((m) => !!m.actualStartTime && !m.actualEndTime)
+      .sort((a, b) => new Date(b.actualStartTime || 0).getTime() - new Date(a.actualStartTime || 0).getTime());
+    if (byActualStart.length > 0) return byActualStart[0];
+    const scheduledActive = list
+      .filter((m) => {
+        const start = new Date(m.scheduledStartTime).getTime();
+        const end = new Date(m.scheduledEndTime).getTime();
+        return start <= now && now <= end && !m.actualEndTime;
+      })
+      .sort((a, b) => new Date(a.scheduledStartTime).getTime() - new Date(b.scheduledStartTime).getTime());
+    return scheduledActive.length > 0 ? scheduledActive[0] : null;
+  }

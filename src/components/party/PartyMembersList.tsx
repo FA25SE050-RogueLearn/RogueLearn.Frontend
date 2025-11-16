@@ -37,19 +37,20 @@ export default function PartyMembersList({ partyId, members, onRefresh }: PartyM
   }, [authUserId, members]);
 
   const isLeader = myRole === "Leader";
+  const isCoLeader = myRole === "CoLeader";
 
   const handleRoleChange = async (member: PartyMemberDto, nextRole: PartyRole) => {
-    // Only allow toggling between Member and CoLeader via assign/revoke.
-    if (!isLeader) return;
-    if (member.role === nextRole) return; // no-op
+    if (!(isLeader || isCoLeader)) return;
+    if (member.role === nextRole) return;
     setBusyMemberId(member.id);
     try {
       if (nextRole === "CoLeader") {
-        await partiesApi.assignRole(partyId, member.authUserId, "CoLeader");
-        toast.success(`Granted CoLeader to ${member.username ?? member.email ?? member.authUserId.slice(0,8)}`);
+        if (member.role !== "Leader") {
+          await partiesApi.assignRole(partyId, member.authUserId, "CoLeader");
+          toast.success(`Granted CoLeader to ${member.username ?? member.email ?? member.authUserId.slice(0,8)}`);
+        }
       } else if (nextRole === "Member") {
-        // Revoke CoLeader if present
-        if (member.role === "CoLeader") {
+        if (isLeader && member.role === "CoLeader") {
           await partiesApi.revokeRole(partyId, member.authUserId, "CoLeader");
           toast.success(`Revoked CoLeader from ${member.username ?? member.email ?? member.authUserId.slice(0,8)}`);
         }
@@ -64,7 +65,8 @@ export default function PartyMembersList({ partyId, members, onRefresh }: PartyM
   };
 
   const handleRemoveMember = async (member: PartyMemberDto) => {
-    if (!isLeader) return;
+    if (!(isLeader || isCoLeader)) return;
+    if (member.role === "Leader") return;
     const confirmed = window.confirm(`Remove ${member.username ?? member.email ?? "this member"} from the party?`);
     if (!confirmed) return;
     setBusyMemberId(member.id);
@@ -121,8 +123,7 @@ export default function PartyMembersList({ partyId, members, onRefresh }: PartyM
               <span className="text-xs capitalize text-green-400">
                 {m.status}
               </span>
-              {/* Actions: visible to leader, and not for the current leader target */}
-              {isLeader && m.role !== "Leader" && (
+              { (isLeader || isCoLeader) && m.role !== "Leader" && (
                 <div className="flex items-center gap-2">
                   <label className="text-[11px] text-white/60">Role:</label>
                   <select
@@ -143,14 +144,16 @@ export default function PartyMembersList({ partyId, members, onRefresh }: PartyM
                   >
                     Remove
                   </button>
-                  <button
-                    onClick={() => handleTransferLeadership(m)}
-                    disabled={busyMemberId === m.id}
-                    className="rounded bg-amber-500/80 px-2 py-1 text-[11px] text-black hover:bg-amber-500 disabled:opacity-50"
-                    title="Transfer leadership to this member"
-                  >
-                    Transfer Lead
-                  </button>
+                  {isLeader && (
+                    <button
+                      onClick={() => handleTransferLeadership(m)}
+                      disabled={busyMemberId === m.id}
+                      className="rounded bg-amber-500/80 px-2 py-1 text-[11px] text-black hover:bg-amber-500 disabled:opacity-50"
+                      title="Transfer leadership to this member"
+                    >
+                      Transfer Lead
+                    </button>
+                  )}
                 </div>
               )}
             </div>

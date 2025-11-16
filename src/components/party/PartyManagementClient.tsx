@@ -5,7 +5,6 @@ import PartyCreationWizard from "./PartyCreationWizard";
 import { PartyDto } from "@/types/parties";
 import partiesApi from "@/api/partiesApi";
 import { useEffect } from "react";
-import PublicPartiesCard from "./PublicPartiesCard";
 
 export default function PartyManagementClient() {
   const [selectedParty, setSelectedParty] = useState<PartyDto | null>(null);
@@ -58,7 +57,7 @@ export default function PartyManagementClient() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="flex h-12 w-12 items-center justify-center rounded-md bg-gradient-to-br from-fuchsia-600 to-purple-700 text-white shadow-md">
+          <div className="flex h-12 w-12 items-center justify-center rounded-md bg-linear-to-br from-fuchsia-600 to-purple-700 text-white shadow-md">
             <span className="text-base font-bold">P</span>
           </div>
           <div>
@@ -99,7 +98,7 @@ export default function PartyManagementClient() {
       <aside className="md:sticky md:top-0 md:h-[calc(100vh-120px)] md:self-start">
         <div className="flex flex-col gap-3">
           <button
-            className="flex items-center justify-center gap-2 rounded-md bg-gradient-to-r from-fuchsia-600 to-purple-700 px-3 py-2 text-sm font-semibold text-white shadow hover:opacity-90"
+            className="flex items-center justify-center gap-2 rounded-md bg-linear-to-r from-fuchsia-600 to-purple-700 px-3 py-2 text-sm font-semibold text-white shadow hover:opacity-90"
             onClick={() => setShowWizard(true)}
           >
             <span>＋</span>
@@ -108,8 +107,7 @@ export default function PartyManagementClient() {
           <div className="rounded-lg border border-white/10 bg-white/5 p-3">
             <PartyListClient onSelectParty={setSelectedParty} />
           </div>
-          {/* Public parties discovery moved to its own card */}
-          <PublicPartiesCard onJoinedNavigate={true} />
+          
         </div>
       </aside>
 

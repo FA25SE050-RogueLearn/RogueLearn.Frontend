@@ -6,11 +6,11 @@ import { PartyDto } from "@/types/parties";
 import PartyDetailClient, { Tabs } from "./PartyDetailClient";
 import PartyDashboard from "./PartyDashboard";
 import PartyStash from "./PartyStash";
-import MeetingScheduler from "./MeetingScheduler";
-import LiveMeeting from "./LiveMeeting";
 import MeetingManagement from "./MeetingManagement";
 import InviteMemberModal from "./InviteMemberModal";
 import { createClient } from "@/utils/supabase/client";
+import RoleGate from "@/components/auth/RoleGate";
+import { usePartyRole } from "@/hooks/usePartyRole";
 
 export default function PartyDetailPageClient({ partyId }: { partyId: string }) {
   const [authUserId, setAuthUserId] = useState<string | null>(null);
@@ -28,6 +28,7 @@ export default function PartyDetailPageClient({ partyId }: { partyId: string }) 
   const [settingsMaxMembers, setSettingsMaxMembers] = useState<number>(6);
   const [isSavingSettings, setIsSavingSettings] = useState(false);
   const router = useRouter();
+  const { role } = usePartyRole(partyId);
 
   useEffect(() => {
       const supabase = createClient();
@@ -94,6 +95,11 @@ export default function PartyDetailPageClient({ partyId }: { partyId: string }) 
 
   const handleLeaveParty = async () => {
     if (!party) return;
+    if (role === "Leader") {
+      setError("Leader must transfer leadership before leaving");
+      setShowLeaveConfirm(false);
+      return;
+    }
     setIsLeaving(true);
     try {
       await partiesApi.leave(party.id, { partyId: party.id, authUserId: authUserId! });
@@ -109,7 +115,7 @@ export default function PartyDetailPageClient({ partyId }: { partyId: string }) 
   const header = (
     <div className="flex w-full items-center justify-between">
       <div className="flex items-center gap-3">
-        <div className="flex h-12 w-12 items-center justify-center rounded-md bg-gradient-to-br from-fuchsia-600 to-purple-700 text-white shadow-md">
+        <div className="flex h-12 w-12 items-center justify-center rounded-md bg-linear-to-br from-fuchsia-600 to-purple-700 text-white shadow-md">
           <span className="text-base font-bold">P</span>
         </div>
         <div>
@@ -120,19 +126,23 @@ export default function PartyDetailPageClient({ partyId }: { partyId: string }) 
         </div>
       </div>
       <div className="flex gap-2">
-        <button
-          onClick={() => setShowSettingsModal(true)}
-          className="rounded bg-white/10 px-3 py-2 text-xs"
-          title="Configure settings"
-        >
-          ⚙ Settings
-        </button>
-        <button
-          onClick={() => setShowInviteModal(true)}
-          className="rounded bg-white/10 px-3 py-2 text-xs"
-        >
-          Invite Member
-        </button>
+        <RoleGate partyId={partyId} requireAny={["Leader", "CoLeader"]}>
+          <button
+            onClick={() => setShowSettingsModal(true)}
+            className="rounded bg-white/10 px-3 py-2 text-xs"
+            title="Configure settings"
+          >
+            ⚙ Settings
+          </button>
+        </RoleGate>
+        <RoleGate partyId={partyId} requireAny={["Leader", "CoLeader"]}>
+          <button
+            onClick={() => setShowInviteModal(true)}
+            className="rounded bg-white/10 px-3 py-2 text-xs"
+          >
+            Invite Member
+          </button>
+        </RoleGate>
         <button
           onClick={() => setShowLeaveConfirm(true)}
           className="rounded bg-red-500/20 px-3 py-2 text-xs text-red-300 hover:bg-red-500/30"
@@ -147,14 +157,17 @@ export default function PartyDetailPageClient({ partyId }: { partyId: string }) 
     <div className="space-y-4">
       {loading && <div className="text-sm text-white/70">Loading...</div>}
       {error && <div className="text-xs text-red-400">{error}</div>}
-      {!loading && (
+      {!loading && role === null && (
+        <div className="rounded border border-white/10 bg-white/5 p-4 text-sm">
+          You do not have permission to view this party.
+        </div>
+      )}
+      {!loading && role !== null && (
         <PartyDetailClient header={header}>
           <Tabs active={activeTab} onChange={setActiveTab} />
           {activeTab === "dashboard" && party && <PartyDashboard partyId={party.id} />}
           {activeTab === "stash" && party && <PartyStash partyId={party.id} />}
           {activeTab === "meetings" && party && <MeetingManagement partyId={party.id} />}
-          {activeTab === "scheduler" && <MeetingScheduler />}
-          {activeTab === "live" && <LiveMeeting />}
         </PartyDetailClient>
       )}
       {showLeaveConfirm && (
