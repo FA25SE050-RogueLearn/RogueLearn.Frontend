@@ -25,12 +25,15 @@ interface CodeArenaViewProps {
   setLanguage: (language: string) => void;
   onSubmit: () => void;
   submissionResult: string;
+  isSubmitting: boolean;
+  problemAlreadySolved: boolean;
   spaceConstraintMb: number | null;
   onBack: () => void;
   eventId: string | null;
   roomId: string | null;
   eventSourceRef: React.RefObject<EventSource | null>;
   notifications: Notification[];
+  leaderboardData: Array<{ place: number; player_name: string; score: number }>;
   eventSecondsLeft: number | null;
   eventEndDate: string | null;
 }
@@ -70,7 +73,7 @@ const BACKDROP_TEXTURE: CSSProperties = {
   opacity: 0.08,
   mixBlendMode: 'screen',
 };
-const USE_MOCK_LEADERBOARD = true;
+const USE_MOCK_LEADERBOARD = false;
 
 export default function CodeArenaView({
   event,
@@ -82,12 +85,15 @@ export default function CodeArenaView({
   setLanguage,
   onSubmit,
   submissionResult,
+  isSubmitting,
+  problemAlreadySolved,
   spaceConstraintMb,
   onBack,
   eventId,
   roomId,
   eventSourceRef,
   notifications,
+  leaderboardData,
   eventSecondsLeft,
   eventEndDate,
 }: CodeArenaViewProps) {
@@ -101,6 +107,13 @@ export default function CodeArenaView({
       setLastUpdated(new Date());
     });
   }, []);
+
+  // Update leaderboard when prop changes
+  useEffect(() => {
+    if (leaderboardData && leaderboardData.length > 0) {
+      updateLeaderboard(leaderboardData);
+    }
+  }, [leaderboardData, updateLeaderboard]);
 
   const clearLeaderboard = useCallback(() => {
     startTransition(() => {
@@ -277,6 +290,8 @@ export default function CodeArenaView({
                   setLanguage={setLanguage}
                   onSubmit={onSubmit}
                   submissionResult={submissionResult}
+                  isSubmitting={isSubmitting}
+                  problemAlreadySolved={problemAlreadySolved}
                   spaceConstraintMb={spaceConstraintMb}
                 />
               </CardContent>

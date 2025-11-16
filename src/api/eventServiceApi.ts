@@ -230,6 +230,7 @@ const eventServiceApi = {
         error: {
           message: error.normalized?.message || 'Failed to submit solution',
           details: error.normalized?.details,
+          status: error.normalized?.status || error.response?.status,
         },
       };
     }

@@ -11,10 +11,12 @@ interface CodeEditorProps {
   setLanguage: (language: string) => void;
   onSubmit: () => void;
   submissionResult: string;
+  isSubmitting: boolean;
+  problemAlreadySolved: boolean;
   spaceConstraintMb: number | null;
 }
 
-export default function CodeEditor({ code, setCode, language, setLanguage, onSubmit, submissionResult, spaceConstraintMb }: CodeEditorProps) {
+export default function CodeEditor({ code, setCode, language, setLanguage, onSubmit, submissionResult, isSubmitting, problemAlreadySolved, spaceConstraintMb }: CodeEditorProps) {
   const editorRef = useRef<HTMLDivElement>(null);
   const monacoEditor = useRef<any>(null);
   const [isEditorReady, setIsEditorReady] = useState(false);
@@ -127,12 +129,13 @@ export default function CodeEditor({ code, setCode, language, setLanguage, onSub
           <option value="python">Python</option>
           <option value="go">Go</option>
         </select>
-        <Button
+                        <Button
           onClick={onSubmit}
-          className="flex items-center gap-2 rounded-full bg-linear-to-r from-[#d23187] via-[#f5c16c] to-[#f5c16c] px-6 text-xs uppercase tracking-[0.35em] text-[#2b130f] shadow-[0_15px_40px_rgba(210,49,135,0.4)] hover:from-[#f061a6] hover:via-[#f5c16c] hover:to-[#f0b26a]"
+          disabled={isSubmitting || problemAlreadySolved}
+          className="flex items-center gap-2 rounded-full bg-linear-to-r from-[#d23187] via-[#f5c16c] to-[#f5c16c] px-6 text-xs uppercase tracking-[0.35em] text-[#2b130f] shadow-[0_15px_40px_rgba(210,49,135,0.4)] hover:from-[#f061a6] hover:via-[#f5c16c] hover:to-[#f0b26a] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:from-[#d23187] disabled:hover:via-[#f5c16c] disabled:hover:to-[#f5c16c]"
         >
           <Play className="h-4 w-4" />
-          Submit Invocation
+          {problemAlreadySolved ? 'Already Solved' : isSubmitting ? 'Evaluating...' : 'Submit Invocation'}
         </Button>
 
         {/* Constraints Display */}
@@ -161,15 +164,28 @@ export default function CodeEditor({ code, setCode, language, setLanguage, onSub
 
       {submissionResult && (
         <div
-          className={`rounded-2xl border px-4 py-3 text-sm ${
-            submissionResult.includes('Success') || submissionResult.includes('Accepted')
-              ? 'border-[#f5c16c]/35 bg-[#f5c16c]/15 text-[#2b130f]'
-              : submissionResult.includes('Failed') || submissionResult.includes('error')
-              ? 'border-rose-400/40 bg-rose-500/20 text-white'
+          className={`rounded-2xl border px-4 py-3 text-sm transition-all ${
+            submissionResult.startsWith('SUCCESS')
+              ? 'border-emerald-400/50 bg-emerald-500/20 text-white shadow-[0_0_20px_rgba(16,185,129,0.3)]'
+              : submissionResult.startsWith('ERROR')
+              ? 'border-rose-400/50 bg-rose-500/20 text-white shadow-[0_0_20px_rgba(244,63,94,0.3)]'
+              : submissionResult.startsWith('SUBMITTING')
+              ? 'border-[#f5c16c]/50 bg-[#f5c16c]/15 text-white animate-pulse shadow-[0_0_20px_rgba(245,193,108,0.4)]'
+              : submissionResult.startsWith('INFO')
+              ? 'border-blue-400/50 bg-blue-500/20 text-white shadow-[0_0_20px_rgba(59,130,246,0.3)]'
               : 'border-[#d23187]/40 bg-[#d23187]/20 text-white'
           }`}
         >
-          {submissionResult}
+          <div className="space-y-2">
+            {submissionResult.split('|').map((line, index) => {
+              if (index === 0) return null; // Skip the status prefix
+              return (
+                <div key={index} className={index === 1 ? 'text-base font-bold flex items-center gap-2' : 'text-sm opacity-90'}>
+                  {line}
+                </div>
+              );
+            })}
+          </div>
         </div>
       )}
     </div>

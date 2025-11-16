@@ -152,8 +152,8 @@ export type SSEEventType =
 // API Request/Response Types
 export interface SubmitSolutionRequest {
   problem_id: string;
-  language_id: string;
-  source_code: string;
+  language: string;
+  code: string;
 }
 
 export interface SubmitSolutionResponse {
