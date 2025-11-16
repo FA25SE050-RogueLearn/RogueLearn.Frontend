@@ -3,7 +3,8 @@
 import { useState, useEffect, startTransition } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Code } from 'lucide-react';
-import { mockEventCodeProblems, EventCodeProblem } from '@/lib/mockCodeBattleData';
+import eventServiceApi from '@/api/eventServiceApi';
+import type { Problem } from '@/types/event-service';
 
 interface ProblemsListProps {
   apiBaseUrl: string;
@@ -13,10 +14,21 @@ interface ProblemsListProps {
   selectedProblemId: string | null;
 }
 
-const USE_MOCK_DATA = true; // Set to false when backend is ready
+const getDifficultyLabel = (difficulty: number) => {
+  switch (difficulty) {
+    case 1:
+      return 'Easy';
+    case 2:
+      return 'Medium';
+    case 3:
+      return 'Hard';
+    default:
+      return `Level ${difficulty}`;
+  }
+};
 
 export default function ProblemsList({ apiBaseUrl, eventId, roomId, onProblemSelect, selectedProblemId }: ProblemsListProps) {
-  const [problems, setProblems] = useState<EventCodeProblem[]>([]);
+  const [problems, setProblems] = useState<Problem[]>([]);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -30,27 +42,32 @@ export default function ProblemsList({ apiBaseUrl, eventId, roomId, onProblemSel
     const fetchProblems = async () => {
       setLoading(true);
       try {
-        if (USE_MOCK_DATA) {
-          // Use mock data - get problems for this event
-          setTimeout(() => {
-            const eventProblems = mockEventCodeProblems[eventId] || [];
-            setProblems(eventProblems);
-            setLoading(false);
-          }, 200); // Simulate network delay
-        } else {
-          // Use real API
-          const response = await fetch(`${apiBaseUrl}/events/${eventId}/rooms/${roomId}/problems`);
-          const data = await response.json();
-          if (data.data && data.data.length > 0) {
-            setProblems(data.data);
+        const response = await eventServiceApi.getEventProblems(eventId);
+
+        console.log('Problems API Response:', response);
+
+        if (response.success && response.data) {
+          // Ensure data is an array
+          if (Array.isArray(response.data)) {
+            setProblems(response.data);
           } else {
-            setProblems([]);
+            console.error('Problems data is not an array:', response.data);
+            startTransition(() => {
+              setProblems([]);
+            });
           }
-          setLoading(false);
+        } else {
+          console.error('Failed to fetch problems:', response.error);
+          startTransition(() => {
+            setProblems([]);
+          });
         }
       } catch (error) {
         console.error('Error fetching problems:', error);
-        setProblems([]);
+        startTransition(() => {
+          setProblems([]);
+        });
+      } finally {
         setLoading(false);
       }
     };
@@ -80,17 +97,17 @@ export default function ProblemsList({ apiBaseUrl, eventId, roomId, onProblemSel
           <ul className="space-y-3">
             {problems.map((problem) => (
               <li
-                key={problem.CodeProblemID}
-                onClick={() => onProblemSelect(problem.CodeProblemID, problem.Title)}
+                key={problem.id}
+                onClick={() => onProblemSelect(problem.id, problem.title)}
                 className={`rounded-2xl border px-4 py-3 text-sm transition-all duration-300 ${
-                  selectedProblemId === problem.CodeProblemID
+                  selectedProblemId === problem.id
                     ? 'border-[#d23187]/55 bg-[#d23187]/25 text-white shadow-[0_12px_30px_rgba(210,49,135,0.35)]'
                     : 'border-[#f5c16c]/15 bg-white/5 text-foreground/70 hover:border-[#d23187]/40 hover:bg-[#d23187]/15 hover:text-white'
                 }`}
               >
                 <div className="flex items-center justify-between">
-                  <span className="font-medium">{problem.Title}</span>
-                  <span className="text-xs uppercase tracking-[0.35em] text-[#f5c16c]/80">{problem.Score} pts</span>
+                  <span className="font-medium">{problem.title}</span>
+                  <span className="text-xs uppercase tracking-[0.35em] text-[#f5c16c]/80">{getDifficultyLabel(problem.difficulty)}</span>
                 </div>
               </li>
             ))}

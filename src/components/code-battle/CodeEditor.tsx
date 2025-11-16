@@ -11,12 +11,14 @@ interface CodeEditorProps {
   setLanguage: (language: string) => void;
   onSubmit: () => void;
   submissionResult: string;
+  spaceConstraintMb: number | null;
 }
 
-export default function CodeEditor({ code, setCode, language, setLanguage, onSubmit, submissionResult }: CodeEditorProps) {
+export default function CodeEditor({ code, setCode, language, setLanguage, onSubmit, submissionResult, spaceConstraintMb }: CodeEditorProps) {
   const editorRef = useRef<HTMLDivElement>(null);
   const monacoEditor = useRef<any>(null);
   const [isEditorReady, setIsEditorReady] = useState(false);
+  const [codeMemoryMb, setCodeMemoryMb] = useState<number>(0);
 
   useEffect(() => {
     // Load Monaco Editor
@@ -104,6 +106,15 @@ export default function CodeEditor({ code, setCode, language, setLanguage, onSub
     }
   }, [language, isEditorReady]);
 
+  // Calculate code memory usage
+  useEffect(() => {
+    // Calculate approximate memory usage in MB
+    // JavaScript uses UTF-16, so 2 bytes per character
+    const bytes = new Blob([code]).size;
+    const mb = bytes / (1024 * 1024);
+    setCodeMemoryMb(mb);
+  }, [code]);
+
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center gap-4">
@@ -123,6 +134,24 @@ export default function CodeEditor({ code, setCode, language, setLanguage, onSub
           <Play className="h-4 w-4" />
           Submit Invocation
         </Button>
+
+        {/* Constraints Display */}
+        <div className="ml-auto flex items-center gap-4">
+          {spaceConstraintMb !== null && (
+            <div className={`flex items-center gap-2 rounded-full border px-4 py-2 transition-colors ${
+              codeMemoryMb > spaceConstraintMb
+                ? 'border-rose-400/40 bg-rose-500/20'
+                : 'border-[#f5c16c]/25 bg-[#140707]/80'
+            }`}>
+              <svg className={`h-4 w-4 ${codeMemoryMb > spaceConstraintMb ? 'text-rose-400' : 'text-[#f5c16c]'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z" />
+              </svg>
+              <span className="text-xs text-foreground/80">
+                {codeMemoryMb.toFixed(4)} / {spaceConstraintMb} MB
+              </span>
+            </div>
+          )}
+        </div>
       </div>
 
       <div

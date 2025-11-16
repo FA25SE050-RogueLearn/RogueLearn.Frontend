@@ -3,7 +3,8 @@
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Sword } from 'lucide-react';
-import { mockEvents, Event } from '@/lib/mockCodeBattleData';
+import eventServiceApi from '@/api/eventServiceApi';
+import type { Event } from '@/types/event-service';
 
 interface EventsListProps {
   apiBaseUrl: string;
@@ -11,9 +12,13 @@ interface EventsListProps {
   selectedEventId: string | null;
 }
 
-const USE_MOCK_DATA = true; // Set to false when backend is ready
-
 const resolveEventStatus = (event: Event) => {
+  // If status is provided by the API, use it
+  if (event.Status === 'active') return 'Live';
+  if (event.Status === 'completed') return 'Concluded';
+  if (event.Status === 'cancelled') return 'Cancelled';
+
+  // Otherwise, calculate based on dates
   const now = new Date();
   const start = new Date(event.StartedDate);
   const end = new Date(event.EndDate);
@@ -36,23 +41,30 @@ export default function EventsList({ apiBaseUrl, onEventSelect, selectedEventId 
   useEffect(() => {
     const fetchEvents = async () => {
       try {
-        if (USE_MOCK_DATA) {
-          // Use mock data
-          setTimeout(() => {
-            setEvents(mockEvents);
-            setLoading(false);
-          }, 300); // Simulate network delay
-        } else {
-          // Use real API
-          const response = await fetch(`${apiBaseUrl}/events`);
-          const data = await response.json();
-          if (data.data) {
-            setEvents(data.data);
+        const response = await eventServiceApi.getAllEvents();
+
+        console.log('Events API Response:', response);
+
+        if (response.success && response.data) {
+          // Ensure data is an array before filtering
+          if (Array.isArray(response.data)) {
+            // Filter to only show code_battle events
+            const codeBattleEvents = response.data.filter(
+              (event) => event.Type === 'code_battle'
+            );
+            setEvents(codeBattleEvents);
+          } else {
+            console.error('Events data is not an array:', response.data);
+            setEvents([]);
           }
-          setLoading(false);
+        } else {
+          console.error('Failed to fetch events:', response.error);
+          setEvents([]);
         }
       } catch (error) {
         console.error('Error fetching events:', error);
+        setEvents([]);
+      } finally {
         setLoading(false);
       }
     };

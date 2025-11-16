@@ -1,84 +1,45 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { AdminLayout } from "@/components/layout/AdminLayout";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { 
-  Calendar, 
-  Users, 
-  DollarSign, 
+import {
+  Calendar,
+  Users,
+  DollarSign,
   Clock,
   ArrowRight,
   CheckCircle,
   XCircle,
-  AlertCircle
+  AlertCircle,
+  Loader2
 } from "lucide-react";
 import Link from "next/link";
+import eventServiceApi from "@/api/eventServiceApi";
+import type { EventRequest } from "@/types/event-service";
 
-// Mock data - will be replaced with real data
-const mockEvents = {
-  pending: [
-    {
-      id: "evt-001",
-      title: "Spring Java Championship 2025",
-      guild: "Java Masters Guild",
-      submittedDate: "2025-10-27",
-      participants: 150,
-      prizePool: "17,000,000 VND",
-      status: "pending"
-    },
-    {
-      id: "evt-002",
-      title: "Algorithm Mastery Tournament",
-      guild: "Code Warriors",
-      submittedDate: "2025-10-26",
-      participants: 80,
-      prizePool: "10,000,000 VND",
-      status: "pending"
-    },
-    {
-      id: "evt-003",
-      title: "Web Dev Sprint Challenge",
-      guild: "Frontend Pioneers",
-      submittedDate: "2025-10-25",
-      participants: 120,
-      prizePool: "12,000,000 VND",
-      status: "pending"
-    },
-  ],
-  active: [
-    {
-      id: "evt-004",
-      title: "Database Design Competition",
-      guild: "Data Architects",
-      startDate: "2025-10-20",
-      participants: 95,
-      prizePool: "8,000,000 VND",
-      status: "active"
-    },
-  ],
-  past: [
-    {
-      id: "evt-005",
-      title: "Winter Coding Marathon 2024",
-      guild: "Elite Coders",
-      endDate: "2025-10-15",
-      participants: 200,
-      prizePool: "20,000,000 VND",
-      status: "completed"
-    },
-  ],
-};
+interface DisplayEvent {
+  id: string;
+  title: string;
+  guild: string;
+  submittedDate?: string;
+  startDate?: string;
+  endDate?: string;
+  participants: number;
+  prizePool: string;
+  status: string;
+}
 
-function EventCard({ event, type }: { event: any; type: string }) {
+function EventCard({ event, type }: { event: DisplayEvent; type: string }) {
   const statusConfig = {
     pending: { icon: AlertCircle, color: "text-orange-400", bg: "bg-orange-950/50" },
-    active: { icon: CheckCircle, color: "text-emerald-400", bg: "bg-emerald-950/50" },
-    completed: { icon: XCircle, color: "text-amber-600", bg: "bg-amber-950/50" },
+    approved: { icon: CheckCircle, color: "text-emerald-400", bg: "bg-emerald-950/50" },
+    rejected: { icon: XCircle, color: "text-rose-400", bg: "bg-rose-950/50" },
   };
 
-  const config = statusConfig[event.status as keyof typeof statusConfig];
+  const config = statusConfig[event.status as keyof typeof statusConfig] || statusConfig.pending;
   const StatusIcon = config.icon;
 
   return (
@@ -143,6 +104,61 @@ function EventCard({ event, type }: { event: any; type: string }) {
 }
 
 export default function EventManagementPage() {
+  const [eventRequests, setEventRequests] = useState<EventRequest[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetchEventRequests();
+  }, []);
+
+  const fetchEventRequests = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await eventServiceApi.getAllEventRequests();
+      if (response.success && response.data) {
+        setEventRequests(response.data);
+      } else {
+        setError(response.error?.message || 'Failed to load event requests');
+      }
+    } catch (err) {
+      setError('An unexpected error occurred');
+      console.error('Error fetching event requests:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Transform EventRequest to DisplayEvent
+  const transformEventRequest = (req: EventRequest): DisplayEvent => {
+    const maxParticipants = req.participation
+      ? req.participation.max_guilds * req.participation.max_players_per_guild
+      : 0;
+
+    return {
+      id: req.request_id,
+      title: req.title || 'Untitled Event',
+      guild: req.requester_guild_id || 'Unknown Guild',
+      submittedDate: req.created_at ? new Date(req.created_at).toLocaleDateString('en-US') : 'N/A',
+      participants: maxParticipants,
+      prizePool: 'TBD', // Event requests don't have prize pool yet
+      status: req.status || 'pending',
+    };
+  };
+
+  const pendingEvents = eventRequests
+    .filter(req => req.status === 'pending')
+    .map(transformEventRequest);
+
+  const approvedEvents = eventRequests
+    .filter(req => req.status === 'approved')
+    .map(transformEventRequest);
+
+  const rejectedEvents = eventRequests
+    .filter(req => req.status === 'rejected')
+    .map(transformEventRequest);
+
   return (
     <AdminLayout>
       <div className="space-y-8">
@@ -157,53 +173,107 @@ export default function EventManagementPage() {
           </div>
         </div>
 
-        {/* Tabs */}
-        <Tabs defaultValue="pending" className="w-full">
-          <TabsList className="grid w-full max-w-md grid-cols-3 bg-amber-950/30 border border-amber-900/30">
-            <TabsTrigger 
-              value="pending"
-              className="data-[state=active]:bg-amber-900/40 data-[state=active]:text-amber-100 text-amber-600"
-            >
-              Awaiting ({mockEvents.pending.length})
-            </TabsTrigger>
-            <TabsTrigger 
-              value="active"
-              className="data-[state=active]:bg-amber-900/40 data-[state=active]:text-amber-100 text-amber-600"
-            >
-              Active ({mockEvents.active.length})
-            </TabsTrigger>
-            <TabsTrigger 
-              value="past"
-              className="data-[state=active]:bg-amber-900/40 data-[state=active]:text-amber-100 text-amber-600"
-            >
-              Completed ({mockEvents.past.length})
-            </TabsTrigger>
-          </TabsList>
+        {/* Error Message */}
+        {error && (
+          <Card className="border-rose-900/30 bg-gradient-to-br from-rose-950/30 to-transparent">
+            <CardContent className="p-6">
+              <div className="flex items-center gap-2 text-rose-400">
+                <XCircle className="h-5 w-5" />
+                <p>{error}</p>
+              </div>
+              <Button
+                onClick={fetchEventRequests}
+                variant="outline"
+                className="mt-4 border-rose-700/50 bg-rose-950/30 text-rose-400 hover:bg-rose-900/50"
+              >
+                Retry
+              </Button>
+            </CardContent>
+          </Card>
+        )}
 
-          <TabsContent value="pending" className="space-y-4">
-            <div className="grid gap-4 md:grid-cols-2">
-              {mockEvents.pending.map((event) => (
-                <EventCard key={event.id} event={event} type="pending" />
-              ))}
-            </div>
-          </TabsContent>
+        {/* Loading State */}
+        {loading ? (
+          <div className="flex items-center justify-center py-12">
+            <Loader2 className="h-8 w-8 animate-spin text-amber-600" />
+            <span className="ml-3 text-amber-700">Loading event requests...</span>
+          </div>
+        ) : (
+          /* Tabs */
+          <Tabs defaultValue="pending" className="w-full">
+            <TabsList className="grid w-full max-w-md grid-cols-3 bg-amber-950/30 border border-amber-900/30">
+              <TabsTrigger
+                value="pending"
+                className="data-[state=active]:bg-amber-900/40 data-[state=active]:text-amber-100 text-amber-600"
+              >
+                Awaiting ({pendingEvents.length})
+              </TabsTrigger>
+              <TabsTrigger
+                value="approved"
+                className="data-[state=active]:bg-amber-900/40 data-[state=active]:text-amber-100 text-amber-600"
+              >
+                Approved ({approvedEvents.length})
+              </TabsTrigger>
+              <TabsTrigger
+                value="rejected"
+                className="data-[state=active]:bg-amber-900/40 data-[state=active]:text-amber-100 text-amber-600"
+              >
+                Rejected ({rejectedEvents.length})
+              </TabsTrigger>
+            </TabsList>
 
-          <TabsContent value="active" className="space-y-4">
-            <div className="grid gap-4 md:grid-cols-2">
-              {mockEvents.active.map((event) => (
-                <EventCard key={event.id} event={event} type="active" />
-              ))}
-            </div>
-          </TabsContent>
+            <TabsContent value="pending" className="space-y-4">
+              {pendingEvents.length === 0 ? (
+                <Card className="border-amber-900/30 bg-gradient-to-br from-amber-950/30 to-transparent">
+                  <CardContent className="py-12 text-center">
+                    <AlertCircle className="mx-auto h-12 w-12 text-amber-700/50" />
+                    <p className="mt-4 text-amber-700">No pending event requests</p>
+                  </CardContent>
+                </Card>
+              ) : (
+                <div className="grid gap-4 md:grid-cols-2">
+                  {pendingEvents.map((event) => (
+                    <EventCard key={event.id} event={event} type="pending" />
+                  ))}
+                </div>
+              )}
+            </TabsContent>
 
-          <TabsContent value="past" className="space-y-4">
-            <div className="grid gap-4 md:grid-cols-2">
-              {mockEvents.past.map((event) => (
-                <EventCard key={event.id} event={event} type="past" />
-              ))}
-            </div>
-          </TabsContent>
-        </Tabs>
+            <TabsContent value="approved" className="space-y-4">
+              {approvedEvents.length === 0 ? (
+                <Card className="border-amber-900/30 bg-gradient-to-br from-amber-950/30 to-transparent">
+                  <CardContent className="py-12 text-center">
+                    <CheckCircle className="mx-auto h-12 w-12 text-emerald-700/50" />
+                    <p className="mt-4 text-amber-700">No approved event requests</p>
+                  </CardContent>
+                </Card>
+              ) : (
+                <div className="grid gap-4 md:grid-cols-2">
+                  {approvedEvents.map((event) => (
+                    <EventCard key={event.id} event={event} type="approved" />
+                  ))}
+                </div>
+              )}
+            </TabsContent>
+
+            <TabsContent value="rejected" className="space-y-4">
+              {rejectedEvents.length === 0 ? (
+                <Card className="border-amber-900/30 bg-gradient-to-br from-amber-950/30 to-transparent">
+                  <CardContent className="py-12 text-center">
+                    <XCircle className="mx-auto h-12 w-12 text-rose-700/50" />
+                    <p className="mt-4 text-amber-700">No rejected event requests</p>
+                  </CardContent>
+                </Card>
+              ) : (
+                <div className="grid gap-4 md:grid-cols-2">
+                  {rejectedEvents.map((event) => (
+                    <EventCard key={event.id} event={event} type="rejected" />
+                  ))}
+                </div>
+              )}
+            </TabsContent>
+          </Tabs>
+        )}
       </div>
     </AdminLayout>
   );

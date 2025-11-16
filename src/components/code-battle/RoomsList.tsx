@@ -3,7 +3,8 @@
 import { useState, useEffect, startTransition } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Users } from 'lucide-react';
-import { mockRooms, Room } from '@/lib/mockCodeBattleData';
+import eventServiceApi from '@/api/eventServiceApi';
+import type { Room } from '@/types/event-service';
 
 interface RoomsListProps {
   apiBaseUrl: string;
@@ -11,8 +12,6 @@ interface RoomsListProps {
   onRoomSelect: (roomId: string) => void;
   selectedRoomId: string | null;
 }
-
-const USE_MOCK_DATA = true; // Set to false when backend is ready
 
 const buildRoomTag = (room: Room) => {
   const createdDate = new Date(room.CreatedDate);
@@ -43,24 +42,32 @@ export default function RoomsList({ apiBaseUrl, eventId, onRoomSelect, selectedR
     const fetchRooms = async () => {
       setLoading(true);
       try {
-        if (USE_MOCK_DATA) {
-          // Use mock data - filter rooms by event
-          setTimeout(() => {
-            const eventRooms = mockRooms.filter(room => room.EventID === eventId);
-            setRooms(eventRooms);
-            setLoading(false);
-          }, 200); // Simulate network delay
-        } else {
-          // Use real API
-          const response = await fetch(`${apiBaseUrl}/events/${eventId}/rooms`);
-          const data = await response.json();
-          if (data.data) {
-            setRooms(data.data);
+        const response = await eventServiceApi.getEventRooms(eventId);
+
+        console.log('Rooms API Response:', response);
+
+        if (response.success && response.data) {
+          // Ensure data is an array
+          if (Array.isArray(response.data)) {
+            setRooms(response.data);
+          } else {
+            console.error('Rooms data is not an array:', response.data);
+            startTransition(() => {
+              setRooms([]);
+            });
           }
-          setLoading(false);
+        } else {
+          console.error('Failed to fetch rooms:', response.error);
+          startTransition(() => {
+            setRooms([]);
+          });
         }
       } catch (error) {
         console.error('Error fetching rooms:', error);
+        startTransition(() => {
+          setRooms([]);
+        });
+      } finally {
         setLoading(false);
       }
     };

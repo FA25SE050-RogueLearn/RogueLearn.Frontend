@@ -1,86 +1,176 @@
 // roguelearn-web/src/components/code-battle/CodeBattlePage.tsx
 "use client";
 
-import { useState, useEffect, useRef } from 'react';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import EventsList from './EventsList';
-import RoomsList from './RoomsList';
-import Leaderboard from './Leaderboard';
-import ProblemsList from './ProblemsList';
-import CodeEditor from './CodeEditor';
-import ExercisesList from './ExercisesList';
-import Notifications from './Notifications';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import eventServiceApi from '@/api/eventServiceApi';
+import { createClient } from '@/utils/supabase/client';
+import type { Event, Room, Problem } from '@/types/event-service';
+import EventsSelectionView from './views/EventsSelectionView';
+import RoomSelectionView from './views/RoomSelectionView';
+import CodeArenaView from './views/CodeArenaView';
 
-// This component will now correctly use the dedicated environment variable for the Code Battle service.
-const API_BASE_URL = process.env.NEXT_PUBLIC_CODE_BATTLE_API_URL;
-const PLAYER_ID = "11111111-1111-1111-1111-111111111111"; // TODO: Get from auth
+type ViewState = 'events' | 'rooms' | 'arena';
 
 export default function CodeBattlePage() {
+  // Navigation state
+  const [currentView, setCurrentView] = useState<ViewState>('events');
+
+  // Data state
+  const [events, setEvents] = useState<Event[]>([]);
+  const [rooms, setRooms] = useState<Room[]>([]);
+  const [problems, setProblems] = useState<Problem[]>([]);
+
+  // Selection state
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
   const [selectedRoomId, setSelectedRoomId] = useState<string | null>(null);
   const [selectedProblemId, setSelectedProblemId] = useState<string | null>(null);
   const [selectedProblemTitle, setSelectedProblemTitle] = useState<string>('');
-  const [notifications, setNotifications] = useState<Array<{ message: string; type: string; time: string }>>([]);
+
+  // Loading states
+  const [loadingEvents, setLoadingEvents] = useState(true);
+  const [loadingRooms, setLoadingRooms] = useState(false);
+  const [loadingProblems, setLoadingProblems] = useState(false);
+
+  // Coding state
   const [language, setLanguage] = useState('javascript');
   const [code, setCode] = useState('');
   const [submissionResult, setSubmissionResult] = useState<string>('');
+  const [spaceConstraintMb, setSpaceConstraintMb] = useState<number | null>(null);
+
+  // User and connection state
+  const [playerId, setPlayerId] = useState<string | null>(null);
+  const [notifications, setNotifications] = useState<Array<{ message: string; type: string; time: string }>>([]);
   const eventSourceRef = useRef<EventSource | null>(null);
+
+  // Event timer state
+  const [eventSecondsLeft, setEventSecondsLeft] = useState<number | null>(null);
+  const [eventEndDate, setEventEndDate] = useState<string | null>(null);
+
+  // Get current user ID from Supabase
+  useEffect(() => {
+    const getUser = async () => {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        setPlayerId(user.id);
+      }
+    };
+    getUser();
+  }, []);
 
   const addNotification = (message: string, type: string = 'info') => {
     const time = new Date().toLocaleTimeString();
     setNotifications(prev => [...prev, { message, type, time }]);
   };
 
-  const handleEventSelect = (eventId: string) => {
-    setSelectedEventId(eventId);
-    setSelectedRoomId(null);
-    setSelectedProblemId(null);
-    setSelectedProblemTitle('');
-    setSubmissionResult('');
-  };
+  // Fetch events on mount
+  useEffect(() => {
+    const fetchEvents = async () => {
+      setLoadingEvents(true);
+      try {
+        const response = await eventServiceApi.getAllEvents();
+        if (response.success && response.data && Array.isArray(response.data)) {
+          const codeBattleEvents = response.data.filter(
+            (event) => event.Type === 'code_battle'
+          );
+          setEvents(codeBattleEvents);
+        }
+      } catch (error) {
+        console.error('Error fetching events:', error);
+        addNotification('Failed to load events', 'error');
+      } finally {
+        setLoadingEvents(false);
+      }
+    };
 
-  const handleRoomSelect = (roomId: string) => {
-    setSelectedRoomId(roomId);
-    setSelectedProblemId(null);
-    setSelectedProblemTitle('');
-    setSubmissionResult('');
-    
-    if (selectedEventId) {
-      joinRoom(selectedEventId, roomId);
+    fetchEvents();
+  }, []);
+
+  // Fetch rooms when event is selected
+  useEffect(() => {
+    if (!selectedEventId) {
+      setRooms([]);
+      return;
     }
-  };
 
-  const handleProblemSelect = async (problemId: string, title: string) => {
-    setSelectedProblemId(problemId);
-    setSelectedProblemTitle(title);
-    setSubmissionResult('');
-    
-    // Immediately load the code stub
+    const fetchRooms = async () => {
+      setLoadingRooms(true);
+      try {
+        const response = await eventServiceApi.getEventRooms(selectedEventId);
+        if (response.success && response.data && Array.isArray(response.data)) {
+          setRooms(response.data);
+        }
+      } catch (error) {
+        console.error('Error fetching rooms:', error);
+        addNotification('Failed to load rooms', 'error');
+      } finally {
+        setLoadingRooms(false);
+      }
+    };
+
+    fetchRooms();
+  }, [selectedEventId]);
+
+  // Fetch problems when room is selected
+  useEffect(() => {
+    if (!selectedEventId || !selectedRoomId) {
+      setProblems([]);
+      return;
+    }
+
+    const fetchProblems = async () => {
+      setLoadingProblems(true);
+      try {
+        const response = await eventServiceApi.getEventProblems(selectedEventId);
+        if (response.success && response.data && Array.isArray(response.data)) {
+          setProblems(response.data);
+        }
+      } catch (error) {
+        console.error('Error fetching problems:', error);
+        addNotification('Failed to load problems', 'error');
+      } finally {
+        setLoadingProblems(false);
+      }
+    };
+
+    fetchProblems();
+  }, [selectedEventId, selectedRoomId]);
+
+  const loadProblemDetails = useCallback(async (problemId: string, lang: string) => {
     try {
-      const { mockProblemLanguageDetails } = await import('@/lib/mockCodeBattleData');
-      const normalizedLang = language === 'go' ? 'Golang' : 
-                            language === 'python' ? 'Python' : 'Javascript';
-      const problemDetails = mockProblemLanguageDetails[problemId]?.[normalizedLang];
-      
-      if (problemDetails) {
-        setCode(problemDetails.SolutionStub);
-        addNotification(`Loaded ${title} - ${normalizedLang}`);
+      const normalizedLang = lang === 'go' ? 'Golang' :
+                            lang === 'python' ? 'Python' : 'Javascript';
+
+      const response = await eventServiceApi.getProblemDetails(problemId, normalizedLang);
+
+      if (response.success && response.data) {
+        const solutionStub = response.data.solution_stub || '// Start coding here';
+        setCode(solutionStub);
+        setSpaceConstraintMb(response.data.space_constraint_mb || null);
+        addNotification(`Loaded problem - ${normalizedLang}`);
       } else {
-        setCode('// Start coding here\n// Solution stub not available for this problem/language combination');
-        addNotification(`No ${normalizedLang} template for ${title}`, 'error');
+        setCode('// Start coding here\n// Solution stub not available');
+        setSpaceConstraintMb(null);
+        addNotification(`Failed to load ${normalizedLang} template`, 'error');
       }
     } catch (error) {
       console.error('Error loading problem template:', error);
       setCode('// Start coding here');
+      setSpaceConstraintMb(null);
       addNotification('Error loading problem template', 'error');
     }
-  };
+  }, []);
 
-  const joinRoom = (eventId: string, roomId: string) => {
-    // Skip SSE connection when using mock data
-    const USE_MOCK_DATA = true;
-    if (USE_MOCK_DATA) {
-      addNotification(`Joined room (mock mode)`);
+  // Reload problem details when language changes
+  useEffect(() => {
+    if (selectedProblemId && currentView === 'arena') {
+      loadProblemDetails(selectedProblemId, language);
+    }
+  }, [language, selectedProblemId, loadProblemDetails, currentView]);
+
+  const joinRoom = async (eventId: string, roomId: string) => {
+    if (!playerId) {
+      addNotification('Unable to join room: Player not authenticated', 'error');
       return;
     }
 
@@ -88,148 +178,176 @@ export default function CodeBattlePage() {
       eventSourceRef.current.close();
     }
 
-    const url = `${API_BASE_URL}/events/${eventId}/rooms/${roomId}/leaderboard?connected_player_id=${PLAYER_ID}`;
-    const eventSource = new EventSource(url);
-    eventSourceRef.current = eventSource;
+    try {
+      const supabase = createClient();
+      const { data: { session } } = await supabase.auth.getSession();
 
-    eventSource.onopen = () => {
-      addNotification(`Connected to room ${roomId}`);
-    };
+      if (!session?.access_token) {
+        addNotification('Unable to join room: No auth token', 'error');
+        return;
+      }
 
-    eventSource.onerror = (error) => {
-      console.error('EventSource failed:', error);
-      addNotification('Connection error', 'error');
-      eventSource.close();
-    };
+      const eventSource = eventServiceApi.createRoomSSE(eventId, roomId, playerId, session.access_token);
+      eventSourceRef.current = eventSource;
 
-    eventSource.addEventListener('CORRECT_SOLUTION_SUBMITTED', (e) => {
-      addNotification('A correct solution was submitted!', 'success');
-      setSubmissionResult('Success! Solution Accepted.');
-    });
+      eventSource.onopen = () => {
+        addNotification(`Connected to room`, 'success');
+      };
 
-    eventSource.addEventListener('WRONG_SOLUTION_SUBMITTED', (e) => {
-      const eventData = JSON.parse(e.data);
-      const errorMessage = eventData.Data || 'Your solution failed.';
-      addNotification(`Solution failed: ${errorMessage}`, 'error');
-      setSubmissionResult(`Failed: ${errorMessage}`);
-    });
+      eventSource.onerror = (error) => {
+        console.error('EventSource failed:', error);
+        addNotification('Connection error - retrying...', 'error');
+      };
 
-    eventSource.addEventListener('LEADERBOARD_UPDATED', (e) => {
-      addNotification('Leaderboard updated');
-    });
+      eventSource.addEventListener('CORRECT_SOLUTION_SUBMITTED', (e) => {
+        const eventData = JSON.parse((e as MessageEvent).data);
+        addNotification('A correct solution was submitted!', 'success');
+        if (eventData.player_id === playerId) {
+          setSubmissionResult('✅ Success! All test cases passed. Your solution has been accepted.');
+        }
+      });
 
-    eventSource.addEventListener('PLAYER_JOINED', () => {
-      addNotification('A player has joined the room');
-    });
+      eventSource.addEventListener('WRONG_SOLUTION_SUBMITTED', (e) => {
+        const eventData = JSON.parse((e as MessageEvent).data);
+        const errorMessage = eventData.error_message || 'Your solution failed.';
+        if (eventData.player_id === playerId) {
+          addNotification(`Solution failed: ${errorMessage}`, 'error');
+          setSubmissionResult(`❌ ${errorMessage}`);
+        }
+      });
 
-    eventSource.addEventListener('PLAYER_LEFT', () => {
-      addNotification('A player has left the room');
-    });
+      eventSource.addEventListener('LEADERBOARD_UPDATED', (e) => {
+        addNotification('Leaderboard updated');
+      });
+
+      eventSource.addEventListener('PLAYER_JOINED', (e) => {
+        const eventData = JSON.parse((e as MessageEvent).data);
+        addNotification(`${eventData.player_name || 'A player'} joined the room`);
+      });
+
+      eventSource.addEventListener('PLAYER_LEFT', (e) => {
+        const eventData = JSON.parse((e as MessageEvent).data);
+        addNotification(`${eventData.player_name || 'A player'} left the room`);
+      });
+
+      eventSource.addEventListener('EVENT_STARTED', () => {
+        addNotification('Event has started!', 'success');
+      });
+
+      eventSource.addEventListener('EVENT_ENDED', () => {
+        addNotification('Event has ended', 'info');
+      });
+
+      eventSource.addEventListener('initial_time', (e) => {
+        try {
+          const eventData = JSON.parse((e as MessageEvent).data);
+          if (eventData.Data) {
+            setEventSecondsLeft(eventData.Data.seconds_left);
+            setEventEndDate(eventData.Data.end_date);
+          }
+        } catch (error) {
+          console.error('Error parsing initial_time data:', error);
+        }
+      });
+    } catch (error) {
+      console.error('Failed to create SSE connection:', error);
+      addNotification('Failed to connect to room', 'error');
+    }
   };
 
   const handleSubmit = async () => {
     if (!selectedEventId || !selectedRoomId || !selectedProblemId) {
-      alert('Please select an event, room, and problem first.');
+      addNotification('Please select an event, room, and problem first', 'error');
       return;
     }
     if (!code.trim()) {
-      alert('Code editor cannot be empty.');
+      addNotification('Code editor cannot be empty', 'error');
       return;
     }
 
     setSubmissionResult('Submitting...');
     addNotification('Submitting solution...', 'info');
 
-    // Simulate submission with mock data
-    setTimeout(() => {
-      const isSuccess = Math.random() > 0.3; // 70% success rate for demo
-      
-      if (isSuccess) {
-        setSubmissionResult('✅ Success! All test cases passed. Your solution has been accepted.');
-        addNotification(`Solution accepted for ${selectedProblemTitle}!`, 'success');
-      } else {
-        const errors = [
-          'Test case 1 failed: Expected 5, got 3',
-          'Runtime error: Index out of bounds',
-          'Time limit exceeded on test case 3',
-          'Wrong answer: Expected [1,2], got [2,1]'
-        ];
-        const randomError = errors[Math.floor(Math.random() * errors.length)];
-        setSubmissionResult(`❌ ${randomError}`);
-        addNotification(`Submission failed: ${randomError}`, 'error');
-      }
-    }, 1500); // Simulate processing time
-  };
-
-  const handleExerciseSubmit = async (exerciseProblemId: string, exerciseCode: string, exerciseLanguage: string) => {
-    // Simulate exercise submission with mock data
-    return new Promise((resolve) => {
-      addNotification('Submitting exercise...', 'info');
-      
-      setTimeout(() => {
-        const isSuccess = Math.random() > 0.4; // 60% success rate for demo
-        
-        if (isSuccess) {
-          addNotification('Exercise solution passed!', 'success');
-          resolve({ 
-            success: true, 
-            data: { 
-              success: true,
-              execution_time_ms: Math.floor(Math.random() * 500 + 50),
-              stdout: 'All test cases passed!',
-              stderr: ''
-            } 
-          });
-        } else {
-          const errors = [
-            'Wrong Answer: Test case 2 failed\nExpected: [1,2]\nGot: [2,1]',
-            'Runtime Error: Line 5: Cannot read property of undefined',
-            'Compilation Error: Syntax error at line 8',
-            'Wrong Answer: Expected output "5", got "3"'
-          ];
-          const randomError = errors[Math.floor(Math.random() * errors.length)];
-          addNotification(`Exercise failed`, 'error');
-          resolve({ 
-            success: true,
-            data: {
-              success: false, 
-              message: randomError,
-              stdout: '',
-              stderr: 'Test execution failed'
-            }
-          });
-        }
-      }, 1500); // Simulate processing time
-    });
-  };
-
-  // Reload code stub when language or problem changes
-  useEffect(() => {
-    const loadCodeForLanguage = async () => {
-      if (!selectedProblemId || !selectedProblemTitle) return;
-      
-      try {
-        const { mockProblemLanguageDetails } = await import('@/lib/mockCodeBattleData');
-        const normalizedLang = language === 'go' ? 'Golang' : 
-                              language === 'python' ? 'Python' : 'Javascript';
-        const problemDetails = mockProblemLanguageDetails[selectedProblemId]?.[normalizedLang];
-        
-        if (problemDetails) {
-          setCode(problemDetails.SolutionStub);
-          addNotification(`Loaded ${selectedProblemTitle} - ${normalizedLang}`);
-        } else {
-          setCode('// Start coding here\n// Solution stub not available for this problem/language combination');
-          addNotification(`No ${normalizedLang} template for ${selectedProblemTitle}`, 'error');
-        }
-      } catch (error) {
-        console.error('Error loading code for language:', error);
-        setCode('// Start coding here');
-        addNotification('Error loading problem template', 'error');
-      }
+    const languageIdMap: Record<string, string> = {
+      'javascript': '63',
+      'python': '71',
+      'go': '60',
+      'java': '62',
+      'cpp': '54',
+      'c': '50',
     };
 
-    loadCodeForLanguage();
-  }, [language, selectedProblemId, selectedProblemTitle]);
+    const languageId = languageIdMap[language] || '63';
+
+    try {
+      const response = await eventServiceApi.submitRoomSolution(
+        selectedEventId,
+        selectedRoomId,
+        {
+          problem_id: selectedProblemId,
+          language_id: languageId,
+          source_code: code,
+        }
+      );
+
+      if (response.success && response.data) {
+        addNotification(`Submission received - evaluating...`, 'info');
+      } else {
+        setSubmissionResult(`❌ Submission failed: ${response.error?.message || 'Unknown error'}`);
+        addNotification(`Submission failed: ${response.error?.message}`, 'error');
+      }
+    } catch (error: any) {
+      console.error('Submission error:', error);
+      setSubmissionResult(`❌ Submission error: ${error.message || 'Unknown error'}`);
+      addNotification(`Submission error: ${error.message}`, 'error');
+    }
+  };
+
+  // Navigation handlers
+  const handleSelectEvent = (eventId: string) => {
+    setSelectedEventId(eventId);
+    setSelectedRoomId(null);
+    setSelectedProblemId(null);
+    setSelectedProblemTitle('');
+    setCurrentView('rooms');
+  };
+
+  const handleSelectRoom = (roomId: string) => {
+    setSelectedRoomId(roomId);
+    setSelectedProblemId(null);
+    setSelectedProblemTitle('');
+    if (selectedEventId) {
+      joinRoom(selectedEventId, roomId);
+    }
+  };
+
+  const handleSelectProblem = async (problemId: string, title: string) => {
+    setSelectedProblemId(problemId);
+    setSelectedProblemTitle(title);
+  };
+
+  const handleStartCoding = async () => {
+    if (selectedProblemId) {
+      await loadProblemDetails(selectedProblemId, language);
+      setCurrentView('arena');
+    }
+  };
+
+  const handleBackToEvents = () => {
+    setCurrentView('events');
+    setSelectedEventId(null);
+    setSelectedRoomId(null);
+    setSelectedProblemId(null);
+    setSelectedProblemTitle('');
+  };
+
+  const handleBackToRooms = () => {
+    setCurrentView('rooms');
+    setSelectedProblemId(null);
+    setSelectedProblemTitle('');
+    setCode('');
+    setSubmissionResult('');
+  };
 
   useEffect(() => {
     return () => {
@@ -239,124 +357,62 @@ export default function CodeBattlePage() {
     };
   }, []);
 
+  const selectedEvent = events.find(e => e.ID === selectedEventId) || null;
+  const selectedRoom = rooms.find(r => r.ID === selectedRoomId) || null;
+
   return (
-    <div className="flex flex-col gap-10 pb-24">
-      <section className="relative overflow-hidden rounded-4xl border border-[#f5c16c]/20 bg-linear-to-br from-[#2c1712]/88 via-[#1a0d0a]/94 to-[#0b0504]/98 p-8 shadow-[0_30px_85px_rgba(52,18,9,0.65)]">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(210,49,135,0.4),transparent_68%)]" />
-        <div className="absolute inset-0 opacity-20 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')]" />
-        <div className="relative z-10 flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
-          <div className="space-y-4">
-            <div className="inline-flex items-center gap-2 rounded-full border border-[#d23187]/40 bg-[#d23187]/15 px-4 py-2 text-xs uppercase tracking-[0.35em] text-[#f9d9eb]">
-              <span className="h-2 w-2 animate-pulse rounded-full bg-[#f5c16c]" />
-              Arena Link Stable
-            </div>
-            <div>
-              <h1 className="text-4xl font-semibold text-white">CodeBattle Arena</h1>
-              <p className="mt-2 max-w-xl text-sm leading-relaxed text-foreground/70">
-                Queue into procedurally generated challenges, duel other rogues in real-time brackets, and
-                refine your spellcraft with focused drills in the practice sanctum.
-              </p>
-            </div>
-          </div>
-          <div className="grid gap-3 text-xs uppercase tracking-[0.35em] text-foreground/60 sm:grid-cols-2">
-            {[{
-              label: 'Battle Rating',
-              value: '1,482',
-            }, {
-              label: 'Active Rooms',
-              value: selectedEventId ? 'Live' : 'Awaiting',
-            }, {
-              label: 'Preferred Language',
-              value: language.toUpperCase(),
-            }, {
-              label: 'Notifications',
-              value: notifications.length,
-            }].map((stat) => (
-              <div key={stat.label} className="rounded-2xl border border-[#f5c16c]/25 bg-[#d23187]/10 px-5 py-4">
-                <p className="text-[11px] text-foreground/50">{stat.label}</p>
-                <p className="mt-2 text-lg font-semibold text-white">{stat.value}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
+    <div className="min-h-screen pb-24">
+      <div className="container mx-auto px-4 py-8">
+        {currentView === 'events' && (
+          <EventsSelectionView
+            events={events}
+            loading={loadingEvents}
+            onSelectEvent={handleSelectEvent}
+            eventSecondsLeft={eventSecondsLeft}
+            eventEndDate={eventEndDate}
+          />
+        )}
 
-      <Tabs defaultValue="battle" className="w-full">
-        <TabsList className="relative mx-auto grid w-full max-w-xl grid-cols-2 rounded-full border border-[#f5c16c]/25 bg-[#140807]/80 p-1">
-          <TabsTrigger
-            value="battle"
-            className="rounded-full text-xs uppercase tracking-[0.35em] text-foreground/60 data-[state=active]:bg-linear-to-r data-[state=active]:from-[#d23187] data-[state=active]:via-[#f5c16c] data-[state=active]:to-[#f5c16c] data-[state=active]:text-[#2b130f]"
-          >
-            Battle Arena
-          </TabsTrigger>
-          <TabsTrigger
-            value="practice"
-            className="rounded-full text-xs uppercase tracking-[0.35em] text-foreground/60 data-[state=active]:bg-linear-to-r data-[state=active]:from-[#f5c16c] data-[state=active]:via-[#d23187] data-[state=active]:to-[#f38f5e] data-[state=active]:text-[#2b130f]"
-          >
-            Practice Sanctum
-          </TabsTrigger>
-        </TabsList>
+        {currentView === 'rooms' && (
+          <RoomSelectionView
+            event={selectedEvent}
+            rooms={rooms}
+            problems={problems}
+            loadingRooms={loadingRooms}
+            loadingProblems={loadingProblems}
+            selectedRoomId={selectedRoomId}
+            selectedProblemId={selectedProblemId}
+            onBack={handleBackToEvents}
+            onSelectRoom={handleSelectRoom}
+            onSelectProblem={handleSelectProblem}
+            onStartCoding={handleStartCoding}
+            eventSecondsLeft={eventSecondsLeft}
+            eventEndDate={eventEndDate}
+          />
+        )}
 
-        <TabsContent value="battle" className="mt-8 space-y-8">
-          <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-            <EventsList
-              apiBaseUrl={API_BASE_URL!}
-              onEventSelect={handleEventSelect}
-              selectedEventId={selectedEventId}
-            />
-            <RoomsList
-              apiBaseUrl={API_BASE_URL!}
-              eventId={selectedEventId}
-              onRoomSelect={handleRoomSelect}
-              selectedRoomId={selectedRoomId}
-            />
-          </div>
-
-          <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-            <Leaderboard
-              apiBaseUrl={API_BASE_URL!}
-              eventId={selectedEventId}
-              roomId={selectedRoomId}
-              eventSourceRef={eventSourceRef}
-            />
-            <ProblemsList
-              apiBaseUrl={API_BASE_URL!}
-              eventId={selectedEventId}
-              roomId={selectedRoomId}
-              onProblemSelect={handleProblemSelect}
-              selectedProblemId={selectedProblemId}
-            />
-          </div>
-
-          {selectedProblemId && (
-            <div className="rounded-[28px] border border-[#f5c16c]/22 bg-linear-to-br from-[#21110d]/88 via-[#140908]/94 to-[#070304]/98 p-6 shadow-[0_24px_70px_rgba(45,15,9,0.5)]">
-              <div className="mb-4 flex items-center justify-between">
-                <div>
-                  <p className="text-xs uppercase tracking-[0.4em] text-foreground/50">Current Duel</p>
-                  <h2 className="text-2xl font-semibold text-white">{selectedProblemTitle}</h2>
-                </div>
-                <div className="rounded-full border border-[#d23187]/35 bg-[#d23187]/15 px-4 py-2 text-xs uppercase tracking-[0.35em] text-[#f9d9eb]">
-                  {language.toUpperCase()}
-                </div>
-              </div>
-              <CodeEditor
-                code={code}
-                setCode={setCode}
-                language={language}
-                setLanguage={setLanguage}
-                onSubmit={handleSubmit}
-                submissionResult={submissionResult}
-              />
-            </div>
-          )}
-        </TabsContent>
-
-        <TabsContent value="practice" className="mt-8 space-y-8">
-          <ExercisesList apiBaseUrl={API_BASE_URL!} onSubmit={handleExerciseSubmit} />
-        </TabsContent>
-      </Tabs>
-
-      <Notifications notifications={notifications} />
+        {currentView === 'arena' && (
+          <CodeArenaView
+            event={selectedEvent}
+            room={selectedRoom}
+            problemTitle={selectedProblemTitle}
+            code={code}
+            setCode={setCode}
+            language={language}
+            setLanguage={setLanguage}
+            onSubmit={handleSubmit}
+            submissionResult={submissionResult}
+            spaceConstraintMb={spaceConstraintMb}
+            onBack={handleBackToRooms}
+            eventId={selectedEventId}
+            roomId={selectedRoomId}
+            eventSourceRef={eventSourceRef}
+            notifications={notifications}
+            eventSecondsLeft={eventSecondsLeft}
+            eventEndDate={eventEndDate}
+          />
+        )}
+      </div>
     </div>
   );
 }

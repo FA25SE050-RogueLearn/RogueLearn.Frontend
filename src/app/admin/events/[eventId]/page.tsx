@@ -3,87 +3,183 @@
 import { AdminLayout } from "@/components/layout/AdminLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { 
-  CheckCircle, 
-  XCircle, 
-  Users, 
-  DollarSign, 
+import {
+  CheckCircle,
+  XCircle,
+  Users,
+  DollarSign,
   Trophy,
   Calendar,
   Server,
   Star,
   ChevronLeft,
-  Clock
+  Clock,
+  Loader2,
+  AlertCircle
 } from "lucide-react";
 import Link from "next/link";
-import { use } from "react";
+import { use, useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
+import eventServiceApi from "@/api/eventServiceApi";
+import type { EventRequest } from "@/types/event-service";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
 
 interface PageProps {
   params: Promise<{ eventId: string }>;
 }
 
-// Mock event data - will be replaced with real data from API
-const mockEventData: any = {
-  "evt-001": {
-    id: "evt-001",
-    title: "Spring Java Championship 2025",
-    description: "A comprehensive Java programming competition testing Spring Boot expertise, algorithm design, database integration, and software design patterns.",
-    guild: {
-      name: "Java Masters Guild",
-      leader: "Nguyen Van A",
-      totalEvents: 2,
-      successRate: 100,
-      rating: 4.7,
-      members: 45
-    },
-    participants: 150,
-    expectedParticipants: 200,
-    startDate: "2025-03-15",
-    endDate: "2025-03-17",
-    submittedDate: "2025-10-27",
-    revenue: {
-      projected: 20000000,
-      platformFee: 3000000,
-      prizePool: 17000000
-    },
-    prizes: {
-      first: 7000000,
-      second: 5000000,
-      third: 3000000,
-      topTen: 2500000,
-      total: 11500000,
-      percentage: 67.6
-    },
-    problemSet: {
-      springBoot: { required: 10, available: 15, status: "sufficient" },
-      algorithms: { required: 15, available: 22, status: "sufficient" },
-      database: { required: 8, available: 8, status: "sufficient" },
-      designPatterns: { required: 5, available: 6, status: "sufficient" }
-    },
-    resources: {
-      serverCapacity: { available: 85, required: 5, status: "ready" },
-      calendarConflicts: false,
-      moderators: 3,
-      engineers: 2,
-      recommendation: "Ready for approval"
-    },
-    status: "pending"
-  }
-};
-
 export default function EventDetailPage({ params }: PageProps) {
   const { eventId } = use(params);
-  const event = mockEventData[eventId];
+  const router = useRouter();
+  const [eventRequest, setEventRequest] = useState<EventRequest | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [processing, setProcessing] = useState(false);
+  const [showRejectDialog, setShowRejectDialog] = useState(false);
+  const [rejectionReason, setRejectionReason] = useState("");
 
-  if (!event) {
+  useEffect(() => {
+    fetchEventRequest();
+  }, [eventId]);
+
+  const fetchEventRequest = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await eventServiceApi.getAllEventRequests();
+      if (response.success && response.data) {
+        const request = response.data.find(req => req.request_id === eventId);
+        if (request) {
+          setEventRequest(request);
+        } else {
+          setError('Event request not found');
+        }
+      } else {
+        setError(response.error?.message || 'Failed to load event request');
+      }
+    } catch (err) {
+      setError('An unexpected error occurred');
+      console.error('Error fetching event request:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleApprove = async () => {
+    if (!eventRequest) return;
+
+    setProcessing(true);
+    try {
+      const response = await eventServiceApi.processEventRequest(eventRequest.request_id, {
+        action: 'approve'
+      });
+
+      if (response.success) {
+        toast.success('Event request approved successfully', {
+          description: 'The event has been approved and rooms will be created.'
+        });
+        // Success - redirect back to events list
+        setTimeout(() => router.push('/admin/events'), 1000);
+      } else {
+        const errorMsg = response.error?.message || 'Failed to approve event request';
+        setError(errorMsg);
+        toast.error('Failed to approve event request', {
+          description: errorMsg
+        });
+      }
+    } catch (err) {
+      const errorMsg = 'An unexpected error occurred';
+      setError(errorMsg);
+      toast.error('Error', {
+        description: errorMsg
+      });
+      console.error('Error approving event request:', err);
+    } finally {
+      setProcessing(false);
+    }
+  };
+
+  const handleReject = async () => {
+    if (!eventRequest || !rejectionReason.trim()) {
+      toast.error('Rejection reason is required', {
+        description: 'Please provide a reason for rejecting this event request.'
+      });
+      return;
+    }
+
+    setProcessing(true);
+    try {
+      const response = await eventServiceApi.processEventRequest(eventRequest.request_id, {
+        action: 'reject',
+        rejection_reason: rejectionReason.trim()
+      });
+
+      if (response.success) {
+        toast.success('Event request rejected', {
+          description: 'The guild master has been notified of the rejection.'
+        });
+        setShowRejectDialog(false);
+        setRejectionReason('');
+        // Success - redirect back to events list
+        setTimeout(() => router.push('/admin/events'), 1000);
+      } else {
+        const errorMsg = response.error?.message || 'Failed to reject event request';
+        setError(errorMsg);
+        toast.error('Failed to reject event request', {
+          description: errorMsg
+        });
+      }
+    } catch (err) {
+      const errorMsg = 'An unexpected error occurred';
+      setError(errorMsg);
+      toast.error('Error', {
+        description: errorMsg
+      });
+      console.error('Error rejecting event request:', err);
+    } finally {
+      setProcessing(false);
+    }
+  };
+
+  if (loading) {
     return (
       <AdminLayout>
         <div className="flex h-full items-center justify-center">
-          <p className="text-foreground/60">Event not found</p>
+          <Loader2 className="h-8 w-8 animate-spin text-amber-600" />
+          <span className="ml-3 text-amber-700">Loading event request...</span>
         </div>
       </AdminLayout>
     );
   }
+
+  if (error || !eventRequest) {
+    return (
+      <AdminLayout>
+        <div className="flex h-full flex-col items-center justify-center gap-4">
+          <XCircle className="h-12 w-12 text-rose-400" />
+          <p className="text-amber-700">{error || 'Event request not found'}</p>
+          <Button
+            asChild
+            variant="outline"
+            className="border-amber-700/50 bg-amber-900/20 text-amber-300 hover:bg-amber-800/30"
+          >
+            <Link href="/admin/events">Back to Events</Link>
+          </Button>
+        </div>
+      </AdminLayout>
+    );
+  }
+
+  const maxParticipants = eventRequest.participation.max_guilds * eventRequest.participation.max_players_per_guild;
 
   return (
     <AdminLayout>
@@ -102,8 +198,8 @@ export default function EventDetailPage({ params }: PageProps) {
             </Link>
           </Button>
           <div className="flex-1">
-            <h1 className="text-2xl font-bold tracking-tight text-amber-100">{event.title}</h1>
-            <p className="text-sm text-amber-700">Submitted by {event.guild.name}</p>
+            <h1 className="text-2xl font-bold tracking-tight text-amber-100">{eventRequest.title}</h1>
+            <p className="text-sm text-amber-700">Submitted by Guild {eventRequest.requester_guild_id}</p>
           </div>
         </div>
 
@@ -114,14 +210,14 @@ export default function EventDetailPage({ params }: PageProps) {
             <CardTitle className="text-amber-100">Quest Overview</CardTitle>
           </CardHeader>
           <CardContent className="relative space-y-6 pt-6">
-            <p className="text-sm text-amber-600">{event.description}</p>
-            
+            <p className="text-sm text-amber-600">{eventRequest.description}</p>
+
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
               {[
-                { label: "Adventurers", value: event.participants, icon: Users },
-                { label: "Start Date", value: event.startDate, icon: Calendar },
-                { label: "Duration", value: "3 days", icon: Clock },
-                { label: "Submitted", value: event.submittedDate, icon: Calendar },
+                { label: "Max Participants", value: maxParticipants, icon: Users },
+                { label: "Start Date", value: new Date(eventRequest.proposed_start_date).toLocaleDateString('en-US'), icon: Calendar },
+                { label: "End Date", value: new Date(eventRequest.proposed_end_date).toLocaleDateString('en-US'), icon: Clock },
+                { label: "Submitted", value: new Date(eventRequest.created_at).toLocaleDateString('en-US'), icon: Calendar },
               ].map((stat) => {
                 const Icon = stat.icon;
                 return (
@@ -139,182 +235,208 @@ export default function EventDetailPage({ params }: PageProps) {
         </Card>
 
         <div className="grid gap-6 lg:grid-cols-2">
-          {/* Problem Set Validation - RPG styled */}
+          {/* Event Configuration - RPG styled */}
           <Card className="relative overflow-hidden border-amber-900/30 bg-gradient-to-br from-[#1f1812] to-[#1a1410]">
             <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/dark-embroidery.png')] opacity-5 pointer-events-none" />
             <CardHeader className="relative border-b border-amber-900/20">
-              <CardTitle className="text-amber-100">Challenge Validation</CardTitle>
-            </CardHeader>
-            <CardContent className="relative space-y-4 pt-6">
-              {Object.entries(event.problemSet).map(([key, value]: [string, any]) => (
-                <div key={key} className="flex items-center justify-between rounded-lg border border-amber-900/30 bg-gradient-to-r from-amber-950/30 to-transparent p-4">
-                  <div>
-                    <p className="text-sm font-medium text-amber-200 capitalize">{key.replace(/([A-Z])/g, ' $1')}</p>
-                    <p className="text-xs text-amber-700">
-                      {value.required} required / {value.available} available
-                    </p>
-                  </div>
-                  <CheckCircle className="h-5 w-5 text-emerald-400" />
-                </div>
-              ))}
-              <div className="rounded-lg bg-emerald-950/50 border border-emerald-700/30 p-4 text-center">
-                <p className="text-sm font-semibold text-emerald-400">All Challenge Sets Sufficient</p>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Guild History - RPG styled */}
-          <Card className="relative overflow-hidden border-amber-900/30 bg-gradient-to-br from-[#1f1812] to-[#1a1410]">
-            <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/dark-embroidery.png')] opacity-5 pointer-events-none" />
-            <CardHeader className="relative border-b border-amber-900/20">
-              <CardTitle className="text-amber-100">Guild Chronicles</CardTitle>
+              <CardTitle className="text-amber-100">Event Configuration</CardTitle>
             </CardHeader>
             <CardContent className="relative space-y-3 pt-6">
               <div className="flex items-center justify-between">
-                <span className="text-sm text-amber-700">Guild Name</span>
-                <span className="text-sm font-semibold text-amber-200">{event.guild.name}</span>
+                <span className="text-sm text-amber-700">Event Type</span>
+                <span className="text-sm font-semibold text-amber-200 capitalize">{eventRequest.event_type.replace('_', ' ')}</span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-sm text-amber-700">Guild Leader</span>
-                <span className="text-sm font-semibold text-amber-200">{event.guild.leader}</span>
+                <span className="text-sm text-amber-700">Max Guilds</span>
+                <span className="text-sm font-semibold text-amber-200">{eventRequest.participation.max_guilds}</span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-sm text-amber-700">Total Quests</span>
-                <span className="text-sm font-semibold text-amber-200">{event.guild.totalEvents}</span>
+                <span className="text-sm text-amber-700">Players per Guild</span>
+                <span className="text-sm font-semibold text-amber-200">{eventRequest.participation.max_players_per_guild}</span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-sm text-amber-700">Success Rate</span>
-                <span className="text-sm font-semibold text-emerald-400">{event.guild.successRate}%</span>
+                <span className="text-sm text-amber-700">Number of Rooms</span>
+                <span className="text-sm font-semibold text-amber-200">{eventRequest.room_configuration.number_of_rooms}</span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-sm text-amber-700">Rating</span>
-                <div className="flex items-center gap-1">
-                  <Star className="h-4 w-4 fill-amber-500 text-amber-500" />
-                  <span className="text-sm font-semibold text-amber-200">{event.guild.rating}/5</span>
-                </div>
+                <span className="text-sm text-amber-700">Guilds per Room</span>
+                <span className="text-sm font-semibold text-amber-200">{eventRequest.room_configuration.guilds_per_room}</span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-sm text-amber-700">Members</span>
-                <span className="text-sm font-semibold text-amber-200">{event.guild.members}</span>
+                <span className="text-sm text-amber-700">Room Prefix</span>
+                <span className="text-sm font-semibold text-amber-200">{eventRequest.room_configuration.room_naming_prefix}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-amber-700">Status</span>
+                <span className={`text-sm font-semibold capitalize ${
+                  eventRequest.status === 'pending' ? 'text-orange-400' :
+                  eventRequest.status === 'approved' ? 'text-emerald-400' :
+                  'text-rose-400'
+                }`}>
+                  {eventRequest.status}
+                </span>
               </div>
             </CardContent>
           </Card>
-        </div>
 
-        {/* Budget & Prizes - RPG styled */}
-        <Card className="relative overflow-hidden border-amber-900/30 bg-gradient-to-br from-[#1f1812] to-[#1a1410]">
-          <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/dark-embroidery.png')] opacity-5 pointer-events-none" />
-          <CardHeader className="relative border-b border-amber-900/20">
-            <CardTitle className="text-amber-100">Treasury & Bounty Allocation</CardTitle>
-          </CardHeader>
-          <CardContent className="relative pt-6">
-            <div className="grid gap-6 lg:grid-cols-2">
-              <div className="space-y-4">
-                <h3 className="text-sm font-semibold text-amber-600">Revenue</h3>
-                <div className="space-y-3 rounded-lg border border-amber-900/30 bg-gradient-to-br from-amber-950/30 to-transparent p-4">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-amber-700">Projected Revenue</span>
-                    <span className="text-sm font-semibold text-amber-200">{(event.revenue.projected / 1000000).toFixed(1)}M VND</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-amber-700">Sanctum Fee (15%)</span>
-                    <span className="text-sm font-semibold text-rose-400">{(event.revenue.platformFee / 1000000).toFixed(1)}M VND</span>
-                  </div>
-                  <div className="flex items-center justify-between border-t border-amber-900/30 pt-3">
-                    <span className="text-sm font-semibold text-amber-300">Bounty Pool</span>
-                    <span className="text-lg font-bold text-amber-100">{(event.revenue.prizePool / 1000000).toFixed(1)}M VND</span>
+          {/* Problem Distribution - RPG styled */}
+          {eventRequest.event_type === 'code_battle' && eventRequest.event_specifics.code_battle && (
+            <Card className="relative overflow-hidden border-amber-900/30 bg-gradient-to-br from-[#1f1812] to-[#1a1410]">
+              <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/dark-embroidery.png')] opacity-5 pointer-events-none" />
+              <CardHeader className="relative border-b border-amber-900/20">
+                <CardTitle className="text-amber-100">Problem Distribution</CardTitle>
+              </CardHeader>
+              <CardContent className="relative space-y-4 pt-6">
+                <div className="space-y-2">
+                  <p className="text-xs text-amber-700 uppercase tracking-wide">Topics</p>
+                  <div className="flex flex-wrap gap-2">
+                    {eventRequest.event_specifics.code_battle.topics.map((topic) => (
+                      <span key={topic} className="rounded-full border border-amber-700/50 bg-amber-950/30 px-3 py-1 text-xs text-amber-300">
+                        {topic}
+                      </span>
+                    ))}
                   </div>
                 </div>
-              </div>
-
-              <div className="space-y-4">
-                <h3 className="text-sm font-semibold text-amber-600">Bounty Distribution</h3>
-                <div className="space-y-3 rounded-lg border border-amber-900/30 bg-gradient-to-br from-amber-950/30 to-transparent p-4">
-                  {[
-                    { place: "Champion", amount: event.prizes.first },
-                    { place: "Runner-up", amount: event.prizes.second },
-                    { place: "3rd Place", amount: event.prizes.third },
-                    { place: "Top 10 Rewards", amount: event.prizes.topTen },
-                  ].map((prize) => (
-                    <div key={prize.place} className="flex items-center justify-between">
-                      <span className="text-sm text-amber-700">{prize.place}</span>
-                      <span className="text-sm font-semibold text-amber-200">{(prize.amount / 1000000).toFixed(1)}M VND</span>
+                <div className="space-y-2">
+                  <p className="text-xs text-amber-700 uppercase tracking-wide">Difficulty Distribution</p>
+                  {eventRequest.event_specifics.code_battle.distribution.map((dist) => (
+                    <div key={dist.difficulty} className="flex items-center justify-between rounded-lg border border-amber-900/30 bg-gradient-to-r from-amber-950/30 to-transparent p-3">
+                      <div>
+                        <p className="text-sm font-medium text-amber-200 capitalize">{dist.difficulty}</p>
+                        <p className="text-xs text-amber-700">{dist.count} problems</p>
+                      </div>
+                      <CheckCircle className="h-4 w-4 text-emerald-400" />
                     </div>
                   ))}
-                  <div className="flex items-center justify-between border-t border-amber-900/30 pt-3">
-                    <span className="text-sm font-semibold text-amber-300">Total Allocated</span>
-                    <span className="text-lg font-bold text-emerald-400">
-                      {(event.prizes.total / 1000000).toFixed(1)}M ({event.prizes.percentage}%)
-                    </span>
-                  </div>
                 </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+              </CardContent>
+            </Card>
+          )}
+        </div>
 
-        {/* Resource Check - RPG styled */}
-        <Card className="relative overflow-hidden border-amber-900/30 bg-gradient-to-br from-[#1f1812] to-[#1a1410]">
-          <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/dark-embroidery.png')] opacity-5 pointer-events-none" />
-          <CardHeader className="relative border-b border-amber-900/20">
-            <CardTitle className="text-amber-100">Resource Verification</CardTitle>
-          </CardHeader>
-          <CardContent className="relative pt-6">
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              <div className="rounded-lg border border-amber-900/30 bg-gradient-to-br from-amber-950/30 to-transparent p-4">
-                <div className="flex items-center gap-2 text-amber-700">
-                  <Server className="h-4 w-4" />
-                  <span className="text-xs">Sanctum Capacity</span>
+        {/* Additional Information - RPG styled */}
+        {(eventRequest.notes || eventRequest.reviewed_by || eventRequest.rejection_reason) && (
+          <Card className="relative overflow-hidden border-amber-900/30 bg-gradient-to-br from-[#1f1812] to-[#1a1410]">
+            <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/dark-embroidery.png')] opacity-5 pointer-events-none" />
+            <CardHeader className="relative border-b border-amber-900/20">
+              <CardTitle className="text-amber-100">Additional Information</CardTitle>
+            </CardHeader>
+            <CardContent className="relative space-y-4 pt-6">
+              {eventRequest.notes && (
+                <div className="space-y-2">
+                  <p className="text-xs text-amber-700 uppercase tracking-wide">Notes</p>
+                  <p className="text-sm text-amber-300">{eventRequest.notes}</p>
                 </div>
-                <p className="mt-2 text-lg font-semibold text-amber-200">{event.resources.serverCapacity.available}%</p>
-                <p className="text-xs text-amber-700">Needs {event.resources.serverCapacity.required}%</p>
-              </div>
-              <div className="rounded-lg border border-amber-900/30 bg-gradient-to-br from-amber-950/30 to-transparent p-4">
-                <div className="flex items-center gap-2 text-amber-700">
-                  <Calendar className="h-4 w-4" />
-                  <span className="text-xs">Calendar</span>
+              )}
+              {eventRequest.reviewed_by && (
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-amber-700">Reviewed By</span>
+                  <span className="text-sm font-semibold text-amber-200">{eventRequest.reviewed_by}</span>
                 </div>
-                <p className="mt-2 text-lg font-semibold text-emerald-400">No Conflicts</p>
-              </div>
-              <div className="rounded-lg border border-amber-900/30 bg-gradient-to-br from-amber-950/30 to-transparent p-4">
-                <div className="flex items-center gap-2 text-amber-700">
-                  <Users className="h-4 w-4" />
-                  <span className="text-xs">Overseers</span>
+              )}
+              {eventRequest.reviewed_at && (
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-amber-700">Reviewed At</span>
+                  <span className="text-sm font-semibold text-amber-200">
+                    {new Date(eventRequest.reviewed_at).toLocaleString('en-US')}
+                  </span>
                 </div>
-                <p className="mt-2 text-lg font-semibold text-amber-200">{event.resources.moderators} Available</p>
-              </div>
-              <div className="rounded-lg border border-amber-900/30 bg-gradient-to-br from-amber-950/30 to-transparent p-4">
-                <div className="flex items-center gap-2 text-amber-700">
-                  <Server className="h-4 w-4" />
-                  <span className="text-xs">Artificers</span>
+              )}
+              {eventRequest.rejection_reason && (
+                <div className="space-y-2 rounded-lg border border-rose-700/30 bg-rose-950/30 p-4">
+                  <p className="text-xs text-rose-400 uppercase tracking-wide">Rejection Reason</p>
+                  <p className="text-sm text-rose-300">{eventRequest.rejection_reason}</p>
                 </div>
-                <p className="mt-2 text-lg font-semibold text-amber-200">{event.resources.engineers} On Call</p>
-              </div>
-            </div>
-            <div className="mt-6 rounded-lg bg-emerald-950/50 border border-emerald-700/30 p-4 text-center">
-              <p className="text-sm font-semibold text-emerald-400">✓ {event.resources.recommendation}</p>
-            </div>
-          </CardContent>
-        </Card>
+              )}
+            </CardContent>
+          </Card>
+        )}
 
         {/* Approval Actions - RPG styled */}
-        <Card className="relative overflow-hidden border-amber-900/30 bg-gradient-to-br from-[#1f1812] to-[#1a1410]">
-          <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/dark-embroidery.png')] opacity-5 pointer-events-none" />
-          <CardHeader className="relative border-b border-amber-900/20">
-            <CardTitle className="text-amber-100">Approval Decision</CardTitle>
-          </CardHeader>
-          <CardContent className="relative flex flex-col gap-4 pt-6 sm:flex-row">
-            <Button className="flex-1 bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 text-emerald-50 shadow-lg shadow-emerald-900/50">
-              <CheckCircle className="mr-2 h-5 w-5" />
-              Approve Quest
-            </Button>
-            <Button variant="outline" className="flex-1 border-red-700/50 bg-red-950/30 text-red-400 hover:bg-red-900/50 hover:text-red-300">
-              <XCircle className="mr-2 h-5 w-5" />
-              Reject Quest
-            </Button>
-          </CardContent>
-        </Card>
+        {eventRequest.status === 'pending' && (
+          <Card className="relative overflow-hidden border-amber-900/30 bg-gradient-to-br from-[#1f1812] to-[#1a1410]">
+            <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/dark-embroidery.png')] opacity-5 pointer-events-none" />
+            <CardHeader className="relative border-b border-amber-900/20">
+              <CardTitle className="text-amber-100">Approval Decision</CardTitle>
+            </CardHeader>
+            <CardContent className="relative flex flex-col gap-4 pt-6 sm:flex-row">
+              <Button
+                onClick={handleApprove}
+                disabled={processing}
+                className="flex-1 bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 text-emerald-50 shadow-lg shadow-emerald-900/50 disabled:opacity-50"
+              >
+                {processing ? (
+                  <>
+                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                    Processing...
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle className="mr-2 h-5 w-5" />
+                    Approve Quest
+                  </>
+                )}
+              </Button>
+              <Button
+                onClick={() => setShowRejectDialog(true)}
+                disabled={processing}
+                variant="outline"
+                className="flex-1 border-red-700/50 bg-red-950/30 text-red-400 hover:bg-red-900/50 hover:text-red-300 disabled:opacity-50"
+              >
+                <XCircle className="mr-2 h-5 w-5" />
+                Reject Quest
+              </Button>
+            </CardContent>
+          </Card>
+        )}
       </div>
+
+      {/* Reject Dialog */}
+      <Dialog open={showRejectDialog} onOpenChange={setShowRejectDialog}>
+        <DialogContent className="border-amber-900/30 bg-gradient-to-br from-[#1f1812] to-[#1a1410] text-amber-100">
+          <DialogHeader>
+            <DialogTitle className="text-amber-100">Reject Event Request</DialogTitle>
+            <DialogDescription className="text-amber-700">
+              Please provide a reason for rejecting this event request. This will be visible to the guild master.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <Textarea
+              value={rejectionReason}
+              onChange={(e) => setRejectionReason(e.target.value)}
+              placeholder="Enter rejection reason..."
+              className="min-h-[120px] border-amber-900/30 bg-amber-950/20 text-amber-100 placeholder:text-amber-700/50"
+            />
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowRejectDialog(false);
+                setRejectionReason('');
+              }}
+              disabled={processing}
+              className="border-amber-700/50 bg-amber-900/20 text-amber-300 hover:bg-amber-800/30"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleReject}
+              disabled={processing || !rejectionReason.trim()}
+              className="bg-gradient-to-r from-rose-600 to-rose-700 hover:from-rose-700 hover:to-rose-800 text-rose-50 disabled:opacity-50"
+            >
+              {processing ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Rejecting...
+                </>
+              ) : (
+                'Confirm Rejection'
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </AdminLayout>
   );
 }

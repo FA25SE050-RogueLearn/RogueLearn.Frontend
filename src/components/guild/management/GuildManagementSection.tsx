@@ -8,6 +8,8 @@ import { JoinRequestsCard } from "@/components/guild/management/JoinRequestsCard
 import { MembersManagementCard } from "@/components/guild/management/MembersManagementCard";
 import { MembershipCard } from "@/components/guild/management/MembershipCard";
 import { AccessRestrictedCard } from "@/components/guild/management/AccessRestrictedCard";
+import { CreateEventRequestCard } from "@/components/guild/management/CreateEventRequestCard";
+import { EventRequestsCard } from "@/components/guild/management/EventRequestsCard";
 
 interface GuildManagementSectionProps {
   guildId: string;
@@ -155,7 +157,11 @@ export function GuildManagementSection({ guildId, onLeftGuild }: GuildManagement
   return (
     <div className="flex flex-col gap-6">
       {myRole === "GuildMaster" && (
-        <InviteMembersCard onInvite={sendInvite} />
+        <>
+          <InviteMembersCard onInvite={sendInvite} />
+          <CreateEventRequestCard guildId={guildId} onRequestCreated={reload} />
+          <EventRequestsCard guildId={guildId} />
+        </>
       )}
 
       <JoinRequestsCard
