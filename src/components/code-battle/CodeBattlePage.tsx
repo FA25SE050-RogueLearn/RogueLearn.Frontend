@@ -25,6 +25,7 @@ export default function CodeBattlePage() {
   const [selectedRoomId, setSelectedRoomId] = useState<string | null>(null);
   const [selectedProblemId, setSelectedProblemId] = useState<string | null>(null);
   const [selectedProblemTitle, setSelectedProblemTitle] = useState<string>('');
+  const [selectedProblemStatement, setSelectedProblemStatement] = useState<string>('');
 
   // Loading states
   const [loadingEvents, setLoadingEvents] = useState(true);
@@ -417,15 +418,17 @@ export default function CodeBattlePage() {
     setSelectedRoomId(roomId);
     setSelectedProblemId(null);
     setSelectedProblemTitle('');
+    setSelectedProblemStatement('');
     setLeaderboardData([]); // Clear leaderboard when changing rooms
     if (selectedEventId) {
       joinRoom(selectedEventId, roomId);
     }
   };
 
-  const handleSelectProblem = async (problemId: string, title: string) => {
+  const handleSelectProblem = async (problemId: string, title: string, statement: string) => {
     setSelectedProblemId(problemId);
     setSelectedProblemTitle(title);
+    setSelectedProblemStatement(statement);
     
     // Check if problem is already solved
     const alreadySolved = isProblemSolved(problemId);
@@ -459,6 +462,7 @@ export default function CodeBattlePage() {
     setSelectedRoomId(null);
     setSelectedProblemId(null);
     setSelectedProblemTitle('');
+    setSelectedProblemStatement('');
     setProblemAlreadySolved(false);
     setSubmissionResult('');
   };
@@ -467,6 +471,7 @@ export default function CodeBattlePage() {
     setCurrentView('rooms');
     setSelectedProblemId(null);
     setSelectedProblemTitle('');
+    setSelectedProblemStatement('');
     setProblemAlreadySolved(false);
     setCode('');
     setSubmissionResult('');
@@ -519,6 +524,7 @@ export default function CodeBattlePage() {
             event={selectedEvent}
             room={selectedRoom}
             problemTitle={selectedProblemTitle}
+            problemStatement={selectedProblemStatement}
             code={code}
             setCode={setCode}
             language={language}
