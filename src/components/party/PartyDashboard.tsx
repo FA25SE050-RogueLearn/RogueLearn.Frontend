@@ -1,16 +1,18 @@
 "use client";
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import partiesApi from "@/api/partiesApi";
-import { PartyMemberDto, PartyInvitationDto } from "@/types/parties";
+import { PartyDto, PartyMemberDto, PartyInvitationDto } from "@/types/parties";
 import PartyStats from "./PartyStats";
 import PartyMembersList from "./PartyMembersList";
 import InvitationManagement from "./InvitationManagement";
+import RoleGate from "@/components/auth/RoleGate";
 
 export default function PartyDashboard({ partyId }: { partyId: string }) {
   const [members, setMembers] = useState<PartyMemberDto[]>([]);
   const [invites, setInvites] = useState<PartyInvitationDto[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [party, setParty] = useState<PartyDto | null>(null);
 
   // Load dashboard data
   useEffect(() => {
@@ -19,11 +21,13 @@ export default function PartyDashboard({ partyId }: { partyId: string }) {
       setLoading(true);
       setError(null);
       try {
-        const [m, i] = await Promise.all([
+        const [p, m, i] = await Promise.all([
+          partiesApi.getById(partyId),
           partiesApi.getMembers(partyId),
           partiesApi.getPendingInvitations(partyId),
         ]);
         if (!mounted) return;
+        setParty((p.data as PartyDto | null) ?? null);
         setMembers(m.data ?? []);
         setInvites(i.data ?? []);
       } catch (e: any) {
@@ -66,11 +70,19 @@ export default function PartyDashboard({ partyId }: { partyId: string }) {
       {loading && <div className="text-sm text-white/70">Loading...</div>}
       {error && <div className="text-xs text-red-400">{error}</div>}
 
+      {party && (
+        <div className="rounded border border-white/10 bg-white/5 p-3 text-sm text-white/80">
+          {party.description}
+        </div>
+      )}
+
       <PartyStats members={members.length} invites={invites.length} resources={stashCount} />
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         <PartyMembersList partyId={partyId} members={members} onRefresh={refreshMembers} />
-        <InvitationManagement invites={invites} />
+        <RoleGate partyId={partyId} requireAny={["Leader", "CoLeader"]}>
+          <InvitationManagement invites={invites} />
+        </RoleGate>
       </div>
 
       {/* Public party discovery moved to /party page */}

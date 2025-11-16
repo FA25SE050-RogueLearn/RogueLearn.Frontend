@@ -1,5 +1,6 @@
 "use client";
 import React from "react";
+import { DashboardFrame } from "../layout/DashboardFrame";
 
 interface TabsProps {
   active: string;
@@ -7,23 +8,23 @@ interface TabsProps {
 }
 
 export function Tabs({ active, onChange }: TabsProps) {
-  const tabs = ["dashboard", "stash", "meetings", "scheduler", "live"];
+  const tabs = ["dashboard", "stash", "meetings"];
   return (
     <div className="mb-4 flex gap-2">
-      {tabs.map(t => (
+      {tabs.map((t) => (
         <button
           key={t}
           onClick={() => onChange(t)}
           className={
             "rounded px-3 py-2 text-xs font-medium " +
-            (active === t ? "bg-fuchsia-600 text-white" : "bg-white/10 text-white/80")
+            (active === t
+              ? "bg-fuchsia-600 text-white"
+              : "bg-white/10 text-white/80")
           }
         >
           {t === "dashboard" && "Dashboard"}
           {t === "stash" && "Stash"}
           {t === "meetings" && "Meetings"}
-          {t === "scheduler" && "Scheduler"}
-          {t === "live" && "Live Meeting"}
         </button>
       ))}
     </div>
@@ -38,13 +39,38 @@ export default function PartyDetailClient({
   children: React.ReactNode;
 }) {
   return (
-    <div className="space-y-4">
-      <header className="flex items-center justify-between rounded-lg border border-white/10 bg-white/5 p-4">
-        {header}
-      </header>
-      <section className="rounded-lg border border-white/10 bg-white/5 p-4">
-        {children}
-      </section>
+    <div className="relative min-h-screen w-full bg-[#08040a] text-foreground">
+      <div className="pointer-events-none fixed inset-0">
+        <div
+          className="absolute inset-0 bg-cover bg-center opacity-60"
+          style={{
+            backgroundImage:
+              "url('https://images.unsplash.com/photo-1534447677768-be436bb09401?auto=format&fit=crop&w=1600&q=80')",
+          }}
+        />
+        <div className="absolute inset-0 bg-linear-to-br from-[#0b0510]/95 via-[#1b0b19]/90 to-[#070b1c]/95" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(210,49,135,0.35),transparent_60%)]" />
+        <div
+          className="absolute inset-0 mix-blend-overlay opacity-[0.15]"
+          style={{
+            backgroundImage:
+              "url('https://www.transparenttextures.com/patterns/dark-matter.png')",
+          }}
+        />
+      </div>
+
+      <div className="relative z-10">
+        <DashboardFrame>
+          <div className="space-y-4">
+            <header className="flex items-center justify-between rounded-lg border border-white/10 bg-white/5 p-4">
+              {header}
+            </header>
+            <section className="rounded-lg border border-white/10 bg-white/5 p-4">
+              {children}
+            </section>
+          </div>
+        </DashboardFrame>
+      </div>
     </div>
   );
 }

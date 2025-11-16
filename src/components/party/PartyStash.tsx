@@ -3,6 +3,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import partiesApi from "@/api/partiesApi";
 import { PartyStashItemDto } from "@/types/parties";
 import Link from "next/link";
+import { usePartyRole } from "@/hooks/usePartyRole";
 
 // Helper to convert BlockNote raw blocks to plain text for previews
 function extractPlainText(blocks?: Record<string, unknown>[]) {
@@ -40,6 +41,8 @@ export default function PartyStash({ partyId }: { partyId: string }) {
   const [contentText, setContentText] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [search, setSearch] = useState("");
+
+  const { role } = usePartyRole(partyId);
 
   // Management state
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -152,6 +155,11 @@ export default function PartyStash({ partyId }: { partyId: string }) {
   }, [items, search]);
 
   return (
+    role === null ? (
+      <div className="rounded border border-white/10 bg-white/5 p-4 text-sm">
+        You do not have permission to view this party.
+      </div>
+    ) : (
     <div className="space-y-4">
       <div className="flex items-center justify-between gap-3">
         <h4 className="text-sm font-semibold">Party Stash</h4>
@@ -169,7 +177,9 @@ export default function PartyStash({ partyId }: { partyId: string }) {
           >
             Refresh
           </button>
-          <button className="rounded bg-fuchsia-600 px-3 py-2 text-xs font-medium" onClick={() => setShowAdd(true)}>Add Resource</button>
+          {role && role !== null && role !== "Member" && (
+            <button className="rounded bg-fuchsia-600 px-3 py-2 text-xs font-medium" onClick={() => setShowAdd(true)}>Add Resource</button>
+          )}
         </div>
       </div>
       {loading && <div className="text-sm text-white/70">Loading...</div>}
@@ -237,18 +247,22 @@ export default function PartyStash({ partyId }: { partyId: string }) {
                   >
                     View
                   </Link>
-                  <button
-                    className="rounded bg-white/10 px-3 py-2 text-xs"
-                    onClick={() => startEdit(item)}
-                  >
-                    Edit
-                  </button>
-                  <button
-                    className="rounded bg-red-600/80 px-3 py-2 text-xs"
-                    onClick={() => deleteItem(item.id)}
-                  >
-                    Delete
-                  </button>
+                  {role && role !== null && role !== "Member" && (
+                    <>
+                      <button
+                        className="rounded bg-white/10 px-3 py-2 text-xs"
+                        onClick={() => startEdit(item)}
+                      >
+                        Edit
+                      </button>
+                      <button
+                        className="rounded bg-red-600/80 px-3 py-2 text-xs"
+                        onClick={() => deleteItem(item.id)}
+                      >
+                        Delete
+                      </button>
+                    </>
+                  )}
                 </div>
               </>
             )}
@@ -299,5 +313,6 @@ export default function PartyStash({ partyId }: { partyId: string }) {
         </div>
       )}
     </div>
+    )
   );
 }
