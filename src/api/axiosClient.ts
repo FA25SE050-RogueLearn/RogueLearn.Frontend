@@ -21,7 +21,6 @@ if (!process.env.NEXT_PUBLIC_API_URL) {
     toast.error('API base URL is not configured. Set NEXT_PUBLIC_API_URL in your .env.local');
   } catch {}
   // Also log to console for visibility in devtools
-  // eslint-disable-next-line no-console
   console.warn('[axiosClient] NEXT_PUBLIC_API_URL is undefined. Requests will target the Next.js dev server origin.');
 }
 
