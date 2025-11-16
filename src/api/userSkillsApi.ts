@@ -6,9 +6,7 @@ import {
   AddUserSkillCommandRequest,
   AddUserSkillResponse,
   RemoveUserSkillCommandRequest,
-  RemoveUserSkillResponse,
   ResetUserSkillProgressCommandRequest,
-  ResetUserSkillProgressResponse,
   GetUserSkillsResponse,
   GetUserSkillResponse,
 } from '@/types/user-skills';
@@ -37,12 +35,18 @@ const userSkillsApi = {
     })),
 
   /** DELETE /api/user-skills */
-  remove: (payload: RemoveUserSkillCommandRequest): Promise<RemoveUserSkillResponse> =>
-    axiosClient.request<void>({ method: 'DELETE', url: '/api/user-skills', data: payload }).then(() => {}),
+  remove: (payload: RemoveUserSkillCommandRequest): Promise<ApiResponse<void>> =>
+    axiosClient.request<void>({ method: 'DELETE', url: '/api/user-skills', data: payload }).then(() => ({
+      isSuccess: true,
+      data: undefined,
+    })),
 
   /** POST /api/user-skills/reset */
-  resetProgress: (payload: ResetUserSkillProgressCommandRequest): Promise<ResetUserSkillProgressResponse> =>
-    axiosClient.post<void>('/api/user-skills/reset', payload).then(() => {}),
+  resetProgress: (payload: ResetUserSkillProgressCommandRequest): Promise<ApiResponse<void>> =>
+    axiosClient.post<void>('/api/user-skills/reset', payload).then(() => ({
+      isSuccess: true,
+      data: undefined,
+    })),
 
   /** POST /api/user-skill-rewards/ingest (XP event -> updates user skill progression) */
   ingestXpEvent: (payload: IngestXpEventCommandRequest): Promise<ApiResponse<IngestXpEventResponse>> =>
