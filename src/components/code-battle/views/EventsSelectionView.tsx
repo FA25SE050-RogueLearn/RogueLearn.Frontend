@@ -135,8 +135,18 @@ export default function EventsSelectionView({ events, loading, onSelectEvent }: 
   const [statusFilter, setStatusFilter] = useState<StatusKey>('all');
   const [isGuildMaster, setIsGuildMaster] = useState(false);
   const [guildId, setGuildId] = useState<string | null>(null);
+  const [currentTime, setCurrentTime] = useState(() => Date.now());
 
   console.log('🔍 Current state - isGuildMaster:', isGuildMaster, 'guildId:', guildId);
+
+  // Update current time every minute to refresh featured event
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentTime(Date.now());
+    }, 60000); // Update every minute
+
+    return () => clearInterval(interval);
+  }, []);
 
   useEffect(() => {
     const checkGuildMasterStatus = async () => {
@@ -192,8 +202,26 @@ export default function EventsSelectionView({ events, loading, onSelectEvent }: 
 
   const featuredEvent = useMemo(() => {
     if (events.length === 0) return null;
-    return events.find((event) => resolveEventStatus(event).key === 'live') ?? events[0];
-  }, [events]);
+    
+    const now = currentTime;
+    
+    // First priority: Find the closest upcoming event (scheduled but not started yet)
+    const upcomingEvents = events
+      .filter((event) => {
+        const start = new Date(event.StartedDate).getTime();
+        return start > now && event.Status !== 'cancelled';
+      })
+      .sort((a, b) => new Date(a.StartedDate).getTime() - new Date(b.StartedDate).getTime());
+    
+    if (upcomingEvents.length > 0) return upcomingEvents[0];
+    
+    // Second priority: Find a currently running event
+    const liveEvent = events.find((event) => resolveEventStatus(event).key === 'live');
+    if (liveEvent) return liveEvent;
+    
+    // Fallback: Return the first event
+    return events[0];
+  }, [events, currentTime]);
 
   const filteredEvents = useMemo(() => {
     if (statusFilter === 'all') return events;
