@@ -7,6 +7,7 @@ import guildsApi from "@/api/guildsApi";
 import type { GuildMemberDto, GuildRole } from "@/types/guilds";
 import type { MeetingDto, MeetingParticipantDto, ArtifactInputDto, MeetingDetailsDto } from "@/types/meetings";
 import { createClient } from "@/utils/supabase/client";
+import { datetimeLocalBangkok, formatBangkok } from "@/utils/time";
 
 interface Props {
   guildId: string;
@@ -31,20 +32,36 @@ export default function GuildMeetingsSection({ guildId }: Props) {
     const in30 = new Date(now.getTime() + 30 * 60 * 1000);
     return {
       title: "Guild Meetup",
-      start: now.toISOString(),
-      end: in30.toISOString(),
+      start: now.toUTCString(),
+      end: in30.toUTCString(),
     };
   });
 
   const [activeMeeting, setActiveMeeting] = useState<{
     meeting: MeetingDto | null;
-    google: { spaceId?: string | null; meetingUri?: string | null } | null;
+    google: { space?: string | null; meetingUri?: string | null } | null;
   }>({ meeting: null, google: null });
 
   const [guildMeetings, setGuildMeetings] = useState<MeetingDto[]>([]);
   const [selectedMeetingDetails, setSelectedMeetingDetails] = useState<MeetingDetailsDto | null>(null);
   const [loadingMeetings, setLoadingMeetings] = useState(false);
   const [members, setMembers] = useState<GuildMemberDto[]>([]);
+
+  function detectActiveMeeting(list: MeetingDto[]): MeetingDto | null {
+    const now = Date.now();
+    const byActualStart = list
+      .filter((m) => !!m.actualStartTime && !m.actualEndTime)
+      .sort((a, b) => new Date(b.actualStartTime || 0).getTime() - new Date(a.actualStartTime || 0).getTime());
+    if (byActualStart.length > 0) return byActualStart[0];
+    const scheduledActive = list
+      .filter((m) => {
+        const start = new Date(m.scheduledStartTime).getTime();
+        const end = new Date(m.scheduledEndTime).getTime();
+        return start <= now && now <= end && !m.actualEndTime;
+      })
+      .sort((a, b) => new Date(a.scheduledStartTime).getTime() - new Date(b.scheduledStartTime).getTime());
+    return scheduledActive.length > 0 ? scheduledActive[0] : null;
+  }
 
   useEffect(() => {
     const supabase = createClient();
@@ -70,6 +87,12 @@ export default function GuildMeetingsSection({ guildId }: Props) {
         if (!mounted) return;
         setGuildMeetings(mList.data ?? []);
         setMembers(mMembers.data ?? []);
+        const active = detectActiveMeeting(mList.data ?? []);
+        if (active) {
+          setActiveMeeting({ meeting: active, google: null });
+        } else {
+          setActiveMeeting({ meeting: null, google: null });
+        }
       } catch (e: any) {
       } finally {
         if (!mounted) return;
@@ -124,7 +147,7 @@ export default function GuildMeetingsSection({ guildId }: Props) {
       const saved = upsertRes.data as MeetingDto;
       setActiveMeeting({
         meeting: saved ?? payload,
-        google: { spaceId: created.spaceId ?? null, meetingUri: created.meetingUri ?? null },
+        google: { space: created.spaceId ?? null, meetingUri: created.meetingUri ?? null },
       });
       const listRes = await meetingsApi.getGuildMeetings(guildId);
       setGuildMeetings(listRes.data ?? []);
@@ -157,6 +180,16 @@ export default function GuildMeetingsSection({ guildId }: Props) {
           setMembers(memRes.data ?? []);
         } catch (memErr) {
           console.warn("[Guild] failed to load members on endMeeting:", memErr);
+        }
+      }
+      let spaceName: string | null = activeMeeting.google?.space ?? null;
+      if (!spaceName) {
+        const link = activeMeeting.meeting?.meetingLink ?? "";
+        const codeMatch = link.match(/[a-z0-9]+-[a-z0-9]+-[a-z0-9]+/i);
+        const code = codeMatch?.[0] ?? null;
+        if (code) {
+          const space = await googleMeetApi.getSpace(token, code);
+          spaceName = space?.name ?? null;
         }
       }
       const confList = await googleMeetApi.listConferenceRecords(token, { pageSize: 10 });
@@ -263,9 +296,26 @@ export default function GuildMeetingsSection({ guildId }: Props) {
 
       const updated: MeetingDto = { ...activeMeeting.meeting, actualEndTime: new Date().toISOString() } as MeetingDto;
       setActiveMeeting((prev) => ({ ...prev, meeting: updated }));
+      try {
+        if (activeMeeting.meeting?.meetingId) {
+          await meetingsApi.upsertMeeting(updated);
+        }
+      } catch (persistErr) {
+        console.warn("[Backend] upsertMeeting failed while setting actualEndTime:", persistErr);
+      }
 
       const detailsRes = await meetingsApi.getMeetingDetails(meetingId);
       setSelectedMeetingDetails(detailsRes.data ?? null);
+
+      try {
+        if (!spaceName && latest?.name) {
+          const record = await googleMeetApi.getConferenceRecord(token, latest.name);
+          spaceName = record?.space ?? spaceName ?? null;
+        }
+        if (spaceName) {
+          await googleMeetApi.endActiveConference(token, spaceName);
+        }
+      } catch (_) {}
 
       const listRes = await meetingsApi.getGuildMeetings(guildId);
       setGuildMeetings(listRes.data ?? []);
@@ -278,6 +328,36 @@ export default function GuildMeetingsSection({ guildId }: Props) {
       setError(e?.message ?? "Failed to end meeting");
     } finally {
       setEnding(false);
+    }
+  }
+
+  async function logActiveMeetingDetails() {
+    try {
+      if (!activeMeeting.meeting) {
+        console.log("No active meeting");
+        return;
+      }
+      const token = activeToken ?? (await requestToken(requiredReadonlyScopes));
+      const link = activeMeeting.meeting.meetingLink ?? "";
+      const codeMatch = link.match(/[a-z0-9]+-[a-z0-9]+-[a-z0-9]+/i);
+      const identifier = activeMeeting.google?.space ?? codeMatch?.[0] ?? "";
+      const space = identifier ? await googleMeetApi.getSpace(token, identifier) : null;
+      const confList = await googleMeetApi.listConferenceRecords(token, { pageSize: 5 });
+      const records: any[] = confList?.conferenceRecords ?? confList?.records ?? [];
+      const latest = records[0];
+      const conferenceId: string = latest?.name?.split("/")?.pop?.() ?? latest?.conferenceId ?? latest?.id;
+      const participants = conferenceId ? await googleMeetApi.listParticipants(token, conferenceId) : null;
+      const recordings = conferenceId ? await googleMeetApi.listRecordings(token, conferenceId) : null;
+      const transcripts = conferenceId ? await googleMeetApi.listTranscripts(token, conferenceId) : null;
+      console.group("Google Meet Details");
+      console.log("Space", space);
+      console.log("ConferenceRecord", latest);
+      console.log("Participants", participants);
+      console.log("Recordings", recordings);
+      console.log("Transcripts", transcripts);
+      console.groupEnd();
+    } catch (e: any) {
+      console.error("Failed to log Google Meet details", e?.message ?? e);
     }
   }
 
@@ -313,10 +393,13 @@ export default function GuildMeetingsSection({ guildId }: Props) {
               <label className="block text-[11px] text-white/70">Start</label>
               <input
                 type="datetime-local"
-                value={new Date(createState.start).toISOString().slice(0, 16)}
+                value={datetimeLocalBangkok(createState.start)}
                 onChange={(e) => {
-                  const dt = new Date(e.target.value);
-                  setCreateState((s) => ({ ...s, start: new Date(dt).toISOString() }));
+                  const [d, t] = e.target.value.split("T");
+                  const [y, m, day] = d.split("-").map((n) => parseInt(n, 10));
+                  const [h, min] = t.split(":" ).map((n) => parseInt(n, 10));
+                  const ms = Date.UTC(y, m - 1, day, h - 7, min);
+                  setCreateState((s) => ({ ...s, start: new Date(ms).toISOString() }));
                 }}
                 className="w-full rounded border border-white/20 bg-white/10 p-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-fuchsia-500"
               />
@@ -325,10 +408,13 @@ export default function GuildMeetingsSection({ guildId }: Props) {
               <label className="block text-[11px] text-white/70">End</label>
               <input
                 type="datetime-local"
-                value={new Date(createState.end).toISOString().slice(0, 16)}
+                value={datetimeLocalBangkok(createState.end)}
                 onChange={(e) => {
-                  const dt = new Date(e.target.value);
-                  setCreateState((s) => ({ ...s, end: new Date(dt).toISOString() }));
+                  const [d, t] = e.target.value.split("T");
+                  const [y, m, day] = d.split("-").map((n) => parseInt(n, 10));
+                  const [h, min] = t.split(":" ).map((n) => parseInt(n, 10));
+                  const ms = Date.UTC(y, m - 1, day, h - 7, min);
+                  setCreateState((s) => ({ ...s, end: new Date(ms).toISOString() }));
                 }}
                 className="w-full rounded border border-white/20 bg-white/10 p-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-fuchsia-500"
               />
@@ -367,13 +453,31 @@ export default function GuildMeetingsSection({ guildId }: Props) {
               )}
             </div>
             <div className="flex items-center gap-2">
+              {activeMeeting.meeting?.meetingLink && (
+                <a
+                  href={activeMeeting.meeting.meetingLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="rounded bg-white/10 px-3 py-2 text-[11px] text-white"
+                >
+                  Join in Google Meet ↗
+                </a>
+              )}
               <button
-                onClick={handleEndMeeting}
-                disabled={ending}
-                className="rounded bg-red-600 px-4 py-2 text-xs font-medium text-white disabled:opacity-50"
+                onClick={logActiveMeetingDetails}
+                className="rounded bg-white/10 px-3 py-2 text-[11px] text-white"
               >
-                {ending ? "Ending..." : "End Meeting"}
+                Log Details
               </button>
+              {(myRole === "GuildMaster" || authUserId === activeMeeting.meeting?.organizerId) && (
+                <button
+                  onClick={handleEndMeeting}
+                  disabled={ending}
+                  className="rounded bg-red-600 px-4 py-2 text-xs font-medium text-white disabled:opacity-50"
+                >
+                  {ending ? "Ending..." : "End Meeting"}
+                </button>
+              )}
             </div>
           </div>
         </div>
@@ -394,7 +498,7 @@ export default function GuildMeetingsSection({ guildId }: Props) {
                   <div>
                     <div className="text-sm font-medium text-white">{m.title}</div>
                     <div className="text-[11px] text-white/60">
-                      {new Date(m.scheduledStartTime).toLocaleString()} – {new Date(m.scheduledEndTime).toLocaleString()}
+                      {formatBangkok(m.scheduledStartTime, { includeSeconds: false, separator: " " })} – {formatBangkok(m.scheduledEndTime, { includeSeconds: false, separator: " " })}
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
@@ -428,8 +532,8 @@ export default function GuildMeetingsSection({ guildId }: Props) {
                     <span className="ml-2 text-white/60">{p.roleInMeeting ?? "participant"}</span>
                   </div>
                   <div className="text-[11px] text-white/60">
-                    {p.joinTime ? new Date(p.joinTime).toLocaleTimeString() : ""}
-                    {p.leaveTime ? ` → ${new Date(p.leaveTime).toLocaleTimeString()}` : ""}
+                    {p.joinTime ? formatBangkok(p.joinTime, { includeSeconds: false, separator: " " }) : ""}
+                    {p.leaveTime ? ` → ${formatBangkok(p.leaveTime, { includeSeconds: false, separator: " " })}` : ""}
                   </div>
                 </li>
               ))}
