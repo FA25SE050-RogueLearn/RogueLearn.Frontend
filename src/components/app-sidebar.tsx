@@ -162,13 +162,13 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 
   return (
     <>
-      <Sidebar variant="inset" {...props} className="border-[#f5c16c]/20 bg-gradient-to-b from-[#0c0308]/98 via-[#14080f]/95 to-[#08030a]/98">
+      <Sidebar variant="inset" {...props} className="border-[#f5c16c]/20 bg-linear-to-b from-[#0c0308]/98 via-[#14080f]/95 to-[#08030a]/98">
         <SidebarHeader className="border-b border-[#f5c16c]/15 bg-[#1a0b08]/60 backdrop-blur-xl">
           <SidebarMenu>
             <SidebarMenuItem>
               <SidebarMenuButton size="lg" asChild>
                 <a href="/dashboard">
-                  <div className="flex aspect-square size-8 items-center justify-center rounded-lg border border-[#f5c16c]/40 bg-gradient-to-br from-[#d23187]/80 to-[#f5c16c]/70 text-white shadow-[0_8px_24px_rgba(210,49,135,0.4)]">
+                  <div className="flex aspect-square size-8 items-center justify-center rounded-lg border border-[#f5c16c]/40 bg-linear-to-br from-[#d23187]/80 to-[#f5c16c]/70 text-white shadow-[0_8px_24px_rgba(210,49,135,0.4)]">
                     <Skull className="size-4" />
                   </div>
                   <div className="grid flex-1 text-left text-sm leading-tight">
@@ -180,7 +180,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             </SidebarMenuItem>
           </SidebarMenu>
         </SidebarHeader>
-        <SidebarContent className="bg-gradient-to-b from-transparent via-[#d23187]/5 to-transparent">
+        <SidebarContent className="bg-linear-to-b from-transparent via-[#d23187]/5 to-transparent">
           <NavMain items={navItems} />
           {data.projects.length > 0 && <NavProjects projects={data.projects} />}
           <NavSecondary items={data.navSecondary} className="mt-auto" onClick={handleLogout} />
@@ -191,10 +191,13 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       </Sidebar>
 
       <Dialog open={showCharacterWizard} onOpenChange={setShowCharacterWizard}>
-        <DialogContent className="max-w-[1100px] overflow-hidden rounded-[40px] border border-white/12 bg-gradient-to-br from-[#12060a] via-[#1d0a11] to-[#060205] p-0 shadow-[0_32px_140px_rgba(20,2,16,0.85)] backdrop-blur-2xl">
-           <div className="relative max-h-[82vh] overflow-y-auto bg-gradient-to-br from-[#1d0a10] via-[#240d14] to-[#090307] px-8 py-10 shadow-[0_24px_80px_rgba(10,0,16,0.65)]">
-            <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(210,49,135,0.32),_transparent_70%)] opacity-45" />
-            <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_bottom_right,_rgba(240,177,90,0.26),_transparent_72%)] opacity-50" />
+        <DialogContent className="max-w-[1100px] overflow-hidden rounded-[40px] border border-white/12 bg-linear-to-br from-[#12060a] via-[#1d0a11] to-[#060205] p-0 shadow-[0_32px_140px_rgba(20,2,16,0.85)] backdrop-blur-2xl">
+          <DialogHeader>
+            <DialogTitle className="sr-only">Character Creation</DialogTitle>
+          </DialogHeader>
+          <div className="relative max-h-[82vh] overflow-y-auto bg-linear-to-br from-[#1d0a10] via-[#240d14] to-[#090307] px-8 py-10 shadow-[0_24px_80px_rgba(10,0,16,0.65)]">
+            <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(210,49,135,0.32),transparent_70%)] opacity-45" />
+            <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_bottom_right,rgba(240,177,90,0.26),transparent_72%)] opacity-50" />
             <div className="relative z-10">
               <CharacterCreationWizard onOnboardingComplete={handleOnboardingComplete} />
             </div>

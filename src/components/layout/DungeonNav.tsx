@@ -31,7 +31,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { Dialog, DialogContent } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { CharacterCreationWizard } from "@/components/features/character-creation/CharacterCreationWizard"
 import { usePageTransition } from "@/components/layout/PageTransition"
 
@@ -434,7 +434,10 @@ export function DungeonNav() {
       </nav>
 
       <Dialog open={showCharacterWizard} onOpenChange={setShowCharacterWizard}>
-        <DialogContent className="max-w-[1100px] overflow-hidden rounded-[40px] border border-white/12 bg-linear-to-br from-[#12060a] via-[#1d0a11] to-[#060205] p-0 shadow-[0_32px_140px_rgba(20,2,16,0.85)] backdrop-blur-2xl">
+        <DialogContent aria-describedby="character-wizard-description" className="max-w-[1100px] overflow-hidden rounded-[40px] border border-white/12 bg-linear-to-br from-[#12060a] via-[#1d0a11] to-[#060205] p-0 shadow-[0_32px_140px_rgba(20,2,16,0.85)] backdrop-blur-2xl">
+          <DialogHeader>
+            <DialogTitle className="sr-only">Character Creation</DialogTitle>
+          </DialogHeader>
           <div className="relative max-h-[82vh] overflow-y-auto bg-linear-to-br from-[#1d0a10] via-[#240d14] to-[#090307] px-8 py-10 shadow-[0_24px_80px_rgba(10,0,16,0.65)]">
             <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(210,49,135,0.32),transparent_70%)] opacity-45" />
             <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_bottom_right,rgba(240,177,90,0.26),transparent_72%)] opacity-50" />
