@@ -27,7 +27,6 @@ interface CodeArenaViewProps {
   onSubmit: () => void;
   submissionResult: string;
   isSubmitting: boolean;
-  problemAlreadySolved: boolean;
   spaceConstraintMb: number | null;
   onBack: () => void;
   eventId: string | null;
@@ -88,7 +87,6 @@ export default function CodeArenaView({
   onSubmit,
   submissionResult,
   isSubmitting,
-  problemAlreadySolved,
   spaceConstraintMb,
   onBack,
   eventId,
@@ -330,7 +328,6 @@ export default function CodeArenaView({
                   onSubmit={onSubmit}
                   submissionResult={submissionResult}
                   isSubmitting={isSubmitting}
-                  problemAlreadySolved={problemAlreadySolved}
                   spaceConstraintMb={spaceConstraintMb}
                 />
               </CardContent>

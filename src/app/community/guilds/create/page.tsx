@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, type CSSProperties } from "react";
 import { useRouter } from "next/navigation";
 import { DashboardFrame } from "@/components/layout/DashboardFrame";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,9 +7,24 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Shield, Users, Lock, Globe } from "lucide-react";
 import guildsApi from "@/api/guildsApi";
 import profileApi from "@/api/profileApi";
 import type { CreateGuildResponse } from "@/types/guilds";
+
+const SECTION_CARD_CLASS = 'relative overflow-hidden rounded-3xl border border-[#f5c16c]/25 bg-[#120806]/80';
+const CARD_TEXTURE: CSSProperties = {
+  backgroundImage: "url('https://www.transparenttextures.com/patterns/asfalt-dark.png')",
+  opacity: 0.25,
+};
+const BACKDROP_GRADIENT: CSSProperties = {
+  background: 'radial-gradient(circle at top, rgba(210,49,135,0.25), transparent 60%), linear-gradient(180deg, #100414 0%, #06020b 60%, #010103 100%)',
+};
+const BACKDROP_TEXTURE: CSSProperties = {
+  backgroundImage: "url('https://www.transparenttextures.com/patterns/stardust.png')",
+  opacity: 0.08,
+  mixBlendMode: 'screen',
+};
 
 export default function CreateGuildPage() {
   const router = useRouter();
@@ -46,46 +61,157 @@ export default function CreateGuildPage() {
   };
 
   return (
-    <div className="relative max-h-screen w-full overflow-hidden bg-[#08040a] text-foreground">
-      <div className="pointer-events-none absolute inset-0">
-        <div className="absolute inset-0 bg-cover bg-center opacity-60" style={{ backgroundImage: "url('https://images.unsplash.com/photo-1534447677768-be436bb09401?auto=format&fit=crop&w=1600&q=80')" }} />
-        <div className="absolute inset-0 bg-gradient-to-br from-[#0b0510]/95 via-[#1b0b19]/90 to-[#070b1c]/95" />
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(210,49,135,0.35),_transparent_60%)]" />
-        <div className="absolute inset-0 mix-blend-overlay opacity-[0.15]" style={{ backgroundImage: "url('https://www.transparenttextures.com/patterns/dark-matter.png')" }} />
-      </div>
+    <div className="relative flex min-h-screen flex-col overflow-hidden">
+      <div aria-hidden="true" className="pointer-events-none absolute inset-0" style={BACKDROP_GRADIENT} />
+      <div aria-hidden="true" className="pointer-events-none absolute inset-0" style={BACKDROP_TEXTURE} />
+      
       <DashboardFrame>
-      <div className="flex flex-col gap-6 pb-16">
-        <Card className="rounded-2xl border-white/12 bg-white/5">
-          <CardHeader>
-            <CardTitle className="text-white">Create Guild</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <Input placeholder="Guild name" value={name} onChange={(e) => setName(e.target.value)} />
-            <Textarea placeholder="Description" value={description} onChange={(e) => setDescription(e.target.value)} />
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              <Select value={privacy} onValueChange={(v) => setPrivacy(v as "public" | "invite_only")}> 
-                <SelectTrigger>
-                  <SelectValue placeholder="Privacy" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="public">Public</SelectItem>
-                  <SelectItem value="invite_only">Invite Only</SelectItem>
-                </SelectContent>
-              </Select>
-              <Input
-                type="number"
-                min={1}
-                max={9999}
-                value={maxMembers}
-                onChange={(e) => setMaxMembers(Number(e.target.value))}
-              />
+        <div className="relative z-10 mx-auto flex max-w-3xl flex-col gap-8 pb-24 pt-8">
+          
+          {/* Header */}
+          <div className="text-center">
+            <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-[#d23187]/50 bg-[#d23187]/10 px-5 py-1.5 text-xs uppercase tracking-[0.45em] text-[#f9d9eb]">
+              <Shield className="h-4 w-4" />
+              Guild Forge
             </div>
-            <Button onClick={handleSubmit} disabled={submitting || !name.trim() || !description.trim() || !myAuthUserId}>
-              {submitting ? "Creating..." : "Create Guild"}
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
+            <h1 className="text-4xl font-bold text-white sm:text-5xl">Establish Your Guild</h1>
+            <p className="mt-3 text-base text-foreground/75">
+              Create a fellowship to unite heroes under a common banner
+            </p>
+          </div>
+
+          {/* Form */}
+          <Card className={SECTION_CARD_CLASS}>
+            <div aria-hidden="true" className="absolute inset-0" style={CARD_TEXTURE} />
+            <CardHeader className="relative z-10 border-b border-white/5 pb-4">
+              <CardTitle className="flex items-center gap-2 text-xl font-semibold text-white">
+                <Shield className="h-5 w-5 text-[#f5c16c]" />
+                Guild Details
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="relative z-10 space-y-6 pt-6">
+              
+              {/* Guild Name */}
+              <div className="space-y-2">
+                <label className="text-sm font-semibold uppercase tracking-wide text-white/80">
+                  Guild Name <span className="text-rose-400">*</span>
+                </label>
+                <Input
+                  placeholder="The Iron Fellowship"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  className="border-[#f5c16c]/25 bg-[#140707]/80 text-white placeholder:text-foreground/40"
+                />
+                <p className="text-xs text-foreground/50">Choose a memorable name that reflects your guild&apos;s identity</p>
+              </div>
+
+              {/* Description */}
+              <div className="space-y-2">
+                <label className="text-sm font-semibold uppercase tracking-wide text-white/80">
+                  Description <span className="text-rose-400">*</span>
+                </label>
+                <Textarea
+                  placeholder="A fellowship of dedicated developers committed to mastering algorithms and conquering challenges together..."
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  rows={4}
+                  className="border-[#f5c16c]/25 bg-[#140707]/80 text-white placeholder:text-foreground/40"
+                />
+                <p className="text-xs text-foreground/50">Describe your guild&apos;s purpose and what makes it unique</p>
+              </div>
+
+              {/* Privacy & Max Members */}
+              <div className="grid gap-6 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <label className="text-sm font-semibold uppercase tracking-wide text-white/80">
+                    Privacy Setting
+                  </label>
+                  <Select value={privacy} onValueChange={(v) => setPrivacy(v as "public" | "invite_only")}>
+                    <SelectTrigger className="border-[#f5c16c]/25 bg-[#140707]/80 text-white">
+                      <SelectValue placeholder="Select privacy" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="public">
+                        <div className="flex items-center gap-2">
+                          <Globe className="h-4 w-4 text-emerald-400" />
+                          <span>Public - Open to all</span>
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="invite_only">
+                        <div className="flex items-center gap-2">
+                          <Lock className="h-4 w-4 text-amber-400" />
+                          <span>Invite Only - Restricted</span>
+                        </div>
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-semibold uppercase tracking-wide text-white/80">
+                    Max Members
+                  </label>
+                  <div className="relative">
+                    <Users className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#f5c16c]/60" />
+                    <Input
+                      type="number"
+                      min={1}
+                      max={9999}
+                      value={maxMembers}
+                      onChange={(e) => setMaxMembers(Number(e.target.value))}
+                      className="pl-10 border-[#f5c16c]/25 bg-[#140707]/80 text-white"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Submit Button */}
+              <div className="flex gap-3 pt-4">
+                <Button
+                  onClick={() => router.back()}
+                  variant="outline"
+                  className="flex-1 rounded-full border-[#f5c16c]/30 bg-[#140707]/80 text-[#f5c16c]"
+                  disabled={submitting}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleSubmit}
+                  disabled={submitting || !name.trim() || !description.trim() || !myAuthUserId}
+                  className="flex-1 rounded-full bg-linear-to-r from-[#d23187] via-[#f5c16c] to-[#f5c16c] px-6 text-xs uppercase tracking-[0.4em] text-[#2b130f] shadow-[0_12px_30px_rgba(210,49,135,0.35)] disabled:opacity-50"
+                >
+                  {submitting ? "Forging..." : "Forge Guild"}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Info Card */}
+          <Card className="relative overflow-hidden rounded-2xl border border-[#f5c16c]/20 bg-[#120806]/60">
+            <div aria-hidden="true" className="absolute inset-0" style={CARD_TEXTURE} />
+            <CardContent className="relative z-10 space-y-4 p-6">
+              <h3 className="flex items-center gap-2 text-sm font-semibold text-white">
+                <svg className="h-4 w-4 text-[#f5c16c]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                Guild Leadership Tips
+              </h3>
+              <ul className="space-y-2 text-xs text-foreground/70">
+                {[
+                  'Choose a clear, memorable name that reflects your mission',
+                  'Write a compelling description to attract like-minded members',
+                  'Set appropriate privacy settings based on your community goals',
+                  'Start with a reasonable member limit - you can adjust later',
+                ].map((tip) => (
+                  <li key={tip} className="flex items-start gap-3">
+                    <span className="mt-1 h-1.5 w-1.5 rounded-full bg-[#f5c16c] shrink-0" />
+                    <span>{tip}</span>
+                  </li>
+                ))}
+              </ul>
+            </CardContent>
+          </Card>
+        </div>
       </DashboardFrame>
     </div>
   );

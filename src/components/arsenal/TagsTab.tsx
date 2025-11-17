@@ -78,25 +78,33 @@ export default function TagsTab() {
   return (
     <div className="flex flex-col gap-6">
       <div className="flex items-center gap-3">
-        <Input placeholder="Search tags..." value={search} onChange={(e) => setSearch(e.target.value)} className="max-w-sm" />
+        <Input placeholder="Search tags..." value={search} onChange={(e) => setSearch(e.target.value)} className="max-w-sm border-[#f5c16c]/20 bg-black/40 focus-visible:border-[#f5c16c] focus-visible:ring-[#f5c16c]/30" />
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         {loading ? (
-          <p className="text-sm text-foreground/70">Loading...</p>
+          <p className="text-sm text-white/60">Loading...</p>
         ) : filtered.length === 0 ? (
-          <p className="text-sm text-foreground/70">No tags found.</p>
+          <p className="text-sm text-white/60">No tags found.</p>
         ) : (
           filtered.map((tag) => (
-            <Card key={tag.id} className="rounded-[20px] border border-white/12 bg-gradient-to-br from-[#1f0d12]/92 to-[#0c0508]/97">
-              <CardHeader>
-                <CardTitle className="text-white">{tag.name}</CardTitle>
+            <Card key={tag.id} className="relative overflow-hidden rounded-[28px] border border-[#f5c16c]/20 bg-gradient-to-br from-[#2d1810]/60 via-[#1a0a08]/80 to-black/90">
+              <div
+                className="pointer-events-none absolute inset-0 opacity-20"
+                style={{
+                  backgroundImage: "url('https://www.transparenttextures.com/patterns/asfalt-dark.png')",
+                  backgroundSize: "100px",
+                  backgroundBlendMode: "overlay",
+                }}
+              />
+              <CardHeader className="relative z-10">
+                <CardTitle className="text-[#f5c16c]">{tag.name}</CardTitle>
               </CardHeader>
-              <CardContent>
-                <p className="text-xs text-foreground/60">Tag ID: {tag.id}</p>
+              <CardContent className="relative z-10">
+                <p className="text-xs text-white/60">Tag ID: {tag.id}</p>
               </CardContent>
-              <CardFooter className="flex items-center gap-2 border-t border-white/10">
-                <Button variant="destructive" size="sm" onClick={() => deleteTag(tag.id)} disabled={deletingId === tag.id}>
+              <CardFooter className="relative z-10 flex items-center gap-2 border-t border-[#f5c16c]/20">
+                <Button variant="destructive" size="sm" onClick={() => deleteTag(tag.id)} disabled={deletingId === tag.id} className="bg-rose-600 hover:bg-rose-700">
                   {deletingId === tag.id ? "Deleting..." : "Delete"}
                 </Button>
               </CardFooter>
@@ -105,11 +113,11 @@ export default function TagsTab() {
         )}
       </div>
 
-      <div className="rounded-2xl border border-white/12 bg-black/20 p-4">
-        <Label htmlFor="new-tag" className="mb-2 block">Create Tag</Label>
+      <div className="rounded-2xl border border-[#f5c16c]/20 bg-black/40 p-6">
+        <Label htmlFor="new-tag" className="mb-2 block text-[#f5c16c]">Create Tag</Label>
         <div className="flex gap-2">
-          <Input id="new-tag" placeholder="e.g. Algorithms" value={name} onChange={(e) => setName(e.target.value)} />
-          <Button onClick={createTag}>Add</Button>
+          <Input id="new-tag" placeholder="e.g. Algorithms" value={name} onChange={(e) => setName(e.target.value)} className="border-[#f5c16c]/20 bg-black/40 focus-visible:border-[#f5c16c] focus-visible:ring-[#f5c16c]/30" />
+          <Button onClick={createTag} className="bg-gradient-to-r from-[#f5c16c] to-[#d4a855] text-black hover:from-[#d4a855] hover:to-[#f5c16c]">Add</Button>
         </div>
       </div>
     </div>

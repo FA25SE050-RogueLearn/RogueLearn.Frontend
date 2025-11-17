@@ -20,6 +20,15 @@ export default function CodeBattlePage() {
   const [rooms, setRooms] = useState<Room[]>([]);
   const [problems, setProblems] = useState<Problem[]>([]);
 
+  // Pagination state
+  const [eventsPage, setEventsPage] = useState(1);
+  const [eventsTotalPages, setEventsTotalPages] = useState(1);
+  const [eventsPageSize] = useState(6);
+
+  const [roomsPage, setRoomsPage] = useState(1);
+  const [roomsTotalPages, setRoomsTotalPages] = useState(1);
+  const [roomsPageSize] = useState(6);
+
   // Selection state
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
   const [selectedRoomId, setSelectedRoomId] = useState<string | null>(null);
@@ -33,11 +42,10 @@ export default function CodeBattlePage() {
   const [loadingProblems, setLoadingProblems] = useState(false);
 
   // Coding state
-  const [language, setLanguage] = useState('javascript');
+  const [language, setLanguage] = useState('python');
   const [code, setCode] = useState('');
   const [submissionResult, setSubmissionResult] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [problemAlreadySolved, setProblemAlreadySolved] = useState(false);
   const [spaceConstraintMb, setSpaceConstraintMb] = useState<number | null>(null);
 
   // User and connection state
@@ -62,51 +70,24 @@ export default function CodeBattlePage() {
     getUser();
   }, []);
 
-  // Helper functions for localStorage
-  const getSolvedProblemsKey = useCallback(() => `solved_problems_${playerId}`, [playerId]);
-  
-  const markProblemAsSolved = useCallback((problemId: string) => {
-    if (!playerId) return;
-    const key = getSolvedProblemsKey();
-    const solved = JSON.parse(localStorage.getItem(key) || '{}');
-    solved[problemId] = true;
-    localStorage.setItem(key, JSON.stringify(solved));
-  }, [playerId, getSolvedProblemsKey]);
-
-  const isProblemSolved = useCallback((problemId: string): boolean => {
-    if (!playerId) return false;
-    const key = getSolvedProblemsKey();
-    const solved = JSON.parse(localStorage.getItem(key) || '{}');
-    return solved[problemId] === true;
-  }, [playerId, getSolvedProblemsKey]);
-
-  // Check if current problem is already solved when problem is selected
-  useEffect(() => {
-    if (selectedProblemId && playerId) {
-      const alreadySolved = isProblemSolved(selectedProblemId);
-      if (alreadySolved) {
-        setProblemAlreadySolved(true);
-        setSubmissionResult('INFO|✅ Problem Already Solved|You have already successfully solved this problem');
-      }
-    }
-  }, [selectedProblemId, playerId, isProblemSolved]);
-
   const addNotification = (message: string, type: string = 'info') => {
     const time = new Date().toLocaleTimeString();
     setNotifications(prev => [...prev, { message, type, time }]);
   };
 
-  // Fetch events on mount
+  // Fetch events on mount and when page changes
   useEffect(() => {
     const fetchEvents = async () => {
       setLoadingEvents(true);
       try {
-        const response = await eventServiceApi.getAllEvents();
+        const response = await eventServiceApi.getAllEvents(eventsPage, eventsPageSize, 'code_battle');
         if (response.success && response.data && Array.isArray(response.data)) {
-          const codeBattleEvents = response.data.filter(
-            (event) => event.Type === 'code_battle'
-          );
-          setEvents(codeBattleEvents);
+          setEvents(response.data);
+
+          // Update pagination metadata
+          if (response.pagination) {
+            setEventsTotalPages(response.pagination.total_pages);
+          }
         }
       } catch (error) {
         console.error('Error fetching events:', error);
@@ -117,9 +98,16 @@ export default function CodeBattlePage() {
     };
 
     fetchEvents();
-  }, []);
+  }, [eventsPage, eventsPageSize]);
 
-  // Fetch rooms when event is selected
+  // Reset rooms page when event changes
+  useEffect(() => {
+    if (selectedEventId) {
+      setRoomsPage(1);
+    }
+  }, [selectedEventId]);
+
+  // Fetch rooms when event is selected or page changes
   useEffect(() => {
     if (!selectedEventId) {
       setRooms([]);
@@ -129,9 +117,14 @@ export default function CodeBattlePage() {
     const fetchRooms = async () => {
       setLoadingRooms(true);
       try {
-        const response = await eventServiceApi.getEventRooms(selectedEventId);
+        const response = await eventServiceApi.getEventRooms(selectedEventId, roomsPage, roomsPageSize);
         if (response.success && response.data && Array.isArray(response.data)) {
           setRooms(response.data);
+
+          // Update pagination metadata
+          if (response.pagination) {
+            setRoomsTotalPages(response.pagination.total_pages);
+          }
         }
       } catch (error) {
         console.error('Error fetching rooms:', error);
@@ -142,7 +135,7 @@ export default function CodeBattlePage() {
     };
 
     fetchRooms();
-  }, [selectedEventId]);
+  }, [selectedEventId, roomsPage, roomsPageSize]);
 
   // Fetch problems when room is selected
   useEffect(() => {
@@ -245,13 +238,7 @@ export default function CodeBattlePage() {
             const executionTime = data?.ExecutionTimeMs || 'N/A';
             const score = data?.Score || 0;
             const message = data?.Message || 'Solution is correct!';
-            
-            // Mark problem as solved in localStorage
-            if (selectedProblemId) {
-              markProblemAsSolved(selectedProblemId);
-              setProblemAlreadySolved(true);
-            }
-            
+
             setSubmissionResult(
               `SUCCESS|✅ ${message}|Execution Time: ${executionTime}|Score: ${score} points|Status: ${data?.Status || 'Accepted'}`
             );
@@ -382,14 +369,8 @@ export default function CodeBattlePage() {
         const errorMessage = response.error?.message || 'Unknown error';
         
         console.log('API Error:', { errorStatus, errorMessage, fullError: response.error });
-        
+
         if (errorStatus === 409) {
-          // Mark problem as solved in localStorage
-          if (selectedProblemId) {
-            markProblemAsSolved(selectedProblemId);
-          }
-          
-          setProblemAlreadySolved(true);
           setSubmissionResult(`INFO|✅ Problem Already Solved|${errorMessage}`);
           addNotification('You have already solved this problem', 'info');
         } else {
@@ -429,28 +410,11 @@ export default function CodeBattlePage() {
     setSelectedProblemId(problemId);
     setSelectedProblemTitle(title);
     setSelectedProblemStatement(statement);
-    
-    // Check if problem is already solved
-    const alreadySolved = isProblemSolved(problemId);
-    setProblemAlreadySolved(alreadySolved);
-    
-    if (alreadySolved) {
-      setSubmissionResult('INFO|✅ Problem Already Solved|You have already successfully solved this problem');
-    } else {
-      setSubmissionResult('');
-    }
+    setSubmissionResult('');
   };
 
   const handleStartCoding = async () => {
     if (selectedProblemId) {
-      // Check again when starting to code (in case state was cleared)
-      const alreadySolved = isProblemSolved(selectedProblemId);
-      setProblemAlreadySolved(alreadySolved);
-      
-      if (alreadySolved) {
-        setSubmissionResult('INFO|✅ Problem Already Solved|You have already successfully solved this problem');
-      }
-      
       await loadProblemDetails(selectedProblemId, language);
       setCurrentView('arena');
     }
@@ -463,7 +427,6 @@ export default function CodeBattlePage() {
     setSelectedProblemId(null);
     setSelectedProblemTitle('');
     setSelectedProblemStatement('');
-    setProblemAlreadySolved(false);
     setSubmissionResult('');
   };
 
@@ -472,7 +435,6 @@ export default function CodeBattlePage() {
     setSelectedProblemId(null);
     setSelectedProblemTitle('');
     setSelectedProblemStatement('');
-    setProblemAlreadySolved(false);
     setCode('');
     setSubmissionResult('');
   };
@@ -498,6 +460,9 @@ export default function CodeBattlePage() {
             onSelectEvent={handleSelectEvent}
             eventSecondsLeft={eventSecondsLeft}
             eventEndDate={eventEndDate}
+            currentPage={eventsPage}
+            totalPages={eventsTotalPages}
+            onPageChange={setEventsPage}
           />
         )}
 
@@ -516,6 +481,9 @@ export default function CodeBattlePage() {
             onStartCoding={handleStartCoding}
             eventSecondsLeft={eventSecondsLeft}
             eventEndDate={eventEndDate}
+            currentPage={roomsPage}
+            totalPages={roomsTotalPages}
+            onPageChange={setRoomsPage}
           />
         )}
 
@@ -532,7 +500,6 @@ export default function CodeBattlePage() {
             onSubmit={handleSubmit}
             submissionResult={submissionResult}
             isSubmitting={isSubmitting}
-            problemAlreadySolved={problemAlreadySolved}
             spaceConstraintMb={spaceConstraintMb}
             onBack={handleBackToRooms}
             eventId={selectedEventId}

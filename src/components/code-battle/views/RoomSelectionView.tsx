@@ -22,6 +22,9 @@ interface RoomSelectionViewProps {
   onStartCoding: () => void;
   eventSecondsLeft: number | null;
   eventEndDate: string | null;
+  currentPage?: number;
+  totalPages?: number;
+  onPageChange?: (page: number) => void;
 }
 
 const buildRoomTag = (room: Room) => {
@@ -87,6 +90,9 @@ export default function RoomSelectionView({
   onStartCoding,
   eventSecondsLeft,
   eventEndDate,
+  currentPage = 1,
+  totalPages = 1,
+  onPageChange,
 }: RoomSelectionViewProps) {
   const selectedRoom = rooms.find(r => r.ID === selectedRoomId);
   const selectedProblem = problems.find(p => p.id === selectedProblemId);
@@ -258,6 +264,69 @@ export default function RoomSelectionView({
                     </div>
                   </button>
                 ))}
+              </div>
+            )}
+
+            {/* Pagination Controls */}
+            {!loadingRooms && rooms.length > 0 && onPageChange && totalPages > 1 && (
+              <div className="mt-6 flex items-center justify-center gap-2">
+                <Button
+                  onClick={() => onPageChange(currentPage - 1)}
+                  disabled={currentPage === 1}
+                  variant="outline"
+                  className="border-[#d23187]/40 bg-white/5 text-[#f5c16c] hover:bg-[#d23187]/20 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Previous
+                </Button>
+
+                <div className="flex items-center gap-2">
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => {
+                    // Show first page, last page, current page, and pages around current
+                    const showPage =
+                      page === 1 ||
+                      page === totalPages ||
+                      Math.abs(page - currentPage) <= 1;
+
+                    // Show ellipsis
+                    const showEllipsis =
+                      (page === currentPage - 2 && currentPage > 3) ||
+                      (page === currentPage + 2 && currentPage < totalPages - 2);
+
+                    if (showEllipsis) {
+                      return (
+                        <span key={page} className="px-2 text-[#f5c16c]/50">
+                          ...
+                        </span>
+                      );
+                    }
+
+                    if (!showPage) return null;
+
+                    return (
+                      <Button
+                        key={page}
+                        onClick={() => onPageChange(page)}
+                        variant={page === currentPage ? "default" : "outline"}
+                        className={
+                          page === currentPage
+                            ? "bg-linear-to-r from-[#d23187] via-[#f061a6] to-[#f5c16c] text-white"
+                            : "border-[#d23187]/40 bg-white/5 text-[#f5c16c] hover:bg-[#d23187]/20"
+                        }
+                      >
+                        {page}
+                      </Button>
+                    );
+                  })}
+                </div>
+
+                <Button
+                  onClick={() => onPageChange(currentPage + 1)}
+                  disabled={currentPage === totalPages}
+                  variant="outline"
+                  className="border-[#d23187]/40 bg-white/5 text-[#f5c16c] hover:bg-[#d23187]/20 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Next
+                </Button>
               </div>
             )}
           </CardContent>

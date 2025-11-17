@@ -1,11 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { DateTimePicker } from "@/components/ui/date-time-picker";
 import {
   Trophy,
   Plus,
@@ -18,35 +20,81 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import eventServiceApi from "@/api/eventServiceApi";
-import type { CreateEventRequestPayload, ProblemDistribution } from "@/types/event-service";
+import type { CreateEventRequestPayload, ProblemDistribution, Tag } from "@/types/event-service";
 
 interface CreateEventRequestCardProps {
   guildId: string;
   onRequestCreated?: () => void;
 }
 
+const CARD_TEXTURE = {
+  backgroundImage: "url('https://www.transparenttextures.com/patterns/asfalt-dark.png')",
+  backgroundSize: "100px",
+  backgroundBlendMode: "overlay" as const,
+  opacity: 0.25,
+};
+
+const CARD_CLASS = "relative overflow-hidden rounded-[28px] border border-[#f5c16c]/30 bg-gradient-to-br from-[#2d1810] via-[#1a0a08] to-black shadow-xl";
+
 export function CreateEventRequestCard({ guildId, onRequestCreated }: CreateEventRequestCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [availableTags, setAvailableTags] = useState<Tag[]>([]);
+  const [loadingTags, setLoadingTags] = useState(false);
 
   // Form state
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [eventType, setEventType] = useState<"code_battle" | "hackathon">("code_battle");
-  const [startDate, setStartDate] = useState("");
-  const [endDate, setEndDate] = useState("");
+  const [startDate, setStartDate] = useState<Date | undefined>();
+  const [endDate, setEndDate] = useState<Date | undefined>();
   const [maxGuilds, setMaxGuilds] = useState(8);
   const [maxPlayersPerGuild, setMaxPlayersPerGuild] = useState(5);
   const [numberOfRooms, setNumberOfRooms] = useState(4);
   const [guildsPerRoom, setGuildsPerRoom] = useState(2);
   const [roomPrefix, setRoomPrefix] = useState("ROOM");
-  const [topics, setTopics] = useState<string[]>(["algorithms"]);
+  const [topics, setTopics] = useState<string[]>([]); // Tag IDs
   const [distributions, setDistributions] = useState<ProblemDistribution[]>([
-    { difficulty: "easy", count: 3 },
-    { difficulty: "medium", count: 2 },
-    { difficulty: "hard", count: 1 }
+    { difficulty: 1, number_of_problems: 3, score: 100 },
+    { difficulty: 2, number_of_problems: 2, score: 200 },
+    { difficulty: 3, number_of_problems: 1, score: 300 }
   ]);
   const [notes, setNotes] = useState("");
+
+  // Fetch available tags when expanded
+  useEffect(() => {
+    if (!isExpanded) return;
+
+    const fetchTags = async () => {
+      setLoadingTags(true);
+      try {
+        const response = await eventServiceApi.getAllTags();
+        console.log('📦 Tags API response:', response);
+        if (response.success && response.data) {
+          // Ensure data is an array
+          const tagsData = Array.isArray(response.data) ? response.data : [];
+          console.log('✅ Parsed tags:', tagsData);
+          setAvailableTags(tagsData);
+        } else {
+          console.error('❌ Failed to load tags:', response.error);
+          setAvailableTags([]);
+          toast.error("Failed to load topics", {
+            description: "Could not fetch available topics for code battles"
+          });
+        }
+      } catch (error) {
+        console.error("Error fetching tags:", error);
+        setAvailableTags([]);
+      } finally {
+        setLoadingTags(false);
+      }
+    };
+
+    // Only fetch if we don't have tags yet
+    if (availableTags.length === 0) {
+      fetchTags();
+    }
+  }, [isExpanded]);
 
   const handleAddTopic = () => {
     setTopics([...topics, ""]);
@@ -62,9 +110,15 @@ export function CreateEventRequestCard({ guildId, onRequestCreated }: CreateEven
     setTopics(newTopics);
   };
 
-  const handleDistributionChange = (difficulty: string, count: number) => {
+  const handleDistributionChange = (difficulty: number, number_of_problems: number) => {
     setDistributions(distributions.map(dist =>
-      dist.difficulty === difficulty ? { ...dist, count } : dist
+      dist.difficulty === difficulty ? { ...dist, number_of_problems } : dist
+    ));
+  };
+
+  const handleScoreChange = (difficulty: number, score: number) => {
+    setDistributions(distributions.map(dist =>
+      dist.difficulty === difficulty ? { ...dist, score } : dist
     ));
   };
 
@@ -82,7 +136,7 @@ export function CreateEventRequestCard({ guildId, onRequestCreated }: CreateEven
       toast.error("Start and end dates are required");
       return;
     }
-    if (new Date(startDate) >= new Date(endDate)) {
+    if (startDate >= endDate) {
       toast.error("End date must be after start date");
       return;
     }
@@ -94,18 +148,39 @@ export function CreateEventRequestCard({ guildId, onRequestCreated }: CreateEven
       toast.error("At least 1 room is required");
       return;
     }
-    if (topics.some(t => !t.trim())) {
-      toast.error("All topics must be filled in");
+    if (topics.length === 0) {
+      toast.error("At least one topic is required");
       return;
     }
+    if (topics.some(t => !t.trim())) {
+      toast.error("All topics must be selected");
+      return;
+    }
+
+    // Format dates with timezone offset
+    const formatDateWithTimezone = (date: Date) => {
+      const offset = date.getTimezoneOffset();
+      const offsetHours = Math.abs(Math.floor(offset / 60));
+      const offsetMinutes = Math.abs(offset % 60);
+      const offsetSign = offset <= 0 ? '+' : '-';
+      
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      const hours = String(date.getHours()).padStart(2, '0');
+      const minutes = String(date.getMinutes()).padStart(2, '0');
+      const seconds = String(date.getSeconds()).padStart(2, '0');
+      
+      return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}${offsetSign}${String(offsetHours).padStart(2, '0')}:${String(offsetMinutes).padStart(2, '0')}`;
+    };
 
     const payload: CreateEventRequestPayload = {
       requester_guild_id: guildId,
       event_type: eventType,
       title: title.trim(),
       description: description.trim(),
-      proposed_start_date: new Date(startDate).toISOString(),
-      proposed_end_date: new Date(endDate).toISOString(),
+      proposed_start_date: formatDateWithTimezone(startDate),
+      proposed_end_date: formatDateWithTimezone(endDate),
       participation: {
         max_guilds: maxGuilds,
         max_players_per_guild: maxPlayersPerGuild
@@ -118,7 +193,7 @@ export function CreateEventRequestCard({ guildId, onRequestCreated }: CreateEven
       event_specifics: {
         code_battle: eventType === "code_battle" ? {
           topics: topics.filter(t => t.trim()),
-          distribution: distributions.filter(d => d.count > 0)
+          distribution: distributions.filter(d => d.number_of_problems > 0)
         } : undefined
       },
       notes: notes.trim() || undefined
@@ -126,6 +201,7 @@ export function CreateEventRequestCard({ guildId, onRequestCreated }: CreateEven
 
     setSubmitting(true);
     try {
+      console.log('📤 Submitting event request payload:', JSON.stringify(payload, null, 2));
       const response = await eventServiceApi.createEventRequest(payload);
 
       if (response.success) {
@@ -136,22 +212,23 @@ export function CreateEventRequestCard({ guildId, onRequestCreated }: CreateEven
         // Reset form
         setTitle("");
         setDescription("");
-        setStartDate("");
-        setEndDate("");
+        setStartDate(undefined);
+        setEndDate(undefined);
         setNotes("");
         setIsExpanded(false);
 
         onRequestCreated?.();
       } else {
+        console.error('❌ Event request failed:', response.error);
         toast.error("Failed to create event request", {
           description: response.error?.message || "An error occurred"
         });
       }
     } catch (err) {
+      console.error("❌ Unexpected error creating event request:", err);
       toast.error("Error", {
         description: "An unexpected error occurred"
       });
-      console.error("Error creating event request:", err);
     } finally {
       setSubmitting(false);
     }
@@ -159,21 +236,24 @@ export function CreateEventRequestCard({ guildId, onRequestCreated }: CreateEven
 
   if (!isExpanded) {
     return (
-      <Card className="border-amber-900/30 bg-gradient-to-br from-[#1f1812] to-[#1a1410]">
-        <CardHeader>
+      <Card className={CARD_CLASS}>
+        {/* Texture overlay */}
+        <div className="pointer-events-none absolute inset-0" style={CARD_TEXTURE} />
+        
+        <CardHeader className="relative">
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle className="flex items-center gap-2 text-amber-100">
-                <Trophy className="h-5 w-5 text-amber-600" />
+              <CardTitle className="flex items-center gap-2 text-[#f5c16c]">
+                <Trophy className="h-5 w-5 text-[#f5c16c]" />
                 Request New Event
               </CardTitle>
-              <CardDescription className="text-amber-700">
+              <CardDescription className="text-white/60">
                 Submit a request to host a guild event
               </CardDescription>
             </div>
             <Button
               onClick={() => setIsExpanded(true)}
-              className="bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-700 hover:to-amber-800 text-amber-50"
+              className="bg-gradient-to-r from-[#f5c16c] to-[#d4a855] text-black font-medium hover:from-[#d4a855] hover:to-[#f5c16c]"
             >
               <Plus className="mr-2 h-4 w-4" />
               New Request
@@ -185,69 +265,68 @@ export function CreateEventRequestCard({ guildId, onRequestCreated }: CreateEven
   }
 
   return (
-    <Card className="border-amber-900/30 bg-gradient-to-br from-[#1f1812] to-[#1a1410]">
-      <CardHeader className="border-b border-amber-900/20">
-        <CardTitle className="flex items-center gap-2 text-amber-100">
-          <Trophy className="h-5 w-5 text-amber-600" />
+    <Card className={CARD_CLASS}>
+      {/* Texture overlay */}
+      <div className="pointer-events-none absolute inset-0" style={CARD_TEXTURE} />
+      
+      <CardHeader className="relative border-b border-[#f5c16c]/20">
+        <CardTitle className="flex items-center gap-2 text-[#f5c16c]">
+          <Trophy className="h-5 w-5 text-[#f5c16c]" />
           Create Event Request
         </CardTitle>
-        <CardDescription className="text-amber-700">
+        <CardDescription className="text-white/60">
           Fill out the details for your event request. The admin will review and approve it.
         </CardDescription>
       </CardHeader>
-      <CardContent className="space-y-6 pt-6">
+      <CardContent className="relative space-y-6 pt-6">
         {/* Basic Information */}
         <div className="space-y-4">
-          <h3 className="text-sm font-semibold text-amber-300">Basic Information</h3>
+          <h3 className="text-sm font-semibold text-[#f5c16c]">Basic Information</h3>
 
           <div className="space-y-2">
-            <Label htmlFor="title" className="text-amber-200">Event Title *</Label>
+            <Label htmlFor="title" className="text-[#f5c16c]/80">Event Title *</Label>
             <Input
               id="title"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="e.g., Spring Java Championship 2025"
-              className="border-amber-900/30 bg-amber-950/20 text-amber-100"
+              className="border-[#f5c16c]/20 bg-black/40 text-white placeholder:text-white/40 focus:border-[#f5c16c]/50 focus:ring-[#f5c16c]/30"
             />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="description" className="text-amber-200">Description *</Label>
+            <Label htmlFor="description" className="text-[#f5c16c]/80">Description *</Label>
             <Textarea
               id="description"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Describe your event..."
-              className="min-h-[100px] border-amber-900/30 bg-amber-950/20 text-amber-100"
+              className="min-h-[100px] border-[#f5c16c]/20 bg-black/40 text-white placeholder:text-white/40 focus:border-[#f5c16c]/50 focus:ring-[#f5c16c]/30"
             />
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="startDate" className="flex items-center gap-2 text-amber-200">
+              <Label className="flex items-center gap-2 text-[#f5c16c]/80">
                 <Calendar className="h-4 w-4" />
-                Start Date *
+                Start Date & Time *
               </Label>
-              <Input
-                id="startDate"
-                type="datetime-local"
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-                className="border-amber-900/30 bg-amber-950/20 text-amber-100"
+              <DateTimePicker
+                date={startDate}
+                setDate={setStartDate}
+                placeholder="Select start date and time"
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="endDate" className="flex items-center gap-2 text-amber-200">
+              <Label className="flex items-center gap-2 text-[#f5c16c]/80">
                 <Calendar className="h-4 w-4" />
-                End Date *
+                End Date & Time *
               </Label>
-              <Input
-                id="endDate"
-                type="datetime-local"
-                value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
-                className="border-amber-900/30 bg-amber-950/20 text-amber-100"
+              <DateTimePicker
+                date={endDate}
+                setDate={setEndDate}
+                placeholder="Select end date and time"
               />
             </div>
           </div>
@@ -255,33 +334,33 @@ export function CreateEventRequestCard({ guildId, onRequestCreated }: CreateEven
 
         {/* Participation */}
         <div className="space-y-4">
-          <h3 className="flex items-center gap-2 text-sm font-semibold text-amber-300">
+          <h3 className="flex items-center gap-2 text-sm font-semibold text-[#f5c16c]">
             <Users className="h-4 w-4" />
             Participation
           </h3>
 
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="maxGuilds" className="text-amber-200">Max Guilds *</Label>
+              <Label htmlFor="maxGuilds" className="text-[#f5c16c]/80">Max Guilds *</Label>
               <Input
                 id="maxGuilds"
                 type="number"
                 min="2"
                 value={maxGuilds}
                 onChange={(e) => setMaxGuilds(parseInt(e.target.value))}
-                className="border-amber-900/30 bg-amber-950/20 text-amber-100"
+                className="border-[#f5c16c]/20 bg-black/40 text-white focus:border-[#f5c16c]/50 focus:ring-[#f5c16c]/30"
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="maxPlayers" className="text-amber-200">Max Players per Guild *</Label>
+              <Label htmlFor="maxPlayers" className="text-[#f5c16c]/80">Max Players per Guild *</Label>
               <Input
                 id="maxPlayers"
                 type="number"
                 min="1"
                 value={maxPlayersPerGuild}
                 onChange={(e) => setMaxPlayersPerGuild(parseInt(e.target.value))}
-                className="border-amber-900/30 bg-amber-950/20 text-amber-100"
+                className="border-[#f5c16c]/20 bg-black/40 text-white focus:border-[#f5c16c]/50 focus:ring-[#f5c16c]/30"
               />
             </div>
           </div>
@@ -289,43 +368,43 @@ export function CreateEventRequestCard({ guildId, onRequestCreated }: CreateEven
 
         {/* Room Configuration */}
         <div className="space-y-4">
-          <h3 className="flex items-center gap-2 text-sm font-semibold text-amber-300">
+          <h3 className="flex items-center gap-2 text-sm font-semibold text-[#f5c16c]">
             <LayoutGrid className="h-4 w-4" />
             Room Configuration
           </h3>
 
           <div className="grid gap-4 sm:grid-cols-3">
             <div className="space-y-2">
-              <Label htmlFor="rooms" className="text-amber-200">Number of Rooms *</Label>
+              <Label htmlFor="rooms" className="text-[#f5c16c]/80">Number of Rooms *</Label>
               <Input
                 id="rooms"
                 type="number"
                 min="1"
                 value={numberOfRooms}
                 onChange={(e) => setNumberOfRooms(parseInt(e.target.value))}
-                className="border-amber-900/30 bg-amber-950/20 text-amber-100"
+                className="border-[#f5c16c]/20 bg-black/40 text-white focus:border-[#f5c16c]/50 focus:ring-[#f5c16c]/30"
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="guildsPerRoom" className="text-amber-200">Guilds per Room *</Label>
+              <Label htmlFor="guildsPerRoom" className="text-[#f5c16c]/80">Guilds per Room *</Label>
               <Input
                 id="guildsPerRoom"
                 type="number"
                 min="1"
                 value={guildsPerRoom}
                 onChange={(e) => setGuildsPerRoom(parseInt(e.target.value))}
-                className="border-amber-900/30 bg-amber-950/20 text-amber-100"
+                className="border-[#f5c16c]/20 bg-black/40 text-white focus:border-[#f5c16c]/50 focus:ring-[#f5c16c]/30"
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="roomPrefix" className="text-amber-200">Room Prefix *</Label>
+              <Label htmlFor="roomPrefix" className="text-[#f5c16c]/80">Room Prefix *</Label>
               <Input
                 id="roomPrefix"
                 value={roomPrefix}
                 onChange={(e) => setRoomPrefix(e.target.value)}
-                className="border-amber-900/30 bg-amber-950/20 text-amber-100"
+                className="border-[#f5c16c]/20 bg-black/40 text-white focus:border-[#f5c16c]/50 focus:ring-[#f5c16c]/30"
               />
             </div>
           </div>
@@ -334,64 +413,103 @@ export function CreateEventRequestCard({ guildId, onRequestCreated }: CreateEven
         {/* Problem Configuration (Code Battle only) */}
         {eventType === "code_battle" && (
           <div className="space-y-4">
-            <h3 className="flex items-center gap-2 text-sm font-semibold text-amber-300">
+            <h3 className="flex items-center gap-2 text-sm font-semibold text-[#f5c16c]">
               <Code className="h-4 w-4" />
               Problem Configuration
             </h3>
 
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <Label className="text-amber-200">Topics *</Label>
+                <Label className="text-[#f5c16c]/80">Topics * {loadingTags && <span className="text-xs text-white/50">(Loading...)</span>}</Label>
                 <Button
                   type="button"
                   variant="outline"
                   size="sm"
                   onClick={handleAddTopic}
-                  className="border-amber-700/50 bg-amber-900/20 text-amber-300"
+                  disabled={loadingTags || availableTags.length === 0}
+                  className="border-[#f5c16c]/30 bg-transparent text-[#f5c16c] hover:bg-[#f5c16c]/10"
                 >
                   <Plus className="h-3 w-3" />
                 </Button>
               </div>
               <div className="space-y-2">
-                {topics.map((topic, index) => (
+                {topics.map((topicId, index) => (
                   <div key={index} className="flex gap-2">
-                    <Input
-                      value={topic}
-                      onChange={(e) => handleTopicChange(index, e.target.value)}
-                      placeholder="e.g., algorithms, data-structures"
-                      className="border-amber-900/30 bg-amber-950/20 text-amber-100"
-                    />
+                    <Select
+                      value={topicId}
+                      onValueChange={(value) => handleTopicChange(index, value)}
+                    >
+                      <SelectTrigger className="border-[#f5c16c]/20 bg-black/40 text-white focus:border-[#f5c16c]/50 focus:ring-[#f5c16c]/30">
+                        <SelectValue placeholder="Select a topic" />
+                      </SelectTrigger>
+                      <SelectContent className="border-[#f5c16c]/30 bg-[#1a0a08]">
+                        {Array.isArray(availableTags) && availableTags.map((tag) => (
+                          <SelectItem 
+                            key={tag.id} 
+                            value={tag.id}
+                            className="text-white hover:bg-[#f5c16c]/10 focus:bg-[#f5c16c]/10"
+                          >
+                            {tag.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                     {topics.length > 1 && (
                       <Button
                         type="button"
                         variant="outline"
                         size="sm"
                         onClick={() => handleRemoveTopic(index)}
-                        className="border-rose-700/50 bg-rose-900/20 text-rose-300"
+                        className="border-rose-500/30 bg-transparent text-rose-400 hover:bg-rose-500/10"
                       >
                         <Minus className="h-3 w-3" />
                       </Button>
                     )}
                   </div>
                 ))}
+                {topics.length === 0 && (
+                  <p className="text-xs italic text-white/50">Click + to add topics</p>
+                )}
               </div>
             </div>
 
             <div className="space-y-2">
-              <Label className="text-amber-200">Difficulty Distribution *</Label>
-              <div className="grid gap-3 sm:grid-cols-3">
-                {distributions.map((dist) => (
-                  <div key={dist.difficulty} className="space-y-1">
-                    <Label className="text-xs capitalize text-amber-300">{dist.difficulty}</Label>
-                    <Input
-                      type="number"
-                      min="0"
-                      value={dist.count}
-                      onChange={(e) => handleDistributionChange(dist.difficulty, parseInt(e.target.value))}
-                      className="border-amber-900/30 bg-amber-950/20 text-amber-100"
-                    />
-                  </div>
-                ))}
+              <Label className="text-[#f5c16c]/80">Difficulty Distribution *</Label>
+              <div className="grid gap-3">
+                {distributions.map((dist) => {
+                  const difficultyLabel = dist.difficulty === 1 ? 'Easy' : dist.difficulty === 2 ? 'Medium' : 'Hard';
+                  return (
+                    <div key={dist.difficulty} className="grid grid-cols-3 gap-3 rounded-lg border border-[#f5c16c]/20 bg-black/20 p-3">
+                      <div className="space-y-1">
+                        <Label className="text-xs text-[#f5c16c]/70">Difficulty</Label>
+                        <div className="flex h-9 items-center rounded border border-[#f5c16c]/20 bg-black/40 px-3 text-sm text-white">
+                          {difficultyLabel}
+                        </div>
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs text-[#f5c16c]/70">Problems</Label>
+                        <Input
+                          type="number"
+                          min="0"
+                          value={dist.number_of_problems}
+                          onChange={(e) => handleDistributionChange(dist.difficulty, parseInt(e.target.value) || 0)}
+                          className="border-[#f5c16c]/20 bg-black/40 text-white focus:border-[#f5c16c]/50 focus:ring-[#f5c16c]/30"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs text-[#f5c16c]/70">Score Each</Label>
+                        <Input
+                          type="number"
+                          min="0"
+                          step="50"
+                          value={dist.score}
+                          onChange={(e) => handleScoreChange(dist.difficulty, parseInt(e.target.value) || 0)}
+                          className="border-[#f5c16c]/20 bg-black/40 text-white focus:border-[#f5c16c]/50 focus:ring-[#f5c16c]/30"
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           </div>
@@ -399,13 +517,13 @@ export function CreateEventRequestCard({ guildId, onRequestCreated }: CreateEven
 
         {/* Notes */}
         <div className="space-y-2">
-          <Label htmlFor="notes" className="text-amber-200">Additional Notes (Optional)</Label>
+          <Label htmlFor="notes" className="text-[#f5c16c]/80">Additional Notes (Optional)</Label>
           <Textarea
             id="notes"
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
             placeholder="Any additional information for the admin..."
-            className="min-h-[80px] border-amber-900/30 bg-amber-950/20 text-amber-100"
+            className="min-h-20 border-[#f5c16c]/20 bg-black/40 text-white placeholder:text-white/40 focus:border-[#f5c16c]/50 focus:ring-[#f5c16c]/30"
           />
         </div>
 
@@ -414,7 +532,7 @@ export function CreateEventRequestCard({ guildId, onRequestCreated }: CreateEven
           <Button
             onClick={handleSubmit}
             disabled={submitting}
-            className="flex-1 bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 text-emerald-50"
+            className="flex-1 bg-emerald-600 text-white hover:bg-emerald-700"
           >
             {submitting ? (
               <>
@@ -432,7 +550,7 @@ export function CreateEventRequestCard({ guildId, onRequestCreated }: CreateEven
             onClick={() => setIsExpanded(false)}
             disabled={submitting}
             variant="outline"
-            className="border-amber-700/50 bg-amber-900/20 text-amber-300"
+            className="border-[#f5c16c]/30 bg-transparent text-[#f5c16c] hover:bg-[#f5c16c]/10"
           >
             Cancel
           </Button>

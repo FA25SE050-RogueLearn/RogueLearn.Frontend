@@ -117,14 +117,14 @@ export function ConstellationMap() {
 
     if (isLoading) {
         return (
-            <div className="flex h-96 w-full items-center justify-center rounded-lg bg-black/20">
-                <Loader2 className="h-8 w-8 animate-spin text-accent" />
+            <div className="flex h-96 w-full items-center justify-center rounded-[28px] border border-[#f5c16c]/20 bg-black/40">
+                <Loader2 className="h-8 w-8 animate-spin text-[#f5c16c]" />
             </div>
         );
     }
 
     return (
-        <div className="h-[85vh] w-full relative bg-gradient-to-br from-[#0c0308] via-[#14080f] to-[#08030a]">
+        <div className="h-[85vh] w-full relative overflow-hidden rounded-[28px] border border-[#f5c16c]/20 bg-gradient-to-br from-[#0a0506] via-[#120806] to-[#0a0506]">
             <ReactFlow
                 nodes={nodes}
                 edges={edges}
@@ -144,7 +144,7 @@ export function ConstellationMap() {
                 />
 
                 <Controls
-                    className="!bg-[#1f0d09]/90 !border-amber-900/30 backdrop-blur-md"
+                    className="!bg-[#1a0a08]/90 !border-[#f5c16c]/30 backdrop-blur-md"
                 />
 
                 <MiniMap
@@ -152,16 +152,15 @@ export function ConstellationMap() {
                         const tier = (node.data as ApiSkillNode).tier;
                         return tier === 1 ? '#10b981' : tier === 2 ? '#3b82f6' : '#a855f7';
                     }}
-                    className="!bg-[#1f0d09]/95 !border-2 !border-amber-900/40 backdrop-blur-md"
-                    maskColor="rgba(12, 3, 8, 0.7)"
+                    className="!bg-[#1a0a08]/95 !border-2 !border-[#f5c16c]/40 backdrop-blur-md"
+                    maskColor="rgba(10, 5, 6, 0.7)"
                 />
 
                 {/* Filter Controls Panel */}
                 <Panel position="top-right" className="space-y-3">
                     {/* View mode filters */}
-                    <div className="flex flex-col gap-2 bg-[#1f0d09]/95 border-2 border-amber-900/30 
-            rounded-2xl p-4 backdrop-blur-xl">
-                        <div className="text-xs uppercase tracking-widest text-amber-700/70 mb-2">
+                    <div className="flex flex-col gap-2 rounded-2xl border-2 border-[#f5c16c]/30 bg-[#1a0a08]/95 p-4 backdrop-blur-xl">
+                        <div className="mb-2 text-xs uppercase tracking-widest text-[#f5c16c]/70">
                             View Mode
                         </div>
                         {(['all', 'unlocked', 'available', 'next'] as FilterMode[]).map(mode => (
@@ -171,8 +170,8 @@ export function ConstellationMap() {
                                 className={cn(
                                     "px-4 py-2 rounded-lg text-xs font-semibold uppercase tracking-wider transition-all",
                                     filterMode === mode
-                                        ? "bg-gradient-to-r from-accent to-amber-500 text-[#0c0308]"
-                                        : "bg-white/5 text-amber-300/70 hover:bg-white/10 border border-amber-900/30"
+                                        ? "bg-gradient-to-r from-[#f5c16c] to-[#d4a855] text-black"
+                                        : "bg-white/5 text-[#f5c16c]/70 hover:bg-white/10 border border-[#f5c16c]/30"
                                 )}
                             >
                                 {mode}
@@ -182,16 +181,14 @@ export function ConstellationMap() {
 
                     {/* Domain filter dropdown */}
                     {domains.length > 0 && (
-                        <div className="bg-[#1f0d09]/95 border-2 border-amber-900/30 
-              rounded-2xl p-4 backdrop-blur-xl">
-                            <div className="text-xs uppercase tracking-widest text-amber-700/70 mb-2">
+                        <div className="rounded-2xl border-2 border-[#f5c16c]/30 bg-[#1a0a08]/95 p-4 backdrop-blur-xl">
+                            <div className="mb-2 text-xs uppercase tracking-widest text-[#f5c16c]/70">
                                 Domain
                             </div>
                             <select
                                 value={selectedDomain || ''}
                                 onChange={(e) => setSelectedDomain(e.target.value || null)}
-                                className="w-full bg-black/40 border border-amber-900/30 rounded-lg px-3 py-2 
-                  text-sm text-amber-200 focus:border-accent focus:outline-none"
+                                className="w-full rounded-lg border border-[#f5c16c]/30 bg-black/40 px-3 py-2 text-sm text-white focus:border-[#f5c16c] focus:outline-none focus:ring-2 focus:ring-[#f5c16c]/30"
                             >
                                 <option value="">All Domains</option>
                                 {domains.map(d => (
@@ -202,17 +199,16 @@ export function ConstellationMap() {
                     )}
 
                     {/* Stats display */}
-                    <div className="bg-gradient-to-br from-[#1f0d09]/95 to-[#14080f]/90 
-            border-2 border-accent/30 rounded-2xl p-4 backdrop-blur-xl">
+                    <div className="rounded-2xl border-2 border-[#f5c16c]/30 bg-gradient-to-br from-[#1a0a08]/95 to-[#120806]/90 p-4 backdrop-blur-xl">
                         <div className="space-y-2 text-xs">
                             <div className="flex justify-between">
-                                <span className="text-gray-400">Unlocked</span>
+                                <span className="text-white/60">Unlocked</span>
                                 <span className="font-bold text-emerald-400">
                                     {stats.unlocked}/{stats.total}
                                 </span>
                             </div>
                             <div className="flex justify-between">
-                                <span className="text-gray-400">Available</span>
+                                <span className="text-white/60">Available</span>
                                 <span className="font-bold text-blue-400">{stats.available}</span>
                             </div>
                         </div>

@@ -67,18 +67,18 @@ export default function PartyDashboard({ partyId }: { partyId: string }) {
 
   return (
     <div className="space-y-6">
-      {loading && <div className="text-sm text-white/70">Loading...</div>}
-      {error && <div className="text-xs text-red-400">{error}</div>}
+      {loading && <div className="text-sm text-white/60">Loading...</div>}
+      {error && <div className="rounded-lg border border-rose-500/30 bg-rose-500/10 p-3 text-sm text-rose-300">{error}</div>}
 
       {party && (
-        <div className="rounded border border-white/10 bg-white/5 p-3 text-sm text-white/80">
-          {party.description}
+        <div className="rounded-lg border border-[#f5c16c]/20 bg-black/40 p-4 text-sm text-white/70">
+          {party.description || "No description provided."}
         </div>
       )}
 
       <PartyStats members={members.length} invites={invites.length} resources={stashCount} />
 
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
         <PartyMembersList partyId={partyId} members={members} onRefresh={refreshMembers} />
         <RoleGate partyId={partyId} requireAny={["Leader", "CoLeader"]}>
           <InvitationManagement invites={invites} />

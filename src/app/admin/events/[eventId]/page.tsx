@@ -46,18 +46,47 @@ export default function EventDetailPage({ params }: PageProps) {
   const [processing, setProcessing] = useState(false);
   const [showRejectDialog, setShowRejectDialog] = useState(false);
   const [rejectionReason, setRejectionReason] = useState("");
+  const [tagNames, setTagNames] = useState<Record<string, string>>({});
 
   useEffect(() => {
     fetchEventRequest();
+    fetchTags();
   }, [eventId]);
+
+  const fetchTags = async () => {
+    try {
+      const response = await eventServiceApi.getAllTags();
+      if (response.success && response.data) {
+        const tagsMap: Record<string, string> = {};
+        response.data.forEach(tag => {
+          tagsMap[tag.id] = tag.name;
+        });
+        setTagNames(tagsMap);
+      }
+    } catch (err) {
+      console.error('❌ Error fetching tags:', err);
+    }
+  };
 
   const fetchEventRequest = async () => {
     setLoading(true);
     setError(null);
     try {
       const response = await eventServiceApi.getAllEventRequests();
+      console.log('📦 All event requests response:', response);
+
       if (response.success && response.data) {
-        const request = response.data.find(req => req.request_id === eventId);
+        // Handle both API response formats: id and request_id
+        const request = response.data.find(req => {
+          const requestId = (req as any).id || req.request_id;
+          console.log('🔍 Comparing:', requestId, 'with', eventId);
+          return requestId === eventId;
+        });
+
+        console.log('✅ Found request:', request);
+        console.log('🔍 Event type:', request?.event_type);
+        console.log('🔍 Event specifics:', request?.event_specifics);
+
         if (request) {
           setEventRequest(request);
         } else {
@@ -68,7 +97,7 @@ export default function EventDetailPage({ params }: PageProps) {
       }
     } catch (err) {
       setError('An unexpected error occurred');
-      console.error('Error fetching event request:', err);
+      console.error('❌ Error fetching event request:', err);
     } finally {
       setLoading(false);
     }
@@ -79,7 +108,9 @@ export default function EventDetailPage({ params }: PageProps) {
 
     setProcessing(true);
     try {
-      const response = await eventServiceApi.processEventRequest(eventRequest.request_id, {
+      // Handle both API response formats: id and request_id
+      const requestId = (eventRequest as any).id || eventRequest.request_id;
+      const response = await eventServiceApi.processEventRequest(requestId, {
         action: 'approve'
       });
 
@@ -118,7 +149,9 @@ export default function EventDetailPage({ params }: PageProps) {
 
     setProcessing(true);
     try {
-      const response = await eventServiceApi.processEventRequest(eventRequest.request_id, {
+      // Handle both API response formats: id and request_id
+      const requestId = (eventRequest as any).id || eventRequest.request_id;
+      const response = await eventServiceApi.processEventRequest(requestId, {
         action: 'reject',
         rejection_reason: rejectionReason.trim()
       });
@@ -179,7 +212,13 @@ export default function EventDetailPage({ params }: PageProps) {
     );
   }
 
-  const maxParticipants = eventRequest.participation.max_guilds * eventRequest.participation.max_players_per_guild;
+  // Handle both API response formats: participation_details and participation
+  const participation = (eventRequest as any).participation_details || eventRequest.participation;
+  const maxParticipants = participation.max_guilds * participation.max_players_per_guild;
+
+  // Infer event type from event_specifics if event_type is missing
+  const eventType = eventRequest.event_type ||
+    (eventRequest.event_specifics?.code_battle ? 'code_battle' : 'unknown');
 
   return (
     <AdminLayout>
@@ -212,12 +251,11 @@ export default function EventDetailPage({ params }: PageProps) {
           <CardContent className="relative space-y-6 pt-6">
             <p className="text-sm text-amber-600">{eventRequest.description}</p>
 
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {[
                 { label: "Max Participants", value: maxParticipants, icon: Users },
                 { label: "Start Date", value: new Date(eventRequest.proposed_start_date).toLocaleDateString('en-US'), icon: Calendar },
                 { label: "End Date", value: new Date(eventRequest.proposed_end_date).toLocaleDateString('en-US'), icon: Clock },
-                { label: "Submitted", value: new Date(eventRequest.created_at).toLocaleDateString('en-US'), icon: Calendar },
               ].map((stat) => {
                 const Icon = stat.icon;
                 return (
@@ -244,15 +282,15 @@ export default function EventDetailPage({ params }: PageProps) {
             <CardContent className="relative space-y-3 pt-6">
               <div className="flex items-center justify-between">
                 <span className="text-sm text-amber-700">Event Type</span>
-                <span className="text-sm font-semibold text-amber-200 capitalize">{eventRequest.event_type.replace('_', ' ')}</span>
+                <span className="text-sm font-semibold text-amber-200 capitalize">{eventType.replace('_', ' ')}</span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-sm text-amber-700">Max Guilds</span>
-                <span className="text-sm font-semibold text-amber-200">{eventRequest.participation.max_guilds}</span>
+                <span className="text-sm font-semibold text-amber-200">{participation.max_guilds}</span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-sm text-amber-700">Players per Guild</span>
-                <span className="text-sm font-semibold text-amber-200">{eventRequest.participation.max_players_per_guild}</span>
+                <span className="text-sm font-semibold text-amber-200">{participation.max_players_per_guild}</span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-sm text-amber-700">Number of Rooms</span>
@@ -280,7 +318,7 @@ export default function EventDetailPage({ params }: PageProps) {
           </Card>
 
           {/* Problem Distribution - RPG styled */}
-          {eventRequest.event_type === 'code_battle' && eventRequest.event_specifics.code_battle && (
+          {eventType === 'code_battle' && eventRequest.event_specifics?.code_battle && (
             <Card className="relative overflow-hidden border-amber-900/30 bg-gradient-to-br from-[#1f1812] to-[#1a1410]">
               <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/dark-embroidery.png')] opacity-5 pointer-events-none" />
               <CardHeader className="relative border-b border-amber-900/20">
@@ -290,24 +328,27 @@ export default function EventDetailPage({ params }: PageProps) {
                 <div className="space-y-2">
                   <p className="text-xs text-amber-700 uppercase tracking-wide">Topics</p>
                   <div className="flex flex-wrap gap-2">
-                    {eventRequest.event_specifics.code_battle.topics.map((topic) => (
-                      <span key={topic} className="rounded-full border border-amber-700/50 bg-amber-950/30 px-3 py-1 text-xs text-amber-300">
-                        {topic}
+                    {eventRequest.event_specifics.code_battle.topics.map((topicId) => (
+                      <span key={topicId} className="rounded-full border border-amber-700/50 bg-amber-950/30 px-3 py-1 text-xs text-amber-300">
+                        {tagNames[topicId] || topicId}
                       </span>
                     ))}
                   </div>
                 </div>
                 <div className="space-y-2">
                   <p className="text-xs text-amber-700 uppercase tracking-wide">Difficulty Distribution</p>
-                  {eventRequest.event_specifics.code_battle.distribution.map((dist) => (
-                    <div key={dist.difficulty} className="flex items-center justify-between rounded-lg border border-amber-900/30 bg-gradient-to-r from-amber-950/30 to-transparent p-3">
-                      <div>
-                        <p className="text-sm font-medium text-amber-200 capitalize">{dist.difficulty}</p>
-                        <p className="text-xs text-amber-700">{dist.count} problems</p>
+                  {eventRequest.event_specifics.code_battle.distribution.map((dist) => {
+                    const difficultyLabel = dist.difficulty === 1 ? 'Easy' : dist.difficulty === 2 ? 'Medium' : 'Hard';
+                    return (
+                      <div key={dist.difficulty} className="flex items-center justify-between rounded-lg border border-amber-900/30 bg-gradient-to-r from-amber-950/30 to-transparent p-3">
+                        <div>
+                          <p className="text-sm font-medium text-amber-200">{difficultyLabel}</p>
+                          <p className="text-xs text-amber-700">{dist.number_of_problems} problems × {dist.score} points</p>
+                        </div>
+                        <CheckCircle className="h-4 w-4 text-emerald-400" />
                       </div>
-                      <CheckCircle className="h-4 w-4 text-emerald-400" />
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </CardContent>
             </Card>

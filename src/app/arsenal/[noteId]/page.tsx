@@ -311,43 +311,54 @@ export default function NoteEditorPage() {
   return (
     <DashboardFrame>
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6 pb-24">
-        <section className="rounded-2xl border border-white/12 bg-linear-to-br from-[#251017]/88 via-[#13070b]/92 to-[#070307]/96 p-4">
-          <div className="flex items-center gap-3">
-            <Input
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="Title"
-              className="font-semibold"
-            />
-            <div className="ml-auto flex items-center gap-2">
-              <Checkbox
-                id="public-toggle"
-                checked={isPublic}
-                onCheckedChange={(v) => setIsPublic(!!v)}
+        <section className="relative overflow-hidden rounded-[28px] border border-[#f5c16c]/20 bg-gradient-to-br from-[#2d1810]/60 via-[#1a0a08]/80 to-black/90 p-6">
+          <div
+            className="pointer-events-none absolute inset-0 opacity-20"
+            style={{
+              backgroundImage: "url('https://www.transparenttextures.com/patterns/asfalt-dark.png')",
+              backgroundSize: "100px",
+              backgroundBlendMode: "overlay",
+            }}
+          />
+          <div className="relative z-10">
+            <div className="flex items-center gap-3">
+              <Input
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="Title"
+                className="border-[#f5c16c]/20 bg-black/40 font-semibold text-white focus-visible:border-[#f5c16c] focus-visible:ring-[#f5c16c]/30"
               />
-              <Label htmlFor="public-toggle" className="text-xs">
-                Public
-              </Label>
-              <span className="text-xs text-foreground/60">
-                {status === "saving"
-                  ? "Saving..."
-                  : status === "dirty"
-                    ? "Unsaved changes"
-                    : "Saved"}
-              </span>
-              {/* Share to Party Stash */}
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Dialog open={shareOpen} onOpenChange={setShareOpen}>
-                      <DialogTrigger asChild>
-                        <Button
-                          variant="secondary"
-                          size="sm"
-                          disabled={!isPublic}
-                        >
-                          Share to Party Stash
-                        </Button>
+              <div className="ml-auto flex items-center gap-2">
+                <Checkbox
+                  id="public-toggle"
+                  checked={isPublic}
+                  onCheckedChange={(v) => setIsPublic(!!v)}
+                  className="border-[#f5c16c]/30"
+                />
+                <Label htmlFor="public-toggle" className="text-xs text-[#f5c16c]/80">
+                  Public
+                </Label>
+                <span className="text-xs text-white/60">
+                  {status === "saving"
+                    ? "Saving..."
+                    : status === "dirty"
+                      ? "Unsaved changes"
+                      : "Saved"}
+                </span>
+                {/* Share to Party Stash */}
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Dialog open={shareOpen} onOpenChange={setShareOpen}>
+                        <DialogTrigger asChild>
+                          <Button
+                            variant="secondary"
+                            size="sm"
+                            disabled={!isPublic}
+                            className="border-[#f5c16c]/20 bg-black/40 hover:border-[#f5c16c]/40 hover:bg-black/60"
+                          >
+                            Share to Party Stash
+                          </Button>
                       </DialogTrigger>
                       <DialogContent>
                         <DialogHeader>
@@ -456,7 +467,7 @@ export default function NoteEditorPage() {
               </TooltipProvider>
             </div>
           </div>
-          <Separator className="my-3" />
+          <Separator className="my-3 bg-[#f5c16c]/20" />
 
           <BlockNoteView
             editor={editor}
@@ -504,130 +515,147 @@ export default function NoteEditorPage() {
               }}
             />
           </BlockNoteView>
+          </div>
         </section>
 
         {/* Sidebar: Tags & AI Suggestions */}
-        <aside className="rounded-2xl border border-white/12 bg-black/20 p-4">
-          <h3 className="mb-2 text-sm font-semibold text-white">Tags</h3>
-          <div className="mb-3 flex flex-wrap gap-2">
-            {noteTags.map((t) => (
-              <span
-                key={t.id}
-                className="inline-flex items-center gap-2 rounded-full border border-accent/40 bg-accent/10 px-2 py-1 text-xs text-accent"
-              >
-                {t.name}
-                <button
-                  className="text-foreground/60 hover:text-foreground"
-                  onClick={() => detachTag(t.id)}
+        <aside className="relative overflow-hidden rounded-[28px] border border-[#f5c16c]/20 bg-gradient-to-br from-[#2d1810]/60 via-[#1a0a08]/80 to-black/90 p-6">
+          <div
+            className="pointer-events-none absolute inset-0 opacity-20"
+            style={{
+              backgroundImage: "url('https://www.transparenttextures.com/patterns/asfalt-dark.png')",
+              backgroundSize: "100px",
+              backgroundBlendMode: "overlay",
+            }}
+          />
+          <div className="relative z-10">
+            <h3 className="mb-2 text-sm font-semibold text-[#f5c16c]">Tags</h3>
+            <div className="mb-3 flex flex-wrap gap-2">
+              {noteTags.map((t) => (
+                <span
+                  key={t.id}
+                  className="inline-flex items-center gap-2 rounded-full border border-[#f5c16c]/40 bg-[#f5c16c]/10 px-2 py-1 text-xs text-[#f5c16c]"
                 >
-                  ✕
-                </button>
-              </span>
-            ))}
-          </div>
-          <Label htmlFor="attach-tag" className="text-xs">
-            Attach existing tag
-          </Label>
-          <div className="mt-1 grid grid-cols-[1fr_auto] gap-2">
-            <select
-              id="attach-tag"
-              className="rounded-md border bg-background p-2 text-sm"
-            >
-              {myTags.map((t) => (
-                <option key={t.id} value={t.id}>
                   {t.name}
-                </option>
+                  <button
+                    className="text-white/60 hover:text-white"
+                    onClick={() => detachTag(t.id)}
+                  >
+                    ✕
+                  </button>
+                </span>
               ))}
-            </select>
+            </div>
+            <Label htmlFor="attach-tag" className="text-xs text-[#f5c16c]/80">
+              Attach existing tag
+            </Label>
+            <div className="mt-1 grid grid-cols-[1fr_auto] gap-2">
+              <select
+                id="attach-tag"
+                className="rounded-md border border-[#f5c16c]/20 bg-black/40 p-2 text-sm text-white focus:border-[#f5c16c] focus:outline-none focus:ring-1 focus:ring-[#f5c16c]/30"
+              >
+                {myTags.map((t) => (
+                  <option key={t.id} value={t.id}>
+                    {t.name}
+                  </option>
+                ))}
+              </select>
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => {
+                  const sel = (
+                    document.getElementById(
+                      "attach-tag"
+                    ) as HTMLSelectElement | null
+                  )?.value;
+                  if (sel) attachTag(sel);
+                }}
+                className="border-[#f5c16c]/20 bg-black/40 hover:border-[#f5c16c]/40 hover:bg-black/60"
+              >
+                Attach
+              </Button>
+            </div>
+
+            <Separator className="my-4 bg-[#f5c16c]/20" />
+            <h3 className="mb-2 text-sm font-semibold text-[#f5c16c]">
+              AI Tag Suggestions
+            </h3>
             <Button
               variant="secondary"
               size="sm"
-              onClick={() => {
-                const sel = (
-                  document.getElementById(
-                    "attach-tag"
-                  ) as HTMLSelectElement | null
-                )?.value;
-                if (sel) attachTag(sel);
-              }}
+              onClick={requestAiTags}
+              disabled={aiLoading}
+              className="border-[#f5c16c]/20 bg-black/40 hover:border-[#f5c16c]/40 hover:bg-black/60"
             >
-              Attach
+              {aiLoading ? "Suggesting..." : "Suggest tags"}
             </Button>
-          </div>
-
-          <Separator className="my-4" />
-          <h3 className="mb-2 text-sm font-semibold text-white">
-            AI Tag Suggestions
-          </h3>
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={requestAiTags}
-            disabled={aiLoading}
-          >
-            {aiLoading ? "Suggesting..." : "Suggest tags"}
-          </Button>
-          {aiSuggestions.length > 0 && (
-            <div className="mt-3 space-y-2">
-              {aiSuggestions.map((s, idx) => (
-                <Card key={idx} className="border-white/10 bg-black/30">
-                  <CardHeader className="py-2">
-                    <CardTitle className="text-sm text-white">
-                      {s.label}{" "}
-                      <span className="ml-2 text-xs text-foreground/60">
-                        {Math.round(s.confidence * 100)}%
-                      </span>
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="py-2 text-xs text-foreground/70">
-                    {s.reason}
-                    <div className="mt-2 flex gap-2">
-                      {s.matchedTagId ? (
-                        <Button
-                          size="sm"
-                          variant="secondary"
-                          onClick={() => commitAiTags([s.matchedTagId!], [])}
-                        >
-                          Attach existing
-                        </Button>
-                      ) : (
-                        <Button
-                          size="sm"
-                          variant="secondary"
-                          onClick={() => commitAiTags([], [s.label])}
-                        >
-                          Create & attach
-                        </Button>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-              <div className="flex gap-2">
-                <Button
-                  size="sm"
-                  onClick={() => {
-                    const existingIds = aiSuggestions
-                      .filter((s) => s.matchedTagId)
-                      .map((s) => s.matchedTagId!);
-                    const newNames = aiSuggestions
-                      .filter((s) => !s.matchedTagId)
-                      .map((s) => s.label);
-                    commitAiTags(existingIds, newNames);
-                  }}
-                >
-                  Apply all
-                </Button>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={() => setAiSuggestions([])}
-                >
-                  Clear
-                </Button>
+            {aiSuggestions.length > 0 && (
+              <div className="mt-3 space-y-2">
+                {aiSuggestions.map((s, idx) => (
+                  <Card key={idx} className="border-[#f5c16c]/20 bg-black/40">
+                    <CardHeader className="py-2">
+                      <CardTitle className="text-sm text-[#f5c16c]">
+                        {s.label}{" "}
+                        <span className="ml-2 text-xs text-white/60">
+                          {Math.round(s.confidence * 100)}%
+                        </span>
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="py-2 text-xs text-white/70">
+                      {s.reason}
+                      <div className="mt-2 flex gap-2">
+                        {s.matchedTagId ? (
+                          <Button
+                            size="sm"
+                            variant="secondary"
+                            onClick={() => commitAiTags([s.matchedTagId!], [])}
+                            className="border-[#f5c16c]/20 bg-black/40 hover:border-[#f5c16c]/40 hover:bg-black/60"
+                          >
+                            Attach existing
+                          </Button>
+                        ) : (
+                          <Button
+                            size="sm"
+                            variant="secondary"
+                            onClick={() => commitAiTags([], [s.label])}
+                            className="border-[#f5c16c]/20 bg-black/40 hover:border-[#f5c16c]/40 hover:bg-black/60"
+                          >
+                            Create & attach
+                          </Button>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+                <div className="flex gap-2">
+                  <Button
+                    size="sm"
+                    onClick={() => {
+                      const existingIds = aiSuggestions
+                        .filter((s) => s.matchedTagId)
+                        .map((s) => s.matchedTagId!);
+                      const newNames = aiSuggestions
+                        .filter((s) => !s.matchedTagId)
+                        .map((s) => s.label);
+                      commitAiTags(existingIds, newNames);
+                    }}
+                    className="bg-gradient-to-r from-[#f5c16c] to-[#d4a855] text-black hover:from-[#d4a855] hover:to-[#f5c16c]"
+                  >
+                    Apply all
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => setAiSuggestions([])}
+                    className="text-white/70 hover:text-white"
+                  >
+                    Clear
+                  </Button>
+                </div>
               </div>
-            </div>
-          )}
+            )}
+          </div>
         </aside>
       </div>
     </DashboardFrame>

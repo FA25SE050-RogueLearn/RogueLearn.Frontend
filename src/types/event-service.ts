@@ -192,11 +192,20 @@ export interface ProcessEventRequestPayload {
   rejection_reason?: string;
 }
 
+export interface PaginationMetadata {
+  total_count: number;
+  total_pages: number;
+  page_index: number;
+  page_size: number;
+}
+
 export interface ApiResponse<T> {
   success: boolean;
   data?: T;
+  pagination?: PaginationMetadata;
   error?: {
     message: string;
     details?: any;
+    status?: number;
   };
 }

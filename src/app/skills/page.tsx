@@ -11,15 +11,23 @@ export default async function SkillsPage() {
         <DashboardLayout>
             <div className="flex flex-col gap-10 pb-24">
                 {/* Thematic Header Section */}
-                <section className="relative overflow-hidden rounded-[32px] border border-white/12 bg-gradient-to-br from-[#351c13]/85 via-[#22100d]/90 to-[#100608]/96 p-8 shadow-[0_30px_80px_rgba(32,8,12,0.65)]">
-                    <div className="absolute inset-0 opacity-25 bg-[url('https://www.transparenttextures.com/patterns/dark-matter.png')]" />
-                    <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(210,49,135,0.45),_transparent_68%)]" />
-                    <div className="absolute inset-0 bg-[radial-gradient(circle_at_bottom_right,_rgba(240,177,90,0.22),_transparent_70%)]" />
-                    <div className="relative z-10 flex flex-col gap-6">
-                        <div className="space-y-3">
-                            <p className="text-xs uppercase tracking-[0.4em] text-foreground/50">Character Progression</p>
-                            <h1 className="text-4xl font-semibold font-heading text-white">Astral Chart</h1>
-                            <p className="max-w-2xl text-sm leading-relaxed text-foreground/70 font-body">
+                <section className="relative overflow-hidden rounded-[28px] border border-[#f5c16c]/30 bg-gradient-to-br from-[#2d1810]/60 via-[#1a0a08]/80 to-black/90 p-8 shadow-2xl">
+                    <div
+                        className="pointer-events-none absolute inset-0 opacity-25"
+                        style={{
+                            backgroundImage: "url('https://www.transparenttextures.com/patterns/asfalt-dark.png')",
+                            backgroundSize: "100px",
+                            backgroundBlendMode: "overlay",
+                        }}
+                    />
+                    <div className="relative z-10 flex items-center gap-4">
+                        <div className="rounded-full bg-[#f5c16c]/10 p-4">
+                            <Sparkles className="h-8 w-8 text-[#f5c16c]" />
+                        </div>
+                        <div className="space-y-2">
+                            <p className="text-xs uppercase tracking-[0.4em] text-[#f5c16c]/60">Character Progression</p>
+                            <h1 className="text-4xl font-semibold text-[#f5c16c]">Astral Chart</h1>
+                            <p className="max-w-2xl text-sm leading-relaxed text-white/70">
                                 Your journey is etched in this constellation of skills. Each point of light represents mastery gained, each connection a path forged through knowledge and practice.
                             </p>
                         </div>

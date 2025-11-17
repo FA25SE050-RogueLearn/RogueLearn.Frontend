@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, type CSSProperties } from "react";
 import { useParams } from "next/navigation";
 import guildsApi from "@/api/guildsApi";
 import profileApi from "@/api/profileApi";
@@ -17,7 +17,22 @@ import {
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Users } from "lucide-react";
+import { Users, Shield, Lock, Globe, Scroll, Swords, Crown, Settings } from "lucide-react";
+
+const SECTION_CARD_CLASS = 'relative overflow-hidden rounded-3xl border border-[#f5c16c]/25 bg-[#120806]/80';
+const HERO_CARD_CLASS = 'relative overflow-hidden rounded-[32px] border border-[#f5c16c]/30 bg-linear-to-br from-[#1c0906]/95 via-[#120605]/98 to-[#040101]';
+const CARD_TEXTURE: CSSProperties = {
+  backgroundImage: "url('https://www.transparenttextures.com/patterns/asfalt-dark.png')",
+  opacity: 0.25,
+};
+const BACKDROP_GRADIENT: CSSProperties = {
+  background: 'radial-gradient(circle at top, rgba(210,49,135,0.25), transparent 60%), linear-gradient(180deg, #100414 0%, #06020b 60%, #010103 100%)',
+};
+const BACKDROP_TEXTURE: CSSProperties = {
+  backgroundImage: "url('https://www.transparenttextures.com/patterns/stardust.png')",
+  opacity: 0.08,
+  mixBlendMode: 'screen',
+};
 
 export default function GuildDetailPage() {
   const { guildId } = useParams<{ guildId: string }>();
@@ -122,128 +137,204 @@ export default function GuildDetailPage() {
   };
 
   return (
-    <div className="relative min-h-screen w-full overflow-auto bg-[#08040a] text-foreground">
-      <div className="pointer-events-none absolute inset-0">
-        <div
-          className="absolute inset-0 bg-cover bg-center opacity-60"
-          style={{
-            backgroundImage:
-              "url('https://images.unsplash.com/photo-1534447677768-be436bb09401?auto=format&fit=crop&w=1600&q=80')",
-          }}
-        />
-        <div className="absolute inset-0 bg-linear-to-br from-[#0b0510]/95 via-[#1b0b19]/90 to-[#070b1c]/95" />
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(210,49,135,0.35),transparent_60%)]" />
-        <div
-          className="absolute inset-0 mix-blend-overlay opacity-[0.15]"
-          style={{
-            backgroundImage:
-              "url('https://www.transparenttextures.com/patterns/dark-matter.png')",
-          }}
-        />
-      </div>
+    <div className="relative flex min-h-screen flex-col overflow-hidden">
+      <div aria-hidden="true" className="pointer-events-none absolute inset-0" style={BACKDROP_GRADIENT} />
+      <div aria-hidden="true" className="pointer-events-none absolute inset-0" style={BACKDROP_TEXTURE} />
+      
       <DashboardFrame className="relative z-20">
         <div className="flex flex-col gap-6 pb-16">
           {loading && (
-            <Card className="rounded-2xl border-white/12 bg-white/5">
-              <CardHeader>
-                <Skeleton className="h-6 w-64" />
+            <Card className={SECTION_CARD_CLASS}>
+              <div aria-hidden="true" className="absolute inset-0" style={CARD_TEXTURE} />
+              <CardHeader className="relative z-10">
+                <Skeleton className="h-8 w-64 bg-white/10" />
               </CardHeader>
-              <CardContent>
-                <Skeleton className="h-4 w-full" />
-                <Skeleton className="h-4 w-2/3 mt-2" />
+              <CardContent className="relative z-10">
+                <Skeleton className="h-4 w-full bg-white/10" />
+                <Skeleton className="h-4 w-2/3 mt-2 bg-white/10" />
               </CardContent>
             </Card>
           )}
-          {error && <div className="text-sm text-red-400">{error}</div>}
+          
+          {error && (
+            <Card className={SECTION_CARD_CLASS}>
+              <div aria-hidden="true" className="absolute inset-0" style={CARD_TEXTURE} />
+              <CardContent className="relative z-10 py-16 text-center">
+                <p className="text-sm text-rose-400">{error}</p>
+              </CardContent>
+            </Card>
+          )}
+          
           {!loading && guild && (
-            <Card className="rounded-[28px] border-white/12 bg-linear-to-br from-[#381c12]/86 via-[#200e11]/93 to-[#0d0508]/97">
-              <CardHeader>
-                <CardTitle className="text-3xl text-white">
-                  {guild.name}
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <p className="text-sm text-foreground/70">
-                  {guild.description}
-                </p>
-                <div className="flex items-center gap-6 text-xs uppercase tracking-[0.35em] text-foreground/50">
-                  <span className="flex items-center gap-2">
-                    <Users className="h-4 w-4 text-accent" />
-                    {memberCount ?? guild.memberCount} members
-                  </span>
-                  {guild.isPublic ? (
-                    <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1">
-                      Public
-                    </span>
-                  ) : (
-                    <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1">
-                      Invite Only
-                    </span>
-                  )}
-                </div>
-                {!isMember && (
-                  <Dialog>
-                    <DialogTrigger asChild>
-                      <Button className="rounded-full">Request to Join</Button>
-                    </DialogTrigger>
-                    <DialogContent>
-                      <DialogHeader>
-                        <DialogTitle>Request to Join {guild.name}</DialogTitle>
-                      </DialogHeader>
-                      <div className="space-y-3">
-                        <label className="text-sm">Motivation (optional)</label>
-                        <Textarea
-                          value={joinMessage}
-                          onChange={(e) => setJoinMessage(e.target.value)}
-                          placeholder="Tell the guild why you want to join..."
-                        />
-                        <Button onClick={handleApply} disabled={submitting}>
-                          {submitting ? "Submitting..." : "Submit Request"}
-                        </Button>
+            <>
+              {/* Guild Header Card */}
+              <Card className={HERO_CARD_CLASS}>
+                <div aria-hidden="true" className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(210,49,135,0.18),transparent_55%)]" />
+                <div aria-hidden="true" className="absolute inset-0" style={CARD_TEXTURE} />
+                
+                <CardHeader className="relative z-10 border-b border-[#f5c16c]/20 pb-6">
+                  <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
+                    <div className="flex-1">
+                      <div className="mb-4 flex items-center gap-3">
+                        <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-[#d23187]/20 border border-[#d23187]/40">
+                          <Shield className="h-8 w-8 text-[#f5c16c]" />
+                        </div>
+                        <div>
+                          <p className="text-xs uppercase tracking-[0.4em] text-[#f5c16c]">Guild Hall</p>
+                          <CardTitle className="text-3xl text-white">{guild.name}</CardTitle>
+                        </div>
                       </div>
-                    </DialogContent>
-                  </Dialog>
-                )}
-              </CardContent>
-            </Card>
-          )}
+                      <p className="text-sm text-foreground/70 leading-relaxed max-w-2xl">
+                        {guild.description}
+                      </p>
+                    </div>
+                    
+                    <div className="flex flex-wrap items-center gap-3">
+                      {guild.isPublic ? (
+                        <div className="flex items-center gap-2 rounded-full border border-emerald-400/30 bg-emerald-400/10 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-emerald-400">
+                          <Globe className="h-3.5 w-3.5" />
+                          Open
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-2 rounded-full border border-amber-400/30 bg-amber-400/10 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-amber-400">
+                          <Lock className="h-3.5 w-3.5" />
+                          Invite Only
+                        </div>
+                      )}
+                      
+                      <div className="flex items-center gap-2 rounded-full border border-[#f5c16c]/30 bg-[#f5c16c]/10 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-[#f5c16c]">
+                        <Users className="h-3.5 w-3.5" />
+                        {memberCount ?? guild.memberCount} Heroes
+                      </div>
+                    </div>
+                  </div>
+                </CardHeader>
+                
+                <CardContent className="relative z-10 pt-6">
+                  <div className="flex flex-wrap items-center gap-3">
+                    {!isMember && (
+                      <Dialog>
+                        <DialogTrigger asChild>
+                          <Button className="rounded-full bg-linear-to-r from-[#d23187] via-[#f5c16c] to-[#f5c16c] px-6 text-xs uppercase tracking-[0.4em] text-[#2b130f] shadow-[0_12px_30px_rgba(210,49,135,0.35)]">
+                            <Swords className="mr-2 h-4 w-4" />
+                            Request to Join
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent className="border-[#f5c16c]/30 bg-[#1a0e0d]">
+                          <DialogHeader>
+                            <DialogTitle className="text-xl text-white">Join {guild.name}</DialogTitle>
+                          </DialogHeader>
+                          <div className="space-y-4">
+                            <div className="space-y-2">
+                              <label className="text-sm font-semibold uppercase tracking-wide text-white/80">
+                                Your Message (Optional)
+                              </label>
+                              <Textarea
+                                value={joinMessage}
+                                onChange={(e) => setJoinMessage(e.target.value)}
+                                placeholder="Tell the guild masters why you wish to join their ranks..."
+                                rows={4}
+                                className="border-[#f5c16c]/25 bg-[#140707]/80 text-white placeholder:text-foreground/40"
+                              />
+                            </div>
+                            <div className="flex gap-3">
+                              <Button
+                                onClick={handleApply}
+                                disabled={submitting}
+                                className="flex-1 rounded-full bg-linear-to-r from-[#d23187] via-[#f5c16c] to-[#f5c16c] text-[#2b130f]"
+                              >
+                                {submitting ? "Submitting..." : "Submit Request"}
+                              </Button>
+                            </div>
+                          </div>
+                        </DialogContent>
+                      </Dialog>
+                    )}
+                    
+                    {isMember && myRole === "GuildMaster" && (
+                      <div className="flex items-center gap-2 rounded-full border border-amber-400/40 bg-amber-400/15 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-amber-300">
+                        <Crown className="h-3.5 w-3.5" />
+                        Guild Master
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
 
-          {!loading && guild && (
-            <Tabs
-              value={activeTab}
-              onValueChange={(v) => {
-                setActiveTab(v);
-                if (typeof window !== "undefined") window.location.hash = v;
-              }}
-              className="mt-2"
-            >
-              <TabsList>
-                <TabsTrigger value="home">Home</TabsTrigger>
-                <TabsTrigger value="posts">Posts</TabsTrigger>
+              {/* Tabs */}
+              <Tabs
+                value={activeTab}
+                onValueChange={(v) => {
+                  setActiveTab(v);
+                  if (typeof window !== "undefined") window.location.hash = v;
+                }}
+                className="mt-2"
+              >
+                <TabsList className="mb-6 inline-flex rounded-full border border-[#f5c16c]/20 bg-[#120806]/90 p-1">
+                  <TabsTrigger
+                    value="home"
+                    className="rounded-full data-[state=active]:bg-linear-to-r data-[state=active]:from-[#d23187] data-[state=active]:via-[#f5c16c] data-[state=active]:to-[#f5c16c] data-[state=active]:text-[#2b130f] data-[state=active]:shadow-lg"
+                  >
+                    <Shield className="mr-2 h-4 w-4" />
+                    Home
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="posts"
+                    className="rounded-full data-[state=active]:bg-linear-to-r data-[state=active]:from-[#d23187] data-[state=active]:via-[#f5c16c] data-[state=active]:to-[#f5c16c] data-[state=active]:text-[#2b130f] data-[state=active]:shadow-lg"
+                  >
+                    <Scroll className="mr-2 h-4 w-4" />
+                    Posts
+                  </TabsTrigger>
+                  {isMember && (
+                    <TabsTrigger
+                      value="meetings"
+                      className="rounded-full data-[state=active]:bg-linear-to-r data-[state=active]:from-[#d23187] data-[state=active]:via-[#f5c16c] data-[state=active]:to-[#f5c16c] data-[state=active]:text-[#2b130f] data-[state=active]:shadow-lg"
+                    >
+                      <Swords className="mr-2 h-4 w-4" />
+                      Meetings
+                    </TabsTrigger>
+                  )}
+                  {canManage && (
+                    <TabsTrigger
+                      value="manage"
+                      className="rounded-full data-[state=active]:bg-linear-to-r data-[state=active]:from-[#d23187] data-[state=active]:via-[#f5c16c] data-[state=active]:to-[#f5c16c] data-[state=active]:text-[#2b130f] data-[state=active]:shadow-lg"
+                    >
+                      <Settings className="mr-2 h-4 w-4" />
+                      Manage
+                    </TabsTrigger>
+                  )}
+                </TabsList>
+
+                <TabsContent value="home" className="space-y-6">
+                  <Card className={SECTION_CARD_CLASS}>
+                    <div aria-hidden="true" className="absolute inset-0" style={CARD_TEXTURE} />
+                    <CardContent className="relative z-10 py-16 text-center">
+                      <Shield className="mx-auto mb-4 h-12 w-12 text-[#f5c16c]" />
+                      <h3 className="mb-2 text-xl font-semibold text-white">Welcome to {guild.name}</h3>
+                      <p className="text-sm text-foreground/70">
+                        Use the tabs above to explore posts, meetings, and more.
+                      </p>
+                    </CardContent>
+                  </Card>
+                </TabsContent>
+
+                <TabsContent value="posts" className="space-y-4">
+                  <GuildPostsSection guildId={guild.id} />
+                </TabsContent>
+
                 {isMember && (
-                  <TabsTrigger value="meetings">Meetings</TabsTrigger>
+                  <TabsContent value="meetings" className="space-y-4">
+                    <GuildMeetingsSection guildId={guild.id} />
+                  </TabsContent>
                 )}
-                {canManage && <TabsTrigger value="manage">Manage</TabsTrigger>}
-              </TabsList>
-              <TabsContent value="home" className="space-y-4">
-                <div className="text-sm text-foreground/70">
-                  Welcome to {guild.name}. Use the tabs to navigate.
-                </div>
-              </TabsContent>
-              <TabsContent value="posts" className="space-y-4">
-                <GuildPostsSection guildId={guild.id} />
-              </TabsContent>
-              {isMember && (
-                <TabsContent value="meetings" className="space-y-4">
-                  <GuildMeetingsSection guildId={guild.id} />
-                </TabsContent>
-              )}
-              {canManage && (
-                <TabsContent value="manage" className="space-y-4">
-                  <GuildManagementSection guildId={guild.id} />
-                </TabsContent>
-              )}
-            </Tabs>
+
+                {canManage && (
+                  <TabsContent value="manage" className="space-y-4">
+                    <GuildManagementSection guildId={guild.id} />
+                  </TabsContent>
+                )}
+              </Tabs>
+            </>
           )}
         </div>
       </DashboardFrame>

@@ -217,26 +217,26 @@ export default function NotesTab() {
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-wrap items-center gap-3">
-        <Input placeholder="Search notes..." value={search} onChange={(e) => setSearch(e.target.value)} className="max-w-sm" />
+        <Input placeholder="Search notes..." value={search} onChange={(e) => setSearch(e.target.value)} className="max-w-sm border-[#f5c16c]/20 bg-black/40 focus-visible:border-[#f5c16c] focus-visible:ring-[#f5c16c]/30" />
         <div className="flex items-center gap-2">
-          <Label htmlFor="tag-filter" className="text-xs">Tag</Label>
-          <select id="tag-filter" value={filterTagId} onChange={(e) => setFilterTagId(e.target.value)} className="rounded-md border bg-background p-2 text-sm">
+          <Label htmlFor="tag-filter" className="text-xs text-[#f5c16c]/80">Tag</Label>
+          <select id="tag-filter" value={filterTagId} onChange={(e) => setFilterTagId(e.target.value)} className="rounded-md border border-[#f5c16c]/20 bg-black/40 p-2 text-sm text-white focus:border-[#f5c16c] focus:outline-none focus:ring-1 focus:ring-[#f5c16c]/30">
             <option value="">All</option>
             {myTags.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
           </select>
         </div>
         <div className="flex items-center gap-2">
-          <Label htmlFor="sort-notes" className="text-xs">Sort</Label>
-          <select id="sort-notes" value={sort} onChange={(e) => setSort(e.target.value as SortMode)} className="rounded-md border bg-background p-2 text-sm">
+          <Label htmlFor="sort-notes" className="text-xs text-[#f5c16c]/80">Sort</Label>
+          <select id="sort-notes" value={sort} onChange={(e) => setSort(e.target.value as SortMode)} className="rounded-md border border-[#f5c16c]/20 bg-black/40 p-2 text-sm text-white focus:border-[#f5c16c] focus:outline-none focus:ring-1 focus:ring-[#f5c16c]/30">
             <option value="updatedAt_desc">Updated (newest)</option>
             <option value="title_asc">Title (A–Z)</option>
           </select>
         </div>
         <input id={fileInputId} type="file" accept=".txt,.md,.pdf,.doc,.docx,.pptx,.ppt" className="hidden" onChange={onFileSelected} />
-        <Button variant="secondary" onClick={onClickUpload} disabled={uploading}>
+        <Button variant="secondary" onClick={onClickUpload} disabled={uploading} className="border-[#f5c16c]/20 bg-black/40 hover:border-[#f5c16c]/40 hover:bg-black/60">
           {uploading ? "Uploading..." : "Upload file"}
         </Button>
-        <Button onClick={openNewNote} className="ml-auto">
+        <Button onClick={openNewNote} className="ml-auto bg-gradient-to-r from-[#f5c16c] to-[#d4a855] text-black hover:from-[#d4a855] hover:to-[#f5c16c]">
           <Plus className="mr-2 h-4 w-4" /> New Note
         </Button>
       </div>
@@ -245,25 +245,33 @@ export default function NotesTab() {
         {loading ? (
           <p className="text-sm text-foreground/70">Loading...</p>
         ) : filteredNotes.length === 0 ? (
-          <div className="rounded-2xl border border-white/10 bg-black/20 p-8 text-center">
-            <p className="mb-3 text-sm text-foreground/70">No notes found.</p>
-            <Button onClick={openNewNote}><Plus className="mr-2 h-4 w-4" /> Create your first note</Button>
+          <div className="rounded-2xl border border-[#f5c16c]/20 bg-black/40 p-8 text-center">
+            <p className="mb-3 text-sm text-white/70">No notes found.</p>
+            <Button onClick={openNewNote} className="bg-gradient-to-r from-[#f5c16c] to-[#d4a855] text-black hover:from-[#d4a855] hover:to-[#f5c16c]"><Plus className="mr-2 h-4 w-4" /> Create your first note</Button>
           </div>
         ) : (
           filteredNotes.map((note) => (
-            <Card key={note.id} className="relative flex h-full flex-col overflow-hidden rounded-[20px] border border-white/12 bg-gradient-to-br from-[#361c15]/86 via-[#1f0d12]/92 to-[#0c0508]/97">
-              <CardHeader className="relative z-10 border-b border-white/10 pb-4">
-                <CardTitle className="text-lg font-semibold text-white">{note.title}</CardTitle>
+            <Card key={note.id} className="relative flex h-full flex-col overflow-hidden rounded-[28px] border border-[#f5c16c]/20 bg-gradient-to-br from-[#2d1810]/60 via-[#1a0a08]/80 to-black/90">
+              <div
+                className="pointer-events-none absolute inset-0 opacity-20"
+                style={{
+                  backgroundImage: "url('https://www.transparenttextures.com/patterns/asfalt-dark.png')",
+                  backgroundSize: "100px",
+                  backgroundBlendMode: "overlay",
+                }}
+              />
+              <CardHeader className="relative z-10 border-b border-[#f5c16c]/20 pb-4">
+                <CardTitle className="text-lg font-semibold text-[#f5c16c]">{note.title}</CardTitle>
               </CardHeader>
               <CardContent className="relative z-10 flex flex-1 flex-col gap-4 p-5">
-                <p className="line-clamp-3 text-sm leading-relaxed text-foreground/70">{extractNotePreview(note.content as any) || "No content"}</p>
+                <p className="line-clamp-3 text-sm leading-relaxed text-white/70">{extractNotePreview(note.content as any) || "No content"}</p>
                 {Array.isArray(note.tagIds) && note.tagIds.length > 0 && (
                   <div className="mt-2 flex flex-wrap gap-2">
                     {note.tagIds.map((tid) => {
                       const t = tagIndex.get(tid);
                       const label = t?.name ?? "Unknown";
                       return (
-                        <span key={`${note.id}-${tid}`} className="rounded-full border border-accent/40 bg-accent/10 px-2 py-1 text-xs text-accent">
+                        <span key={`${note.id}-${tid}`} className="rounded-full border border-[#f5c16c]/40 bg-[#f5c16c]/10 px-2 py-1 text-xs text-[#f5c16c]">
                           {label}
                         </span>
                       );
@@ -271,9 +279,9 @@ export default function NotesTab() {
                   </div>
                 )}
               </CardContent>
-              <CardFooter className="relative z-10 flex items-center gap-2 border-t border-white/10 p-4">
-                <Button size="sm" variant="secondary" onClick={() => openEditNote(note.id)}>Open</Button>
-                <Button size="sm" variant="destructive" onClick={() => deleteNote(note.id)}>
+              <CardFooter className="relative z-10 flex items-center gap-2 border-t border-[#f5c16c]/20 p-4">
+                <Button size="sm" variant="secondary" onClick={() => openEditNote(note.id)} className="border-[#f5c16c]/20 bg-black/40 hover:border-[#f5c16c]/40 hover:bg-black/60">Open</Button>
+                <Button size="sm" variant="destructive" onClick={() => deleteNote(note.id)} className="bg-rose-600 hover:bg-rose-700">
                   <Trash2 className="mr-2 h-4 w-4" /> Delete
                 </Button>
               </CardFooter>

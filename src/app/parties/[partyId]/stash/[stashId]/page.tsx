@@ -211,123 +211,164 @@ export default function PartyStashDetailPage() {
   }, [editor, initialBlocks]);
 
   return (
-    <div className="mx-auto max-w-3xl space-y-4 p-4">
-      <div className="flex items-center gap-3">
-        <Input
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          readOnly={!canEdit}
-          placeholder="Title"
-          className="font-semibold"
+    <div className="mx-auto max-w-4xl space-y-6 p-6">
+      {/* Header with RPG styling */}
+      <div className="relative overflow-hidden rounded-[28px] border border-[#f5c16c]/30 bg-gradient-to-br from-[#2d1810] via-[#1a0a08] to-black p-6 shadow-xl">
+        <div
+          className="pointer-events-none absolute inset-0 opacity-25"
+          style={{
+            backgroundImage: "url('https://www.transparenttextures.com/patterns/asfalt-dark.png')",
+            backgroundSize: "100px",
+            backgroundBlendMode: "overlay",
+          }}
         />
-        <div className="ml-auto flex items-center gap-2">
-          <span className="text-xs text-foreground/60">
-            {status === "saving"
-              ? "Saving..."
-              : status === "dirty"
-              ? "Unsaved changes"
-              : "Saved"}
-          </span>
-          <button
-            onClick={() => router.back()}
-            className="rounded bg-white/10 px-3 py-2 text-xs"
-          >
-            Back
-          </button>
-          <Link
-            href={`/parties/${partyId}/stash`}
-            className="rounded bg-white/10 px-3 py-2 text-xs"
-          >
-            Stash
-          </Link>
+        
+        <div className="relative flex items-center gap-4">
+          <Input
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            readOnly={!canEdit}
+            placeholder="Document Title..."
+            className="flex-1 border-[#f5c16c]/20 bg-black/40 text-lg font-semibold text-white placeholder:text-white/40 focus:border-[#f5c16c]/50 focus:ring-[#f5c16c]/30"
+          />
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 rounded-lg border border-[#f5c16c]/20 bg-black/40 px-3 py-2">
+              <div
+                className={`h-2 w-2 rounded-full ${
+                  status === "saving"
+                    ? "animate-pulse bg-amber-400"
+                    : status === "dirty"
+                    ? "bg-amber-400"
+                    : "bg-emerald-400"
+                }`}
+              />
+              <span className="text-xs text-white/70">
+                {status === "saving"
+                  ? "Saving..."
+                  : status === "dirty"
+                  ? "Unsaved"
+                  : "Saved"}
+              </span>
+            </div>
+            <button
+              onClick={() => router.back()}
+              className="rounded-lg border border-[#f5c16c]/30 bg-transparent px-4 py-2 text-sm text-[#f5c16c] transition-all hover:bg-[#f5c16c]/10"
+            >
+              Back
+            </button>
+            <Link
+              href={`/parties/${partyId}/stash`}
+              className="rounded-lg bg-gradient-to-r from-[#f5c16c] to-[#d4a855] px-4 py-2 text-sm font-medium text-black transition-all hover:from-[#d4a855] hover:to-[#f5c16c]"
+            >
+              View Stash
+            </Link>
+          </div>
         </div>
       </div>
 
-      {error && <div className="text-xs text-red-400">{error}</div>}
+      {error && (
+        <div className="rounded-lg border border-rose-500/20 bg-rose-500/10 p-4">
+          <p className="text-sm text-rose-400">{error}</p>
+        </div>
+      )}
 
       {item && (
-        <div className="space-y-3 rounded border border-white/10 bg-white/5 p-4">
-          <div className="text-lg font-bold text-white">{item.title}</div>
-          <div className="text-xs text-white/70">
-            Shared by {item.sharedByUserId} •{" "}
-            {new Date(item.sharedAt).toLocaleString()}
-          </div>
-          {item.tags && item.tags.length > 0 && (
-            <div className="mt-1 flex flex-wrap gap-2">
-              {item.tags.map((t) => (
-                <span
-                  key={t}
-                  className="rounded bg-white/10 px-2 py-1 text-xs text-white/80"
+        <div className="relative overflow-hidden rounded-[28px] border border-[#f5c16c]/20 bg-gradient-to-br from-[#2d1810]/90 via-[#1a0a08]/95 to-black/98 p-6 shadow-lg">
+          <div
+            className="pointer-events-none absolute inset-0 opacity-25"
+            style={{
+              backgroundImage: "url('https://www.transparenttextures.com/patterns/asfalt-dark.png')",
+              backgroundSize: "100px",
+              backgroundBlendMode: "overlay",
+            }}
+          />
+          
+          <div className="relative space-y-4">
+            <h2 className="text-2xl font-bold text-[#f5c16c]">{item.title}</h2>
+            
+            <div className="flex items-center gap-4 text-sm text-white/60">
+              <span>Shared by <span className="text-white">{item.sharedByUserId}</span></span>
+              <span>•</span>
+              <span>{new Date(item.sharedAt).toLocaleString()}</span>
+            </div>
+            
+            {item.tags && item.tags.length > 0 && (
+              <div className="flex flex-wrap gap-2">
+                {item.tags.map((t) => (
+                  <span
+                    key={t}
+                    className="rounded-full border border-[#f5c16c]/30 bg-[#f5c16c]/10 px-3 py-1 text-xs font-medium text-[#f5c16c]"
+                  >
+                    #{t}
+                  </span>
+                ))}
+              </div>
+            )}
+
+            {item.originalNoteId && (
+              <div className="rounded-lg border border-[#d23187]/20 bg-[#d23187]/10 p-3">
+                <span className="text-sm text-white/70">Origin: </span>
+                <Link
+                  href={`/arsenal/${item.originalNoteId}`}
+                  className="text-sm font-medium text-[#d23187] underline hover:text-[#d23187]/80"
                 >
-                  #{t}
-                </span>
-              ))}
+                  View original note
+                </Link>
+              </div>
+            )}
+
+            <div className="rounded-lg border border-[#f5c16c]/20 bg-black/40 p-6">
+              <CursorUsersProvider provider={provider} defaultName={cursorName} defaultColor={cursorColor}>
+                <BlockNoteView
+                  editor={editor}
+                  onChange={onEditorChange}
+                  formattingToolbar={false}
+                  slashMenu={false}
+                  editable={canEdit}
+                  style={{ minHeight: "60vh" }}
+                >
+                  {AI_BASE_URL && canEdit && <AIMenuController />}
+
+                  <FormattingToolbarController
+                    formattingToolbar={() => (
+                      <FormattingToolbar>
+                        {...getFormattingToolbarItems()}
+                        {AI_BASE_URL && canEdit && <AIToolbarButton />}
+                      </FormattingToolbar>
+                    )}
+                  />
+
+                  {canEdit && (
+                    <SuggestionMenuController
+                      triggerCharacter=\"/\"
+                      getItems={async (query) => {
+                        const items = [
+                          ...getDefaultReactSlashMenuItems(editor),
+                          ...(AI_BASE_URL ? getAISlashMenuItems(editor) : []),
+                        ];
+                        const q = (query ?? \"\").toLowerCase();
+                        if (!q) return items;
+                        return items.filter((item: any) => {
+                          const title = (
+                            item?.title ||
+                            item?.label ||
+                            \"\"
+                          ).toLowerCase();
+                          const keywords: string[] =
+                            item?.keywords || item?.aliases || [];
+                          const matchKeywords =
+                            Array.isArray(keywords) &&
+                            keywords.some((k) =>
+                              (k || \"\").toLowerCase().includes(q)
+                            );
+                          return title.includes(q) || matchKeywords;
+                        });
+                      }}
+                    />
+                  )}
+                </BlockNoteView>
+              </CursorUsersProvider>
             </div>
-          )}
-
-          {item.originalNoteId && (
-            <div className="text-xs">
-              Origin:{" "}
-              <Link
-                href={`/arsenal/${item.originalNoteId}`}
-                className="text-fuchsia-400 underline"
-              >
-                View original note
-              </Link>
-            </div>
-          )}
-
-          <div className="mt-3">
-            <CursorUsersProvider provider={provider} defaultName={cursorName} defaultColor={cursorColor}>
-            <BlockNoteView
-              editor={editor}
-              onChange={onEditorChange}
-              formattingToolbar={false}
-              slashMenu={false}
-              editable={canEdit}
-              style={{ minHeight: "60vh" }}
-            >
-              {AI_BASE_URL && canEdit && <AIMenuController />}
-
-              <FormattingToolbarController
-                formattingToolbar={() => (
-                  <FormattingToolbar>
-                    {...getFormattingToolbarItems()}
-                    {AI_BASE_URL && canEdit && <AIToolbarButton />}
-                  </FormattingToolbar>
-                )}
-              />
-
-              {canEdit && (
-                <SuggestionMenuController
-                  triggerCharacter="/"
-                  getItems={async (query) => {
-                    const items = [
-                      ...getDefaultReactSlashMenuItems(editor),
-                      ...(AI_BASE_URL ? getAISlashMenuItems(editor) : []),
-                    ];
-                    const q = (query ?? "").toLowerCase();
-                    if (!q) return items;
-                    return items.filter((item: any) => {
-                      const title = (
-                        item?.title ||
-                        item?.label ||
-                        ""
-                      ).toLowerCase();
-                      const keywords: string[] =
-                        item?.keywords || item?.aliases || [];
-                      const matchKeywords =
-                        Array.isArray(keywords) &&
-                        keywords.some((k) =>
-                          (k || "").toLowerCase().includes(q)
-                        );
-                      return title.includes(q) || matchKeywords;
-                    });
-                  }}
-                />
-              )}
-            </BlockNoteView>
-            </CursorUsersProvider>
           </div>
         </div>
       )}

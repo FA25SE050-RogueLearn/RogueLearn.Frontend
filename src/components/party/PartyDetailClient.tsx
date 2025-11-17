@@ -10,16 +10,16 @@ interface TabsProps {
 export function Tabs({ active, onChange }: TabsProps) {
   const tabs = ["dashboard", "stash", "meetings"];
   return (
-    <div className="mb-4 flex gap-2">
+    <div className="mb-6 flex gap-2">
       {tabs.map((t) => (
         <button
           key={t}
           onClick={() => onChange(t)}
           className={
-            "rounded px-3 py-2 text-xs font-medium " +
+            "rounded-lg px-4 py-2 text-sm font-medium transition-all " +
             (active === t
-              ? "bg-fuchsia-600 text-white"
-              : "bg-white/10 text-white/80")
+              ? "bg-gradient-to-r from-[#f5c16c] to-[#d4a855] text-black"
+              : "border border-[#f5c16c]/20 bg-black/40 text-white/70 hover:border-[#f5c16c]/40 hover:bg-black/60 hover:text-white")
           }
         >
           {t === "dashboard" && "Dashboard"}
@@ -39,34 +39,54 @@ export default function PartyDetailClient({
   children: React.ReactNode;
 }) {
   return (
-    <div className="relative min-h-screen w-full bg-[#08040a] text-foreground">
+    <div className="relative min-h-screen w-full bg-gradient-to-b from-[#0a0506] via-[#120806] to-[#0a0506] text-foreground">
       <div className="pointer-events-none fixed inset-0">
         <div
-          className="absolute inset-0 bg-cover bg-center opacity-60"
+          className="absolute inset-0 bg-cover bg-center opacity-30"
           style={{
             backgroundImage:
               "url('https://images.unsplash.com/photo-1534447677768-be436bb09401?auto=format&fit=crop&w=1600&q=80')",
           }}
         />
-        <div className="absolute inset-0 bg-linear-to-br from-[#0b0510]/95 via-[#1b0b19]/90 to-[#070b1c]/95" />
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(210,49,135,0.35),transparent_60%)]" />
+        <div className="absolute inset-0 bg-gradient-to-br from-[#0a0506]/95 via-[#1a0a08]/90 to-[#0a0506]/95" />
         <div
-          className="absolute inset-0 mix-blend-overlay opacity-[0.15]"
+          className="absolute inset-0 mix-blend-overlay opacity-20"
           style={{
             backgroundImage:
-              "url('https://www.transparenttextures.com/patterns/dark-matter.png')",
+              "url('https://www.transparenttextures.com/patterns/asfalt-dark.png')",
+            backgroundSize: "100px",
           }}
         />
       </div>
 
       <div className="relative z-10">
         <DashboardFrame>
-          <div className="space-y-4">
-            <header className="flex items-center justify-between rounded-lg border border-white/10 bg-white/5 p-4">
-              {header}
+          <div className="space-y-6">
+            <header className="overflow-hidden rounded-[28px] border border-[#f5c16c]/20 bg-gradient-to-br from-[#2d1810]/60 via-[#1a0a08]/80 to-black/90 p-6">
+              <div
+                className="pointer-events-none absolute inset-0 opacity-25"
+                style={{
+                  backgroundImage: "url('https://www.transparenttextures.com/patterns/asfalt-dark.png')",
+                  backgroundSize: "100px",
+                  backgroundBlendMode: "overlay",
+                }}
+              />
+              <div className="relative">
+                {header}
+              </div>
             </header>
-            <section className="rounded-lg border border-white/10 bg-white/5 p-4">
-              {children}
+            <section className="overflow-hidden rounded-[28px] border border-[#f5c16c]/20 bg-gradient-to-br from-[#2d1810]/60 via-[#1a0a08]/80 to-black/90 p-6">
+              <div
+                className="pointer-events-none absolute inset-0 opacity-25"
+                style={{
+                  backgroundImage: "url('https://www.transparenttextures.com/patterns/asfalt-dark.png')",
+                  backgroundSize: "100px",
+                  backgroundBlendMode: "overlay",
+                }}
+              />
+              <div className="relative">
+                {children}
+              </div>
             </section>
           </div>
         </DashboardFrame>

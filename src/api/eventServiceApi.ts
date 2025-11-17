@@ -128,17 +128,45 @@ const eventServiceApi = {
 
   // ============ Events ============
   /**
-   * Get all events (public)
+   * Get all events (public) with pagination support
+   * @param page - Page number (1-indexed)
+   * @param pageSize - Number of items per page
+   * @param type - Optional event type filter (e.g., 'code_battle')
    */
-  async getAllEvents(): Promise<ApiResponse<Event[]>> {
+  async getAllEvents(page: number = 1, pageSize: number = 6, type?: string): Promise<ApiResponse<Event[]>> {
     try {
-      const response = await axiosCodeBattleClient.get('/events');
-      // API response is already wrapped: { success: true, data: [...], message: "..." }
+      const params: any = { page_index: page, page_size: pageSize };
+      if (type) {
+        params.type = type;
+      }
+      const response = await axiosCodeBattleClient.get('/events', { params });
+      console.log('📦 Events API response:', response.data);
+
+      // API response is wrapped: { success: true, data: { items: [...], total_count, ... }, message: "..." }
       if (response.data.success && response.data.data) {
-        return { success: true, data: response.data.data };
+        // Handle paginated response format: data.items contains the actual array
+        const eventsData = response.data.data.items || response.data.data;
+        console.log('✅ Extracted events:', eventsData);
+        console.log('📊 Pagination info:', {
+          total_count: response.data.data.total_count,
+          total_pages: response.data.data.total_pages,
+          page_index: response.data.data.page_index,
+          page_size: response.data.data.page_size
+        });
+        return {
+          success: true,
+          data: Array.isArray(eventsData) ? eventsData : [],
+          pagination: {
+            total_count: response.data.data.total_count,
+            total_pages: response.data.data.total_pages,
+            page_index: response.data.data.page_index,
+            page_size: response.data.data.page_size
+          }
+        };
       }
       return { success: false, error: { message: 'Invalid response format' } };
     } catch (error: any) {
+      console.error('❌ Error fetching events:', error);
       return {
         success: false,
         error: {
@@ -190,16 +218,49 @@ const eventServiceApi = {
 
   // ============ Rooms ============
   /**
-   * Get rooms for an event (public)
+   * Get rooms for an event (public) with pagination support
+   * @param eventId - Event ID
+   * @param page - Page number (1-indexed)
+   * @param pageSize - Number of items per page
    */
-  async getEventRooms(eventId: string): Promise<ApiResponse<Room[]>> {
+  async getEventRooms(eventId: string, page: number = 1, pageSize: number = 6): Promise<ApiResponse<Room[]>> {
     try {
-      const response = await axiosCodeBattleClient.get(`/events/${eventId}/rooms`);
+      const response = await axiosCodeBattleClient.get(`/events/${eventId}/rooms`, {
+        params: { page_index: page, page_size: pageSize }
+      });
+      console.log('📦 Rooms API response:', response.data);
+
       if (response.data.success && response.data.data) {
-        return { success: true, data: response.data.data };
+        // Handle both paginated and non-paginated response formats
+        const roomsData = response.data.data.items || response.data.data;
+        console.log('✅ Extracted rooms:', roomsData);
+
+        // Check if response has pagination metadata
+        if (response.data.data.total_count !== undefined) {
+          console.log('📊 Rooms pagination info:', {
+            total_count: response.data.data.total_count,
+            total_pages: response.data.data.total_pages,
+            page_index: response.data.data.page_index,
+            page_size: response.data.data.page_size
+          });
+
+          return {
+            success: true,
+            data: Array.isArray(roomsData) ? roomsData : [],
+            pagination: {
+              total_count: response.data.data.total_count,
+              total_pages: response.data.data.total_pages,
+              page_index: response.data.data.page_index,
+              page_size: response.data.data.page_size
+            }
+          };
+        }
+
+        return { success: true, data: Array.isArray(roomsData) ? roomsData : [] };
       }
       return { success: false, error: { message: 'Invalid response format' } };
     } catch (error: any) {
+      console.error('❌ Error fetching rooms:', error);
       return {
         success: false,
         error: {
@@ -242,14 +303,22 @@ const eventServiceApi = {
    */
   async createEventRequest(payload: CreateEventRequestPayload): Promise<ApiResponse<EventRequest>> {
     try {
+      console.log('🚀 Creating event request with payload:', payload);
       const response = await axiosCodeBattleClient.post('/event-requests', payload);
+      console.log('✅ Event request response:', response.data);
       return { success: true, data: response.data };
     } catch (error: any) {
+      console.error('❌ Event request error:', {
+        message: error.normalized?.message,
+        details: error.normalized?.details,
+        status: error.normalized?.status,
+        raw: error.response?.data
+      });
       return {
         success: false,
         error: {
-          message: error.normalized?.message || 'Failed to create event request',
-          details: error.normalized?.details,
+          message: error.normalized?.message || error.response?.data?.message || error.response?.data?.error_message || 'Failed to create event request',
+          details: error.normalized?.details || error.response?.data?.data,
         },
       };
     }
@@ -260,16 +329,24 @@ const eventServiceApi = {
    */
   async getGuildEventRequests(guildId: string): Promise<ApiResponse<EventRequest[]>> {
     try {
+      console.log('🔍 Fetching event requests for guild:', guildId);
       const response = await axiosCodeBattleClient.get(`/event-requests/${guildId}`);
+      console.log('📦 Event requests response:', response.data);
+
       if (response.data.success && response.data.data) {
-        return { success: true, data: response.data.data };
+        // Handle paginated response format: data.items contains the actual array
+        const requestsData = response.data.data.items || response.data.data;
+        console.log('✅ Extracted event requests:', requestsData);
+        return { success: true, data: Array.isArray(requestsData) ? requestsData : [] };
       }
+
       return { success: false, error: { message: 'Invalid response format' } };
     } catch (error: any) {
+      console.error('❌ Error fetching event requests:', error);
       return {
         success: false,
         error: {
-          message: error.normalized?.message || 'Failed to fetch event requests',
+          message: error.normalized?.message || error.response?.data?.message || 'Failed to fetch event requests',
           details: error.normalized?.details,
         },
       };
@@ -283,11 +360,18 @@ const eventServiceApi = {
   async getAllEventRequests(): Promise<ApiResponse<EventRequest[]>> {
     try {
       const response = await axiosCodeBattleClient.get('/admin/event-requests');
+      console.log('📦 Admin event requests response:', response.data);
+
       if (response.data.success && response.data.data) {
-        return { success: true, data: response.data.data };
+        // Handle paginated response format: data.items contains the actual array
+        const requestsData = response.data.data.items || response.data.data;
+        console.log('✅ Extracted admin event requests:', requestsData);
+        return { success: true, data: Array.isArray(requestsData) ? requestsData : [] };
       }
+
       return { success: false, error: { message: 'Invalid response format' } };
     } catch (error: any) {
+      console.error('❌ Error fetching admin event requests:', error);
       return {
         success: false,
         error: {
@@ -329,11 +413,17 @@ const eventServiceApi = {
   async getAllTags(): Promise<ApiResponse<Tag[]>> {
     try {
       const response = await axiosCodeBattleClient.get('/tags');
+      console.log('📦 Raw tags API response:', response.data);
+
       if (response.data.success && response.data.data) {
-        return { success: true, data: response.data.data };
+        // Handle paginated response format: data.items contains the actual array
+        const tagsData = response.data.data.items || response.data.data;
+        console.log('✅ Extracted tags:', tagsData);
+        return { success: true, data: Array.isArray(tagsData) ? tagsData : [] };
       }
       return { success: false, error: { message: 'Invalid response format' } };
     } catch (error: any) {
+      console.error('❌ Error fetching tags:', error);
       return {
         success: false,
         error: {
