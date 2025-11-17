@@ -34,14 +34,22 @@ import userQuestProgressApi from "@/api/userQuestProgressApi";
 // --- Sub-components (UNCHANGED) ---
 
 const ReadingStepContent = ({ content }: { content: ReadingContent }) => (
-    <Card className="bg-muted/30 border-white/10">
-        <CardHeader>
-            <CardTitle>{content.articleTitle || 'Reading Material'}</CardTitle>
+    <Card className="relative overflow-hidden bg-black/40 border-[#f5c16c]/20">
+        <div
+          className="pointer-events-none absolute inset-0 opacity-20 mix-blend-overlay"
+          style={{
+            backgroundImage: 'url(/images/asfalt-dark.png)',
+            backgroundSize: '350px 350px',
+            backgroundRepeat: 'repeat'
+          }}
+        />
+        <CardHeader className="relative z-10">
+            <CardTitle className="text-white">{content.articleTitle || 'Reading Material'}</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4 prose prose-invert max-w-none prose-p:text-foreground/80 prose-headings:text-white">
-            <p className="whitespace-pre-wrap font-body">{content.summary}</p>
+        <CardContent className="relative z-10 space-y-4 prose prose-invert max-w-none prose-p:text-white/80 prose-headings:text-white">
+            <p className="whitespace-pre-wrap font-body text-white/80">{content.summary}</p>
             {content.url && (
-                <Button asChild variant="outline" className="border-accent/40 bg-accent/10 text-accent hover:bg-accent/20">
+                <Button asChild variant="outline" className="border-[#f5c16c]/40 bg-[#f5c16c]/10 text-[#f5c16c] hover:bg-[#f5c16c]/20">
                     <a href={content.url} target="_blank" rel="noopener noreferrer">
                         <LinkIcon className="w-4 h-4 mr-2" />
                         Read Full Article
@@ -66,11 +74,19 @@ const InteractiveStepContent = ({ content }: { content: InteractiveContent }) =>
     };
 
     return (
-        <Card className="bg-muted/30 border-white/10">
-            <CardHeader><CardTitle>Challenge</CardTitle></CardHeader>
-            <CardContent className="space-y-6">
+        <Card className="relative overflow-hidden bg-black/40 border-[#f5c16c]/20">
+            <div
+              className="pointer-events-none absolute inset-0 opacity-20 mix-blend-overlay"
+              style={{
+                backgroundImage: 'url(/images/asfalt-dark.png)',
+                backgroundSize: '350px 350px',
+                backgroundRepeat: 'repeat'
+              }}
+            />
+            <CardHeader className="relative z-10"><CardTitle className="text-white">Challenge</CardTitle></CardHeader>
+            <CardContent className="relative z-10 space-y-6">
                 {content.challenge && (
-                    <p className="whitespace-pre-wrap font-body text-foreground/80">{content.challenge}</p>
+                    <p className="whitespace-pre-wrap font-body text-white/80">{content.challenge}</p>
                 )}
 
                 {content.questions && (
@@ -123,7 +139,7 @@ const InteractiveStepContent = ({ content }: { content: InteractiveContent }) =>
                         {!submitted && (
                             <Button
                                 onClick={handleSubmitQuestions}
-                                className="bg-accent text-accent-foreground hover:bg-accent/90"
+                                className="bg-gradient-to-r from-[#f5c16c] to-[#d4a855] text-black font-semibold hover:from-[#d4a855] hover:to-[#f5c16c]"
                                 disabled={Object.keys(selectedAnswers).length !== content.questions.length}
                             >
                                 Submit Answers
@@ -160,9 +176,17 @@ const QuizStepContent = ({ content }: { content: QuizContent }) => {
     const correctCount = content.questions.filter((q, i) => selectedAnswers[i] === q.correctAnswer).length;
 
     return (
-        <Card className="bg-muted/30 border-white/10">
-            <CardHeader><CardTitle>Knowledge Check</CardTitle></CardHeader>
-            <CardContent className="space-y-6">
+        <Card className="relative overflow-hidden bg-black/40 border-[#f5c16c]/20">
+            <div
+              className="pointer-events-none absolute inset-0 opacity-20 mix-blend-overlay"
+              style={{
+                backgroundImage: 'url(/images/asfalt-dark.png)',
+                backgroundSize: '350px 350px',
+                backgroundRepeat: 'repeat'
+              }}
+            />
+            <CardHeader className="relative z-10"><CardTitle className="text-white">Knowledge Check</CardTitle></CardHeader>
+            <CardContent className="relative z-10 space-y-6">
                 {content.questions.map((q, i) => (
                     <div key={i}>
                         <p className="font-semibold mb-2 text-white">{i + 1}. {q.question}</p>
@@ -192,7 +216,7 @@ const QuizStepContent = ({ content }: { content: QuizContent }) => {
                 {!submitted && (
                     <Button
                         onClick={checkAnswers}
-                        className="bg-accent text-accent-foreground hover:bg-accent/90"
+                        className="bg-gradient-to-r from-[#f5c16c] to-[#d4a855] text-black font-semibold hover:from-[#d4a855] hover:to-[#f5c16c]"
                         disabled={Object.keys(selectedAnswers).length !== content.questions.length}
                     >
                         Submit Answers
@@ -209,9 +233,17 @@ const QuizStepContent = ({ content }: { content: QuizContent }) => {
 };
 
 const CodingStepContent = ({ content }: { content: CodingContent }) => (
-    <Card className="bg-muted/30 border-white/10">
-        <CardHeader><CardTitle>Coding Challenge</CardTitle></CardHeader>
-        <CardContent className="space-y-4">
+    <Card className="relative overflow-hidden bg-black/40 border-[#f5c16c]/20">
+        <div
+          className="pointer-events-none absolute inset-0 opacity-20 mix-blend-overlay"
+          style={{
+            backgroundImage: 'url(/images/asfalt-dark.png)',
+            backgroundSize: '350px 350px',
+            backgroundRepeat: 'repeat'
+          }}
+        />
+        <CardHeader className="relative z-10"><CardTitle className="text-white">Coding Challenge</CardTitle></CardHeader>
+        <CardContent className="relative z-10 space-y-4">
             <div className="flex items-center gap-4 mb-4">
                 <span className="px-3 py-1 rounded-full bg-blue-500/20 border border-blue-500/40 text-blue-300 text-sm font-semibold">
                     {content.language}
@@ -222,15 +254,15 @@ const CodingStepContent = ({ content }: { content: CodingContent }) => (
             </div>
             <div>
                 <h4 className="font-semibold text-white mb-2">Topic:</h4>
-                <p className="text-foreground/80">{content.topic}</p>
+                <p className="text-white/80">{content.topic}</p>
             </div>
-            <div className="p-4 rounded-lg bg-amber-500/10 border border-amber-500/30">
-                <p className="text-sm text-amber-200">
+            <div className="p-4 rounded-lg bg-[#f5c16c]/10 border border-[#f5c16c]/30">
+                <p className="text-sm text-[#f5c16c]">
                     This coding challenge will be generated dynamically when you start working on it. 
                     The challenge will be tailored to the <strong>{content.topic}</strong> topic at a <strong>{content.difficulty}</strong> level using <strong>{content.language}</strong>.
                 </p>
             </div>
-            <Button className="w-full bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white font-semibold">
+            <Button className="w-full bg-gradient-to-r from-[#f5c16c] to-[#d4a855] text-black font-semibold hover:from-[#d4a855] hover:to-[#f5c16c]">
                 Start Coding Challenge
             </Button>
         </CardContent>
@@ -238,37 +270,61 @@ const CodingStepContent = ({ content }: { content: CodingContent }) => (
 );
 
 const SubmissionStepContent = ({ content }: { content: SubmissionContent }) => (
-    <Card className="bg-muted/30 border-white/10">
-        <CardHeader><CardTitle>Submission Required</CardTitle></CardHeader>
-        <CardContent className="space-y-4">
+    <Card className="relative overflow-hidden bg-black/40 border-[#f5c16c]/20">
+        <div
+          className="pointer-events-none absolute inset-0 opacity-20 mix-blend-overlay"
+          style={{
+            backgroundImage: 'url(/images/asfalt-dark.png)',
+            backgroundSize: '350px 350px',
+            backgroundRepeat: 'repeat'
+          }}
+        />
+        <CardHeader className="relative z-10"><CardTitle className="text-white">Submission Required</CardTitle></CardHeader>
+        <CardContent className="relative z-10 space-y-4">
             <h4 className="font-semibold text-white">Challenge</h4>
-            <p className="whitespace-pre-wrap font-body">{content.challenge}</p>
+            <p className="whitespace-pre-wrap font-body text-white/80">{content.challenge}</p>
             <h4 className="font-semibold text-white">Submission Format</h4>
-            <p className="whitespace-pre-wrap font-body text-foreground/80">{content.submissionFormat}</p>
-            <Textarea placeholder="Enter your submission here..." rows={8} className="mt-4 bg-background/50 border-white/20" />
+            <p className="whitespace-pre-wrap font-body text-white/80">{content.submissionFormat}</p>
+            <Textarea placeholder="Enter your submission here..." rows={8} className="mt-4 bg-background/50 border-[#f5c16c]/20" />
         </CardContent>
     </Card>
 );
 
 const ReflectionStepContent = ({ content }: { content: ReflectionContent }) => (
-    <Card className="bg-muted/30 border-white/10">
-        <CardHeader><CardTitle>Reflection</CardTitle></CardHeader>
-        <CardContent className="space-y-4">
+    <Card className="relative overflow-hidden bg-black/40 border-[#f5c16c]/20">
+        <div
+          className="pointer-events-none absolute inset-0 opacity-20 mix-blend-overlay"
+          style={{
+            backgroundImage: 'url(/images/asfalt-dark.png)',
+            backgroundSize: '350px 350px',
+            backgroundRepeat: 'repeat'
+          }}
+        />
+        <CardHeader className="relative z-10"><CardTitle className="text-white">Reflection</CardTitle></CardHeader>
+        <CardContent className="relative z-10 space-y-4">
             <h4 className="font-semibold text-white">Challenge</h4>
-            <p className="whitespace-pre-wrap font-body">{content.challenge}</p>
+            <p className="whitespace-pre-wrap font-body text-white/80">{content.challenge}</p>
             <h4 className="font-semibold text-white">Reflection Prompt</h4>
-            <p className="whitespace-pre-wrap font-body text-foreground/80">{content.reflectionPrompt}</p>
+            <p className="whitespace-pre-wrap font-body text-white/80">{content.reflectionPrompt}</p>
             <h4 className="font-semibold text-white">Expected Outcome</h4>
-            <p className="whitespace-pre-wrap font-body text-foreground/80">{content.expectedOutcome}</p>
-            <Textarea placeholder="Write your reflection here..." rows={8} className="mt-4 bg-background/50 border-white/20" />
+            <p className="whitespace-pre-wrap font-body text-white/80">{content.expectedOutcome}</p>
+            <Textarea placeholder="Write your reflection here..." rows={8} className="mt-4 bg-background/50 border-[#f5c16c]/20" />
         </CardContent>
     </Card>
 );
 
 const PlaceholderContent = ({ type }: { type: string }) => (
-    <Card className="bg-muted/30 border-white/10">
-        <CardHeader><CardTitle>{type} Content</CardTitle></CardHeader>
-        <CardContent><p>Content for this step type ({type}) is under construction.</p></CardContent>
+    <Card className="relative overflow-hidden bg-black/40 border-[#f5c16c]/20">
+        <div
+          className="pointer-events-none absolute inset-0 opacity-20 mix-blend-overlay"
+          style={{
+            backgroundImage: 'url(/images/asfalt-dark.png)',
+            backgroundSize: '350px 350px',
+            backgroundRepeat: 'repeat'
+          }}
+        />
+        <CardHeader className="relative z-10"><CardTitle className="text-white">{type} Content</CardTitle></CardHeader>
+        <CardContent className="relative z-10"><p className="text-white/80">Content for this step type ({type}) is under construction.</p></CardContent>
     </Card>
 );
 
@@ -410,8 +466,8 @@ export function ModuleLearningView({ learningPath, chapter, questDetails: initia
     if (isLoading) {
         return (
             <div className="flex flex-col items-center justify-center min-h-[400px] gap-4">
-                <Loader2 className="w-16 h-16 text-accent animate-spin" />
-                <p className="text-xl text-foreground/70">Loading Quest Content...</p>
+                <Loader2 className="w-16 h-16 text-[#f5c16c] animate-spin" />
+                <p className="text-xl text-white/70">Loading Quest Content...</p>
             </div>
         );
     }
@@ -420,41 +476,49 @@ export function ModuleLearningView({ learningPath, chapter, questDetails: initia
         return (
             <div className="flex flex-col items-center justify-center min-h-[400px] gap-4">
                 <XCircle className="w-16 h-16 text-red-500" />
-                <p className="text-xl text-foreground/70">Could not load quest steps.</p>
+                <p className="text-xl text-white/70">Could not load quest steps.</p>
             </div>
         );
     }
 
     return (
-        <div className="space-y-6 pb-32">
+        <div className="space-y-6 pb-40">
             <div className="flex items-center justify-between">
                 <div>
-                    <div className="flex items-center gap-2 text-sm text-foreground/60 mb-2">
-                        <Link href={`/quests/${learningPath.id}`} className="hover:text-accent">
+                    <div className="flex items-center gap-2 text-sm text-white/60 mb-2">
+                        <Link href={`/quests/${learningPath.id}`} className="hover:text-[#f5c16c]">
                             {learningPath.name}
                         </Link>
                         <span>/</span>
-                        <Link href={`/quests/${learningPath.id}/${chapter.id}`} className="hover:text-accent">
+                        <Link href={`/quests/${learningPath.id}/${chapter.id}`} className="hover:text-[#f5c16c]">
                             {chapter.title}
                         </Link>
                     </div>
                     <h1 className="text-4xl font-bold font-heading flex items-center gap-3 text-white">
-                        <BookOpen className="w-10 h-10 text-accent" />
+                        <BookOpen className="w-10 h-10 text-[#f5c16c]" />
                         {questDetails.title}
                     </h1>
-                    <p className="text-sm text-foreground/60 mt-2">
+                    <p className="text-sm text-white/60 mt-2">
                         Step {currentStepIndex + 1} of {totalSteps}
                     </p>
                 </div>
             </div>
 
-            <Card className="border-white/10 bg-black/20">
-                <CardHeader>
+            <Card className="relative overflow-hidden border-[#f5c16c]/20 bg-gradient-to-br from-[#2d1810] via-[#1a0a08] to-[#0a0506]">
+                <div
+                  className="pointer-events-none absolute inset-0 opacity-25 mix-blend-overlay"
+                  style={{
+                    backgroundImage: 'url(/images/asfalt-dark.png)',
+                    backgroundSize: '350px 350px',
+                    backgroundRepeat: 'repeat'
+                  }}
+                />
+                <CardHeader className="relative z-10">
                     <CardTitle className="flex items-center justify-between text-white">
                         <span className="flex-1">Step {currentStep.stepNumber}: {currentStep.title}</span>
                         <div className="flex items-center gap-4">
                             {currentStep.experiencePoints > 0 && (
-                                <span className="flex items-center gap-2 text-sm font-semibold text-amber-300 bg-amber-900/50 border border-amber-700/30 rounded-full px-3 py-1">
+                                <span className="flex items-center gap-2 text-sm font-semibold text-[#f5c16c] bg-[#f5c16c]/10 border border-[#f5c16c]/30 rounded-full px-3 py-1">
                                     <Sparkles className="w-4 h-4" /> +{currentStep.experiencePoints} XP
                                 </span>
                             )}
@@ -466,52 +530,57 @@ export function ModuleLearningView({ learningPath, chapter, questDetails: initia
                         </div>
                     </CardTitle>
                 </CardHeader>
-                <CardContent>
-                    <p className="text-foreground/80 leading-relaxed mb-6">{currentStep.description}</p>
+                <CardContent className="relative z-10">
+                    <p className="text-white/80 leading-relaxed mb-6">{currentStep.description}</p>
                     {renderStepContent(currentStep)}
                 </CardContent>
             </Card>
 
-            <div className="flex items-center justify-between pt-8 border-t border-white/10">
-                <Button
-                    variant="outline"
-                    size="lg"
-                    onClick={handlePrevStep}
-                    disabled={isFirstStep}
-                    className="border-white/20 bg-white/5 hover:bg-white/10 text-white disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                    <ArrowLeft className="w-5 h-5 mr-2" /> Previous Step
-                </Button>
+            {/* Fixed Navigation Bar - positioned above bottom nav */}
+            <div className="fixed bottom-36 left-0 right-0 z-40">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <div className="flex items-center justify-between py-4">
+                        <Button
+                            variant="outline"
+                            size="lg"
+                            onClick={handlePrevStep}
+                            disabled={isFirstStep}
+                            className="border-[#f5c16c]/20 bg-black/40 hover:bg-[#f5c16c]/10 text-white disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            <ArrowLeft className="w-5 h-5 mr-2" /> Previous Step
+                        </Button>
 
-                {stepProgress[currentStep.id] !== 'Completed' ? (
-                    <Button
-                        size="lg"
-                        className="bg-gradient-to-r from-accent to-amber-400 text-primary-foreground font-bold"
-                        onClick={() => handleCompleteStep(currentStep.id)}
-                        disabled={isCompleting === currentStep.id}
-                    >
-                        {isCompleting === currentStep.id ? (
-                            <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                        {stepProgress[currentStep.id] !== 'Completed' ? (
+                            <Button
+                                size="lg"
+                                className="bg-gradient-to-r from-[#f5c16c] to-[#d4a855] text-black font-bold hover:from-[#d4a855] hover:to-[#f5c16c]"
+                                onClick={() => handleCompleteStep(currentStep.id)}
+                                disabled={isCompleting === currentStep.id}
+                            >
+                                {isCompleting === currentStep.id ? (
+                                    <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                                ) : (
+                                    <CheckCircle className="w-5 h-5 mr-2" />
+                                )}
+                                Mark as Complete
+                            </Button>
                         ) : (
-                            <CheckCircle className="w-5 h-5 mr-2" />
+                            <div className="flex items-center gap-2 text-emerald-400 font-semibold px-4">
+                                <CheckCircle className="w-5 h-5" /> Step Completed
+                            </div>
                         )}
-                        Mark as Complete
-                    </Button>
-                ) : (
-                    <div className="flex items-center gap-2 text-emerald-400 font-semibold px-4">
-                        <CheckCircle className="w-5 h-5" /> Step Completed
-                    </div>
-                )}
 
-                <Button
-                    variant="outline"
-                    size="lg"
-                    onClick={handleNextStep}
-                    disabled={isLastStep}
-                    className="border-white/20 bg-white/5 hover:bg-white/10 text-white disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                    Next Step <ArrowRight className="w-5 h-5 ml-2" />
-                </Button>
+                        <Button
+                            variant="outline"
+                            size="lg"
+                            onClick={handleNextStep}
+                            disabled={isLastStep}
+                            className="border-[#f5c16c]/20 bg-black/40 hover:bg-[#f5c16c]/10 text-white disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            Next Step <ArrowRight className="w-5 h-5 ml-2" />
+                        </Button>
+                    </div>
+                </div>
             </div>
         </div>
     );

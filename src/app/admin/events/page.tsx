@@ -24,11 +24,9 @@ interface DisplayEvent {
   id: string;
   title: string;
   guild: string;
-  submittedDate?: string;
   startDate?: string;
   endDate?: string;
-  participants: number;
-  prizePool: string;
+  participants: number; // Number of guilds
   status: string;
 }
 
@@ -65,24 +63,24 @@ function EventCard({ event, type }: { event: DisplayEvent; type: string }) {
           <div className="space-y-1">
             <div className="flex items-center gap-2 text-amber-700">
               <Users className="h-4 w-4" />
-              <span className="text-xs">Adventurers</span>
+              <span className="text-xs">Guilds</span>
             </div>
             <p className="text-sm font-semibold text-amber-200">{event.participants}</p>
           </div>
           <div className="space-y-1">
             <div className="flex items-center gap-2 text-amber-700">
-              <DollarSign className="h-4 w-4" />
-              <span className="text-xs">Bounty</span>
+              <Calendar className="h-4 w-4" />
+              <span className="text-xs">Start Date</span>
             </div>
-            <p className="text-sm font-semibold text-amber-200">{event.prizePool}</p>
+            <p className="text-sm font-semibold text-amber-200">{event.startDate || 'N/A'}</p>
           </div>
           <div className="space-y-1">
             <div className="flex items-center gap-2 text-amber-700">
               <Clock className="h-4 w-4" />
-              <span className="text-xs">Date</span>
+              <span className="text-xs">End Date</span>
             </div>
             <p className="text-sm font-semibold text-amber-200">
-              {event.submittedDate || event.startDate || event.endDate}
+              {event.endDate || 'N/A'}
             </p>
           </div>
         </div>
@@ -132,17 +130,20 @@ export default function EventManagementPage() {
 
   // Transform EventRequest to DisplayEvent
   const transformEventRequest = (req: EventRequest): DisplayEvent => {
-    const maxParticipants = req.participation
-      ? req.participation.max_guilds * req.participation.max_players_per_guild
-      : 0;
+    // Handle both API response formats: participation_details and participation
+    const participation = (req as any).participation_details || req.participation;
+    const maxGuilds = participation ? participation.max_guilds : 0;
+
+    // Handle both id and request_id
+    const requestId = (req as any).id || req.request_id;
 
     return {
-      id: req.request_id,
+      id: requestId,
       title: req.title || 'Untitled Event',
       guild: req.requester_guild_id || 'Unknown Guild',
-      submittedDate: req.created_at ? new Date(req.created_at).toLocaleDateString('en-US') : 'N/A',
-      participants: maxParticipants,
-      prizePool: 'TBD', // Event requests don't have prize pool yet
+      startDate: req.proposed_start_date ? new Date(req.proposed_start_date).toLocaleDateString('en-US') : undefined,
+      endDate: req.proposed_end_date ? new Date(req.proposed_end_date).toLocaleDateString('en-US') : undefined,
+      participants: maxGuilds, // Number of guilds, not total players
       status: req.status || 'pending',
     };
   };

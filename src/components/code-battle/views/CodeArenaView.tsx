@@ -19,18 +19,21 @@ interface CodeArenaViewProps {
   event: Event | null;
   room: Room | null;
   problemTitle: string;
+  problemStatement: string;
   code: string;
   setCode: (code: string) => void;
   language: string;
   setLanguage: (language: string) => void;
   onSubmit: () => void;
   submissionResult: string;
+  isSubmitting: boolean;
   spaceConstraintMb: number | null;
   onBack: () => void;
   eventId: string | null;
   roomId: string | null;
   eventSourceRef: React.RefObject<EventSource | null>;
   notifications: Notification[];
+  leaderboardData: Array<{ place: number; player_name: string; score: number }>;
   eventSecondsLeft: number | null;
   eventEndDate: string | null;
 }
@@ -70,24 +73,27 @@ const BACKDROP_TEXTURE: CSSProperties = {
   opacity: 0.08,
   mixBlendMode: 'screen',
 };
-const USE_MOCK_LEADERBOARD = true;
+const USE_MOCK_LEADERBOARD = false;
 
 export default function CodeArenaView({
   event,
   room,
   problemTitle,
+  problemStatement,
   code,
   setCode,
   language,
   setLanguage,
   onSubmit,
   submissionResult,
+  isSubmitting,
   spaceConstraintMb,
   onBack,
   eventId,
   roomId,
   eventSourceRef,
   notifications,
+  leaderboardData,
   eventSecondsLeft,
   eventEndDate,
 }: CodeArenaViewProps) {
@@ -101,6 +107,13 @@ export default function CodeArenaView({
       setLastUpdated(new Date());
     });
   }, []);
+
+  // Update leaderboard when prop changes
+  useEffect(() => {
+    if (leaderboardData && leaderboardData.length > 0) {
+      updateLeaderboard(leaderboardData);
+    }
+  }, [leaderboardData, updateLeaderboard]);
 
   const clearLeaderboard = useCallback(() => {
     startTransition(() => {
@@ -199,15 +212,52 @@ export default function CodeArenaView({
             <Card className={SECTION_CARD_CLASS}>
               <div aria-hidden="true" className="pointer-events-none absolute inset-0" style={CARD_TEXTURE} />
               <CardContent className="relative z-10 space-y-6 p-6">
-                <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-                  <div>
+                <div className="flex flex-col gap-4">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="rounded-full border border-[#f5c16c]/30 bg-[#f5c16c]/5 px-3 py-1 text-[10px] font-medium uppercase tracking-[0.2em] text-[#f5c16c]/80">{event?.Type || 'Code Battle'}</span>
+                    <span className="rounded-full border border-[#d23187]/30 bg-[#d23187]/10 px-3 py-1 text-[10px] font-medium uppercase tracking-[0.2em] text-[#d23187]">{room?.Name || 'Unassigned Room'}</span>
+                  </div>
+                  <div className="flex-1">
                     <p className="text-xs uppercase tracking-[0.35em] text-[#f5c16c]">Mission Briefing</p>
                     <h1 className="mt-2 text-3xl font-bold text-white">{problemTitle}</h1>
                     <p className="mt-2 text-sm text-foreground/60">Submit your solution to earn points and keep your guild on top.</p>
-                  </div>
-                  <div className="flex flex-wrap gap-3 text-xs text-foreground/60">
-                    <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1">{event?.Type || 'Code Battle'}</span>
-                    <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1">{room?.Name || 'Unassigned Room'}</span>
+                    {problemStatement && (
+                      <div className="mt-4 space-y-3 rounded-2xl border border-[#f5c16c]/20 bg-[#0f0504]/60 p-4">
+                        <div className="flex items-start justify-between gap-4">
+                          <p className="text-xs uppercase tracking-[0.3em] text-[#f5c16c]">Requirements</p>
+                          <span className="shrink-0 rounded-full border border-[#f5c16c]/40 bg-[#f5c16c]/10 px-3 py-1 text-[9px] font-semibold uppercase tracking-[0.25em] text-[#f5c16c]">
+                            Sample
+                          </span>
+                        </div>
+                        <p className="text-[10px] italic text-foreground/50">
+                          Note: This is a sample test case for reference. Your submission will be evaluated against additional hidden test cases.
+                        </p>
+                        <div className="space-y-2 text-sm text-foreground/80">
+                          {problemStatement.split('```').map((part, index) => {
+                            // Odd indices are code blocks
+                            if (index % 2 === 1) {
+                              const lines = part.split('\n');
+                              const lang = lines[0].trim();
+                              const code = lines.slice(1).join('\n');
+                              return (
+                                <pre key={index} className="overflow-x-auto rounded-lg border border-[#f5c16c]/30 bg-black/60 p-3 text-xs font-mono text-white">
+                                  <code>{code}</code>
+                                </pre>
+                              );
+                            }
+                            // Even indices are regular text
+                            if (part.trim()) {
+                              return (
+                                <p key={index} className="leading-relaxed text-foreground/70">
+                                  {part.trim()}
+                                </p>
+                              );
+                            }
+                            return null;
+                          })}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -277,6 +327,7 @@ export default function CodeArenaView({
                   setLanguage={setLanguage}
                   onSubmit={onSubmit}
                   submissionResult={submissionResult}
+                  isSubmitting={isSubmitting}
                   spaceConstraintMb={spaceConstraintMb}
                 />
               </CardContent>

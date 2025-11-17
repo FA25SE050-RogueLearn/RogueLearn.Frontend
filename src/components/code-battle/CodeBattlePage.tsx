@@ -20,11 +20,21 @@ export default function CodeBattlePage() {
   const [rooms, setRooms] = useState<Room[]>([]);
   const [problems, setProblems] = useState<Problem[]>([]);
 
+  // Pagination state
+  const [eventsPage, setEventsPage] = useState(1);
+  const [eventsTotalPages, setEventsTotalPages] = useState(1);
+  const [eventsPageSize] = useState(6);
+
+  const [roomsPage, setRoomsPage] = useState(1);
+  const [roomsTotalPages, setRoomsTotalPages] = useState(1);
+  const [roomsPageSize] = useState(6);
+
   // Selection state
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
   const [selectedRoomId, setSelectedRoomId] = useState<string | null>(null);
   const [selectedProblemId, setSelectedProblemId] = useState<string | null>(null);
   const [selectedProblemTitle, setSelectedProblemTitle] = useState<string>('');
+  const [selectedProblemStatement, setSelectedProblemStatement] = useState<string>('');
 
   // Loading states
   const [loadingEvents, setLoadingEvents] = useState(true);
@@ -32,14 +42,16 @@ export default function CodeBattlePage() {
   const [loadingProblems, setLoadingProblems] = useState(false);
 
   // Coding state
-  const [language, setLanguage] = useState('javascript');
+  const [language, setLanguage] = useState('python');
   const [code, setCode] = useState('');
   const [submissionResult, setSubmissionResult] = useState<string>('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [spaceConstraintMb, setSpaceConstraintMb] = useState<number | null>(null);
 
   // User and connection state
   const [playerId, setPlayerId] = useState<string | null>(null);
   const [notifications, setNotifications] = useState<Array<{ message: string; type: string; time: string }>>([]);
+  const [leaderboardData, setLeaderboardData] = useState<Array<{ place: number; player_name: string; score: number }>>([]);
   const eventSourceRef = useRef<EventSource | null>(null);
 
   // Event timer state
@@ -63,17 +75,19 @@ export default function CodeBattlePage() {
     setNotifications(prev => [...prev, { message, type, time }]);
   };
 
-  // Fetch events on mount
+  // Fetch events on mount and when page changes
   useEffect(() => {
     const fetchEvents = async () => {
       setLoadingEvents(true);
       try {
-        const response = await eventServiceApi.getAllEvents();
+        const response = await eventServiceApi.getAllEvents(eventsPage, eventsPageSize, 'code_battle');
         if (response.success && response.data && Array.isArray(response.data)) {
-          const codeBattleEvents = response.data.filter(
-            (event) => event.Type === 'code_battle'
-          );
-          setEvents(codeBattleEvents);
+          setEvents(response.data);
+
+          // Update pagination metadata
+          if (response.pagination) {
+            setEventsTotalPages(response.pagination.total_pages);
+          }
         }
       } catch (error) {
         console.error('Error fetching events:', error);
@@ -84,9 +98,16 @@ export default function CodeBattlePage() {
     };
 
     fetchEvents();
-  }, []);
+  }, [eventsPage, eventsPageSize]);
 
-  // Fetch rooms when event is selected
+  // Reset rooms page when event changes
+  useEffect(() => {
+    if (selectedEventId) {
+      setRoomsPage(1);
+    }
+  }, [selectedEventId]);
+
+  // Fetch rooms when event is selected or page changes
   useEffect(() => {
     if (!selectedEventId) {
       setRooms([]);
@@ -96,9 +117,14 @@ export default function CodeBattlePage() {
     const fetchRooms = async () => {
       setLoadingRooms(true);
       try {
-        const response = await eventServiceApi.getEventRooms(selectedEventId);
+        const response = await eventServiceApi.getEventRooms(selectedEventId, roomsPage, roomsPageSize);
         if (response.success && response.data && Array.isArray(response.data)) {
           setRooms(response.data);
+
+          // Update pagination metadata
+          if (response.pagination) {
+            setRoomsTotalPages(response.pagination.total_pages);
+          }
         }
       } catch (error) {
         console.error('Error fetching rooms:', error);
@@ -109,7 +135,7 @@ export default function CodeBattlePage() {
     };
 
     fetchRooms();
-  }, [selectedEventId]);
+  }, [selectedEventId, roomsPage, roomsPageSize]);
 
   // Fetch problems when room is selected
   useEffect(() => {
@@ -200,24 +226,66 @@ export default function CodeBattlePage() {
       };
 
       eventSource.addEventListener('CORRECT_SOLUTION_SUBMITTED', (e) => {
-        const eventData = JSON.parse((e as MessageEvent).data);
-        addNotification('A correct solution was submitted!', 'success');
-        if (eventData.player_id === playerId) {
-          setSubmissionResult('✅ Success! All test cases passed. Your solution has been accepted.');
+        try {
+          const eventData = JSON.parse((e as MessageEvent).data);
+          const data = eventData.Data;
+          const playerIdFromEvent = data?.SolutionSubmitted?.PlayerID;
+          
+          addNotification('A correct solution was submitted!', 'success');
+          
+          if (playerIdFromEvent === playerId) {
+            setIsSubmitting(false);
+            const executionTime = data?.ExecutionTimeMs || 'N/A';
+            const score = data?.Score || 0;
+            const message = data?.Message || 'Solution is correct!';
+
+            setSubmissionResult(
+              `SUCCESS|✅ ${message}|Execution Time: ${executionTime}|Score: ${score} points|Status: ${data?.Status || 'Accepted'}`
+            );
+            addNotification(`Your solution scored ${score} points! (${executionTime})`, 'success');
+          }
+        } catch (error) {
+          console.error('Error parsing CORRECT_SOLUTION_SUBMITTED:', error);
         }
       });
 
       eventSource.addEventListener('WRONG_SOLUTION_SUBMITTED', (e) => {
-        const eventData = JSON.parse((e as MessageEvent).data);
-        const errorMessage = eventData.error_message || 'Your solution failed.';
-        if (eventData.player_id === playerId) {
-          addNotification(`Solution failed: ${errorMessage}`, 'error');
-          setSubmissionResult(`❌ ${errorMessage}`);
+        try {
+          const eventData = JSON.parse((e as MessageEvent).data);
+          const data = eventData.Data;
+          const playerIdFromEvent = data?.SolutionSubmitted?.PlayerID;
+          
+          if (playerIdFromEvent === playerId) {
+            setIsSubmitting(false);
+            const errorMessage = data?.Message || data?.error_message || 'Your solution failed.';
+            const executionTime = data?.ExecutionTimeMs || 'N/A';
+            const status = data?.Status || 'Failed';
+            
+            addNotification(`Solution failed: ${errorMessage}`, 'error');
+            setSubmissionResult(
+              `ERROR|❌ ${errorMessage}|Execution Time: ${executionTime}|Status: ${status}`
+            );
+          }
+        } catch (error) {
+          console.error('Error parsing WRONG_SOLUTION_SUBMITTED:', error);
         }
       });
 
       eventSource.addEventListener('LEADERBOARD_UPDATED', (e) => {
-        addNotification('Leaderboard updated');
+        try {
+          const eventData = JSON.parse((e as MessageEvent).data);
+          console.log('Leaderboard update received:', eventData);
+          
+          // Store leaderboard data in parent state
+          if (Array.isArray(eventData.Data)) {
+            setLeaderboardData(eventData.Data);
+          }
+          
+          addNotification('Leaderboard updated', 'info');
+          // The CodeArenaView component will receive this data via props
+        } catch (error) {
+          console.error('Error parsing LEADERBOARD_UPDATED:', error);
+        }
       });
 
       eventSource.addEventListener('PLAYER_JOINED', (e) => {
@@ -265,19 +333,20 @@ export default function CodeBattlePage() {
       return;
     }
 
-    setSubmissionResult('Submitting...');
+    setIsSubmitting(true);
+    setSubmissionResult('SUBMITTING|⏳ Evaluating your solution...|Please wait while we run test cases');
     addNotification('Submitting solution...', 'info');
 
-    const languageIdMap: Record<string, string> = {
-      'javascript': '63',
-      'python': '71',
-      'go': '60',
-      'java': '62',
-      'cpp': '54',
-      'c': '50',
+    const languageMap: Record<string, string> = {
+      'javascript': 'Javascript',
+      'python': 'Python',
+      'go': 'Golang',
+      'java': 'Java',
+      'cpp': 'Cpp',
+      'c': 'C',
     };
 
-    const languageId = languageIdMap[language] || '63';
+    const languageName = languageMap[language] || 'Javascript';
 
     try {
       const response = await eventServiceApi.submitRoomSolution(
@@ -285,20 +354,34 @@ export default function CodeBattlePage() {
         selectedRoomId,
         {
           problem_id: selectedProblemId,
-          language_id: languageId,
-          source_code: code,
+          language: languageName,
+          code: code,
         }
       );
 
       if (response.success && response.data) {
         addNotification(`Submission received - evaluating...`, 'info');
       } else {
-        setSubmissionResult(`❌ Submission failed: ${response.error?.message || 'Unknown error'}`);
-        addNotification(`Submission failed: ${response.error?.message}`, 'error');
+        setIsSubmitting(false);
+        
+        // Check for 409 Conflict - Problem already solved
+        const errorStatus = (response.error as any)?.status;
+        const errorMessage = response.error?.message || 'Unknown error';
+        
+        console.log('API Error:', { errorStatus, errorMessage, fullError: response.error });
+
+        if (errorStatus === 409) {
+          setSubmissionResult(`INFO|✅ Problem Already Solved|${errorMessage}`);
+          addNotification('You have already solved this problem', 'info');
+        } else {
+          setSubmissionResult(`ERROR|❌ Submission failed|${errorMessage}`);
+          addNotification(`Submission failed: ${errorMessage}`, 'error');
+        }
       }
     } catch (error: any) {
       console.error('Submission error:', error);
-      setSubmissionResult(`❌ Submission error: ${error.message || 'Unknown error'}`);
+      setIsSubmitting(false);
+      setSubmissionResult(`ERROR|❌ Submission error|${error.message || 'Unknown error'}`);
       addNotification(`Submission error: ${error.message}`, 'error');
     }
   };
@@ -316,14 +399,18 @@ export default function CodeBattlePage() {
     setSelectedRoomId(roomId);
     setSelectedProblemId(null);
     setSelectedProblemTitle('');
+    setSelectedProblemStatement('');
+    setLeaderboardData([]); // Clear leaderboard when changing rooms
     if (selectedEventId) {
       joinRoom(selectedEventId, roomId);
     }
   };
 
-  const handleSelectProblem = async (problemId: string, title: string) => {
+  const handleSelectProblem = async (problemId: string, title: string, statement: string) => {
     setSelectedProblemId(problemId);
     setSelectedProblemTitle(title);
+    setSelectedProblemStatement(statement);
+    setSubmissionResult('');
   };
 
   const handleStartCoding = async () => {
@@ -339,12 +426,15 @@ export default function CodeBattlePage() {
     setSelectedRoomId(null);
     setSelectedProblemId(null);
     setSelectedProblemTitle('');
+    setSelectedProblemStatement('');
+    setSubmissionResult('');
   };
 
   const handleBackToRooms = () => {
     setCurrentView('rooms');
     setSelectedProblemId(null);
     setSelectedProblemTitle('');
+    setSelectedProblemStatement('');
     setCode('');
     setSubmissionResult('');
   };
@@ -370,6 +460,9 @@ export default function CodeBattlePage() {
             onSelectEvent={handleSelectEvent}
             eventSecondsLeft={eventSecondsLeft}
             eventEndDate={eventEndDate}
+            currentPage={eventsPage}
+            totalPages={eventsTotalPages}
+            onPageChange={setEventsPage}
           />
         )}
 
@@ -388,6 +481,9 @@ export default function CodeBattlePage() {
             onStartCoding={handleStartCoding}
             eventSecondsLeft={eventSecondsLeft}
             eventEndDate={eventEndDate}
+            currentPage={roomsPage}
+            totalPages={roomsTotalPages}
+            onPageChange={setRoomsPage}
           />
         )}
 
@@ -396,18 +492,21 @@ export default function CodeBattlePage() {
             event={selectedEvent}
             room={selectedRoom}
             problemTitle={selectedProblemTitle}
+            problemStatement={selectedProblemStatement}
             code={code}
             setCode={setCode}
             language={language}
             setLanguage={setLanguage}
             onSubmit={handleSubmit}
             submissionResult={submissionResult}
+            isSubmitting={isSubmitting}
             spaceConstraintMb={spaceConstraintMb}
             onBack={handleBackToRooms}
             eventId={selectedEventId}
             roomId={selectedRoomId}
             eventSourceRef={eventSourceRef}
             notifications={notifications}
+            leaderboardData={leaderboardData}
             eventSecondsLeft={eventSecondsLeft}
             eventEndDate={eventEndDate}
           />

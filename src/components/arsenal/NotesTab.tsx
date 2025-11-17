@@ -249,24 +249,24 @@ export default function NotesTab() {
       <div className="flex flex-wrap items-center gap-3">
         <Input placeholder="Search notes..." value={searchInput} onChange={(e) => setSearchInput(e.target.value)} className="max-w-sm" />
         <div className="flex items-center gap-2">
-          <Label htmlFor="tag-filter" className="text-xs">Tag</Label>
-          <select id="tag-filter" value={filterTagId} onChange={(e) => setFilterTagId(e.target.value)} className="rounded-md border bg-background p-2 text-sm">
+          <Label htmlFor="tag-filter" className="text-xs text-[#f5c16c]/80">Tag</Label>
+          <select id="tag-filter" value={filterTagId} onChange={(e) => setFilterTagId(e.target.value)} className="rounded-md border border-[#f5c16c]/20 bg-black/40 p-2 text-sm text-white focus:border-[#f5c16c] focus:outline-none focus:ring-1 focus:ring-[#f5c16c]/30">
             <option value="">All</option>
             {myTags.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
           </select>
         </div>
         <div className="flex items-center gap-2">
-          <Label htmlFor="sort-notes" className="text-xs">Sort</Label>
-          <select id="sort-notes" value={sort} onChange={(e) => setSort(e.target.value as SortMode)} className="rounded-md border bg-background p-2 text-sm">
+          <Label htmlFor="sort-notes" className="text-xs text-[#f5c16c]/80">Sort</Label>
+          <select id="sort-notes" value={sort} onChange={(e) => setSort(e.target.value as SortMode)} className="rounded-md border border-[#f5c16c]/20 bg-black/40 p-2 text-sm text-white focus:border-[#f5c16c] focus:outline-none focus:ring-1 focus:ring-[#f5c16c]/30">
             <option value="updatedAt_desc">Updated (newest)</option>
             <option value="title_asc">Title (A–Z)</option>
           </select>
         </div>
         <input id={fileInputId} type="file" accept=".txt,.md,.pdf,.doc,.docx,.pptx,.ppt" className="hidden" onChange={onFileSelected} />
-        <Button variant="secondary" onClick={onClickUpload} disabled={uploading}>
+        <Button variant="secondary" onClick={onClickUpload} disabled={uploading} className="border-[#f5c16c]/20 bg-black/40 hover:border-[#f5c16c]/40 hover:bg-black/60">
           {uploading ? "Uploading..." : "Upload file"}
         </Button>
-        <Button onClick={openNewNote} className="ml-auto">
+        <Button onClick={openNewNote} className="ml-auto bg-gradient-to-r from-[#f5c16c] to-[#d4a855] text-black hover:from-[#d4a855] hover:to-[#f5c16c]">
           <Plus className="mr-2 h-4 w-4" /> New Note
         </Button>
       </div>

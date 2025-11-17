@@ -118,7 +118,7 @@ export default function PartyListClient({ onSelectParty }: PartyListClientProps)
           placeholder="Search parties..."
           value={search}
           onChange={e => setSearch(e.target.value)}
-          className="w-full rounded-md border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder:text-white/50 focus:border-fuchsia-500/60 focus:outline-none"
+          className="w-full rounded-md border border-[#f5c16c]/20 bg-black/40 px-3 py-2 text-sm text-white placeholder:text-white/50 focus:border-[#f5c16c] focus:outline-none focus:ring-1 focus:ring-[#f5c16c]/30"
         />
       </div>
       {loading && <div className="text-sm text-white/70">Loading parties...</div>}
@@ -133,9 +133,9 @@ export default function PartyListClient({ onSelectParty }: PartyListClientProps)
       </div>
 
       {/* Global Pending Invitations Panel */}
-      <div className="mt-6 rounded-lg border border-white/10 bg-[#0a0710] p-4">
+      <div className="mt-6 rounded-lg border border-[#f5c16c]/20 bg-black/40 p-4">
         <div className="mb-3 flex items-center justify-between">
-          <h4 className="text-sm font-semibold text-white">My Pending Invitations</h4>
+          <h4 className="text-sm font-semibold text-[#f5c16c]">My Pending Invitations</h4>
           {loadingInvites && <span className="text-xs text-white/60">Loading...</span>}
         </div>
         {myInvites.length === 0 ? (
@@ -143,7 +143,7 @@ export default function PartyListClient({ onSelectParty }: PartyListClientProps)
         ) : (
           <ul className="space-y-2">
             {myInvites.map(inv => (
-              <li key={inv.id} className="flex items-center justify-between rounded bg-white/5 p-3">
+              <li key={inv.id} className="flex items-center justify-between rounded-lg border border-[#f5c16c]/10 bg-gradient-to-br from-[#2d1810]/40 to-black/60 p-3">
                 <div>
                   <div className="text-sm text-white">Invitation to party {partyNameMap[inv.partyId] ?? inv.partyId}</div>
                   <div className="text-[11px] text-white/50">Sent at {new Date(inv.createdAt).toLocaleString()} • Expires {new Date(inv.expiresAt).toLocaleDateString()}</div>
@@ -166,7 +166,7 @@ export default function PartyListClient({ onSelectParty }: PartyListClientProps)
                         toast.error(e?.message ?? "Failed to accept invitation");
                       }
                     }}
-                    className="rounded bg-emerald-600 px-3 py-1.5 text-xs text-white"
+                    className="rounded-md bg-emerald-600 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-emerald-700"
                   >
                     Accept
                   </button>
@@ -182,7 +182,7 @@ export default function PartyListClient({ onSelectParty }: PartyListClientProps)
                         toast.error(e?.message ?? "Failed to decline invitation");
                       }
                     }}
-                    className="rounded bg-red-600 px-3 py-1.5 text-xs text-white"
+                    className="rounded-md bg-rose-600 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-rose-700"
                   >
                     Decline
                   </button>

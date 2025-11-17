@@ -154,24 +154,32 @@ export default function QuestListView({
       }`}
     >
       <Card
-        className={`relative overflow-hidden rounded-[24px] border border-white/12 bg-gradient-to-br from-[#170b1d]/92 via-[#0f0815]/96 to-[#06030a]/98 shadow-[0_20px_50px_rgba(4,0,14,0.65)] transition-all duration-300 group-hover:-translate-y-1 group-hover:shadow-[0_28px_65px_rgba(210,49,135,0.35)] ${
+        className={`relative overflow-hidden rounded-[28px] border bg-gradient-to-br from-[#2d1810] via-[#1a0a08] to-[#0a0506] shadow-[0_20px_50px_rgba(4,0,14,0.65)] transition-all duration-300 group-hover:-translate-y-1 group-hover:shadow-[0_28px_65px_rgba(245,193,108,0.25)] ${
           quest.status === 'InProgress'
-            ? 'border-accent/50'
+            ? 'border-[#f5c16c]/50'
             : quest.status === 'Completed'
             ? 'border-emerald-400/50'
-            : 'border-white/12'
+            : 'border-[#f5c16c]/20'
         }`}
       >
-        <div className="absolute inset-0 opacity-40 bg-[radial-gradient(circle_at_top,_rgba(210,49,135,0.25),_transparent_70%)]" />
-        <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/40 to-transparent" />
+        <div
+          className="pointer-events-none absolute inset-0 opacity-25 mix-blend-overlay"
+          style={{
+            backgroundImage: 'url(/images/asfalt-dark.png)',
+            backgroundSize: '350px 350px',
+            backgroundRepeat: 'repeat'
+          }}
+        />
+        <div className="absolute inset-0 opacity-20 bg-[radial-gradient(circle_at_top,_rgba(245,193,108,0.2),_transparent_70%)]" />
+        <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[#f5c16c]/40 to-transparent" />
 
         <CardContent className="relative z-10 space-y-4 p-6">
           <div className="flex items-start justify-between">
             <div className="flex flex-1 gap-4">
-              <div className={`flex h-14 w-14 items-center justify-center rounded-2xl border border-white/20 bg-white/5 text-lg shadow-[0_8px_20px_rgba(210,49,135,0.35)] ${
+              <div className={`flex h-14 w-14 items-center justify-center rounded-2xl border shadow-[0_8px_20px_rgba(245,193,108,0.25)] ${
                 quest.status === 'Completed' ? 'border-emerald-400/40 bg-emerald-400/10 text-emerald-200'
-                  : quest.status === 'InProgress' ? 'border-accent/40 bg-accent/15 text-accent'
-                    : 'text-foreground/70'
+                  : quest.status === 'InProgress' ? 'border-[#f5c16c]/40 bg-[#f5c16c]/15 text-[#f5c16c]'
+                    : 'border-[#f5c16c]/20 bg-[#f5c16c]/5 text-white/70'
               }`}>
                 {quest.status === 'Completed' ? <CheckCircle className="h-7 w-7" />
                   : isLocked ? <Lock className="h-7 w-7" />
@@ -179,7 +187,7 @@ export default function QuestListView({
               </div>
               <div className="flex-1 space-y-1">
                 <h3 className="text-xl font-semibold text-white">{quest.title}</h3>
-                <p className="text-xs uppercase tracking-[0.3em] text-foreground/50">
+                <p className="text-xs uppercase tracking-[0.3em] text-white/50">
                   Status: {quest.status}
                 </p>
               </div>
@@ -190,7 +198,7 @@ export default function QuestListView({
             <Button
               // The button itself no longer needs an onClick, as the parent Link handles it.
               disabled={generatingQuestId === quest.id}
-              className="w-full bg-accent text-accent-foreground hover:bg-accent/90 pointer-events-none" // pointer-events-none makes it not interfere with the Link's click
+              className="w-full bg-gradient-to-r from-[#f5c16c] to-[#d4a855] text-black font-semibold hover:from-[#d4a855] hover:to-[#f5c16c] pointer-events-none" // pointer-events-none makes it not interfere with the Link's click
             >
               {generatingQuestId === quest.id ? (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -202,7 +210,7 @@ export default function QuestListView({
           )}
 
           {isLocked && (
-            <div className="rounded-2xl border border-white/10 bg-black/40 p-4 text-xs uppercase tracking-[0.35em] text-foreground/50">
+            <div className="rounded-2xl border border-[#f5c16c]/20 bg-black/40 p-4 text-xs uppercase tracking-[0.35em] text-white/50">
               <Lock className="mr-2 inline h-3 w-3" /> Complete previous quests to unlock
             </div>
           )}
@@ -215,24 +223,31 @@ export default function QuestListView({
     <div className="flex flex-col gap-10 pb-24">
       <div
         ref={headerRef}
-        className="relative overflow-hidden rounded-[28px] border border-white/12 bg-gradient-to-br from-[#2b1030]/80 via-[#170a1c]/90 to-[#090614]/95 p-8 shadow-[0_25px_70px_rgba(0,0,0,0.55)]"
+        className="relative overflow-hidden rounded-[28px] border border-[#f5c16c]/20 bg-gradient-to-br from-[#2d1810] via-[#1a0a08] to-[#0a0506] p-8 shadow-[0_25px_70px_rgba(0,0,0,0.55)]"
       >
-        <div className="absolute inset-0 opacity-50 bg-[radial-gradient(circle_at_top,_rgba(210,49,135,0.45),_transparent_70%)]" />
-        <div className="absolute inset-0 bg-[linear-gradient(120deg,rgba(255,255,255,0.05)_0%,rgba(255,255,255,0)_35%)]" />
+        <div
+          className="pointer-events-none absolute inset-0 opacity-25 mix-blend-overlay"
+          style={{
+            backgroundImage: 'url(/images/asfalt-dark.png)',
+            backgroundSize: '350px 350px',
+            backgroundRepeat: 'repeat'
+          }}
+        />
+        <div className="absolute inset-0 opacity-30 bg-[radial-gradient(circle_at_top,_rgba(245,193,108,0.25),_transparent_70%)]" />
         <div className="relative z-10 flex flex-col gap-6">
-          <div className="flex items-center gap-2 text-xs uppercase tracking-[0.35em] text-foreground/60">
-            <span>RogueLearn</span>
-            <span className="text-foreground/40">/</span>
-            <span className="text-foreground">Quest Chronicle</span>
+          <div className="flex items-center gap-2 text-xs uppercase tracking-[0.35em] text-white/50">
+            <span className="text-[#f5c16c]">RogueLearn</span>
+            <span className="text-white/30">/</span>
+            <span className="text-white/70">Quest Chronicle</span>
           </div>
           <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
             <div className="space-y-2">
               <h1 className="text-4xl font-semibold text-white">Guild Quest Chronicle</h1>
-              <p className="text-sm uppercase tracking-[0.3em] text-foreground/60">
+              <p className="text-sm uppercase tracking-[0.3em] text-white/50">
                 Records of every delve into the arcane labyrinth
               </p>
             </div>
-            <div className="flex items-center space-x-3 rounded-full border border-white/10 bg-black/30 p-2">
+            <div className="flex items-center space-x-3 rounded-full border border-[#f5c16c]/20 bg-black/40 p-2">
                 <Label htmlFor="learning-mode" className="pl-2 text-xs font-semibold text-white/70">
                     Structured Path
                 </Label>
@@ -240,41 +255,66 @@ export default function QuestListView({
                     id="learning-mode"
                     checked={learningMode === 'free'}
                     onCheckedChange={(checked) => setLearningMode(checked ? 'free' : 'structured')}
+                    className="data-[state=checked]:bg-gradient-to-r data-[state=checked]:from-[#f5c16c] data-[state=checked]:to-[#d4a855]"
                 />
                 <Label htmlFor="learning-mode" className="pr-2 text-xs font-semibold text-white/70">
                     Free Path
                 </Label>
             </div>
           </div>
-          <div className="grid gap-4 text-xs uppercase tracking-[0.3em] text-foreground/60 sm:grid-cols-3">
-            <div className="relative overflow-hidden rounded-2xl border border-white/12 bg-white/5 p-5">
-              <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(255,184,108,0.35),_transparent_70%)]" />
+          <div className="grid gap-4 text-xs uppercase tracking-[0.3em] text-white/60 sm:grid-cols-3">
+            <div className="relative overflow-hidden rounded-2xl border border-[#f5c16c]/20 bg-black/40 p-5">
+              <div
+                className="pointer-events-none absolute inset-0 opacity-20 mix-blend-overlay"
+                style={{
+                  backgroundImage: 'url(/images/asfalt-dark.png)',
+                  backgroundSize: '350px 350px',
+                  backgroundRepeat: 'repeat'
+                }}
+              />
+              <div className="absolute inset-0 opacity-20 bg-[radial-gradient(circle_at_top,_rgba(245,193,108,0.35),_transparent_70%)]" />
               <div className="relative z-10 space-y-3">
-                <div className="flex items-center gap-2 text-amber-300">
+                <div className="flex items-center gap-2 text-[#f5c16c]">
                   <Flame className="h-4 w-4" /> <span>Streak</span>
                 </div>
                 <p className="text-2xl font-semibold text-white">{userStats.streak} days</p>
-                <p className="text-[11px] text-foreground/50">Daily runs maintained</p>
+                <p className="text-[11px] text-white/50">Daily runs maintained</p>
               </div>
             </div>
-            <div className="relative overflow-hidden rounded-2xl border border-white/12 bg-white/5 p-5">
-              <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(108,173,255,0.3),_transparent_70%)]" />
+            <div className="relative overflow-hidden rounded-2xl border border-[#f5c16c]/20 bg-black/40 p-5">
+              <div
+                className="pointer-events-none absolute inset-0 opacity-20 mix-blend-overlay"
+                style={{
+                  backgroundImage: 'url(/images/asfalt-dark.png)',
+                  backgroundSize: '350px 350px',
+                  backgroundRepeat: 'repeat'
+                }}
+              />
+              <div className="absolute inset-0 opacity-20 bg-[radial-gradient(circle_at_top,_rgba(245,193,108,0.25),_transparent_70%)]" />
               <div className="relative z-10 space-y-3">
-                <div className="flex items-center gap-2 text-blue-300">
+                <div className="flex items-center gap-2 text-[#f5c16c]">
                   <BookOpen className="h-4 w-4" /> <span>Quests Logged</span>
                 </div>
                 <p className="text-2xl font-semibold text-white">{userStats.totalQuests}</p>
-                <p className="text-[11px] text-foreground/50">Entries in the codex</p>
+                <p className="text-[11px] text-white/50">Entries in the codex</p>
               </div>
             </div>
-            <div className="relative overflow-hidden rounded-2xl border border-white/12 bg-white/5 p-5">
-              <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(210,49,135,0.4),_transparent_70%)]" />
+            <div className="relative overflow-hidden rounded-2xl border border-[#f5c16c]/20 bg-black/40 p-5">
+              <div
+                className="pointer-events-none absolute inset-0 opacity-20 mix-blend-overlay"
+                style={{
+                  backgroundImage: 'url(/images/asfalt-dark.png)',
+                  backgroundSize: '350px 350px',
+                  backgroundRepeat: 'repeat'
+                }}
+              />
+              <div className="absolute inset-0 opacity-20 bg-[radial-gradient(circle_at_top,_rgba(245,193,108,0.3),_transparent_70%)]" />
               <div className="relative z-10 space-y-3">
-                <div className="flex items-center gap-2 text-accent">
+                <div className="flex items-center gap-2 text-[#f5c16c]">
                   <Sparkles className="h-4 w-4" /> <span>Total Essence</span>
                 </div>
                 <p className="text-2xl font-semibold text-white">{userStats.totalXP} XP</p>
-                <p className="text-[11px] text-foreground/50">Harvested from victories</p>
+                <p className="text-[11px] text-white/50">Harvested from victories</p>
               </div>
             </div>
           </div>
@@ -283,14 +323,14 @@ export default function QuestListView({
 
       {activeQuests.length > 0 && (
         <div ref={activeQuestsRef}>
-          <div className="mb-6 flex items-center justify-between rounded-2xl border border-white/12 bg-gradient-to-r from-white/10 via-transparent to-transparent px-6 py-4">
+          <div className="mb-6 flex items-center justify-between rounded-2xl border border-[#f5c16c]/20 bg-gradient-to-r from-[#f5c16c]/10 via-transparent to-transparent px-6 py-4">
             <h2 className="flex items-center gap-3 text-2xl font-semibold text-white">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-accent/20 text-accent shadow-[0_0_20px_rgba(210,49,135,0.45)]">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#f5c16c]/20 text-[#f5c16c] shadow-[0_0_20px_rgba(245,193,108,0.35)]">
                 <Target className="h-5 w-5" />
               </div>
               Active Quests
             </h2>
-            <span className="text-xs uppercase tracking-[0.35em] text-foreground/60">
+            <span className="text-xs uppercase tracking-[0.35em] text-white/60">
               {activeQuests.length} in progress
             </span>
           </div>
@@ -302,9 +342,9 @@ export default function QuestListView({
 
       {completedQuests.length > 0 && (
         <div ref={completedQuestsRef}>
-          <div className="mb-6 flex items-center justify-between rounded-2xl border border-white/12 bg-gradient-to-r from-green-400/15 via-transparent to-transparent px-6 py-4">
+          <div className="mb-6 flex items-center justify-between rounded-2xl border border-emerald-400/20 bg-gradient-to-r from-emerald-400/10 via-transparent to-transparent px-6 py-4">
             <h2 className="flex items-center gap-3 text-2xl font-semibold text-white">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-green-500/20 text-green-300 shadow-[0_0_20px_rgba(134,239,172,0.45)]">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500/20 text-emerald-300 shadow-[0_0_20px_rgba(134,239,172,0.35)]">
                 <CheckCircle className="h-5 w-5" />
               </div>
               Completed Quests
@@ -318,14 +358,14 @@ export default function QuestListView({
 
       {availableQuests.length > 0 && (
         <div ref={availableQuestsRef}>
-          <div className="mb-6 flex items-center justify-between rounded-2xl border border-white/12 bg-gradient-to-r from-blue-400/15 via-transparent to-transparent px-6 py-4">
+          <div className="mb-6 flex items-center justify-between rounded-2xl border border-[#f5c16c]/20 bg-gradient-to-r from-[#f5c16c]/10 via-transparent to-transparent px-6 py-4">
             <h2 className="flex items-center gap-3 text-2xl font-semibold text-white">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-500/20 text-blue-200 shadow-[0_0_20px_rgba(96,165,250,0.45)]">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#f5c16c]/20 text-[#f5c16c] shadow-[0_0_20px_rgba(245,193,108,0.35)]">
                 <Sparkles className="h-5 w-5" />
               </div>
               Available Quests
             </h2>
-            <span className="text-xs uppercase tracking-[0.35em] text-foreground/60">
+            <span className="text-xs uppercase tracking-[0.35em] text-white/60">
               {availableQuests.length} ready to start
             </span>
           </div>
@@ -337,14 +377,14 @@ export default function QuestListView({
 
       {lockedQuests.length > 0 && (
         <div ref={lockedQuestsRef}>
-          <div className="mb-6 flex items-center justify-between rounded-2xl border border-white/12 bg-gradient-to-r from-gray-400/15 via-transparent to-transparent px-6 py-4">
+          <div className="mb-6 flex items-center justify-between rounded-2xl border border-white/20 bg-gradient-to-r from-white/10 via-transparent to-transparent px-6 py-4">
             <h2 className="flex items-center gap-3 text-2xl font-semibold text-white">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gray-500/20 text-gray-300 shadow-[0_0_20px_rgba(156,163,175,0.45)]">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/10 text-white/60 shadow-[0_0_20px_rgba(255,255,255,0.15)]">
                 <Lock className="h-5 w-5" />
               </div>
               Locked Quests
             </h2>
-            <span className="text-xs uppercase tracking-[0.35em] text-foreground/60">
+            <span className="text-xs uppercase tracking-[0.35em] text-white/60">
               {lockedQuests.length} awaiting unlock
             </span>
           </div>

@@ -18,10 +18,13 @@ interface RoomSelectionViewProps {
   selectedProblemId: string | null;
   onBack: () => void;
   onSelectRoom: (roomId: string) => void;
-  onSelectProblem: (problemId: string, title: string) => void;
+  onSelectProblem: (problemId: string, title: string, statement: string) => void;
   onStartCoding: () => void;
   eventSecondsLeft: number | null;
   eventEndDate: string | null;
+  currentPage?: number;
+  totalPages?: number;
+  onPageChange?: (page: number) => void;
 }
 
 const buildRoomTag = (room: Room) => {
@@ -87,14 +90,17 @@ export default function RoomSelectionView({
   onStartCoding,
   eventSecondsLeft,
   eventEndDate,
+  currentPage = 1,
+  totalPages = 1,
+  onPageChange,
 }: RoomSelectionViewProps) {
   const selectedRoom = rooms.find(r => r.ID === selectedRoomId);
   const selectedProblem = problems.find(p => p.id === selectedProblemId);
 
   type DifficultyBuckets = { easy: number; medium: number; hard: number };
-  const initialBuckets: DifficultyBuckets = { easy: 0, medium: 0, hard: 0 };
 
   const difficultySpread = useMemo(() => {
+    const initialBuckets: DifficultyBuckets = { easy: 0, medium: 0, hard: 0 };
     return problems.reduce<DifficultyBuckets>((acc, curr) => {
       if (curr.difficulty <= 3) acc.easy += 1;
       else if (curr.difficulty <= 6) acc.medium += 1;
@@ -260,6 +266,69 @@ export default function RoomSelectionView({
                 ))}
               </div>
             )}
+
+            {/* Pagination Controls */}
+            {!loadingRooms && rooms.length > 0 && onPageChange && totalPages > 1 && (
+              <div className="mt-6 flex items-center justify-center gap-2">
+                <Button
+                  onClick={() => onPageChange(currentPage - 1)}
+                  disabled={currentPage === 1}
+                  variant="outline"
+                  className="border-[#d23187]/40 bg-white/5 text-[#f5c16c] hover:bg-[#d23187]/20 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Previous
+                </Button>
+
+                <div className="flex items-center gap-2">
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => {
+                    // Show first page, last page, current page, and pages around current
+                    const showPage =
+                      page === 1 ||
+                      page === totalPages ||
+                      Math.abs(page - currentPage) <= 1;
+
+                    // Show ellipsis
+                    const showEllipsis =
+                      (page === currentPage - 2 && currentPage > 3) ||
+                      (page === currentPage + 2 && currentPage < totalPages - 2);
+
+                    if (showEllipsis) {
+                      return (
+                        <span key={page} className="px-2 text-[#f5c16c]/50">
+                          ...
+                        </span>
+                      );
+                    }
+
+                    if (!showPage) return null;
+
+                    return (
+                      <Button
+                        key={page}
+                        onClick={() => onPageChange(page)}
+                        variant={page === currentPage ? "default" : "outline"}
+                        className={
+                          page === currentPage
+                            ? "bg-linear-to-r from-[#d23187] via-[#f061a6] to-[#f5c16c] text-white"
+                            : "border-[#d23187]/40 bg-white/5 text-[#f5c16c] hover:bg-[#d23187]/20"
+                        }
+                      >
+                        {page}
+                      </Button>
+                    );
+                  })}
+                </div>
+
+                <Button
+                  onClick={() => onPageChange(currentPage + 1)}
+                  disabled={currentPage === totalPages}
+                  variant="outline"
+                  className="border-[#d23187]/40 bg-white/5 text-[#f5c16c] hover:bg-[#d23187]/20 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Next
+                </Button>
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -290,7 +359,7 @@ export default function RoomSelectionView({
                     <button
                       type="button"
                       key={problem.id}
-                      onClick={() => onSelectProblem(problem.id, problem.title)}
+                      onClick={() => onSelectProblem(problem.id, problem.title, problem.problem_statement || '')}
                       className={`relative w-full overflow-hidden rounded-3xl border p-5 text-left transition-all ${
                         selectedProblemId === problem.id
                           ? 'border-[#d23187]/60 bg-[#2b1310] shadow-[0_12px_30px_rgba(210,49,135,0.35)]'
@@ -299,11 +368,31 @@ export default function RoomSelectionView({
                     >
                       <div aria-hidden="true" className="pointer-events-none absolute inset-0" style={CARD_TEXTURE} />
                       <div className="flex items-start justify-between gap-4">
-                        <div>
+                        <div className="flex-1">
                           <p className="text-xs uppercase tracking-[0.3em] text-[#f5c16c]/85">Contract</p>
                           <h3 className="mt-2 text-lg font-semibold text-white">{problem.title}</h3>
                           {problem.problem_statement && (
-                            <p className="mt-1 line-clamp-2 text-xs text-foreground/60">{problem.problem_statement}</p>
+                            <div className="mt-2 space-y-1">
+                              {problem.problem_statement.split('```').map((part, index) => {
+                                // Odd indices are code blocks
+                                if (index % 2 === 1) {
+                                  const lines = part.split('\n');
+                                  const lang = lines[0].trim();
+                                  const code = lines.slice(1).join('\n');
+                                  return (
+                                    <pre key={index} className="overflow-x-auto rounded-lg border border-white/10 bg-black/40 p-2 text-[10px] text-white">
+                                      <code>{code}</code>
+                                    </pre>
+                                  );
+                                }
+                                // Even indices are regular text
+                                return (
+                                  <p key={index} className="line-clamp-2 text-xs text-foreground/60">
+                                    {part.trim()}
+                                  </p>
+                                );
+                              })}
+                            </div>
                           )}
                         </div>
                         <span className={`shrink-0 rounded-full border px-3 py-1 text-[10px] font-semibold uppercase tracking-wider ${getDifficultyColor(problem.difficulty)}`}>

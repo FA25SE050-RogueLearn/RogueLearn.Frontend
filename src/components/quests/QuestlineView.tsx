@@ -63,31 +63,42 @@ export default function QuestlineView({ learningPath }: QuestlineViewProps) {
       <header ref={headerRef} className="space-y-8">
           <Link
             href="/dashboard"
-            className="inline-flex items-center gap-2 text-xs uppercase tracking-[0.35em] text-foreground/60 transition-colors hover:text-accent"
+            className="inline-flex items-center gap-2 text-xs uppercase tracking-[0.35em] text-white/60 transition-colors hover:text-[#f5c16c]"
           >
             <ArrowLeft className="h-3.5 w-3.5" /> Back to Dashboard
           </Link>
 
-          <div className="rounded-[30px] border border-white/12 bg-black/35 p-6 shadow-[0_20px_50px_rgba(12,3,9,0.6)] backdrop-blur">
-            <p className="text-xs uppercase tracking-[0.4em] text-foreground/55">Questline Dossier</p>
-            <h1 className="mt-3 text-3xl font-semibold text-white">{learningPath.name}</h1>
-            <p className="mt-2 text-sm text-foreground/70">{learningPath.description}</p>
+          <div className="relative overflow-hidden rounded-[28px] border border-[#f5c16c]/20 bg-gradient-to-br from-[#2d1810] via-[#1a0a08] to-[#0a0506] p-6 shadow-[0_20px_50px_rgba(12,3,9,0.6)]">
+            <div
+              className="pointer-events-none absolute inset-0 opacity-25 mix-blend-overlay"
+              style={{
+                backgroundImage: 'url(/images/asfalt-dark.png)',
+                backgroundSize: '350px 350px',
+                backgroundRepeat: 'repeat'
+              }}
+            />
+            <div className="absolute inset-0 opacity-20 bg-[radial-gradient(circle_at_top,_rgba(245,193,108,0.25),_transparent_70%)]" />
+            <div className="relative z-10">
+              <p className="text-xs uppercase tracking-[0.4em] text-white/50">Questline Dossier</p>
+              <h1 className="mt-3 text-3xl font-semibold text-white">{learningPath.name}</h1>
+              <p className="mt-2 text-sm text-white/70">{learningPath.description}</p>
 
-            <div className="mt-6 space-y-3 text-sm">
-              <div className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
-                <span className="flex items-center gap-2 text-foreground/60">
-                  <Target className="h-4 w-4 text-amber-300" /> Chapters Cleared
-                </span>
-                <span className="font-semibold text-white">{completedChapters}/{learningPath.chapters.length}</span>
+              <div className="mt-6 space-y-3 text-sm">
+                <div className="flex items-center justify-between rounded-2xl border border-[#f5c16c]/20 bg-black/40 px-4 py-3">
+                  <span className="flex items-center gap-2 text-white/60">
+                    <Target className="h-4 w-4 text-[#f5c16c]" /> Chapters Cleared
+                  </span>
+                  <span className="font-semibold text-white">{completedChapters}/{learningPath.chapters.length}</span>
+                </div>
               </div>
-            </div>
 
-            <div className="mt-6 space-y-2">
-              <div className="flex items-center justify-between text-xs uppercase tracking-[0.35em] text-foreground/60">
-                <span>Path Completion</span>
-                <span className="text-white">{learningPath.completionPercentage.toFixed(0)}%</span>
+              <div className="mt-6 space-y-2">
+                <div className="flex items-center justify-between text-xs uppercase tracking-[0.35em] text-white/60">
+                  <span>Path Completion</span>
+                  <span className="text-white">{learningPath.completionPercentage.toFixed(0)}%</span>
+                </div>
+                <Progress value={learningPath.completionPercentage} className="h-2 bg-white/10 [&>div]:bg-gradient-to-r [&>div]:from-[#f5c16c] [&>div]:to-[#d4a855]" />
               </div>
-              <Progress value={learningPath.completionPercentage} className="h-2 bg-white/10" />
             </div>
           </div>
       </header>
@@ -109,32 +120,40 @@ export default function QuestlineView({ learningPath }: QuestlineViewProps) {
                 href={!isLocked ? `/quests/${learningPath.id}/${chapter.id}` : '#'}
                 className={`chapter-card group relative block transition ${isLocked ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'}`}
             >
-                <Card className={`relative overflow-hidden rounded-[24px] border transition-all duration-300 group-hover:-translate-y-1 group-hover:shadow-[0_28px_65px_rgba(210,49,135,0.35)] 
-                    ${isCurrent ? 'border-accent shadow-[0_0_35px_rgba(210,49,135,0.45)]' : 
+                <Card className={`relative overflow-hidden rounded-[28px] border transition-all duration-300 group-hover:-translate-y-1 group-hover:shadow-[0_28px_65px_rgba(245,193,108,0.25)] 
+                    ${isCurrent ? 'border-[#f5c16c]/50 shadow-[0_0_35px_rgba(245,193,108,0.35)]' : 
                     isCompleted ? 'border-emerald-400/30 bg-emerald-950/20' : 
-                    'border-white/12 bg-black/40'}`}>
+                    'border-[#f5c16c]/20 bg-gradient-to-br from-[#2d1810] via-[#1a0a08] to-[#0a0506]'}`}>
                     
-                    {isCurrent && <div className="pointer-events-none absolute inset-0 opacity-50 bg-[radial-gradient(circle_at_top,_rgba(210,49,135,0.42),_transparent_70%)]" />}
+                    <div
+                      className="pointer-events-none absolute inset-0 opacity-25 mix-blend-overlay"
+                      style={{
+                        backgroundImage: 'url(/images/asfalt-dark.png)',
+                        backgroundSize: '350px 350px',
+                        backgroundRepeat: 'repeat'
+                      }}
+                    />
+                    {isCurrent && <div className="pointer-events-none absolute inset-0 opacity-30 bg-[radial-gradient(circle_at_top,_rgba(245,193,108,0.3),_transparent_70%)]" />}
 
                     <CardContent className="relative z-10 p-6">
                         <div className="flex items-start justify-between">
                             <div className="flex-1 space-y-1">
                                 <h3 className="text-xl font-semibold text-white">{chapter.title}</h3>
-                                <p className="text-xs uppercase tracking-[0.3em] text-foreground/50">
+                                <p className="text-xs uppercase tracking-[0.3em] text-white/50">
                                     {questsInChapter.length} Quests
                                 </p>
                             </div>
-                            <div className={`flex h-12 w-12 items-center justify-center rounded-2xl border bg-white/5 text-lg shadow-inner shadow-black/50
-                                ${isCurrent ? 'border-accent/40 bg-accent/15 text-accent' :
+                            <div className={`flex h-12 w-12 items-center justify-center rounded-2xl border shadow-[0_8px_20px_rgba(245,193,108,0.25)]
+                                ${isCurrent ? 'border-[#f5c16c]/40 bg-[#f5c16c]/15 text-[#f5c16c]' :
                                 isCompleted ? 'border-emerald-400/40 bg-emerald-400/10 text-emerald-300' :
-                                'border-white/20 text-foreground/70'}`}>
+                                'border-[#f5c16c]/20 bg-[#f5c16c]/5 text-white/70'}`}>
                                 {isCompleted ? <CheckCircle className="h-7 w-7" />
                                 : isLocked ? <Lock className="h-7 w-7" />
                                 : <Sparkles className="h-7 w-7 animate-pulse" />}
                             </div>
                         </div>
                         <div className="mt-4">
-                            <Progress value={chapterProgress} className="h-2 bg-white/10" />
+                            <Progress value={chapterProgress} className="h-2 bg-white/10 [&>div]:bg-gradient-to-r [&>div]:from-[#f5c16c] [&>div]:to-[#d4a855]" />
                         </div>
                     </CardContent>
                 </Card>

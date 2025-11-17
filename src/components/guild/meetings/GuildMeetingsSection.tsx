@@ -1,5 +1,6 @@
 "use client";
 import React, { useEffect, useMemo, useState } from "react";
+import { Swords, Video, Calendar, Clock, Users, ExternalLink, Play, Square, AlertCircle } from "lucide-react";
 import { useGoogleMeet, MeetScopes } from "@/hooks/useGoogleMeet";
 import googleMeetApi from "@/api/googleMeetApi";
 import meetingsApi from "@/api/meetingsApi";
@@ -19,6 +20,18 @@ type CreateState = {
   start: string;
   end: string;
 };
+
+// RPG Design Constants
+const CARD_TEXTURE = {
+  backgroundImage: "url('https://www.transparenttextures.com/patterns/asfalt-dark.png')",
+  backgroundSize: "100px",
+  backgroundBlendMode: "overlay" as const,
+  opacity: 0.25,
+};
+
+const MEETING_CARD_CLASS = "relative overflow-hidden rounded-[28px] border border-[#f5c16c]/30 bg-gradient-to-br from-[#2d1810] via-[#1a0a08] to-black shadow-xl";
+
+const ACTIVE_MEETING_CLASS = "relative overflow-hidden rounded-[28px] border-2 border-emerald-500/50 bg-gradient-to-br from-emerald-950/50 via-[#1a0a08] to-black shadow-[0_0_30px_rgba(16,185,129,0.2)]";
 
 export default function GuildMeetingsSection({ guildId }: Props) {
   const { requestToken } = useGoogleMeet();
@@ -381,114 +394,153 @@ export default function GuildMeetingsSection({ guildId }: Props) {
 
   return (
     <div className="space-y-6">
+      {/* Header */}
       <div className="flex items-center justify-between">
-        <h4 className="text-sm font-semibold">Guild Meetings</h4>
-        {error && <span className="text-xs text-red-400">{error}</span>}
+        <div className="flex items-center gap-3">
+          <div className="rounded-full bg-[#f5c16c]/10 p-2">
+            <Swords className="h-5 w-5 text-[#f5c16c]" />
+          </div>
+          <h4 className="text-lg font-semibold text-[#f5c16c]">Guild Meetings</h4>
+        </div>
+        {error && (
+          <div className="flex items-center gap-2 text-sm text-rose-400">
+            <AlertCircle className="h-4 w-4" />
+            <span>{error}</span>
+          </div>
+        )}
       </div>
 
+      {/* Create Meeting Card - Guild Master Only */}
       {myRole === "GuildMaster" && (
-        <div className="rounded border border-white/10 bg-white/5 p-4">
-          <h5 className="mb-3 text-xs font-semibold">Create a meeting</h5>
-          <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-            <div>
-              <label className="block text-[11px] text-white/70">Title</label>
-              <input
-                type="text"
-                value={createState.title}
-                onChange={(e) => setCreateState((s) => ({ ...s, title: e.target.value }))}
-                className="w-full rounded border border-white/20 bg-white/10 p-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-fuchsia-500"
-                placeholder="Guild Meetup"
-              />
+        <div className={MEETING_CARD_CLASS}>
+          {/* Texture overlay */}
+          <div className="pointer-events-none absolute inset-0" style={CARD_TEXTURE} />
+          
+          <div className="relative p-6">
+            <div className="mb-4 flex items-center gap-3">
+              <div className="rounded-full bg-[#f5c16c]/10 p-2">
+                <Calendar className="h-5 w-5 text-[#f5c16c]" />
+              </div>
+              <h5 className="text-base font-semibold text-[#f5c16c]">Schedule New Meeting</h5>
             </div>
-            <div>
-              <label className="block text-[11px] text-white/70">Start</label>
-              <input
-                type="datetime-local"
-                value={datetimeLocalBangkok(createState.start)}
-                onChange={(e) => {
-                  const [d, t] = e.target.value.split("T");
-                  const [y, m, day] = d.split("-").map((n) => parseInt(n, 10));
-                  const [h, min] = t.split(":" ).map((n) => parseInt(n, 10));
-                  const ms = Date.UTC(y, m - 1, day, h - 7, min);
-                  setCreateState((s) => ({ ...s, start: new Date(ms).toISOString() }));
-                }}
-                className="w-full rounded border border-white/20 bg-white/10 p-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-fuchsia-500"
-              />
+            
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+              <div>
+                <label className="mb-2 block text-xs font-medium text-[#f5c16c]/70">Title</label>
+                <input
+                  type="text"
+                  value={createState.title}
+                  onChange={(e) => setCreateState((s) => ({ ...s, title: e.target.value }))}
+                  className="w-full rounded-lg border border-[#f5c16c]/20 bg-black/40 p-2.5 text-sm text-white placeholder:text-white/40 focus:border-[#f5c16c]/50 focus:outline-none focus:ring-2 focus:ring-[#f5c16c]/20"
+                  placeholder="Guild Strategy Session"
+                />
+              </div>
+              <div>
+                <label className="mb-2 block text-xs font-medium text-[#f5c16c]/70">Start Time</label>
+                <input
+                  type="datetime-local"
+                  value={datetimeLocalBangkok(createState.start)}
+                  onChange={(e) => {
+                    const [d, t] = e.target.value.split("T");
+                    const [y, m, day] = d.split("-").map((n) => parseInt(n, 10));
+                    const [h, min] = t.split(":").map((n) => parseInt(n, 10));
+                    const ms = Date.UTC(y, m - 1, day, h - 7, min);
+                    setCreateState((s) => ({ ...s, start: new Date(ms).toISOString() }));
+                  }}
+                  className="w-full rounded-lg border border-[#f5c16c]/20 bg-black/40 p-2.5 text-sm text-white focus:border-[#f5c16c]/50 focus:outline-none focus:ring-2 focus:ring-[#f5c16c]/20"
+                />
+              </div>
+              <div>
+                <label className="mb-2 block text-xs font-medium text-[#f5c16c]/70">End Time</label>
+                <input
+                  type="datetime-local"
+                  value={datetimeLocalBangkok(createState.end)}
+                  onChange={(e) => {
+                    const [d, t] = e.target.value.split("T");
+                    const [y, m, day] = d.split("-").map((n) => parseInt(n, 10));
+                    const [h, min] = t.split(":").map((n) => parseInt(n, 10));
+                    const ms = Date.UTC(y, m - 1, day, h - 7, min);
+                    setCreateState((s) => ({ ...s, end: new Date(ms).toISOString() }));
+                  }}
+                  className="w-full rounded-lg border border-[#f5c16c]/20 bg-black/40 p-2.5 text-sm text-white focus:border-[#f5c16c]/50 focus:outline-none focus:ring-2 focus:ring-[#f5c16c]/20"
+                />
+              </div>
             </div>
-            <div>
-              <label className="block text-[11px] text-white/70">End</label>
-              <input
-                type="datetime-local"
-                value={datetimeLocalBangkok(createState.end)}
-                onChange={(e) => {
-                  const [d, t] = e.target.value.split("T");
-                  const [y, m, day] = d.split("-").map((n) => parseInt(n, 10));
-                  const [h, min] = t.split(":" ).map((n) => parseInt(n, 10));
-                  const ms = Date.UTC(y, m - 1, day, h - 7, min);
-                  setCreateState((s) => ({ ...s, end: new Date(ms).toISOString() }));
-                }}
-                className="w-full rounded border border-white/20 bg-white/10 p-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-fuchsia-500"
-              />
-            </div>
-          </div>
-          <div className="mt-3 flex items-center gap-3">
-            <button
-              onClick={handleCreateMeeting}
-              disabled={creating}
-              className="rounded bg-fuchsia-600 px-4 py-2 text-xs font-medium text-white disabled:opacity-50"
-            >
-              {creating ? "Creating..." : "Create Meeting"}
-            </button>
-            {activeMeeting.meeting?.meetingLink && (
-              <a
-                href={activeMeeting.meeting.meetingLink}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="rounded bg-white/10 px-4 py-2 text-xs font-medium text-white"
+            
+            <div className="mt-4 flex items-center gap-3">
+              <button
+                onClick={handleCreateMeeting}
+                disabled={creating}
+                className="flex items-center gap-2 rounded-lg bg-gradient-to-r from-[#f5c16c] to-[#d4a855] px-4 py-2.5 text-sm font-medium text-black transition-all hover:from-[#d4a855] hover:to-[#f5c16c] disabled:opacity-50"
               >
-                Join in Google Meet ↗
-              </a>
-            )}
-          </div>
-        </div>
-      )}
-
-      {activeMeeting.meeting && (
-        <div className="rounded border border-white/10 bg-white/5 p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="text-xs text-white/70">Active Meeting</div>
-              <div className="text-sm font-medium text-white">{activeMeeting.meeting.title}</div>
-              {activeMeeting.meeting?.meetingLink && (
-                <div className="text-xs text-white/60">{activeMeeting.meeting.meetingLink}</div>
-              )}
-            </div>
-            <div className="flex items-center gap-2">
+                <Play className="h-4 w-4" />
+                {creating ? "Creating..." : "Create Meeting"}
+              </button>
               {activeMeeting.meeting?.meetingLink && (
                 <a
                   href={activeMeeting.meeting.meetingLink}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="rounded bg-white/10 px-3 py-2 text-[11px] text-white"
+                  className="flex items-center gap-2 rounded-lg border border-[#f5c16c]/30 bg-transparent px-4 py-2.5 text-sm font-medium text-[#f5c16c] transition-all hover:bg-[#f5c16c]/10"
                 >
-                  Join in Google Meet ↗
+                  <Video className="h-4 w-4" />
+                  Join in Google Meet
+                  <ExternalLink className="h-3.5 w-3.5" />
                 </a>
               )}
-              <button
-                onClick={logActiveMeetingDetails}
-                className="rounded bg-white/10 px-3 py-2 text-[11px] text-white"
-              >
-                Log Details
-              </button>
-              {(myRole === "GuildMaster" || authUserId === activeMeeting.meeting?.organizerId) && (
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Active Meeting Card */}
+      {activeMeeting.meeting && (
+        <div className={ACTIVE_MEETING_CLASS}>
+          {/* Texture overlay */}
+          <div className="pointer-events-none absolute inset-0" style={CARD_TEXTURE} />
+          
+          <div className="relative p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="mb-1 flex items-center gap-2">
+                  <div className="h-2 w-2 animate-pulse rounded-full bg-emerald-400" />
+                  <span className="text-xs font-medium uppercase tracking-wide text-emerald-400">Live Meeting</span>
+                </div>
+                <h5 className="text-lg font-semibold text-white">{activeMeeting.meeting.title}</h5>
+                {activeMeeting.meeting?.meetingLink && (
+                  <p className="mt-1 text-xs text-white/50">{activeMeeting.meeting.meetingLink}</p>
+                )}
+              </div>
+              <div className="flex items-center gap-2">
+                {activeMeeting.meeting?.meetingLink && (
+                  <a
+                    href={activeMeeting.meeting.meetingLink}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-2 rounded-lg border border-emerald-500/50 bg-emerald-500/10 px-4 py-2.5 text-sm font-medium text-emerald-400 transition-all hover:bg-emerald-500/20"
+                  >
+                    <Video className="h-4 w-4" />
+                    Join Meeting
+                    <ExternalLink className="h-3.5 w-3.5" />
+                  </a>
+                )}
                 <button
-                  onClick={handleEndMeeting}
-                  disabled={ending}
-                  className="rounded bg-red-600 px-4 py-2 text-xs font-medium text-white disabled:opacity-50"
+                  onClick={logActiveMeetingDetails}
+                  className="rounded-lg border border-[#f5c16c]/30 bg-[#f5c16c]/5 px-4 py-2.5 text-sm font-medium text-[#f5c16c] transition-all hover:bg-[#f5c16c]/10"
                 >
-                  {ending ? "Ending..." : "End Meeting"}
+                  Log Details
                 </button>
-              )}
+                {(myRole === "GuildMaster" || authUserId === activeMeeting.meeting?.organizerId) && (
+                  <button
+                    onClick={handleEndMeeting}
+                    disabled={ending}
+                    className="flex items-center gap-2 rounded-lg bg-rose-600 px-4 py-2.5 text-sm font-medium text-white transition-all hover:bg-rose-700 disabled:opacity-50"
+                  >
+                    <Square className="h-4 w-4" />
+                    {ending ? "Ending..." : "End Meeting"}
+                  </button>
+                )}
+              </div>
             </div>
           </div>
         </div>

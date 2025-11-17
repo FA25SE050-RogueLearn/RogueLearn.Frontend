@@ -5,6 +5,16 @@ import PartyCreationWizard from "./PartyCreationWizard";
 import { PartyDto } from "@/types/parties";
 import partiesApi from "@/api/partiesApi";
 import { useEffect } from "react";
+import { Users, Plus, TrendingUp, Package, UserCheck } from "lucide-react";
+
+const CARD_TEXTURE = {
+  backgroundImage: "url('https://www.transparenttextures.com/patterns/asfalt-dark.png')",
+  backgroundSize: "100px",
+  backgroundBlendMode: "overlay" as const,
+  opacity: 0.25,
+};
+
+const MAIN_CARD_CLASS = "relative overflow-hidden rounded-[28px] border border-[#f5c16c]/30 bg-gradient-to-br from-[#2d1810] via-[#1a0a08] to-black shadow-xl";
 
 export default function PartyManagementClient() {
   const [selectedParty, setSelectedParty] = useState<PartyDto | null>(null);
@@ -44,76 +54,136 @@ export default function PartyManagementClient() {
   }, [selectedParty]);
 
   const welcome = useMemo(() => (
-    <div className="flex h-full flex-col items-center justify-center gap-4 text-center">
-      <h2 className="text-xl font-semibold text-white">Welcome to Party Management</h2>
-      <p className="max-w-xl text-sm text-white/80">
-        Create study groups, collaborate with peers, and share resources. Use the sidebar to create a new party
-        or select an existing one to preview its activity.
-      </p>
+    <div className="flex h-full flex-col items-center justify-center gap-6 py-12 text-center">
+      <div className="rounded-full bg-[#f5c16c]/10 p-6">
+        <Users className="h-16 w-16 text-[#f5c16c]" />
+      </div>
+      <div className="space-y-2">
+        <h2 className="text-2xl font-semibold text-[#f5c16c]">Welcome to Party Management</h2>
+        <p className="max-w-xl text-sm text-white/70">
+          Create study groups, collaborate with peers, and share resources. Use the sidebar to create a new party
+          or select an existing one to preview its activity.
+        </p>
+      </div>
     </div>
   ), []);
 
   const preview = selectedParty && (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="flex h-12 w-12 items-center justify-center rounded-md bg-linear-to-br from-fuchsia-600 to-purple-700 text-white shadow-md">
-            <span className="text-base font-bold">P</span>
+        <div className="flex items-center gap-4">
+          <div className="flex h-14 w-14 items-center justify-center rounded-xl border-2 border-[#f5c16c]/30 bg-gradient-to-br from-[#f5c16c]/20 to-[#d4a855]/20 shadow-lg">
+            <Users className="h-7 w-7 text-[#f5c16c]" />
           </div>
           <div>
-            <h3 className="text-lg font-semibold text-white">{selectedParty.name}</h3>
-            <div className="text-xs text-white/70">{selectedParty.partyType} • {selectedParty.isPublic ? "Public" : "Private"}</div>
+            <h3 className="text-xl font-semibold text-[#f5c16c]">{selectedParty.name}</h3>
+            <div className="flex items-center gap-2 text-sm text-white/60">
+              <span>{selectedParty.partyType}</span>
+              <span>•</span>
+              <span>{selectedParty.isPublic ? "Public" : "Private"}</span>
+            </div>
           </div>
         </div>
         <a
           href={`/parties/${selectedParty.id}`}
-          className="rounded bg-fuchsia-600 px-3 py-2 text-xs font-medium text-white"
+          className="rounded-lg bg-gradient-to-r from-[#f5c16c] to-[#d4a855] px-4 py-2.5 text-sm font-medium text-black transition-all hover:from-[#d4a855] hover:to-[#f5c16c]"
         >
-          Open Full Dashboard
+          Open Dashboard
         </a>
       </div>
+      
       <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-        <div className="rounded-lg border border-white/10 bg-white/5 p-4">
-          <div className="text-xs text-white/70">Members</div>
-          <div className="text-2xl font-bold text-white">{loadingPreview ? "…" : (membersCount ?? "–")}</div>
+        <div className="relative overflow-hidden rounded-2xl border border-[#f5c16c]/20 bg-gradient-to-br from-[#2d1810]/60 via-[#1a0a08]/80 to-black/90 p-5">
+          <div
+            className="pointer-events-none absolute inset-0 opacity-20"
+            style={{
+              backgroundImage: "url('https://www.transparenttextures.com/patterns/asfalt-dark.png')",
+              backgroundSize: "100px",
+              backgroundBlendMode: "overlay",
+            }}
+          />
+          <div className="relative">
+            <div className="mb-2 flex items-center gap-2 text-[#f5c16c]/70">
+              <UserCheck className="h-4 w-4" />
+              <span className="text-xs font-medium uppercase tracking-wide">Members</span>
+            </div>
+            <div className="text-3xl font-bold text-[#f5c16c]">{loadingPreview ? "…" : (membersCount ?? "–")}</div>
+          </div>
         </div>
-        <div className="rounded-lg border border-white/10 bg-white/5 p-4">
-          <div className="text-xs text-white/70">Stash Items</div>
-          <div className="text-2xl font-bold text-white">{loadingPreview ? "…" : (resourcesCount ?? "–")}</div>
+        
+        <div className="relative overflow-hidden rounded-2xl border border-[#f5c16c]/20 bg-gradient-to-br from-[#2d1810]/60 via-[#1a0a08]/80 to-black/90 p-5">
+          <div
+            className="pointer-events-none absolute inset-0 opacity-20"
+            style={{
+              backgroundImage: "url('https://www.transparenttextures.com/patterns/asfalt-dark.png')",
+              backgroundSize: "100px",
+              backgroundBlendMode: "overlay",
+            }}
+          />
+          <div className="relative">
+            <div className="mb-2 flex items-center gap-2 text-[#f5c16c]/70">
+              <Package className="h-4 w-4" />
+              <span className="text-xs font-medium uppercase tracking-wide">Stash Items</span>
+            </div>
+            <div className="text-3xl font-bold text-[#f5c16c]">{loadingPreview ? "…" : (resourcesCount ?? "–")}</div>
+          </div>
         </div>
-        <div className="rounded-lg border border-white/10 bg-white/5 p-4">
-          <div className="text-xs text-white/70">Max Capacity</div>
-          <div className="text-2xl font-bold text-white">{selectedParty.maxMembers}</div>
+        
+        <div className="relative overflow-hidden rounded-2xl border border-[#f5c16c]/20 bg-gradient-to-br from-[#2d1810]/60 via-[#1a0a08]/80 to-black/90 p-5">
+          <div
+            className="pointer-events-none absolute inset-0 opacity-20"
+            style={{
+              backgroundImage: "url('https://www.transparenttextures.com/patterns/asfalt-dark.png')",
+              backgroundSize: "100px",
+              backgroundBlendMode: "overlay",
+            }}
+          />
+          <div className="relative">
+            <div className="mb-2 flex items-center gap-2 text-[#f5c16c]/70">
+              <TrendingUp className="h-4 w-4" />
+              <span className="text-xs font-medium uppercase tracking-wide">Max Capacity</span>
+            </div>
+            <div className="text-3xl font-bold text-[#f5c16c]">{selectedParty.maxMembers}</div>
+          </div>
         </div>
       </div>
-      <div className="rounded-lg border border-white/10 bg-white/5 p-4 text-sm text-white/80">
-        Recent activity and previews will appear here as the feature evolves.
+      
+      <div className="rounded-xl border border-[#f5c16c]/20 bg-black/40 p-6 text-sm text-white/70">
+        <p>Recent activity and detailed analytics will appear here as features evolve.</p>
       </div>
     </div>
   );
 
   return (
-    <div className="grid grid-cols-1 gap-6 md:grid-cols-[320px_1fr]">
-      {/* Left Sidebar */}
-      <aside className="md:sticky md:top-0 md:h-[calc(100vh-120px)] md:self-start">
-        <div className="flex flex-col gap-3">
+    <div className="flex h-screen overflow-hidden bg-gradient-to-b from-[#0a0506] via-[#120806] to-[#0a0506]">
+      {/* Sidebar */}
+      <aside className="flex w-80 flex-col border-r border-[#f5c16c]/20 bg-black/20">
+        <div className="border-b border-[#f5c16c]/20 p-4">
+          <h2 className="text-lg font-semibold text-[#f5c16c]">My Parties</h2>
           <button
-            className="flex items-center justify-center gap-2 rounded-md bg-linear-to-r from-fuchsia-600 to-purple-700 px-3 py-2 text-sm font-semibold text-white shadow hover:opacity-90"
             onClick={() => setShowWizard(true)}
+            className="mt-3 flex w-full items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-[#f5c16c] to-[#d4a855] px-4 py-2.5 text-sm font-medium text-black transition-all hover:from-[#d4a855] hover:to-[#f5c16c]"
           >
-            <span>＋</span>
-            <span>Create New Party</span>
+            <Plus className="h-4 w-4" />
+            Create New Party
           </button>
-          <div className="rounded-lg border border-white/10 bg-white/5 p-3">
-            <PartyListClient onSelectParty={setSelectedParty} />
-          </div>
-          
+        </div>
+        <div className="flex-1 overflow-y-auto p-3">
+          <PartyListClient onSelectParty={setSelectedParty} />
         </div>
       </aside>
 
       {/* Main Content */}
-      <main className="min-h-[50vh] rounded-lg border border-white/10 bg-white/5 p-6">
-        {!selectedParty ? welcome : preview}
+      <main className="flex-1 overflow-y-auto p-8">
+        <div className={MAIN_CARD_CLASS}>
+          <div
+            className="pointer-events-none absolute inset-0"
+            style={CARD_TEXTURE}
+          />
+          <div className="relative">
+            {!selectedParty ? welcome : preview}
+          </div>
+        </div>
       </main>
 
       <PartyCreationWizard
