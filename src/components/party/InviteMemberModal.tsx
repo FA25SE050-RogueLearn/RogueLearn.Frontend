@@ -4,9 +4,10 @@ import partiesApi from '@/api/partiesApi';
 interface InviteMemberModalProps {
   partyId: string;
   onClose: () => void;
+  onInvited?: () => void;
 }
 
-export default function InviteMemberModal({ partyId, onClose }: InviteMemberModalProps) {
+export default function InviteMemberModal({ partyId, onClose, onInvited }: InviteMemberModalProps) {
   const [email, setEmail] = useState('');
   const [isInviting, setIsInviting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -19,14 +20,22 @@ export default function InviteMemberModal({ partyId, onClose }: InviteMemberModa
     setIsInviting(true);
     setError(null);
     try {
-      await partiesApi.inviteMember(partyId, {
+      const res = await partiesApi.inviteMember(partyId, {
         targets: [{ email: trimmed.toLowerCase() }],
         message: 'You have been invited to join this party.',
         expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
       });
+      if (!res?.isSuccess || !res?.data) {
+        const msg = res?.message || 'Invitation failed';
+        setError(msg);
+        return;
+      }
+      try { onInvited?.(); } catch {}
       onClose();
     } catch (e: any) {
-      setError(e?.message ?? 'Failed to invite member');
+      const normalized = e?.normalized;
+      const msg = normalized?.message || e?.message || 'Failed to invite member';
+      setError(msg);
     } finally {
       setIsInviting(false);
     }

@@ -423,7 +423,7 @@ export default function NoteEditorPage() {
   return (
     <DashboardFrame>
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6 pb-24">
-        <section className="relative overflow-hidden rounded-[28px] border border-[#f5c16c]/20 bg-gradient-to-br from-[#2d1810]/60 via-[#1a0a08]/80 to-black/90 p-6">
+        <section className="relative overflow-hidden rounded-[28px] border border-[#f5c16c]/20 bg-linear-to-br from-[#2d1810]/60 via-[#1a0a08]/80 to-black/90 p-6">
           <div
             className="pointer-events-none absolute inset-0 opacity-20"
             style={{
@@ -592,7 +592,7 @@ export default function NoteEditorPage() {
             <FormattingToolbarController
               formattingToolbar={() => (
                 <FormattingToolbar>
-                  {...getFormattingToolbarItems()}
+                  {getFormattingToolbarItems()}
                   {AI_BASE_URL && <AIToolbarButton />}
                 </FormattingToolbar>
               )}
@@ -624,11 +624,10 @@ export default function NoteEditorPage() {
               }}
             />
           </BlockNoteView>
-          </div>
         </section>
 
         {/* Sidebar: Tags & AI Suggestions */}
-        <aside className="relative overflow-hidden rounded-[28px] border border-[#f5c16c]/20 bg-gradient-to-br from-[#2d1810]/60 via-[#1a0a08]/80 to-black/90 p-6">
+        <aside className="relative overflow-hidden rounded-[28px] border border-[#f5c16c]/20 bg-linear-to-br from-[#2d1810]/60 via-[#1a0a08]/80 to-black/90 p-6">
           <div
             className="pointer-events-none absolute inset-0 opacity-20"
             style={{
@@ -830,8 +829,8 @@ export default function NoteEditorPage() {
                   Clear
                 </Button>
               </div>
-            )}
-          </div>
+            </div>
+          )}
         </aside>
       </div>
     </DashboardFrame>

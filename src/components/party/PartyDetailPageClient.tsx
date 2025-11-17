@@ -28,8 +28,14 @@ export default function PartyDetailPageClient({ partyId }: { partyId: string }) 
   const [settingsIsPublic, setSettingsIsPublic] = useState<boolean>(true);
   const [settingsMaxMembers, setSettingsMaxMembers] = useState<number>(6);
   const [isSavingSettings, setIsSavingSettings] = useState(false);
+  const [refreshAt, setRefreshAt] = useState<number>(0);
   const router = useRouter();
-  const { role } = usePartyRole(partyId);
+  const { role, refresh: refreshRole } = usePartyRole(partyId);
+
+  const triggerRefresh = () => {
+    setRefreshAt((prev) => prev + 1);
+    refreshRole();
+  };
 
   useEffect(() => {
       const supabase = createClient();
@@ -116,7 +122,7 @@ export default function PartyDetailPageClient({ partyId }: { partyId: string }) 
   const header = (
     <div className="flex w-full items-center justify-between">
       <div className="flex items-center gap-4">
-        <div className="flex h-14 w-14 items-center justify-center rounded-xl border-2 border-[#f5c16c]/30 bg-gradient-to-br from-[#f5c16c]/20 to-[#d4a855]/20 shadow-lg">
+        <div className="flex h-14 w-14 items-center justify-center rounded-xl border-2 border-[#f5c16c]/30 bg-linear-to-br from-[#f5c16c]/20 to-[#d4a855]/20 shadow-lg">
           <Users className="h-7 w-7 text-[#f5c16c]" />
         </div>
         <div>
@@ -169,7 +175,9 @@ export default function PartyDetailPageClient({ partyId }: { partyId: string }) 
       {!loading && role !== null && (
         <PartyDetailClient header={header}>
           <Tabs active={activeTab} onChange={setActiveTab} />
-          {activeTab === "dashboard" && party && <PartyDashboard partyId={party.id} />}
+          {activeTab === "dashboard" && party && (
+            <PartyDashboard partyId={party.id} refreshAt={refreshAt} onChanged={triggerRefresh} />
+          )}
           {activeTab === "stash" && party && <PartyStash partyId={party.id} />}
           {activeTab === "meetings" && party && <MeetingManagement partyId={party.id} />}
         </PartyDetailClient>
@@ -177,7 +185,7 @@ export default function PartyDetailPageClient({ partyId }: { partyId: string }) 
       {showLeaveConfirm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm">
           <div className="absolute inset-0 bg-black/80" onClick={() => setShowLeaveConfirm(false)} />
-          <div className="relative overflow-hidden rounded-[28px] border border-rose-500/30 bg-gradient-to-b from-[#1a0a08] to-[#0a0506] p-8 shadow-2xl">
+          <div className="relative overflow-hidden rounded-[28px] border border-rose-500/30 bg-linear-to-b from-[#1a0a08] to-[#0a0506] p-8 shadow-2xl">
             {/* Texture overlay */}
             <div
               className="pointer-events-none absolute inset-0 opacity-25"
@@ -217,12 +225,13 @@ export default function PartyDetailPageClient({ partyId }: { partyId: string }) 
         <InviteMemberModal
           partyId={party.id}
           onClose={() => setShowInviteModal(false)}
+          onInvited={triggerRefresh}
         />
       )}
       {showSettingsModal && party && (
         <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm">
           <div className="absolute inset-0 bg-black/80" onClick={() => setShowSettingsModal(false)} />
-          <div className="relative w-full max-w-lg overflow-hidden rounded-[28px] border border-[#f5c16c]/30 bg-gradient-to-b from-[#1a0a08] to-[#0a0506] p-8 shadow-2xl">
+          <div className="relative w-full max-w-lg overflow-hidden rounded-[28px] border border-[#f5c16c]/30 bg-linear-to-b from-[#1a0a08] to-[#0a0506] p-8 shadow-2xl">
             {/* Texture overlay */}
             <div
               className="pointer-events-none absolute inset-0 opacity-25"
@@ -287,7 +296,7 @@ export default function PartyDetailPageClient({ partyId }: { partyId: string }) 
                 <button
                   onClick={handleSaveSettings}
                   disabled={isSavingSettings}
-                  className="rounded-lg bg-gradient-to-r from-[#f5c16c] to-[#d4a855] px-5 py-2.5 text-sm font-medium text-black transition-all hover:from-[#d4a855] hover:to-[#f5c16c] disabled:cursor-not-allowed disabled:opacity-50"
+                  className="rounded-lg bg-linear-to-r from-[#f5c16c] to-[#d4a855] px-5 py-2.5 text-sm font-medium text-black transition-all hover:from-[#d4a855] hover:to-[#f5c16c] disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {isSavingSettings ? "Saving..." : "Save"}
                 </button>

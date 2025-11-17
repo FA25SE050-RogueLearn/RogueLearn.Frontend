@@ -7,7 +7,13 @@ import PartyMembersList from "./PartyMembersList";
 import InvitationManagement from "./InvitationManagement";
 import RoleGate from "@/components/party/RoleGate";
 
-export default function PartyDashboard({ partyId }: { partyId: string }) {
+interface PartyDashboardProps {
+  partyId: string;
+  refreshAt?: number;
+  onChanged?: () => void;
+}
+
+export default function PartyDashboard({ partyId, refreshAt, onChanged }: PartyDashboardProps) {
   const [members, setMembers] = useState<PartyMemberDto[]>([]);
   const [invites, setInvites] = useState<PartyInvitationDto[]>([]);
   const [loading, setLoading] = useState(true);
@@ -40,7 +46,7 @@ export default function PartyDashboard({ partyId }: { partyId: string }) {
     };
     load();
     return () => { mounted = false; };
-  }, [partyId]);
+  }, [partyId, refreshAt]);
 
   const [stashCount, setStashCount] = useState<number>(0);
   useEffect(() => {
@@ -63,6 +69,7 @@ export default function PartyDashboard({ partyId }: { partyId: string }) {
     } catch {
       // swallow
     }
+    try { onChanged?.(); } catch {}
   };
 
   return (
