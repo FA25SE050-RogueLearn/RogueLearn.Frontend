@@ -17,7 +17,6 @@ import {
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Users } from "lucide-react";
 import GuildRoleGate from "@/components/guild/RoleGate";
 import { useGuildRoles } from "@/hooks/useGuildRoles";
 import { Users, Shield, Lock, Globe, Scroll, Swords, Crown, Settings } from "lucide-react";
@@ -245,7 +244,7 @@ export default function GuildDetailPage() {
                       </Dialog>
                     )}
                     
-                    {isMember && myRole === "GuildMaster" && (
+                    {isMember && myRoles.includes("GuildMaster") && (
                       <div className="flex items-center gap-2 rounded-full border border-amber-400/40 bg-amber-400/15 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-amber-300">
                         <Crown className="h-3.5 w-3.5" />
                         Guild Master
@@ -311,12 +310,6 @@ export default function GuildDetailPage() {
                     </CardContent>
                   </Card>
                 </TabsContent>
-              )}
-              {canManage && (
-                <TabsContent value="manage" className="space-y-4">
-                  <GuildRoleGate guildId={guild.id} requireAny={["GuildMaster", "Officer"]}>
-                    <GuildManagementSection guildId={guild.id} />
-                  </GuildRoleGate>
 
                 <TabsContent value="posts" className="space-y-4">
                   <GuildPostsSection guildId={guild.id} />
@@ -330,7 +323,9 @@ export default function GuildDetailPage() {
 
                 {canManage && (
                   <TabsContent value="manage" className="space-y-4">
-                    <GuildManagementSection guildId={guild.id} />
+                    <GuildRoleGate guildId={guild.id} requireAny={["GuildMaster", "Officer"]}>
+                      <GuildManagementSection guildId={guild.id} />
+                    </GuildRoleGate>
                   </TabsContent>
                 )}
               </Tabs>
