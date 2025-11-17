@@ -8,6 +8,7 @@ import type { GuildMemberDto, GuildRole } from "@/types/guilds";
 import type { MeetingDto, MeetingParticipantDto, ArtifactInputDto, MeetingDetailsDto } from "@/types/meetings";
 import { createClient } from "@/utils/supabase/client";
 import { datetimeLocalBangkok, formatBangkok } from "@/utils/time";
+import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
 
 interface Props {
   guildId: string;
@@ -43,7 +44,9 @@ export default function GuildMeetingsSection({ guildId }: Props) {
   }>({ meeting: null, google: null });
 
   const [guildMeetings, setGuildMeetings] = useState<MeetingDto[]>([]);
-  const [selectedMeetingDetails, setSelectedMeetingDetails] = useState<MeetingDetailsDto | null>(null);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [detailsById, setDetailsById] = useState<Record<string, MeetingDetailsDto | null>>({});
+  const [detailsLoading, setDetailsLoading] = useState<Record<string, boolean>>({});
   const [loadingMeetings, setLoadingMeetings] = useState(false);
   const [members, setMembers] = useState<GuildMemberDto[]>([]);
 
@@ -305,7 +308,8 @@ export default function GuildMeetingsSection({ guildId }: Props) {
       }
 
       const detailsRes = await meetingsApi.getMeetingDetails(meetingId);
-      setSelectedMeetingDetails(detailsRes.data ?? null);
+      setDetailsById((prev) => ({ ...prev, [meetingId]: detailsRes.data ?? null }));
+      setExpandedId(meetingId);
 
       try {
         if (!spaceName && latest?.name) {
@@ -361,11 +365,18 @@ export default function GuildMeetingsSection({ guildId }: Props) {
     }
   }
 
-  async function loadDetails(meetingId: string) {
+  async function loadDetailsIfNeeded(meetingId: string) {
+    if (!meetingId) return;
+    if (detailsById[meetingId] || detailsLoading[meetingId]) return;
+    setDetailsLoading((prev) => ({ ...prev, [meetingId]: true }));
     try {
       const res = await meetingsApi.getMeetingDetails(meetingId);
-      setSelectedMeetingDetails(res.data ?? null);
-    } catch (e) {}
+      setDetailsById((prev) => ({ ...prev, [meetingId]: res.data ?? null }));
+    } catch (e) {
+      setDetailsById((prev) => ({ ...prev, [meetingId]: null }));
+    } finally {
+      setDetailsLoading((prev) => ({ ...prev, [meetingId]: false }));
+    }
   }
 
   return (
@@ -491,60 +502,65 @@ export default function GuildMeetingsSection({ guildId }: Props) {
         {guildMeetings.length === 0 ? (
           <div className="text-xs text-white/60">No meetings yet.</div>
         ) : (
-          <ul className="divide-y divide-white/10">
-            {guildMeetings.map((m) => (
-              <li key={(m.meetingId ?? m.title) + m.scheduledStartTime} className="py-3">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="text-sm font-medium text-white">{m.title}</div>
-                    <div className="text-[11px] text-white/60">
-                      {formatBangkok(m.scheduledStartTime, { includeSeconds: false, separator: " " })} – {formatBangkok(m.scheduledEndTime, { includeSeconds: false, separator: " " })}
+          <Accordion type="single" collapsible value={expandedId ?? undefined} onValueChange={(val) => {
+            const v = typeof val === "string" ? val : null;
+            setExpandedId(v ?? null);
+            if (v) loadDetailsIfNeeded(v);
+          }}>
+            {guildMeetings.map((m) => {
+              const id = m.meetingId ?? `${m.title}-${m.scheduledStartTime}`;
+              const details = m.meetingId ? detailsById[m.meetingId] : null;
+              const isLoading = m.meetingId ? detailsLoading[m.meetingId] : false;
+              return (
+                <AccordionItem key={id} value={m.meetingId ?? id}>
+                  <AccordionTrigger>
+                    <div className="flex w-full items-center justify-between">
+                      <div>
+                        <div className="text-sm font-medium text-white">{m.title}</div>
+                        <div className="text-[11px] text-white/60">
+                          {formatBangkok(m.scheduledStartTime, { includeSeconds: false, separator: " " })} – {formatBangkok(m.scheduledEndTime, { includeSeconds: false, separator: " " })}
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {m.meetingId && (
-                      <button
-                        onClick={() => loadDetails(m.meetingId!)}
-                        className="rounded bg-white/10 px-3 py-2 text-[11px] text-white"
-                      >
-                        View Details
-                      </button>
+                  </AccordionTrigger>
+                  <AccordionContent>
+                    {isLoading ? (
+                      <div className="text-xs text-white/60">Loading details...</div>
+                    ) : details ? (
+                      <div className="space-y-2">
+                        <div className="text-sm font-medium text-white">{details.meeting?.title}</div>
+                        <div className="text-xs text-white/70">Participants ({details.participants?.length ?? 0})</div>
+                        <ul className="grid grid-cols-1 gap-2 md:grid-cols-2">
+                          {details.participants?.map((p, idx) => (
+                            <li key={(p.userId ?? String(idx)) + (p.joinTime ?? "")} className="rounded border border-white/10 bg-white/5 p-2">
+                              <div className="text-xs text-white">
+                                {p.displayName ?? p.userId}
+                                <span className="ml-2 text-white/60">{p.roleInMeeting ?? "participant"}</span>
+                              </div>
+                              <div className="text-[11px] text-white/60">
+                                {p.joinTime ? formatBangkok(p.joinTime, { includeSeconds: false, separator: " " }) : ""}
+                                {p.leaveTime ? ` → ${formatBangkok(p.leaveTime, { includeSeconds: false, separator: " " })}` : ""}
+                              </div>
+                            </li>
+                          ))}
+                        </ul>
+                        <div className="text-xs text-white/70">Summary</div>
+                        <div className="whitespace-pre-wrap rounded border border-white/10 bg-white/5 p-3 text-xs text-white/80">
+                          {details.summaryText ?? "No summary available."}
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="text-xs text-white/60">No details available.</div>
                     )}
-                  </div>
-                </div>
-              </li>
-            ))}
-          </ul>
+                  </AccordionContent>
+                </AccordionItem>
+              );
+            })}
+          </Accordion>
         )}
       </div>
 
-      {selectedMeetingDetails && (
-        <div className="rounded border border-white/10 bg-white/5 p-4">
-          <h5 className="mb-2 text-xs font-semibold">Meeting Details</h5>
-          <div className="space-y-2">
-            <div className="text-sm font-medium text-white">{selectedMeetingDetails.meeting?.title}</div>
-            <div className="text-xs text-white/70">Participants ({selectedMeetingDetails.participants?.length ?? 0})</div>
-            <ul className="grid grid-cols-1 gap-2 md:grid-cols-2">
-              {selectedMeetingDetails.participants?.map((p, idx) => (
-                <li key={(p.userId ?? String(idx)) + (p.joinTime ?? "")} className="rounded border border-white/10 bg-white/5 p-2">
-                  <div className="text-xs text-white">
-                    {p.displayName ?? p.userId}
-                    <span className="ml-2 text-white/60">{p.roleInMeeting ?? "participant"}</span>
-                  </div>
-                  <div className="text-[11px] text-white/60">
-                    {p.joinTime ? formatBangkok(p.joinTime, { includeSeconds: false, separator: " " }) : ""}
-                    {p.leaveTime ? ` → ${formatBangkok(p.leaveTime, { includeSeconds: false, separator: " " })}` : ""}
-                  </div>
-                </li>
-              ))}
-            </ul>
-            <div className="text-xs text-white/70">Summary</div>
-            <div className="whitespace-pre-wrap rounded border border-white/10 bg-white/5 p-3 text-xs text-white/80">
-              {selectedMeetingDetails.summaryText ?? "No summary available."}
-            </div>
-          </div>
-        </div>
-      )}
+
     </div>
   );
 }

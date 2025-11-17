@@ -120,6 +120,24 @@ export function MembersManagementCard({
                       <Button size="sm" variant="destructive" onClick={() => onRemoveMember(m.memberId)}>Remove</Button>
                     </div>
                   )}
+                  {myRole === "Officer" && m.role !== "GuildMaster" && m.role !== "Officer" && (
+                    <div className="flex items-center gap-2">
+                      <Select value={roleToAssign} onValueChange={(v) => setRoleToAssign(v as GuildRole)}>
+                        <SelectTrigger className="w-[160px]">
+                          <SelectValue placeholder="Role" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {["Veteran", "Recruit"].map((r) => (
+                            <SelectItem key={r} value={r as GuildRole}>
+                              {r}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <Button size="sm" onClick={() => onAssignRole(m.authUserId, roleToAssign)}>Assign</Button>
+                      <Button size="sm" variant="destructive" onClick={() => onRemoveMember(m.memberId)}>Remove</Button>
+                    </div>
+                  )}
                 </div>
               );
             })

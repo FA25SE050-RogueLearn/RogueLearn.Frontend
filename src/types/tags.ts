@@ -81,3 +81,14 @@ export interface CreateTagAndAttachToNoteResponse {
   tag: Tag;
   createdNewTag: boolean;
 }
+
+/** Command payload to update an existing tag. */
+export interface UpdateTagCommandRequest {
+  authUserId: string;
+  name: string;
+}
+
+/** Response payload after updating a tag. */
+export interface UpdateTagResponse {
+  tag: Tag;
+}

@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import guildsApi from "@/api/guildsApi";
 import profileApi from "@/api/profileApi";
-import type { GuildDto, GuildRole } from "@/types/guilds";
+import type { GuildDto } from "@/types/guilds";
 import { DashboardFrame } from "@/components/layout/DashboardFrame";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -18,6 +18,8 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Users } from "lucide-react";
+import GuildRoleGate from "@/components/guild/RoleGate";
+import { useGuildRoles } from "@/hooks/useGuildRoles";
 
 export default function GuildDetailPage() {
   const { guildId } = useParams<{ guildId: string }>();
@@ -30,7 +32,7 @@ export default function GuildDetailPage() {
   const [submitting, setSubmitting] = useState<boolean>(false);
   const [activeTab, setActiveTab] = useState<string>("home");
   const [myAuthUserId, setMyAuthUserId] = useState<string | null>(null);
-  const [myRole, setMyRole] = useState<GuildRole | null>(null);
+  const { roles: myRoles } = useGuildRoles(guildId as string);
 
   useEffect(() => {
     let cancelled = false;
@@ -60,15 +62,6 @@ export default function GuildDetailPage() {
         setMemberCount(
           directCount ?? fallbackMyCount ?? gRes.data?.memberCount ?? null
         );
-        // Derive my role if I am a member
-        if (authId && Array.isArray(membersRes.data)) {
-          const me = (membersRes.data as any[]).find(
-            (m) => m.authUserId === authId
-          );
-          setMyRole((me?.role as GuildRole) ?? null);
-        } else {
-          setMyRole(null);
-        }
         setError(null);
       })
       .catch((err) => {
@@ -89,7 +82,7 @@ export default function GuildDetailPage() {
         typeof window !== "undefined"
           ? window.location.hash.replace(/^#/, "")
           : "";
-      const canManage = myRole === "GuildMaster"; // Only GuildMaster can manage
+      const canManage = myRoles.includes("GuildMaster") || myRoles.includes("Officer");
       if (hash === "home" || hash === "posts" || hash === "meetings") {
         setActiveTab(hash);
       } else if (hash === "manage") {
@@ -99,10 +92,10 @@ export default function GuildDetailPage() {
     applyHash();
     window.addEventListener("hashchange", applyHash);
     return () => window.removeEventListener("hashchange", applyHash);
-  }, [myRole]);
+  }, [myRoles]);
 
   const isMember = guild && myGuildId === guild.id;
-  const canManage = isMember && myRole === "GuildMaster";
+  const canManage = isMember && (myRoles.includes("GuildMaster") || myRoles.includes("Officer"));
 
   const handleApply = async () => {
     if (!guildId) return;
@@ -240,7 +233,9 @@ export default function GuildDetailPage() {
               )}
               {canManage && (
                 <TabsContent value="manage" className="space-y-4">
-                  <GuildManagementSection guildId={guild.id} />
+                  <GuildRoleGate guildId={guild.id} requireAny={["GuildMaster", "Officer"]}>
+                    <GuildManagementSection guildId={guild.id} />
+                  </GuildRoleGate>
                 </TabsContent>
               )}
             </Tabs>

@@ -2,7 +2,6 @@
 import axiosClient from './axiosClient';
 import { ApiResponse } from '../types/base/Api';
 import {
-  Tag,
   CreateTagCommandRequest,
   CreateTagResponse,
   GetMyTagsResponse,
@@ -12,6 +11,8 @@ import {
   GetTagsForNoteResponse,
   CreateTagAndAttachToNoteCommandRequest,
   CreateTagAndAttachToNoteResponse,
+  UpdateTagCommandRequest,
+  UpdateTagResponse,
 } from '@/types/tags';
 
 const tagsApi = {
@@ -29,12 +30,13 @@ const tagsApi = {
       data: res.data,
     })),
 
-  /** POST /api/notes/{noteId}/tags */
+  /** POST /api/notes/{noteId}/tags/attach */
   attachToNote: (payload: AttachTagToNoteCommandRequest): Promise<ApiResponse<AttachTagToNoteResponse>> =>
-    axiosClient.post<AttachTagToNoteResponse>(`/api/notes/${payload.noteId}/tags`, {
-      authUserId: payload.authUserId,
-      tagId: payload.tagId,
-    }).then(res => ({
+    axiosClient.post<AttachTagToNoteResponse>(
+      `/api/notes/${payload.noteId}/tags/attach`,
+      JSON.stringify(payload.tagId),
+      { headers: { 'Content-Type': 'application/json' } }
+    ).then(res => ({
       isSuccess: true,
       data: res.data,
     })),
@@ -60,6 +62,13 @@ const tagsApi = {
       authUserId: payload.authUserId,
       name: payload.name,
     }).then(res => ({ isSuccess: true, data: res.data })),
+
+  /** PUT /api/tags/{id} */
+  update: (id: string, payload: UpdateTagCommandRequest): Promise<ApiResponse<UpdateTagResponse>> =>
+    axiosClient.put<UpdateTagResponse>(`/api/tags/${id}`, payload).then(res => ({
+      isSuccess: true,
+      data: res.data,
+    })),
 };
 
 export default tagsApi;

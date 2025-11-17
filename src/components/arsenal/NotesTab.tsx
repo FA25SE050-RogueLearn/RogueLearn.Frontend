@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import useMeasure from "react-use-measure";
 import { useRouter } from "next/navigation";
 import notesApi from "@/api/notesApi";
 import tagsApi from "@/api/tagsApi";
@@ -10,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { createClient } from "@/utils/supabase/client";
 import { Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
@@ -87,9 +89,11 @@ export default function NotesTab() {
   const [myTags, setMyTags] = useState<Tag[]>([]);
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState("");
+  const [searchInput, setSearchInput] = useState("");
   const [sort, setSort] = useState<SortMode>("updatedAt_desc");
   const [filterTagId, setFilterTagId] = useState<string>("");
   const [authUserId, setAuthUserId] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const supabase = createClient();
@@ -100,9 +104,12 @@ export default function NotesTab() {
 
   const fetchNotes = async () => {
     setLoading(true);
+    setError(null);
     try {
       const res = await notesApi.getMyNotes();
       if (res.isSuccess) setNotes(res.data);
+    } catch (e: any) {
+      setError("Failed to load notes");
     } finally {
       setLoading(false);
     }
@@ -124,6 +131,11 @@ export default function NotesTab() {
     fetchNotes();
     fetchTags();
   }, []);
+
+  useEffect(() => {
+    const h = setTimeout(() => setSearch(searchInput), 300);
+    return () => clearTimeout(h);
+  }, [searchInput]);
 
   const filteredNotes = useMemo(() => {
     let base = notes;
@@ -214,10 +226,28 @@ export default function NotesTab() {
     } catch (e) {}
   };
 
+  const [listRef, bounds] = useMeasure();
+  const [scrollTop, setScrollTop] = useState(0);
+  const CARD_WIDTH = 320;
+  const GAP = 16;
+  const ROW_HEIGHT = 220;
+  const buffer = 2;
+  const total = filteredNotes.length;
+  const containerWidth = bounds.width || 0;
+  const numCols = Math.max(1, Math.floor(containerWidth / (CARD_WIDTH + GAP)));
+  const totalRows = Math.max(1, Math.ceil(total / numCols));
+  const startRow = Math.max(0, Math.floor(scrollTop / ROW_HEIGHT) - buffer);
+  const visibleRows = Math.ceil((bounds.height || 0) / ROW_HEIGHT) + buffer * 2;
+  const endRow = Math.min(totalRows, startRow + visibleRows);
+  const startIndex = startRow * numCols;
+  const endIndex = Math.min(total, endRow * numCols);
+  const topPadding = startRow * ROW_HEIGHT;
+  const bottomPadding = Math.max(0, (totalRows - endRow) * ROW_HEIGHT);
+
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-wrap items-center gap-3">
-        <Input placeholder="Search notes..." value={search} onChange={(e) => setSearch(e.target.value)} className="max-w-sm" />
+        <Input placeholder="Search notes..." value={searchInput} onChange={(e) => setSearchInput(e.target.value)} className="max-w-sm" />
         <div className="flex items-center gap-2">
           <Label htmlFor="tag-filter" className="text-xs">Tag</Label>
           <select id="tag-filter" value={filterTagId} onChange={(e) => setFilterTagId(e.target.value)} className="rounded-md border bg-background p-2 text-sm">
@@ -241,44 +271,85 @@ export default function NotesTab() {
         </Button>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+      <div className="rounded-2xl border border-white/12 bg-black/20 min-h-[80vh]">
         {loading ? (
-          <p className="text-sm text-foreground/70">Loading...</p>
-        ) : filteredNotes.length === 0 ? (
-          <div className="rounded-2xl border border-white/10 bg-black/20 p-8 text-center">
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 p-4">
+            {Array.from({ length: 9 }).map((_, i) => (
+              <div key={i} className="h-[220px] animate-pulse rounded-xl bg-white/5" />
+            ))}
+          </div>
+        ) : error ? (
+          <div className="p-6 text-center">
+            <p className="mb-3 text-sm text-foreground/70">{error}</p>
+            <Button variant="secondary" onClick={fetchNotes}>Retry</Button>
+          </div>
+        ) : total === 0 ? (
+          <div className="p-8 text-center">
             <p className="mb-3 text-sm text-foreground/70">No notes found.</p>
             <Button onClick={openNewNote}><Plus className="mr-2 h-4 w-4" /> Create your first note</Button>
           </div>
         ) : (
-          filteredNotes.map((note) => (
-            <Card key={note.id} className="relative flex h-full flex-col overflow-hidden rounded-[20px] border border-white/12 bg-gradient-to-br from-[#361c15]/86 via-[#1f0d12]/92 to-[#0c0508]/97">
-              <CardHeader className="relative z-10 border-b border-white/10 pb-4">
-                <CardTitle className="text-lg font-semibold text-white">{note.title}</CardTitle>
-              </CardHeader>
-              <CardContent className="relative z-10 flex flex-1 flex-col gap-4 p-5">
-                <p className="line-clamp-3 text-sm leading-relaxed text-foreground/70">{extractNotePreview(note.content as any) || "No content"}</p>
-                {Array.isArray(note.tagIds) && note.tagIds.length > 0 && (
-                  <div className="mt-2 flex flex-wrap gap-2">
-                    {note.tagIds.map((tid) => {
-                      const t = tagIndex.get(tid);
-                      const label = t?.name ?? "Unknown";
-                      return (
-                        <span key={`${note.id}-${tid}`} className="rounded-full border border-accent/40 bg-accent/10 px-2 py-1 text-xs text-accent">
-                          {label}
-                        </span>
-                      );
-                    })}
-                  </div>
-                )}
-              </CardContent>
-              <CardFooter className="relative z-10 flex items-center gap-2 border-t border-white/10 p-4">
-                <Button size="sm" variant="secondary" onClick={() => openEditNote(note.id)}>Open</Button>
-                <Button size="sm" variant="destructive" onClick={() => deleteNote(note.id)}>
-                  <Trash2 className="mr-2 h-4 w-4" /> Delete
-                </Button>
-              </CardFooter>
-            </Card>
-          ))
+          <div
+            ref={listRef}
+            className="h-[80vh] overflow-y-auto p-4"
+            onScroll={(e) => setScrollTop((e.target as HTMLDivElement).scrollTop)}
+            role="list"
+            aria-label="Notes grid"
+          >
+            <div style={{ paddingTop: topPadding, paddingBottom: bottomPadding }}>
+              <div
+                style={{ display: 'grid', gridTemplateColumns: `repeat(${numCols}, minmax(0, 1fr))`, gap: `${GAP}px` }}
+              >
+                {filteredNotes.slice(startIndex, endIndex).map((note) => (
+                  <Card
+                    key={note.id}
+                    className="flex h-[220px] flex-col overflow-hidden rounded-[20px] border border-white/12 bg-gradient-to-br from-[#361c15]/86 via-[#1f0d12]/92 to-[#0c0508]/97"
+                    role="listitem"
+                    tabIndex={0}
+                    onKeyDown={(e) => { if ((e as any).key === "Enter") openEditNote(note.id); }}
+                  >
+                    <CardHeader className="relative z-10 flex items-center justify-between border-b border-white/10 py-3">
+                      <CardTitle className="text-base font-semibold text-white">{note.title}</CardTitle>
+                      <div className="flex items-center gap-2">
+                        {note.isPublic && (
+                          <span className="rounded-full border border-green-500/40 bg-green-500/15 px-2 py-0.5 text-xs text-green-300">Public</span>
+                        )}
+                        <span className="text-xs text-foreground/60">{new Date(note.updatedAt).toLocaleDateString()}</span>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="relative z-10 flex min-h-0 flex-1 flex-col gap-3 p-4">
+                      <p className="line-clamp-2 text-sm leading-relaxed text-foreground/70">{extractNotePreview(note.content as any) || "No content"}</p>
+                    </CardContent>
+                    <CardFooter className="relative z-10 flex items-center gap-2 border-t border-white/10 p-3">
+                      <Button size="sm" variant="secondary" onClick={() => openEditNote(note.id)} aria-label="Open note">Open</Button>
+                      <Button size="sm" variant="destructive" onClick={() => deleteNote(note.id)} aria-label="Delete note">
+                        <Trash2 className="mr-2 h-4 w-4" /> Delete
+                      </Button>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button size="sm" variant="secondary" aria-label="Show tags">Tags</Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent className="w-48">
+                          <DropdownMenuLabel>Tags</DropdownMenuLabel>
+                          {Array.isArray(note.tagIds) && note.tagIds.length > 0 ? (
+                            note.tagIds.map((tid) => {
+                              const t = tagIndex.get(tid);
+                              const label = t?.name ?? "Unknown";
+                              return (
+                                <DropdownMenuItem key={`${note.id}-${tid}`}>{label}</DropdownMenuItem>
+                              );
+                            })
+                          ) : (
+                            <DropdownMenuItem disabled>No tags</DropdownMenuItem>
+                          )}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </CardFooter>
+                  </Card>
+                ))}
+              </div>
+            </div>
+          </div>
         )}
       </div>
     </div>
