@@ -30,8 +30,10 @@ import {
 } from "@/types/quest";
 import questApi from "@/api/questApi";
 import userQuestProgressApi from "@/api/userQuestProgressApi";
+// ADDED: Import the new modal component.
+import { CodingChallengeModal } from "./CodingChallengeModal";
 
-// --- Sub-components (UNCHANGED) ---
+// --- Sub-components ---
 
 const ReadingStepContent = ({ content }: { content: ReadingContent }) => (
     <Card className="relative overflow-hidden bg-black/40 border-[#f5c16c]/20">
@@ -232,7 +234,8 @@ const QuizStepContent = ({ content }: { content: QuizContent }) => {
     );
 };
 
-const CodingStepContent = ({ content }: { content: CodingContent }) => (
+// MODIFIED: This component now accepts an `onStartChallenge` callback.
+const CodingStepContent = ({ content, onStartChallenge }: { content: CodingContent, onStartChallenge: (content: CodingContent) => void }) => (
     <Card className="relative overflow-hidden bg-black/40 border-[#f5c16c]/20">
         <div
           className="pointer-events-none absolute inset-0 opacity-20 mix-blend-overlay"
@@ -258,16 +261,21 @@ const CodingStepContent = ({ content }: { content: CodingContent }) => (
             </div>
             <div className="p-4 rounded-lg bg-[#f5c16c]/10 border border-[#f5c16c]/30">
                 <p className="text-sm text-[#f5c16c]">
-                    This coding challenge will be generated dynamically when you start working on it. 
+                    This coding challenge will be generated dynamically when you start working on it.
                     The challenge will be tailored to the <strong>{content.topic}</strong> topic at a <strong>{content.difficulty}</strong> level using <strong>{content.language}</strong>.
                 </p>
             </div>
-            <Button className="w-full bg-gradient-to-r from-[#f5c16c] to-[#d4a855] text-black font-semibold hover:from-[#d4a855] hover:to-[#f5c16c]">
+            {/* MODIFIED: The button now triggers the onStartChallenge callback. */}
+            <Button 
+                className="w-full bg-gradient-to-r from-[#f5c16c] to-[#d4a855] text-black font-semibold hover:from-[#d4a855] hover:to-[#f5c16c]"
+                onClick={() => onStartChallenge(content)}
+            >
                 Start Coding Challenge
             </Button>
         </CardContent>
     </Card>
 );
+
 
 const SubmissionStepContent = ({ content }: { content: SubmissionContent }) => (
     <Card className="relative overflow-hidden bg-black/40 border-[#f5c16c]/20">
@@ -342,11 +350,12 @@ export function ModuleLearningView({ learningPath, chapter, questDetails: initia
     const [currentStepIndex, setCurrentStepIndex] = useState(0);
     const [stepProgress, setStepProgress] = useState<Record<string, 'Completed' | 'NotStarted'>>({});
     const [isCompleting, setIsCompleting] = useState<string | null>(null);
+    // ADDED: State to manage the coding challenge modal.
+    const [activeCodingChallenge, setActiveCodingChallenge] = useState<CodingContent | null>(null);
 
     useEffect(() => {
         const initializeAndFetchProgress = async () => {
             let currentDetails = questDetails;
-            // Step 1: Generate steps if they don't exist.
             if (!currentDetails.steps || currentDetails.steps.length === 0) {
                 setIsLoading(true);
                 try {
@@ -365,18 +374,15 @@ export function ModuleLearningView({ learningPath, chapter, questDetails: initia
                 }
             }
 
-            // Step 2: Always fetch the latest user progress for this quest.
             try {
                 const progressResponse = await userQuestProgressApi.getUserQuestProgress(currentDetails.id);
                 const progressData = progressResponse.data;
-
                 const newStepProgress: Record<string, 'Completed' | 'NotStarted'> = {};
                 currentDetails.steps.forEach(step => {
                     const status = progressData?.stepStatuses[step.id];
                     newStepProgress[step.id] = status === 'Completed' ? 'Completed' : 'NotStarted';
                 });
                 setStepProgress(newStepProgress);
-
             } catch (error) {
                 console.warn("Could not fetch user progress, defaulting all steps to NotStarted:", error);
                 const defaultProgress: Record<string, 'Completed' | 'NotStarted'> = {};
@@ -388,16 +394,13 @@ export function ModuleLearningView({ learningPath, chapter, questDetails: initia
                 setIsLoading(false);
             }
         };
-
         initializeAndFetchProgress();
-    }, [questDetails.id]); // Removed questDetails from dependencies to prevent infinite loops
+    }, [questDetails.id]);
 
-    // CRITICAL FIX: Simpler navigation without useCallback dependencies
     const handleNextStep = () => {
         setCurrentStepIndex(prev => {
             const maxIndex = (questDetails?.steps?.length || 1) - 1;
             const nextIndex = prev + 1;
-            console.log('handleNextStep - current:', prev, 'next:', nextIndex, 'max:', maxIndex);
             return nextIndex <= maxIndex ? nextIndex : prev;
         });
     };
@@ -405,7 +408,6 @@ export function ModuleLearningView({ learningPath, chapter, questDetails: initia
     const handlePrevStep = () => {
         setCurrentStepIndex(prev => {
             const prevIndex = prev - 1;
-            console.log('handlePrevStep - current:', prev, 'prev:', prevIndex);
             return prevIndex >= 0 ? prevIndex : 0;
         });
     };
@@ -414,10 +416,7 @@ export function ModuleLearningView({ learningPath, chapter, questDetails: initia
         setIsCompleting(stepId);
         try {
             await questApi.updateQuestStepProgress(questDetails.id, stepId, 'Completed');
-
             setStepProgress(prev => ({ ...prev, [stepId]: 'Completed' }));
-
-            // Auto-advance to next step after completion
             if (questDetails && currentStepIndex < questDetails.steps.length - 1) {
                 setTimeout(() => { 
                     handleNextStep(); 
@@ -442,8 +441,9 @@ export function ModuleLearningView({ learningPath, chapter, questDetails: initia
                 return <InteractiveStepContent content={step.content as InteractiveContent} />;
             case 'Quiz':
                 return <QuizStepContent content={step.content as QuizContent} />;
+            // MODIFIED: Pass the callback to open the modal.
             case 'Coding':
-                return <CodingStepContent content={step.content as CodingContent} />;
+                return <CodingStepContent content={step.content as CodingContent} onStartChallenge={setActiveCodingChallenge} />;
             case 'Submission':
                 return <SubmissionStepContent content={step.content as SubmissionContent} />;
             case 'Reflection':
@@ -457,7 +457,6 @@ export function ModuleLearningView({ learningPath, chapter, questDetails: initia
         }
     };
 
-    // Get current step safely
     const currentStep = questDetails?.steps?.[currentStepIndex];
     const totalSteps = questDetails?.steps?.length || 0;
     const isFirstStep = currentStepIndex === 0;
@@ -483,6 +482,17 @@ export function ModuleLearningView({ learningPath, chapter, questDetails: initia
 
     return (
         <div className="space-y-6 pb-40">
+            {/* ADDED: Render the modal conditionally. */}
+            {activeCodingChallenge && (
+                <CodingChallengeModal
+                    challengeContent={activeCodingChallenge}
+                    onClose={() => setActiveCodingChallenge(null)}
+                    onComplete={() => {
+                        handleCompleteStep(currentStep.id);
+                        setActiveCodingChallenge(null);
+                    }}
+                />
+            )}
             <div className="flex items-center justify-between">
                 <div>
                     <div className="flex items-center gap-2 text-sm text-white/60 mb-2">
@@ -536,7 +546,6 @@ export function ModuleLearningView({ learningPath, chapter, questDetails: initia
                 </CardContent>
             </Card>
 
-            {/* Fixed Navigation Bar - positioned above bottom nav */}
             <div className="fixed bottom-36 left-0 right-0 z-40">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="flex items-center justify-between py-4">

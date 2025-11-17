@@ -20,6 +20,8 @@ import {
 } from 'lucide-react';
 import { QuestSummary } from '@/types/quest';
 import questApi from '@/api/questApi';
+// MODIFICATION: Import the usePageTransition hook.
+import { usePageTransition } from '@/components/layout/PageTransition';
 
 interface QuestListViewProps {
   activeQuests: QuestSummary[];
@@ -39,6 +41,8 @@ export default function QuestListView({
   userStats
 }: QuestListViewProps) {
   const router = useRouter();
+  // MODIFICATION: Get the navigateTo function from our custom hook.
+  const { navigateTo } = usePageTransition();
   const headerRef = useRef<HTMLDivElement>(null);
   const activeQuestsRef = useRef<HTMLDivElement>(null);
   const completedQuestsRef = useRef<HTMLDivElement>(null);
@@ -109,23 +113,20 @@ export default function QuestListView({
     setGeneratingQuestId(quest.id);
 
     try {
-      // First, try to get quest details to check if steps already exist.
       const detailsResponse = await questApi.getQuestDetails(quest.id);
 
-      // If steps exist (Scenario A), navigate directly.
       if (detailsResponse.isSuccess && detailsResponse.data?.steps && detailsResponse.data.steps.length > 0) {
         console.log(`Quest steps for ${quest.title} already exist. Navigating directly.`);
-        router.push(`/quests/${quest.learningPathId}/${quest.chapterId}/${quest.id}`);
+        // MODIFICATION: Use the navigateTo function to trigger the transition.
+        navigateTo(`/quests/${quest.learningPathId}/${quest.chapterId}/${quest.id}`);
       } else {
-        // If steps do NOT exist (Scenario B), generate them now.
         console.log(`Quest steps for ${quest.title} not found. Generating now...`);
         const generateResponse = await questApi.generateQuestSteps(quest.id);
 
         if (generateResponse.isSuccess && generateResponse.data && generateResponse.data.length > 0) {
-          // Generation was successful, now navigate.
-          router.push(`/quests/${quest.learningPathId}/${quest.chapterId}/${quest.id}`);
+          // MODIFICATION: Use the navigateTo function to trigger the transition.
+          navigateTo(`/quests/${quest.learningPathId}/${quest.chapterId}/${quest.id}`);
         } else {
-          // Generation failed.
           alert('Failed to generate new quest steps. Please try again.');
         }
       }
@@ -133,34 +134,29 @@ export default function QuestListView({
       console.error('Error starting quest:', error);
       alert('An error occurred while starting the quest. It might be locked by a prerequisite in the backend.');
     } finally {
-      // This ensures the loading state is turned off regardless of success or failure.
       setGeneratingQuestId(null);
     }
   };
 
   const QuestCard = ({ quest, isLocked = false }: { quest: QuestSummary; isLocked?: boolean }) => (
-    <Link
-      href={isLocked ? '#' : `/quests/${quest.learningPathId}/${quest.chapterId}/${quest.id}`}
+    <button
       onClick={(e) => {
         if (isLocked) {
           e.preventDefault();
           return;
         }
-        // For available quests, we handle the logic in handleStartQuest instead of direct navigation
         handleStartQuest(e, quest);
       }}
-      className={`quest-card group relative block transition ${
-        isLocked ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'
-      }`}
+      className={`quest-card group relative block w-full text-left transition ${isLocked ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'
+        }`}
     >
       <Card
-        className={`relative overflow-hidden rounded-[28px] border bg-gradient-to-br from-[#2d1810] via-[#1a0a08] to-[#0a0506] shadow-[0_20px_50px_rgba(4,0,14,0.65)] transition-all duration-300 group-hover:-translate-y-1 group-hover:shadow-[0_28px_65px_rgba(245,193,108,0.25)] ${
-          quest.status === 'InProgress'
+        className={`relative overflow-hidden rounded-[28px] border bg-gradient-to-br from-[#2d1810] via-[#1a0a08] to-[#0a0506] shadow-[0_20px_50px_rgba(4,0,14,0.65)] transition-all duration-300 group-hover:-translate-y-1 group-hover:shadow-[0_28px_65px_rgba(245,193,108,0.25)] ${quest.status === 'InProgress'
             ? 'border-[#f5c16c]/50'
             : quest.status === 'Completed'
-            ? 'border-emerald-400/50'
-            : 'border-[#f5c16c]/20'
-        }`}
+              ? 'border-emerald-400/50'
+              : 'border-[#f5c16c]/20'
+          }`}
       >
         <div
           className="pointer-events-none absolute inset-0 opacity-25 mix-blend-overlay"
@@ -176,11 +172,10 @@ export default function QuestListView({
         <CardContent className="relative z-10 space-y-4 p-6">
           <div className="flex items-start justify-between">
             <div className="flex flex-1 gap-4">
-              <div className={`flex h-14 w-14 items-center justify-center rounded-2xl border shadow-[0_8px_20px_rgba(245,193,108,0.25)] ${
-                quest.status === 'Completed' ? 'border-emerald-400/40 bg-emerald-400/10 text-emerald-200'
+              <div className={`flex h-14 w-14 items-center justify-center rounded-2xl border shadow-[0_8px_20px_rgba(245,193,108,0.25)] ${quest.status === 'Completed' ? 'border-emerald-400/40 bg-emerald-400/10 text-emerald-200'
                   : quest.status === 'InProgress' ? 'border-[#f5c16c]/40 bg-[#f5c16c]/15 text-[#f5c16c]'
                     : 'border-[#f5c16c]/20 bg-[#f5c16c]/5 text-white/70'
-              }`}>
+                }`}>
                 {quest.status === 'Completed' ? <CheckCircle className="h-7 w-7" />
                   : isLocked ? <Lock className="h-7 w-7" />
                     : <BookOpen className="h-7 w-7" />}
@@ -195,18 +190,16 @@ export default function QuestListView({
           </div>
 
           {(quest.status === 'InProgress' || quest.status === 'NotStarted') && !isLocked && (
-            <Button
-              // The button itself no longer needs an onClick, as the parent Link handles it.
-              disabled={generatingQuestId === quest.id}
-              className="w-full bg-gradient-to-r from-[#f5c16c] to-[#d4a855] text-black font-semibold hover:from-[#d4a855] hover:to-[#f5c16c] pointer-events-none" // pointer-events-none makes it not interfere with the Link's click
+            <div
+              className="w-full h-10 flex items-center justify-center bg-gradient-to-r from-[#f5c16c] to-[#d4a855] text-black font-semibold rounded-full"
             >
               {generatingQuestId === quest.id ? (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               ) : (
                 <Sparkles className="mr-2 h-4 w-4" />
               )}
-              {generatingQuestId === quest.id ? 'Forging Quest...' : (quest.status === 'InProgress' ? 'Continue Quest' : 'Start Quest')}
-            </Button>
+              <span>{generatingQuestId === quest.id ? 'Forging Quest...' : (quest.status === 'InProgress' ? 'Continue Quest' : 'Start Quest')}</span>
+            </div>
           )}
 
           {isLocked && (
@@ -216,7 +209,7 @@ export default function QuestListView({
           )}
         </CardContent>
       </Card>
-    </Link>
+    </button>
   );
 
   return (
@@ -248,18 +241,18 @@ export default function QuestListView({
               </p>
             </div>
             <div className="flex items-center space-x-3 rounded-full border border-[#f5c16c]/20 bg-black/40 p-2">
-                <Label htmlFor="learning-mode" className="pl-2 text-xs font-semibold text-white/70">
-                    Structured Path
-                </Label>
-                <Switch
-                    id="learning-mode"
-                    checked={learningMode === 'free'}
-                    onCheckedChange={(checked) => setLearningMode(checked ? 'free' : 'structured')}
-                    className="data-[state=checked]:bg-gradient-to-r data-[state=checked]:from-[#f5c16c] data-[state=checked]:to-[#d4a855]"
-                />
-                <Label htmlFor="learning-mode" className="pr-2 text-xs font-semibold text-white/70">
-                    Free Path
-                </Label>
+              <Label htmlFor="learning-mode" className="pl-2 text-xs font-semibold text-white/70">
+                Structured Path
+              </Label>
+              <Switch
+                id="learning-mode"
+                checked={learningMode === 'free'}
+                onCheckedChange={(checked) => setLearningMode(checked ? 'free' : 'structured')}
+                className="data-[state=checked]:bg-gradient-to-r data-[state=checked]:from-[#f5c16c] data-[state=checked]:to-[#d4a855]"
+              />
+              <Label htmlFor="learning-mode" className="pr-2 text-xs font-semibold text-white/70">
+                Free Path
+              </Label>
             </div>
           </div>
           <div className="grid gap-4 text-xs uppercase tracking-[0.3em] text-white/60 sm:grid-cols-3">

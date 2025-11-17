@@ -1,3 +1,4 @@
+// roguelearn-web/src/types/event-service.ts
 // Event Service API Types
 
 export interface Problem {
@@ -156,11 +157,25 @@ export interface SubmitSolutionRequest {
   code: string;
 }
 
+// MODIFIED: This interface has been updated to accurately reflect the JSON response
+// from the Go backend's general /submissions endpoint. It now includes the 'success'
+// boolean property, resolving the TypeScript compilation error.
 export interface SubmitSolutionResponse {
-  submission_id: string;
-  status: string;
+  success: boolean;
   message: string;
+  status: string; // e.g., 'accepted', 'wrong_answer'
+  submission_id?: string; // Kept for potential compatibility
+  stdout?: string;
+  stderr?: string;
+  error?: string; // Corresponds to error_type
+  code_problem_id?: string;
+  problem_title?: string;
+  language_id?: string;
+  language_name?: string;
+  submitted_at?: string;
+  execution_time_ms?: string;
 }
+
 
 export interface CreateEventRequestPayload {
   requester_guild_id: string;

@@ -1,4 +1,4 @@
-// Event Service API Client
+// roguelearn-web/src/api/eventServiceApi.ts
 import axiosCodeBattleClient from './axiosCodeBattleClient';
 import { createClient } from '@/utils/supabase/client';
 import type {
@@ -86,13 +86,39 @@ const eventServiceApi = {
     }
   },
 
+  // ADDED: New function to find a suitable problem for a quest step.
+  /**
+   * Find a single problem by topic and difficulty (for quest steps).
+   * This assumes the backend exposes a GET /problems/find endpoint with these filters.
+   */
+  async findProblem(topic: string, difficulty: string): Promise<ApiResponse<Problem>> {
+    try {
+      const response = await axiosCodeBattleClient.get('/problems/find', {
+        params: { topic, difficulty },
+      });
+      if (response.data.success && response.data.data) {
+        return { success: true, data: response.data.data };
+      }
+      return { success: false, error: { message: 'Problem not found or invalid response' } };
+    } catch (error: any) {
+      return {
+        success: false,
+        error: {
+          message: error.normalized?.message || 'Failed to find a suitable problem',
+          details: error.normalized?.details,
+        },
+      };
+    }
+  },
+
   // ============ Submissions ============
   /**
-   * Submit general solution (authenticated)
+   * Submit general solution (authenticated) for practice or non-event quests.
    */
   async submitSolution(payload: SubmitSolutionRequest): Promise<ApiResponse<SubmitSolutionResponse>> {
     try {
       const response = await axiosCodeBattleClient.post('/submissions', payload);
+      // The backend response for /submissions is expected to be the submission result directly
       return { success: true, data: response.data };
     } catch (error: any) {
       return {
