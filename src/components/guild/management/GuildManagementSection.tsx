@@ -156,7 +156,7 @@ export function GuildManagementSection({ guildId, onLeftGuild }: GuildManagement
 
   return (
     <div className="flex flex-col gap-6">
-      {myRole === "GuildMaster" && (
+      {(myRole === "GuildMaster" || myRole === "Officer") && (
         <>
           <InviteMembersCard onInvite={sendInvite} />
           <CreateEventRequestCard guildId={guildId} onRequestCreated={reload} />

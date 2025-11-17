@@ -9,7 +9,7 @@ import PartyStash from "./PartyStash";
 import MeetingManagement from "./MeetingManagement";
 import InviteMemberModal from "./InviteMemberModal";
 import { createClient } from "@/utils/supabase/client";
-import RoleGate from "@/components/auth/RoleGate";
+import RoleGate from "@/components/party/RoleGate";
 import { usePartyRole } from "@/hooks/usePartyRole";
 import { Users, Settings, UserPlus, LogOut } from "lucide-react";
 

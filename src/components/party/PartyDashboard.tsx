@@ -5,7 +5,7 @@ import { PartyDto, PartyMemberDto, PartyInvitationDto } from "@/types/parties";
 import PartyStats from "./PartyStats";
 import PartyMembersList from "./PartyMembersList";
 import InvitationManagement from "./InvitationManagement";
-import RoleGate from "@/components/auth/RoleGate";
+import RoleGate from "@/components/party/RoleGate";
 
 export default function PartyDashboard({ partyId }: { partyId: string }) {
   const [members, setMembers] = useState<PartyMemberDto[]>([]);

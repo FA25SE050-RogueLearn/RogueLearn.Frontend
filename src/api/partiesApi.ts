@@ -65,6 +65,15 @@ const partiesApi = {
         data: res.data,
       })),
 
+  /** POST /api/parties/{partyId}/stash - Add a resource to party stash */
+  addResource: (
+    partyId: string,
+    payload: AddPartyResourceRequest
+  ): Promise<ApiResponse<PartyStashItemDto>> =>
+    axiosClient
+      .post<PartyStashItemDto>(`/api/parties/${partyId}/stash`, payload)
+      .then((res) => ({ isSuccess: true, data: res.data })),
+
   /** GET /api/parties/{partyId}/stash/{stashItemId} - Get a stash item by id */
   getResourceById: (
     partyId: string,
@@ -144,17 +153,6 @@ const partiesApi = {
         data: res.data,
       })),
 
-  /** POST /api/parties/{partyId}/stash - Add a resource to party stash (Party Leader only) */
-  addResource: (
-    partyId: string,
-    payload: AddPartyResourceRequest
-  ): Promise<ApiResponse<PartyStashItemDto>> =>
-    axiosClient
-      .post<PartyStashItemDto>(`/api/parties/${partyId}/stash`, payload)
-      .then((res) => ({
-        isSuccess: true,
-        data: res.data,
-      })),
 
   /** PUT /api/parties/{partyId}/stash/{stashItemId} - Update a stash item (Party Leader only) */
   updateResource: (

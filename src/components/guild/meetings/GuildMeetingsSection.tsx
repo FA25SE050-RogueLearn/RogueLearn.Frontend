@@ -9,6 +9,7 @@ import type { GuildMemberDto, GuildRole } from "@/types/guilds";
 import type { MeetingDto, MeetingParticipantDto, ArtifactInputDto, MeetingDetailsDto } from "@/types/meetings";
 import { createClient } from "@/utils/supabase/client";
 import { datetimeLocalBangkok, formatBangkok } from "@/utils/time";
+import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
 
 interface Props {
   guildId: string;
@@ -56,7 +57,9 @@ export default function GuildMeetingsSection({ guildId }: Props) {
   }>({ meeting: null, google: null });
 
   const [guildMeetings, setGuildMeetings] = useState<MeetingDto[]>([]);
-  const [selectedMeetingDetails, setSelectedMeetingDetails] = useState<MeetingDetailsDto | null>(null);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [detailsById, setDetailsById] = useState<Record<string, MeetingDetailsDto | null>>({});
+  const [detailsLoading, setDetailsLoading] = useState<Record<string, boolean>>({});
   const [loadingMeetings, setLoadingMeetings] = useState(false);
   const [members, setMembers] = useState<GuildMemberDto[]>([]);
 
@@ -318,7 +321,8 @@ export default function GuildMeetingsSection({ guildId }: Props) {
       }
 
       const detailsRes = await meetingsApi.getMeetingDetails(meetingId);
-      setSelectedMeetingDetails(detailsRes.data ?? null);
+      setDetailsById((prev) => ({ ...prev, [meetingId]: detailsRes.data ?? null }));
+      setExpandedId(meetingId);
 
       try {
         if (!spaceName && latest?.name) {
@@ -374,11 +378,18 @@ export default function GuildMeetingsSection({ guildId }: Props) {
     }
   }
 
-  async function loadDetails(meetingId: string) {
+  async function loadDetailsIfNeeded(meetingId: string) {
+    if (!meetingId) return;
+    if (detailsById[meetingId] || detailsLoading[meetingId]) return;
+    setDetailsLoading((prev) => ({ ...prev, [meetingId]: true }));
     try {
       const res = await meetingsApi.getMeetingDetails(meetingId);
-      setSelectedMeetingDetails(res.data ?? null);
-    } catch (e) {}
+      setDetailsById((prev) => ({ ...prev, [meetingId]: res.data ?? null }));
+    } catch (e) {
+      setDetailsById((prev) => ({ ...prev, [meetingId]: null }));
+    } finally {
+      setDetailsLoading((prev) => ({ ...prev, [meetingId]: false }));
+    }
   }
 
   return (
@@ -535,128 +546,73 @@ export default function GuildMeetingsSection({ guildId }: Props) {
         </div>
       )}
 
-      {/* Past Meetings List */}
-      <div className={MEETING_CARD_CLASS}>
-        {/* Texture overlay */}
-        <div className="pointer-events-none absolute inset-0" style={CARD_TEXTURE} />
-        
-        <div className="relative p-6">
-          <div className="mb-4 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="rounded-full bg-[#f5c16c]/10 p-2">
-                <Clock className="h-5 w-5 text-[#f5c16c]" />
-              </div>
-              <h5 className="text-base font-semibold text-[#f5c16c]">Meeting History</h5>
-            </div>
-            {loadingMeetings && (
-              <span className="text-xs text-white/50">Loading...</span>
-            )}
-          </div>
-          
-          {guildMeetings.length === 0 ? (
-            <div className="rounded-lg border border-[#f5c16c]/20 bg-[#f5c16c]/5 p-8 text-center">
-              <Calendar className="mx-auto mb-3 h-12 w-12 text-[#f5c16c]/40" />
-              <p className="text-sm text-white/60">No meetings scheduled yet.</p>
-            </div>
-          ) : (
-            <ul className="space-y-3">
-              {guildMeetings.map((m) => (
-                <li
-                  key={(m.meetingId ?? m.title) + m.scheduledStartTime}
-                  className="rounded-lg border border-[#f5c16c]/20 bg-gradient-to-br from-black/40 to-[#1a0a08]/40 p-4 transition-all hover:border-[#f5c16c]/40"
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex-1">
-                      <h6 className="mb-1 font-medium text-white">{m.title}</h6>
-                      <div className="flex items-center gap-4 text-xs text-white/50">
-                        <div className="flex items-center gap-1.5">
-                          <Clock className="h-3.5 w-3.5" />
-                          <span>
-                            {formatBangkok(m.scheduledStartTime, { includeSeconds: false, separator: " " })}
-                          </span>
+      <div className="rounded border border-white/10 bg-white/5 p-4">
+        <div className="mb-2 flex items-center justify-between">
+          <h5 className="text-xs font-semibold">Past Meetings</h5>
+          {loadingMeetings && <span className="text-xs text-white/60">Loading...</span>}
+        </div>
+        {guildMeetings.length === 0 ? (
+          <div className="text-xs text-white/60">No meetings yet.</div>
+        ) : (
+          <Accordion type="single" collapsible value={expandedId ?? undefined} onValueChange={(val) => {
+            const v = typeof val === "string" ? val : null;
+            setExpandedId(v ?? null);
+            if (v) loadDetailsIfNeeded(v);
+          }}>
+            {guildMeetings.map((m) => {
+              const id = m.meetingId ?? `${m.title}-${m.scheduledStartTime}`;
+              const details = m.meetingId ? detailsById[m.meetingId] : null;
+              const isLoading = m.meetingId ? detailsLoading[m.meetingId] : false;
+              return (
+                <AccordionItem key={id} value={m.meetingId ?? id}>
+                  <AccordionTrigger>
+                    <div className="flex w-full items-center justify-between">
+                      <div>
+                        <div className="text-sm font-medium text-white">{m.title}</div>
+                        <div className="text-[11px] text-white/60">
+                          {formatBangkok(m.scheduledStartTime, { includeSeconds: false, separator: " " })} – {formatBangkok(m.scheduledEndTime, { includeSeconds: false, separator: " " })}
                         </div>
-                        <span className="text-white/30">→</span>
-                        <span>
-                          {formatBangkok(m.scheduledEndTime, { includeSeconds: false, separator: " " })}
-                        </span>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      {m.meetingId && (
-                        <button
-                          onClick={() => loadDetails(m.meetingId!)}
-                          className="rounded-lg border border-[#f5c16c]/30 bg-transparent px-3 py-2 text-xs font-medium text-[#f5c16c] transition-all hover:bg-[#f5c16c]/10"
-                        >
-                          View Details
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
+                  </AccordionTrigger>
+                  <AccordionContent>
+                    {isLoading ? (
+                      <div className="text-xs text-white/60">Loading details...</div>
+                    ) : details ? (
+                      <div className="space-y-2">
+                        <div className="text-sm font-medium text-white">{details.meeting?.title}</div>
+                        <div className="text-xs text-white/70">Participants ({details.participants?.length ?? 0})</div>
+                        <ul className="grid grid-cols-1 gap-2 md:grid-cols-2">
+                          {details.participants?.map((p, idx) => (
+                            <li key={(p.userId ?? String(idx)) + (p.joinTime ?? "")} className="rounded border border-white/10 bg-white/5 p-2">
+                              <div className="text-xs text-white">
+                                {p.displayName ?? p.userId}
+                                <span className="ml-2 text-white/60">{p.roleInMeeting ?? "participant"}</span>
+                              </div>
+                              <div className="text-[11px] text-white/60">
+                                {p.joinTime ? formatBangkok(p.joinTime, { includeSeconds: false, separator: " " }) : ""}
+                                {p.leaveTime ? ` → ${formatBangkok(p.leaveTime, { includeSeconds: false, separator: " " })}` : ""}
+                              </div>
+                            </li>
+                          ))}
+                        </ul>
+                        <div className="text-xs text-white/70">Summary</div>
+                        <div className="whitespace-pre-wrap rounded border border-white/10 bg-white/5 p-3 text-xs text-white/80">
+                          {details.summaryText ?? "No summary available."}
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="text-xs text-white/60">No details available.</div>
+                    )}
+                  </AccordionContent>
+                </AccordionItem>
+              );
+            })}
+          </Accordion>
+        )}
       </div>
 
-      {/* Meeting Details Modal */}
-      {selectedMeetingDetails && (
-        <div className={MEETING_CARD_CLASS}>
-          {/* Texture overlay */}
-          <div className="pointer-events-none absolute inset-0" style={CARD_TEXTURE} />
-          
-          <div className="relative p-6">
-            <div className="mb-4 flex items-center gap-3">
-              <div className="rounded-full bg-[#f5c16c]/10 p-2">
-                <Users className="h-5 w-5 text-[#f5c16c]" />
-              </div>
-              <h5 className="text-base font-semibold text-[#f5c16c]">Meeting Details</h5>
-            </div>
-            
-            <div className="space-y-4">
-              <div>
-                <h6 className="mb-2 text-sm font-medium text-white">
-                  {selectedMeetingDetails.meeting?.title}
-                </h6>
-              </div>
-              
-              <div>
-                <p className="mb-3 text-xs font-medium text-[#f5c16c]/70">
-                  Participants ({selectedMeetingDetails.participants?.length ?? 0})
-                </p>
-                <ul className="grid grid-cols-1 gap-3 md:grid-cols-2">
-                  {selectedMeetingDetails.participants?.map((p, idx) => (
-                    <li
-                      key={(p.userId ?? String(idx)) + (p.joinTime ?? "")}
-                      className="rounded-lg border border-[#f5c16c]/20 bg-black/40 p-3"
-                    >
-                      <div className="mb-1 flex items-center justify-between">
-                        <span className="text-sm font-medium text-white">
-                          {p.displayName ?? p.userId}
-                        </span>
-                        <span className="rounded bg-[#f5c16c]/20 px-2 py-0.5 text-xs text-[#f5c16c]">
-                          {p.roleInMeeting ?? "participant"}
-                        </span>
-                      </div>
-                      <div className="text-xs text-white/50">
-                        {p.joinTime ? formatBangkok(p.joinTime, { includeSeconds: false, separator: " " }) : ""}
-                        {p.leaveTime ? ` → ${formatBangkok(p.leaveTime, { includeSeconds: false, separator: " " })}` : ""}
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-              
-              <div>
-                <p className="mb-2 text-xs font-medium text-[#f5c16c]/70">Meeting Summary</p>
-                <div className="whitespace-pre-wrap rounded-lg border border-[#f5c16c]/20 bg-black/40 p-4 text-sm leading-relaxed text-white/70">
-                  {selectedMeetingDetails.summaryText ?? "No summary available."}
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+
     </div>
   );
 }

@@ -68,6 +68,7 @@ export default function NoteEditorPage() {
   const [note, setNote] = useState<NoteDto | null>(null);
   const [title, setTitle] = useState("");
   const [isPublic, setIsPublic] = useState(false);
+  const [lastSavedIsPublic, setLastSavedIsPublic] = useState<boolean>(false);
   const [status, setStatus] = useState<EditorStatus>("loading");
   const [initialBlocks, setInitialBlocks] = useState<
     PartialBlock[] | undefined
@@ -75,6 +76,8 @@ export default function NoteEditorPage() {
 
   const [myTags, setMyTags] = useState<Tag[]>([]);
   const [noteTags, setNoteTags] = useState<Tag[]>([]);
+  const [newTagName, setNewTagName] = useState<string>("");
+  const [lastTagAction, setLastTagAction] = useState<{ type: "attach" | "detach"; tagId: string; tagName: string } | null>(null);
   const [aiSuggestions, setAiSuggestions] = useState<
     {
       label: string;
@@ -85,7 +88,9 @@ export default function NoteEditorPage() {
     }[]
   >([]);
   const [aiLoading, setAiLoading] = useState(false);
+  const [selectedAiKeys, setSelectedAiKeys] = useState<string[]>([]);
   const saveTimerRef = useRef<number | null>(null);
+  const [queuedCount, setQueuedCount] = useState(0);
 
   // Share to Party Stash modal state
   const [shareOpen, setShareOpen] = useState(false);
@@ -113,6 +118,7 @@ export default function NoteEditorPage() {
           setNote(n);
           setTitle(n.title);
           setIsPublic(n.isPublic);
+          setLastSavedIsPublic(n.isPublic);
           // Parse content which may be a JSON string or an object already
           let blocks: PartialBlock[] | undefined = undefined;
           const raw = n.content;
@@ -159,6 +165,15 @@ export default function NoteEditorPage() {
         if (parties.isSuccess) setMyParties(parties.data);
       } catch {}
     };
+    try {
+      const raw = localStorage.getItem(`noteDraft:${noteId}`);
+      if (raw) {
+        const d = JSON.parse(raw);
+        if (typeof d?.title === "string") setTitle(d.title);
+        if (typeof d?.isPublic === "boolean") setIsPublic(d.isPublic);
+        if (Array.isArray(d?.content) && d.content.length > 0) setInitialBlocks(d.content);
+      }
+    } catch {}
     load();
     loadTags();
   }, [noteId]);
@@ -203,19 +218,41 @@ export default function NoteEditorPage() {
           : null;
       if (existingContent == null) return; // avoid overwriting with empty content
       setStatus("saving");
+      const payload = {
+        authUserId,
+        title: title.trim(),
+        isPublic: isPublic,
+        content: existingContent,
+      };
       try {
-        await notesApi.update(noteId, {
-          authUserId,
-          title: title.trim(),
-          isPublic: isPublic,
-          content: existingContent,
-        });
+        if (!navigator.onLine) {
+          const qk = `notesQueue:${noteId}`;
+          const raw = localStorage.getItem(qk);
+          const arr = raw ? JSON.parse(raw) : [];
+          arr.push({ ts: Date.now(), payload });
+          localStorage.setItem(qk, JSON.stringify(arr));
+          localStorage.setItem(`noteDraft:${noteId}`, JSON.stringify({ title, isPublic, content: editor ? editor.document : initialBlocks }));
+          setQueuedCount(arr.length);
+        } else {
+          await notesApi.update(noteId, payload);
+          localStorage.setItem(`noteDraft:${noteId}`, JSON.stringify({ title, isPublic, content: editor ? editor.document : initialBlocks }));
+          setLastSavedIsPublic(isPublic);
+        }
+      } catch (e: any) {
+        if (navigator.onLine) {
+          if (e?.response?.status === 403) {
+            toast.error("Permission denied updating public state");
+          } else {
+            toast.error("Failed to save changes");
+          }
+          setIsPublic(lastSavedIsPublic);
+        }
       } finally {
         setStatus("ready");
       }
     }, 1000);
     return () => clearTimeout(handle);
-  }, [title, isPublic, noteId, authUserId]);
+  }, [title, isPublic, noteId, authUserId, editor, initialBlocks, lastSavedIsPublic, note]);
 
   // Save content on change (debounced by BlockNoteView onChange frequency)
   const onEditorChange = () => {
@@ -228,14 +265,30 @@ export default function NoteEditorPage() {
     setStatus("dirty");
     saveTimerRef.current = window.setTimeout(async () => {
       setStatus("saving");
+      const json = editor.document;
+      const payload = {
+        authUserId,
+        content: JSON.stringify(json),
+        isPublic: isPublic,
+        title: title.trim(),
+      };
       try {
-        const json = editor.document; // Block[]
-        await notesApi.update(noteId, {
-          authUserId,
-          content: JSON.stringify(json),
-          isPublic: isPublic,
-          title: title.trim(),
-        });
+        if (!navigator.onLine) {
+          const qk = `notesQueue:${noteId}`;
+          const raw = localStorage.getItem(qk);
+          const arr = raw ? JSON.parse(raw) : [];
+          arr.push({ ts: Date.now(), payload });
+          localStorage.setItem(qk, JSON.stringify(arr));
+          localStorage.setItem(`noteDraft:${noteId}`, JSON.stringify({ title, isPublic, content: json }));
+          setQueuedCount(arr.length);
+        } else {
+          await notesApi.update(noteId, payload);
+          localStorage.setItem(`noteDraft:${noteId}`, JSON.stringify({ title, isPublic, content: json }));
+        }
+      } catch (e: any) {
+        if (navigator.onLine) {
+          toast.error("Failed to save changes");
+        }
       } finally {
         setStatus("ready");
       }
@@ -250,6 +303,36 @@ export default function NoteEditorPage() {
     };
   }, []);
 
+  useEffect(() => {
+    const drain = async () => {
+      if (!noteId || !authUserId) return;
+      const qk = `notesQueue:${noteId}`;
+      const raw = localStorage.getItem(qk);
+      if (!raw) return;
+      const arr = JSON.parse(raw);
+      if (!Array.isArray(arr) || arr.length === 0) return;
+      arr.sort((a: any, b: any) => a.ts - b.ts);
+      for (const it of arr) {
+        try {
+          await notesApi.update(noteId, it.payload);
+        } catch {
+          break;
+        }
+      }
+      localStorage.setItem(qk, JSON.stringify([]));
+      setQueuedCount(0);
+      toast.success("Queued changes synced");
+    };
+    const onOnline = () => {
+      drain();
+    };
+    window.addEventListener("online", onOnline);
+    drain();
+    return () => {
+      window.removeEventListener("online", onOnline);
+    };
+  }, [noteId, authUserId]);
+
   const requestAiTags = async () => {
     if (!authUserId || !noteId) return;
     setAiLoading(true);
@@ -260,6 +343,7 @@ export default function NoteEditorPage() {
         maxTags: 8,
       });
       if (res.isSuccess) setAiSuggestions(res.data.suggestions);
+      setSelectedAiKeys([]);
     } finally {
       setAiLoading(false);
     }
@@ -276,9 +360,34 @@ export default function NoteEditorPage() {
     if (res.isSuccess) {
       toast.success(`Applied ${res.data.totalTagsAssigned} tags`);
       setAiSuggestions([]);
+      setSelectedAiKeys([]);
       const nt = await tagsApi.getTagsForNote(noteId);
       if (nt.isSuccess) setNoteTags(nt.data.tags);
     }
+  };
+
+  const keyForSuggestion = (s: { label: string; matchedTagId?: string }) =>
+    s.matchedTagId ? `id:${s.matchedTagId}` : `new:${s.label.toLowerCase()}`;
+
+  const toggleSelectSuggestion = (s: { label: string; matchedTagId?: string }) => {
+    const k = keyForSuggestion(s);
+    setSelectedAiKeys((prev) => (prev.includes(k) ? prev.filter((x) => x !== k) : [...prev, k]));
+  };
+
+  const applySelected = () => {
+    const existingIds: string[] = [];
+    const newNames: string[] = [];
+    for (const s of aiSuggestions) {
+      const k = keyForSuggestion(s);
+      if (!selectedAiKeys.includes(k)) continue;
+      if (s.matchedTagId) existingIds.push(s.matchedTagId);
+      else newNames.push(s.label);
+    }
+    if (existingIds.length === 0 && newNames.length === 0) {
+      toast.info("No suggestions selected");
+      return;
+    }
+    commitAiTags(existingIds, newNames);
   };
 
   const attachTag = async (tagId: string) => {
@@ -288,6 +397,7 @@ export default function NoteEditorPage() {
       toast.success(`Attached tag '${res.data.tag.name}'`);
       const nt = await tagsApi.getTagsForNote(noteId);
       if (nt.isSuccess) setNoteTags(nt.data.tags);
+      setLastTagAction({ type: "attach", tagId, tagName: res.data.tag.name });
     }
   };
 
@@ -296,6 +406,8 @@ export default function NoteEditorPage() {
     await tagsApi.removeFromNote({ authUserId, noteId, tagId });
     const nt = await tagsApi.getTagsForNote(noteId);
     if (nt.isSuccess) setNoteTags(nt.data.tags);
+    const t = myTags.find((x) => x.id === tagId);
+    setLastTagAction({ type: "detach", tagId, tagName: t?.name ?? "" });
   };
 
   if (status === "loading") {
@@ -328,37 +440,34 @@ export default function NoteEditorPage() {
                 placeholder="Title"
                 className="border-[#f5c16c]/20 bg-black/40 font-semibold text-white focus-visible:border-[#f5c16c] focus-visible:ring-[#f5c16c]/30"
               />
-              <div className="ml-auto flex items-center gap-2">
-                <Checkbox
-                  id="public-toggle"
-                  checked={isPublic}
-                  onCheckedChange={(v) => setIsPublic(!!v)}
-                  className="border-[#f5c16c]/30"
-                />
-                <Label htmlFor="public-toggle" className="text-xs text-[#f5c16c]/80">
-                  Public
-                </Label>
-                <span className="text-xs text-white/60">
-                  {status === "saving"
-                    ? "Saving..."
-                    : status === "dirty"
-                      ? "Unsaved changes"
-                      : "Saved"}
+              <Label htmlFor="public-toggle" className="text-xs">
+                Public
+              </Label>
+              <span className="text-xs text-foreground/60">
+                {status === "saving"
+                  ? "Saving..."
+                  : status === "dirty"
+                    ? "Unsaved changes"
+                    : "Saved"}
+              </span>
+              {queuedCount > 0 && (
+                <span className="ml-2 rounded-md border border-yellow-600/40 bg-yellow-900/20 px-2 py-1 text-xs text-yellow-200">
+                  {queuedCount} queued
                 </span>
-                {/* Share to Party Stash */}
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Dialog open={shareOpen} onOpenChange={setShareOpen}>
-                        <DialogTrigger asChild>
-                          <Button
-                            variant="secondary"
-                            size="sm"
-                            disabled={!isPublic}
-                            className="border-[#f5c16c]/20 bg-black/40 hover:border-[#f5c16c]/40 hover:bg-black/60"
-                          >
-                            Share to Party Stash
-                          </Button>
+              )}
+              {/* Share to Party Stash */}
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Dialog open={shareOpen} onOpenChange={setShareOpen}>
+                      <DialogTrigger asChild>
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          disabled={!isPublic}
+                        >
+                          Share to Party Stash
+                        </Button>
                       </DialogTrigger>
                       <DialogContent>
                         <DialogHeader>
@@ -465,9 +574,9 @@ export default function NoteEditorPage() {
                   )}
                 </Tooltip>
               </TooltipProvider>
-            </div>
-          </div>
-          <Separator className="my-3 bg-[#f5c16c]/20" />
+        </div>
+      </div>
+      <Separator className="my-3" />
 
           <BlockNoteView
             editor={editor}
@@ -590,69 +699,136 @@ export default function NoteEditorPage() {
             >
               {aiLoading ? "Suggesting..." : "Suggest tags"}
             </Button>
-            {aiSuggestions.length > 0 && (
-              <div className="mt-3 space-y-2">
-                {aiSuggestions.map((s, idx) => (
-                  <Card key={idx} className="border-[#f5c16c]/20 bg-black/40">
-                    <CardHeader className="py-2">
-                      <CardTitle className="text-sm text-[#f5c16c]">
+          </div>
+
+          <div className="mt-3 grid grid-cols-[1fr_auto] gap-2">
+            <Input
+              value={newTagName}
+              onChange={(e) => setNewTagName(e.target.value)}
+              placeholder="Create new tag"
+              aria-label="New tag name"
+            />
+            <Button
+              size="sm"
+              onClick={async () => {
+                if (!authUserId || !noteId) return;
+                const name = newTagName.trim();
+                if (!name) {
+                  toast.error("Tag name cannot be empty");
+                  return;
+                }
+                const exists = myTags.some((t) => t.name.toLowerCase() === name.toLowerCase());
+                if (exists) {
+                  toast.error("Tag already exists");
+                  return;
+                }
+                try {
+                  const res = await tagsApi.create({ authUserId, name });
+                  if (res.isSuccess) {
+                    setNewTagName("");
+                    const my = await tagsApi.getMyTags();
+                    if (my.isSuccess) setMyTags((my.data as any)?.tags ?? []);
+                    toast.success("Tag created");
+                  }
+                } catch {
+                  toast.error("Failed to create tag");
+                }
+              }}
+            >
+              Create
+            </Button>
+          </div>
+
+          {lastTagAction && (
+            <div className="mt-2 flex items-center gap-2 text-xs text-foreground/70">
+              <span>
+                Last action: {lastTagAction.type === "attach" ? "Attached" : "Detached"} &quot;{lastTagAction.tagName}&quot;
+              </span>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={async () => {
+                  if (!authUserId || !noteId || !lastTagAction) return;
+                  if (lastTagAction.type === "attach") {
+                    await tagsApi.removeFromNote({ authUserId, noteId, tagId: lastTagAction.tagId });
+                  } else {
+                    await tagsApi.attachToNote({ authUserId, noteId, tagId: lastTagAction.tagId });
+                  }
+                  const nt = await tagsApi.getTagsForNote(noteId);
+                  if (nt.isSuccess) setNoteTags(nt.data.tags);
+                  setLastTagAction(null);
+                }}
+                aria-label="Undo last tag action"
+              >
+                Undo
+              </Button>
+            </div>
+          )}
+
+          <Separator className="my-4" />
+          <h3 className="mb-2 text-sm font-semibold text-white">
+            AI Tag Suggestions
+          </h3>
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={requestAiTags}
+            disabled={aiLoading}
+          >
+            {aiLoading ? "Suggesting..." : "Suggest tags"}
+          </Button>
+          {aiSuggestions.length > 0 && (
+            <div className="mt-3 space-y-2">
+              {aiSuggestions.map((s, idx) => (
+                <Card key={idx} className="border-white/10 bg-black/30">
+                  <CardHeader className="py-2">
+                    <CardTitle className="flex items-center justify-between text-sm text-white">
+                      <span>
                         {s.label}{" "}
-                        <span className="ml-2 text-xs text-white/60">
+                        <span className="ml-2 text-xs text-foreground/60">
                           {Math.round(s.confidence * 100)}%
                         </span>
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="py-2 text-xs text-white/70">
-                      {s.reason}
-                      <div className="mt-2 flex gap-2">
-                        {s.matchedTagId ? (
-                          <Button
-                            size="sm"
-                            variant="secondary"
-                            onClick={() => commitAiTags([s.matchedTagId!], [])}
-                            className="border-[#f5c16c]/20 bg-black/40 hover:border-[#f5c16c]/40 hover:bg-black/60"
-                          >
-                            Attach existing
-                          </Button>
-                        ) : (
-                          <Button
-                            size="sm"
-                            variant="secondary"
-                            onClick={() => commitAiTags([], [s.label])}
-                            className="border-[#f5c16c]/20 bg-black/40 hover:border-[#f5c16c]/40 hover:bg-black/60"
-                          >
-                            Create & attach
-                          </Button>
+                      </span>
+                      <div className="flex items-center gap-2">
+                        {s.matchedTagId && (
+                          <span className="rounded-full border border-green-500/40 bg-green-500/15 px-2 py-0.5 text-[10px] text-green-300">Existing</span>
                         )}
+                        <Checkbox
+                          checked={selectedAiKeys.includes(keyForSuggestion(s))}
+                          onCheckedChange={() => toggleSelectSuggestion(s)}
+                          aria-label="Select suggestion"
+                        />
                       </div>
-                    </CardContent>
-                  </Card>
-                ))}
-                <div className="flex gap-2">
-                  <Button
-                    size="sm"
-                    onClick={() => {
-                      const existingIds = aiSuggestions
-                        .filter((s) => s.matchedTagId)
-                        .map((s) => s.matchedTagId!);
-                      const newNames = aiSuggestions
-                        .filter((s) => !s.matchedTagId)
-                        .map((s) => s.label);
-                      commitAiTags(existingIds, newNames);
-                    }}
-                    className="bg-gradient-to-r from-[#f5c16c] to-[#d4a855] text-black hover:from-[#d4a855] hover:to-[#f5c16c]"
-                  >
-                    Apply all
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => setAiSuggestions([])}
-                    className="text-white/70 hover:text-white"
-                  >
-                    Clear
-                  </Button>
-                </div>
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="py-2 text-xs text-foreground/70">
+                    {s.reason}
+                  </CardContent>
+                </Card>
+              ))}
+              <div className="flex gap-2">
+                <Button size="sm" onClick={applySelected}>Apply selected</Button>
+                <Button
+                  size="sm"
+                  onClick={() => {
+                    const existingIds = aiSuggestions
+                      .filter((s) => s.matchedTagId)
+                      .map((s) => s.matchedTagId!);
+                    const newNames = aiSuggestions
+                      .filter((s) => !s.matchedTagId)
+                      .map((s) => s.label);
+                    commitAiTags(existingIds, newNames);
+                  }}
+                >
+                  Apply all
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => { setAiSuggestions([]); setSelectedAiKeys([]); }}
+                >
+                  Clear
+                </Button>
               </div>
             )}
           </div>
