@@ -178,7 +178,7 @@ export default function NoteEditorPage() {
     loadTags();
   }, [noteId]);
 
-  const AI_BASE_URL = process.env.NEXT_PUBLIC_BLOCKNOTE_AI_SERVER_BASE_URL || "/api/blocknote";
+  const AI_BASE_URL = "/api/blocknote";
 
   const editor = useCreateBlockNote(
     {
