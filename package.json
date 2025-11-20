@@ -9,6 +9,7 @@
     "lint": "eslint ."
   },
   "dependencies": {
+    "@ai-sdk/google": "^2.0.39",
     "@blocknote/core": "^0.41.1",
     "@blocknote/react": "^0.41.1",
     "@blocknote/shadcn": "^0.41.1",

@@ -171,7 +171,7 @@ export default function PartyStashDetailPage() {
     doc
   );
 
-  const AI_BASE_URL = process.env.NEXT_PUBLIC_BLOCKNOTE_AI_SERVER_BASE_URL;
+  const AI_BASE_URL = process.env.NEXT_PUBLIC_BLOCKNOTE_AI_SERVER_BASE_URL || "/api/blocknote";
   const editor = useCreateBlockNote(
     {
       dictionary: AI_BASE_URL ? ({ ...en, ai: aiEn } as any) : undefined,

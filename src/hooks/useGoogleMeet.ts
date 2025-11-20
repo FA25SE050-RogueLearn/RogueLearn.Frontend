@@ -8,6 +8,7 @@
 export type MeetScopes =
   | "https://www.googleapis.com/auth/meetings.space.created"
   | "https://www.googleapis.com/auth/meetings.space.readonly"
+  | "https://www.googleapis.com/auth/drive.readonly"
   // Note: Do NOT request "https://www.googleapis.com/auth/meeting" — this scope is invalid
   // for the Google Meet REST API and will cause an `invalid_scope` error.
 
@@ -23,6 +24,7 @@ declare global {
           initTokenClient: (config: {
             client_id: string;
             scope: string;
+            access_type: string;
             callback: (resp: { access_token: string }) => void;
           }) => TokenClient;
         };
@@ -57,6 +59,7 @@ export function useGoogleMeet() {
         const tokenClient = window.google.accounts.oauth2.initTokenClient({
           client_id: clientId,
           scope: scopeString,
+          access_type: "OPEN",
           callback: (resp: { access_token: string }) => {
             if (!resp?.access_token) {
               reject(new Error("Failed to acquire access_token"));
