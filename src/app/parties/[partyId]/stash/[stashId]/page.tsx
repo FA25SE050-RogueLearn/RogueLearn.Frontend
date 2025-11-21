@@ -171,7 +171,7 @@ export default function PartyStashDetailPage() {
     doc
   );
 
-  const AI_BASE_URL = process.env.NEXT_PUBLIC_BLOCKNOTE_AI_SERVER_BASE_URL;
+  const AI_BASE_URL = "/api/blocknote";
   const editor = useCreateBlockNote(
     {
       dictionary: AI_BASE_URL ? ({ ...en, ai: aiEn } as any) : undefined,
@@ -213,7 +213,7 @@ export default function PartyStashDetailPage() {
   return (
     <div className="mx-auto max-w-4xl space-y-6 p-6">
       {/* Header with RPG styling */}
-      <div className="relative overflow-hidden rounded-[28px] border border-[#f5c16c]/30 bg-gradient-to-br from-[#2d1810] via-[#1a0a08] to-black p-6 shadow-xl">
+      <div className="relative overflow-hidden rounded-[28px] border border-[#f5c16c]/30 bg-linear-to-br from-[#2d1810] via-[#1a0a08] to-black p-6 shadow-xl">
         <div
           className="pointer-events-none absolute inset-0 opacity-25"
           style={{
@@ -258,7 +258,7 @@ export default function PartyStashDetailPage() {
             </button>
             <Link
               href={`/parties/${partyId}/stash`}
-              className="rounded-lg bg-gradient-to-r from-[#f5c16c] to-[#d4a855] px-4 py-2 text-sm font-medium text-black transition-all hover:from-[#d4a855] hover:to-[#f5c16c]"
+              className="rounded-lg bg-linear-to-r from-[#f5c16c] to-[#d4a855] px-4 py-2 text-sm font-medium text-black transition-all hover:from-[#d4a855] hover:to-[#f5c16c]"
             >
               View Stash
             </Link>
@@ -273,7 +273,7 @@ export default function PartyStashDetailPage() {
       )}
 
       {item && (
-        <div className="relative overflow-hidden rounded-[28px] border border-[#f5c16c]/20 bg-gradient-to-br from-[#2d1810]/90 via-[#1a0a08]/95 to-black/98 p-6 shadow-lg">
+        <div className="relative overflow-hidden rounded-[28px] border border-[#f5c16c]/20 bg-linear-to-br from-[#2d1810]/90 via-[#1a0a08]/95 to-black/98 p-6 shadow-lg">
           <div
             className="pointer-events-none absolute inset-0 opacity-25"
             style={{
@@ -332,7 +332,7 @@ export default function PartyStashDetailPage() {
                   <FormattingToolbarController
                     formattingToolbar={() => (
                       <FormattingToolbar>
-                        {...getFormattingToolbarItems()}
+                        {getFormattingToolbarItems()}
                         {AI_BASE_URL && canEdit && <AIToolbarButton />}
                       </FormattingToolbar>
                     )}
@@ -340,26 +340,26 @@ export default function PartyStashDetailPage() {
 
                   {canEdit && (
                     <SuggestionMenuController
-                      triggerCharacter=\"/\"
+                      triggerCharacter="/"
                       getItems={async (query) => {
                         const items = [
                           ...getDefaultReactSlashMenuItems(editor),
                           ...(AI_BASE_URL ? getAISlashMenuItems(editor) : []),
                         ];
-                        const q = (query ?? \"\").toLowerCase();
+                        const q = (query ?? "").toLowerCase();
                         if (!q) return items;
                         return items.filter((item: any) => {
                           const title = (
                             item?.title ||
                             item?.label ||
-                            \"\"
+                            ""
                           ).toLowerCase();
                           const keywords: string[] =
                             item?.keywords || item?.aliases || [];
                           const matchKeywords =
                             Array.isArray(keywords) &&
                             keywords.some((k) =>
-                              (k || \"\").toLowerCase().includes(q)
+                              (k || "").toLowerCase().includes(q)
                             );
                           return title.includes(q) || matchKeywords;
                         });

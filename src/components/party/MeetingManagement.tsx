@@ -120,6 +120,7 @@ export default function MeetingManagement({ partyId }: Props) {
   const requiredBothScopes: MeetScopes[] = [
     "https://www.googleapis.com/auth/meetings.space.created",
     "https://www.googleapis.com/auth/meetings.space.readonly",
+    "https://www.googleapis.com/auth/drive.readonly",
   ];
 
   async function handleCreateMeeting() {
@@ -315,13 +316,26 @@ export default function MeetingManagement({ partyId }: Props) {
       const updated: MeetingDto = { ...activeMeeting.meeting, actualEndTime: new Date().toISOString() } as MeetingDto;
       setActiveMeeting((prev) => ({ ...prev, meeting: updated }));
 
-      // Refresh list
       const listRes = await meetingsApi.getPartyMeetings(partyId);
       setPartyMeetings(listRes.data ?? []);
-      // After saving all information to the backend, end active session state and clear token
-      setActiveMeeting({ meeting: null, google: null });
-      setActiveToken(null);
-      try { sessionStorage.removeItem(`meetingToken:${partyId}`); } catch (_) {}
+      const now = new Date();
+      const in30 = new Date(now.getTime() + 30 * 60 * 1000);
+      const created = await googleMeetApi.createSpace(token, { config: {} });
+      const payload: MeetingDto = {
+        organizerId: authUserId as string,
+        partyId,
+        title: createState.title,
+        scheduledStartTime: now.toISOString(),
+        scheduledEndTime: in30.toISOString(),
+        actualStartTime: now.toISOString(),
+        meetingLink: created.meetingUri ?? "",
+      };
+      const upsertRes = await meetingsApi.upsertMeeting(payload);
+      const saved = upsertRes.data as MeetingDto;
+      setActiveMeeting({
+        meeting: saved ?? payload,
+        google: { spaceId: created.spaceId ?? null, meetingUri: created.meetingUri ?? null },
+      });
     } catch (e: any) {
       setError(e?.message ?? "Failed to end meeting");
     } finally {

@@ -178,7 +178,7 @@
 //     loadTags();
 //   }, [noteId]);
 
-//   const AI_BASE_URL = process.env.NEXT_PUBLIC_BLOCKNOTE_AI_SERVER_BASE_URL;
+  const AI_BASE_URL = "/api/blocknote";
 
 //   const editor = useCreateBlockNote(
 //     {
@@ -420,163 +420,163 @@
 //     );
 //   }
 
-//   return (
-//     <DashboardFrame>
-//       <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6 pb-24">
-//         <section className="relative overflow-hidden rounded-[28px] border border-[#f5c16c]/20 bg-gradient-to-br from-[#2d1810]/60 via-[#1a0a08]/80 to-black/90 p-6">
-//           <div
-//             className="pointer-events-none absolute inset-0 opacity-20"
-//             style={{
-//               backgroundImage: "url('https://www.transparenttextures.com/patterns/asfalt-dark.png')",
-//               backgroundSize: "100px",
-//               backgroundBlendMode: "overlay",
-//             }}
-//           >
-//           <div className="relative z-10">
-//             <div className="flex items-center gap-3">
-//               <Input
-//                 value={title}
-//                 onChange={(e) => setTitle(e.target.value)}
-//                 placeholder="Title"
-//                 className="border-[#f5c16c]/20 bg-black/40 font-semibold text-white focus-visible:border-[#f5c16c] focus-visible:ring-[#f5c16c]/30"
-//               />
-//               <Label htmlFor="public-toggle" className="text-xs">
-//                 Public
-//               </Label>
-//               <span className="text-xs text-foreground/60">
-//                 {status === "saving"
-//                   ? "Saving..."
-//                   : status === "dirty"
-//                     ? "Unsaved changes"
-//                     : "Saved"}
-//               </span>
-//               {queuedCount > 0 && (
-//                 <span className="ml-2 rounded-md border border-yellow-600/40 bg-yellow-900/20 px-2 py-1 text-xs text-yellow-200">
-//                   {queuedCount} queued
-//                 </span>
-//               )}
-//               {/* Share to Party Stash */}
-//               <TooltipProvider>
-//                 <Tooltip>
-//                   <TooltipTrigger asChild>
-//                     <Dialog open={shareOpen} onOpenChange={setShareOpen}>
-//                       <DialogTrigger asChild>
-//                         <Button
-//                           variant="secondary"
-//                           size="sm"
-//                           disabled={!isPublic}
-//                         >
-//                           Share to Party Stash
-//                         </Button>
-//                       </DialogTrigger>
-//                       <DialogContent>
-//                         <DialogHeader>
-//                           <DialogTitle>Share to Party Stash</DialogTitle>
-//                         </DialogHeader>
-//                         <div className="space-y-3">
-//                           {!isPublic && (
-//                             <div className="rounded-md border border-yellow-600/40 bg-yellow-900/20 p-2 text-xs text-yellow-200">
-//                               Note must be public to share.
-//                             </div>
-//                           )}
-//                           {sharePartyId && !(shareRole === "Leader" || shareRole === "CoLeader") && (
-//                             <div className="rounded-md border border-red-600/40 bg-red-900/20 p-2 text-xs text-red-200">
-//                               Only Leader or CoLeader of the selected party can share notes.
-//                             </div>
-//                           )}
-//                           <div className="grid grid-cols-2 gap-2 items-center">
-//                             <Label className="text-xs">Party</Label>
-//                             <Select
-//                               onValueChange={(v) => setSharePartyId(v)}
-//                               value={sharePartyId ?? undefined}
-//                             >
-//                               <SelectTrigger className="h-8">
-//                                 <SelectValue placeholder="Select a party" />
-//                               </SelectTrigger>
-//                               <SelectContent>
-//                                 {myParties.map((p) => (
-//                                   <SelectItem key={p.id} value={p.id}>
-//                                     {p.name}
-//                                   </SelectItem>
-//                                 ))}
-//                               </SelectContent>
-//                             </Select>
-//                           </div>
-//                           <div className="grid grid-cols-2 gap-2 items-center">
-//                             <Label className="text-xs">Title</Label>
-//                             <Input
-//                               value={shareTitle || title}
-//                               onChange={(e) => setShareTitle(e.target.value)}
-//                               placeholder="Stash item title"
-//                             />
-//                           </div>
-//                           <div className="grid grid-cols-2 gap-2 items-center">
-//                             <Label className="text-xs">Tags</Label>
-//                             <Input
-//                               value={shareTags}
-//                               onChange={(e) => setShareTags(e.target.value)}
-//                               placeholder="Comma-separated tags"
-//                             />
-//                           </div>
-//                         </div>
-//                         <DialogFooter>
-//                           <Button
-//                             disabled={!isPublic || !sharePartyId || !(shareRole === "Leader" || shareRole === "CoLeader")}
-//                             onClick={async () => {
-//                               if (!isPublic) {
-//                                 toast.error("Note must be public to share.");
-//                                 return;
-//                               }
-//                               if (!sharePartyId) {
-//                                 toast.error("Please select a party.");
-//                                 return;
-//                               }
-//                               if (!(shareRole === "Leader" || shareRole === "CoLeader")) {
-//                                 toast.error("Only Leader or CoLeader can share to this party.");
-//                                 return;
-//                               }
-//                               try {
-//                                 const tags = shareTags
-//                                   .split(",")
-//                                   .map((t) => t.trim())
-//                                   .filter((t) => t.length > 0);
-//                                 // provenance tag
-//                                 if (noteId) tags.push(`source:note:${noteId}`);
-//                                 // Share raw BlockNote document array (no wrapper), same as note content
-//                                 const contentArray = (editor?.document ?? initialBlocks ?? []) as any[];
-//                                 const res = await partiesApi.addResource(sharePartyId, {
-//                                   title: (shareTitle || title).trim(),
-//                                   content: contentArray,
-//                                   tags,
-//                                   originalNoteId: noteId,
-//                                 });
-//                                 if (res.isSuccess) {
-//                                   toast.success("Shared to party stash");
-//                                   setShareOpen(false);
-//                                   setShareTags("");
-//                                   setSharePartyId(null);
-//                                 }
-//                               } catch (e: any) {
-//                                 toast.error(e?.response?.status === 403 ? "Permission denied" : "Failed to share");
-//                               }
-//                             }}
-//                           >
-//                             Share
-//                           </Button>
-//                         </DialogFooter>
-//                       </DialogContent>
-//                     </Dialog>
-//                   </TooltipTrigger>
-//                   {!isPublic && (
-//                     <TooltipContent>
-//                       Make note public to enable sharing
-//                     </TooltipContent>
-//                   )}
-//                 </Tooltip>
-//               </TooltipProvider>
-//         </div>
-//       </div>
-//       <Separator className="my-3" />
+  return (
+    <DashboardFrame>
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6 pb-24">
+        <section className="relative overflow-hidden rounded-[28px] border border-[#f5c16c]/20 bg-linear-to-br from-[#2d1810]/60 via-[#1a0a08]/80 to-black/90 p-6">
+          <div
+            className="pointer-events-none absolute inset-0 opacity-20"
+            style={{
+              backgroundImage: "url('https://www.transparenttextures.com/patterns/asfalt-dark.png')",
+              backgroundSize: "100px",
+              backgroundBlendMode: "overlay",
+            }}
+          />
+          <div className="relative z-10">
+            <div className="flex items-center gap-3">
+              <Input
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="Title"
+                className="border-[#f5c16c]/20 bg-black/40 font-semibold text-white focus-visible:border-[#f5c16c] focus-visible:ring-[#f5c16c]/30"
+              />
+              <Label htmlFor="public-toggle" className="text-xs">
+                Public
+              </Label>
+              <span className="text-xs text-foreground/60">
+                {status === "saving"
+                  ? "Saving..."
+                  : status === "dirty"
+                    ? "Unsaved changes"
+                    : "Saved"}
+              </span>
+              {queuedCount > 0 && (
+                <span className="ml-2 rounded-md border border-yellow-600/40 bg-yellow-900/20 px-2 py-1 text-xs text-yellow-200">
+                  {queuedCount} queued
+                </span>
+              )}
+              {/* Share to Party Stash */}
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Dialog open={shareOpen} onOpenChange={setShareOpen}>
+                      <DialogTrigger asChild>
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          disabled={!isPublic}
+                        >
+                          Share to Party Stash
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent>
+                        <DialogHeader>
+                          <DialogTitle>Share to Party Stash</DialogTitle>
+                        </DialogHeader>
+                        <div className="space-y-3">
+                          {!isPublic && (
+                            <div className="rounded-md border border-yellow-600/40 bg-yellow-900/20 p-2 text-xs text-yellow-200">
+                              Note must be public to share.
+                            </div>
+                          )}
+                          {sharePartyId && !(shareRole === "Leader" || shareRole === "CoLeader") && (
+                            <div className="rounded-md border border-red-600/40 bg-red-900/20 p-2 text-xs text-red-200">
+                              Only Leader or CoLeader of the selected party can share notes.
+                            </div>
+                          )}
+                          <div className="grid grid-cols-2 gap-2 items-center">
+                            <Label className="text-xs">Party</Label>
+                            <Select
+                              onValueChange={(v) => setSharePartyId(v)}
+                              value={sharePartyId ?? undefined}
+                            >
+                              <SelectTrigger className="h-8">
+                                <SelectValue placeholder="Select a party" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {myParties.map((p) => (
+                                  <SelectItem key={p.id} value={p.id}>
+                                    {p.name}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div className="grid grid-cols-2 gap-2 items-center">
+                            <Label className="text-xs">Title</Label>
+                            <Input
+                              value={shareTitle || title}
+                              onChange={(e) => setShareTitle(e.target.value)}
+                              placeholder="Stash item title"
+                            />
+                          </div>
+                          <div className="grid grid-cols-2 gap-2 items-center">
+                            <Label className="text-xs">Tags</Label>
+                            <Input
+                              value={shareTags}
+                              onChange={(e) => setShareTags(e.target.value)}
+                              placeholder="Comma-separated tags"
+                            />
+                          </div>
+                        </div>
+                        <DialogFooter>
+                          <Button
+                            disabled={!isPublic || !sharePartyId || !(shareRole === "Leader" || shareRole === "CoLeader")}
+                            onClick={async () => {
+                              if (!isPublic) {
+                                toast.error("Note must be public to share.");
+                                return;
+                              }
+                              if (!sharePartyId) {
+                                toast.error("Please select a party.");
+                                return;
+                              }
+                              if (!(shareRole === "Leader" || shareRole === "CoLeader")) {
+                                toast.error("Only Leader or CoLeader can share to this party.");
+                                return;
+                              }
+                              try {
+                                const tags = shareTags
+                                  .split(",")
+                                  .map((t) => t.trim())
+                                  .filter((t) => t.length > 0);
+                                // provenance tag
+                                if (noteId) tags.push(`source:note:${noteId}`);
+                                // Share raw BlockNote document array (no wrapper), same as note content
+                                const contentArray = (editor?.document ?? initialBlocks ?? []) as any[];
+                                const res = await partiesApi.addResource(sharePartyId, {
+                                  title: (shareTitle || title).trim(),
+                                  content: contentArray,
+                                  tags,
+                                  originalNoteId: noteId,
+                                });
+                                if (res.isSuccess) {
+                                  toast.success("Shared to party stash");
+                                  setShareOpen(false);
+                                  setShareTags("");
+                                  setSharePartyId(null);
+                                }
+                              } catch (e: any) {
+                                toast.error(e?.response?.status === 403 ? "Permission denied" : "Failed to share");
+                              }
+                            }}
+                          >
+                            Share
+                          </Button>
+                        </DialogFooter>
+                      </DialogContent>
+                    </Dialog>
+                  </TooltipTrigger>
+                  {!isPublic && (
+                    <TooltipContent>
+                      Make note public to enable sharing
+                    </TooltipContent>
+                  )}
+                </Tooltip>
+              </TooltipProvider>
+        </div>
+      </div>
+      <Separator className="my-3" />
 
 //           <BlockNoteView
 //             editor={editor}
@@ -588,104 +588,102 @@
 //             {/* AI command menu if enabled */}
 //             {AI_BASE_URL && <AIMenuController />}
 
-//             {/* Custom formatting toolbar including AI button */}
-//             <FormattingToolbarController
-//               formattingToolbar={() => (
-//                 <FormattingToolbar>
-//                   {...getFormattingToolbarItems()}
-//                   {AI_BASE_URL && <AIToolbarButton />}
-//                 </FormattingToolbar>
-//               )}
-//             />
+            {/* Custom formatting toolbar including AI button */}
+            <FormattingToolbarController
+              formattingToolbar={() => (
+                <FormattingToolbar>
+                  {getFormattingToolbarItems()}
+                  {AI_BASE_URL && <AIToolbarButton />}
+                </FormattingToolbar>
+              )}
+            />
 
-//             {/* Slash menu with AI if enabled */}
-//             <SuggestionMenuController
-//               triggerCharacter="/"
-//               getItems={async (query) => {
-//                 const items = [
-//                   ...getDefaultReactSlashMenuItems(editor),
-//                   ...(AI_BASE_URL ? getAISlashMenuItems(editor) : []),
-//                 ];
-//                 const q = (query ?? "").toLowerCase();
-//                 if (!q) return items;
-//                 return items.filter((item: any) => {
-//                   const title = (
-//                     item?.title ||
-//                     item?.label ||
-//                     ""
-//                   ).toLowerCase();
-//                   const keywords: string[] =
-//                     item?.keywords || item?.aliases || [];
-//                   const matchKeywords =
-//                     Array.isArray(keywords) &&
-//                     keywords.some((k) => (k || "").toLowerCase().includes(q));
-//                   return title.includes(q) || matchKeywords;
-//                 });
-//               }}
-//             />
-//           </BlockNoteView>
-//           </div>
-//         </section>
-//         </ div>
+            {/* Slash menu with AI if enabled */}
+            <SuggestionMenuController
+              triggerCharacter="/"
+              getItems={async (query) => {
+                const items = [
+                  ...getDefaultReactSlashMenuItems(editor),
+                  ...(AI_BASE_URL ? getAISlashMenuItems(editor) : []),
+                ];
+                const q = (query ?? "").toLowerCase();
+                if (!q) return items;
+                return items.filter((item: any) => {
+                  const title = (
+                    item?.title ||
+                    item?.label ||
+                    ""
+                  ).toLowerCase();
+                  const keywords: string[] =
+                    item?.keywords || item?.aliases || [];
+                  const matchKeywords =
+                    Array.isArray(keywords) &&
+                    keywords.some((k) => (k || "").toLowerCase().includes(q));
+                  return title.includes(q) || matchKeywords;
+                });
+              }}
+            />
+          </BlockNoteView>
+        </section>
 
-//         {/* Sidebar: Tags & AI Suggestions */}
-//         <aside className="relative overflow-hidden rounded-[28px] border border-[#f5c16c]/20 bg-gradient-to-br from-[#2d1810]/60 via-[#1a0a08]/80 to-black/90 p-6">
-//           <div
-//             className="pointer-events-none absolute inset-0 opacity-20"
-//             style={{
-//               backgroundImage: "url('https://www.transparenttextures.com/patterns/asfalt-dark.png')",
-//               backgroundSize: "100px",
-//               backgroundBlendMode: "overlay",
-//             }}
-//           />
-//           <div className="relative z-10">
-//             <h3 className="mb-2 text-sm font-semibold text-[#f5c16c]">Tags</h3>
-//             <div className="mb-3 flex flex-wrap gap-2">
-//               {noteTags.map((t) => (
-//                 <span
-//                   key={t.id}
-//                   className="inline-flex items-center gap-2 rounded-full border border-[#f5c16c]/40 bg-[#f5c16c]/10 px-2 py-1 text-xs text-[#f5c16c]"
-//                 >
-//                   {t.name}
-//                   <button
-//                     className="text-white/60 hover:text-white"
-//                     onClick={() => detachTag(t.id)}
-//                   >
-//                     ✕
-//                   </button>
-//                 </span>
-//               ))}
-//             </div>
-//             <Label htmlFor="attach-tag" className="text-xs text-[#f5c16c]/80">
-//               Attach existing tag
-//             </Label>
-//             <div className="mt-1 grid grid-cols-[1fr_auto] gap-2">
-//               <select
-//                 id="attach-tag"
-//                 className="rounded-md border border-[#f5c16c]/20 bg-black/40 p-2 text-sm text-white focus:border-[#f5c16c] focus:outline-none focus:ring-1 focus:ring-[#f5c16c]/30"
-//               >
-//                 {myTags.map((t) => (
-//                   <option key={t.id} value={t.id}>
-//                     {t.name}
-//                   </option>
-//                 ))}
-//               </select>
-//               <Button
-//                 variant="secondary"
-//                 size="sm"
-//                 onClick={() => {
-//                   const sel = (
-//                     document.getElementById(
-//                       "attach-tag"
-//                     ) as HTMLSelectElement | null
-//                   )?.value;
-//                   if (sel) attachTag(sel);
-//                 }}
-//                 className="border-[#f5c16c]/20 bg-black/40 hover:border-[#f5c16c]/40 hover:bg-black/60"
-//               >
-//                 Attach
-//               </Button>
-//             </div>
+        {/* Sidebar: Tags & AI Suggestions */}
+        <aside className="relative overflow-hidden rounded-[28px] border border-[#f5c16c]/20 bg-linear-to-br from-[#2d1810]/60 via-[#1a0a08]/80 to-black/90 p-6">
+          <div
+            className="pointer-events-none absolute inset-0 opacity-20"
+            style={{
+              backgroundImage: "url('https://www.transparenttextures.com/patterns/asfalt-dark.png')",
+              backgroundSize: "100px",
+              backgroundBlendMode: "overlay",
+            }}
+          />
+          <div className="relative z-10">
+            <h3 className="mb-2 text-sm font-semibold text-[#f5c16c]">Tags</h3>
+            <div className="mb-3 flex flex-wrap gap-2">
+              {noteTags.map((t) => (
+                <span
+                  key={t.id}
+                  className="inline-flex items-center gap-2 rounded-full border border-[#f5c16c]/40 bg-[#f5c16c]/10 px-2 py-1 text-xs text-[#f5c16c]"
+                >
+                  {t.name}
+                  <button
+                    className="text-white/60 hover:text-white"
+                    onClick={() => detachTag(t.id)}
+                  >
+                    ✕
+                  </button>
+                </span>
+              ))}
+            </div>
+            <Label htmlFor="attach-tag" className="text-xs text-[#f5c16c]/80">
+              Attach existing tag
+            </Label>
+            <div className="mt-1 grid grid-cols-[1fr_auto] gap-2">
+              <select
+                id="attach-tag"
+                className="rounded-md border border-[#f5c16c]/20 bg-black/40 p-2 text-sm text-white focus:border-[#f5c16c] focus:outline-none focus:ring-1 focus:ring-[#f5c16c]/30"
+              >
+                {myTags.map((t) => (
+                  <option key={t.id} value={t.id}>
+                    {t.name}
+                  </option>
+                ))}
+              </select>
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => {
+                  const sel = (
+                    document.getElementById(
+                      "attach-tag"
+                    ) as HTMLSelectElement | null
+                  )?.value;
+                  if (sel) attachTag(sel);
+                }}
+                className="border-[#f5c16c]/20 bg-black/40 hover:border-[#f5c16c]/40 hover:bg-black/60"
+              >
+                Attach
+              </Button>
+            </div>
 
 //             <Separator className="my-4 bg-[#f5c16c]/20" />
 //             <h3 className="mb-2 text-sm font-semibold text-[#f5c16c]">
@@ -766,74 +764,75 @@
 //             </div>
 //           )}
 
-//           <Separator className="my-4" />
-//           <h3 className="mb-2 text-sm font-semibold text-white">
-//             AI Tag Suggestions
-//           </h3>
-//           <Button
-//             variant="secondary"
-//             size="sm"
-//             onClick={requestAiTags}
-//             disabled={aiLoading}
-//           >
-//             {aiLoading ? "Suggesting..." : "Suggest tags"}
-//           </Button>
-//           {aiSuggestions.length > 0 && (
-//             <div className="mt-3 space-y-2">
-//               {aiSuggestions.map((s, idx) => (
-//                 <Card key={idx} className="border-white/10 bg-black/30">
-//                   <CardHeader className="py-2">
-//                     <CardTitle className="flex items-center justify-between text-sm text-white">
-//                       <span>
-//                         {s.label}{" "}
-//                         <span className="ml-2 text-xs text-foreground/60">
-//                           {Math.round(s.confidence * 100)}%
-//                         </span>
-//                       </span>
-//                       <div className="flex items-center gap-2">
-//                         {s.matchedTagId && (
-//                           <span className="rounded-full border border-green-500/40 bg-green-500/15 px-2 py-0.5 text-[10px] text-green-300">Existing</span>
-//                         )}
-//                         <Checkbox
-//                           checked={selectedAiKeys.includes(keyForSuggestion(s))}
-//                           onCheckedChange={() => toggleSelectSuggestion(s)}
-//                           aria-label="Select suggestion"
-//                         />
-//                       </div>
-//                     </CardTitle>
-//                   </CardHeader>
-//                   <CardContent className="py-2 text-xs text-foreground/70">
-//                     {s.reason}
-//                   </CardContent>
-//                 </Card>
-//               ))}
-//               <div className="flex gap-2">
-//                 <Button size="sm" onClick={applySelected}>Apply selected</Button>
-//                 <Button
-//                   size="sm"
-//                   onClick={() => {
-//                     const existingIds = aiSuggestions
-//                       .filter((s) => s.matchedTagId)
-//                       .map((s) => s.matchedTagId!);
-//                     const newNames = aiSuggestions
-//                       .filter((s) => !s.matchedTagId)
-//                       .map((s) => s.label);
-//                     commitAiTags(existingIds, newNames);
-//                   }}
-//                 >
-//                   Apply all
-//                 </Button>
-//                 <Button
-//                   size="sm"
-//                   variant="ghost"
-//                   onClick={() => { setAiSuggestions([]); setSelectedAiKeys([]); }}
-//                 >
-//                   Clear
-//                 </Button>
-//               </div>
-//             {'}'}}
-//           </div>
-//         </aside>
-//       </ DashboardFrame>
-//   );
-// }
+          <Separator className="my-4" />
+          <h3 className="mb-2 text-sm font-semibold text-white">
+            AI Tag Suggestions
+          </h3>
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={requestAiTags}
+            disabled={aiLoading}
+          >
+            {aiLoading ? "Suggesting..." : "Suggest tags"}
+          </Button>
+          {aiSuggestions.length > 0 && (
+            <div className="mt-3 space-y-2">
+              {aiSuggestions.map((s, idx) => (
+                <Card key={idx} className="border-white/10 bg-black/30">
+                  <CardHeader className="py-2">
+                    <CardTitle className="flex items-center justify-between text-sm text-white">
+                      <span>
+                        {s.label}{" "}
+                        <span className="ml-2 text-xs text-foreground/60">
+                          {Math.round(s.confidence * 100)}%
+                        </span>
+                      </span>
+                      <div className="flex items-center gap-2">
+                        {s.matchedTagId && (
+                          <span className="rounded-full border border-green-500/40 bg-green-500/15 px-2 py-0.5 text-[10px] text-green-300">Existing</span>
+                        )}
+                        <Checkbox
+                          checked={selectedAiKeys.includes(keyForSuggestion(s))}
+                          onCheckedChange={() => toggleSelectSuggestion(s)}
+                          aria-label="Select suggestion"
+                        />
+                      </div>
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="py-2 text-xs text-foreground/70">
+                    {s.reason}
+                  </CardContent>
+                </Card>
+              ))}
+              <div className="flex gap-2">
+                <Button size="sm" onClick={applySelected}>Apply selected</Button>
+                <Button
+                  size="sm"
+                  onClick={() => {
+                    const existingIds = aiSuggestions
+                      .filter((s) => s.matchedTagId)
+                      .map((s) => s.matchedTagId!);
+                    const newNames = aiSuggestions
+                      .filter((s) => !s.matchedTagId)
+                      .map((s) => s.label);
+                    commitAiTags(existingIds, newNames);
+                  }}
+                >
+                  Apply all
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => { setAiSuggestions([]); setSelectedAiKeys([]); }}
+                >
+                  Clear
+                </Button>
+              </div>
+            </div>
+          )}
+        </aside>
+      </div>
+    </DashboardFrame>
+  );
+}

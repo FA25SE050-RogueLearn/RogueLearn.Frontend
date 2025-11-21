@@ -136,6 +136,7 @@ export default function GuildMeetingsSection({ guildId }: Props) {
   const requiredBothScopes: MeetScopes[] = [
     "https://www.googleapis.com/auth/meetings.space.created",
     "https://www.googleapis.com/auth/meetings.space.readonly",
+    "https://www.googleapis.com/auth/drive.readonly",
   ];
 
   async function handleCreateMeeting() {
@@ -189,7 +190,7 @@ export default function GuildMeetingsSection({ guildId }: Props) {
     setEnding(true);
     try {
       if (!activeMeeting.meeting?.meetingId) throw new Error("No active meeting to end");
-      const token = activeToken ?? (await requestToken(requiredCreateScopes));
+      const token = activeToken ?? (await requestToken(requiredBothScopes));
       if (members.length === 0) {
         try {
           const memRes = await guildsApi.getMembers(guildId);
@@ -336,11 +337,25 @@ export default function GuildMeetingsSection({ guildId }: Props) {
 
       const listRes = await meetingsApi.getGuildMeetings(guildId);
       setGuildMeetings(listRes.data ?? []);
-      setActiveMeeting({ meeting: null, google: null });
-      setActiveToken(null);
-      try {
-        sessionStorage.removeItem(`guildMeetingToken:${guildId}`);
-      } catch (_) {}
+      const now = new Date();
+      const in30 = new Date(now.getTime() + 30 * 60 * 1000);
+      const created = await googleMeetApi.createSpace(token, { config: {} });
+      const payload: MeetingDto = {
+        organizerId: authUserId as string,
+        partyId: null,
+        guildId,
+        title: createState.title,
+        scheduledStartTime: now.toISOString(),
+        scheduledEndTime: in30.toISOString(),
+        actualStartTime: now.toISOString(),
+        meetingLink: created.meetingUri ?? "",
+      };
+      const upsertRes = await meetingsApi.upsertMeeting(payload);
+      const saved = upsertRes.data as MeetingDto;
+      setActiveMeeting({
+        meeting: saved ?? payload,
+        google: { space: created.spaceId ?? null, meetingUri: created.meetingUri ?? null },
+      });
     } catch (e: any) {
       setError(e?.message ?? "Failed to end meeting");
     } finally {
