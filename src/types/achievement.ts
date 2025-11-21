@@ -131,3 +131,12 @@ export interface GetUserAchievementsByAuthIdQuery {
 export interface GetUserAchievementsByAuthIdResponse {
   achievements: UserAchievementDto[];
 }
+export interface GrantAchievementsCommand {
+  entries: Array<{ userId: string; achievementKey: string }>;
+}
+
+export interface GrantAchievementsResponse {
+  successCount: number;
+  failureCount: number;
+  results?: Array<{ userId: string; achievementKey: string; success: boolean; error?: string }>;
+}
