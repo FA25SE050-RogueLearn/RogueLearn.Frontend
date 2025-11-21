@@ -18,7 +18,7 @@ import { createClient } from "@/utils/supabase/client";
 import { Loader2 } from "lucide-react";
 
 // BlockNote imports
-import { PartialBlock } from "@blocknote/core";
+import { PartialBlock, filterSuggestionItems, insertOrUpdateBlock } from "@blocknote/core";
 import { en } from "@blocknote/core/locales";
 import "@blocknote/core/fonts/inter.css";
 import { BlockNoteView } from "@blocknote/shadcn";
@@ -193,6 +193,24 @@ export default function NoteEditorPage() {
             }),
           ]
         : undefined,
+      uploadFile: async (file: File) => {
+        const supabase = createClient();
+        const { data: { user } } = await supabase.auth.getUser();
+        const uid = user?.id ?? authUserId;
+        if (!uid) {
+          toast.error("Not authenticated");
+          throw new Error("Not authenticated");
+        }
+        const nameSafe = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+        const path = `${uid}/${Date.now()}-${nameSafe}`;
+        const { data, error } = await supabase.storage.from("notes-media").upload(path, file, { contentType: file.type, upsert: false });
+        if (error) {
+          toast.error("Image upload failed");
+          throw error;
+        }
+        const { data: pub } = supabase.storage.from("notes-media").getPublicUrl(data.path);
+        return pub.publicUrl;
+      },
     },
     [initialBlocks, AI_BASE_URL]
   );
@@ -257,6 +275,44 @@ export default function NoteEditorPage() {
   // Save content on change (debounced by BlockNoteView onChange frequency)
   const onEditorChange = () => {
     if (!noteId || !authUserId || !editor) return;
+    const getMediaUrls = (blocks: any[]): Set<string> => {
+      const urls = new Set<string>();
+      const visit = (arr: any[]) => {
+        for (const b of arr ?? []) {
+          const t = (b?.type || "").toLowerCase();
+          if (t === "image" || t === "video" || t === "audio" || t === "file") {
+            const u = b?.props?.url;
+            if (typeof u === "string" && u) urls.add(u);
+          }
+          if (Array.isArray(b?.children) && b.children.length) visit(b.children);
+        }
+      };
+      visit(blocks);
+      return urls;
+    };
+    const deleteSupabaseObjectByUrl = async (url: string) => {
+      try {
+        const marker = "/notes-media/";
+        const idx = url.indexOf(marker);
+        if (idx === -1) return;
+        const pathPart = url.substring(idx + marker.length);
+        const path = decodeURIComponent(pathPart);
+        const supabase = createClient();
+        await supabase.storage.from("notes-media").remove([path]);
+      } catch {}
+    };
+    try {
+      const current = getMediaUrls(editor.document as any);
+      const prevRaw = localStorage.getItem(`noteMedia:${noteId}`);
+      const prev: string[] = prevRaw ? JSON.parse(prevRaw) : [];
+      const prevSet = new Set<string>(prev);
+      for (const u of prevSet) {
+        if (!current.has(u)) {
+          deleteSupabaseObjectByUrl(u);
+        }
+      }
+      localStorage.setItem(`noteMedia:${noteId}`, JSON.stringify(Array.from(current)));
+    } catch {}
     // Debounce saves to avoid spamming the API and to make status updates visible
     if (saveTimerRef.current) {
       clearTimeout(saveTimerRef.current);
@@ -422,7 +478,20 @@ export default function NoteEditorPage() {
 
   return (
     <DashboardFrame>
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6 pb-24">
+      <div className="grid grid-cols-1 lg:grid-cols-[320px_1fr_320px] gap-6 pb-24">
+        <aside className="relative overflow-hidden rounded-[28px] border border-[#f5c16c]/20 bg-linear-to-br from-[#2d1810]/60 via-[#1a0a08]/80 to-black/90 p-6">
+          <div
+            className="pointer-events-none absolute inset-0 opacity-20"
+            style={{
+              backgroundImage: "url('https://www.transparenttextures.com/patterns/asfalt-dark.png')",
+              backgroundSize: "100px",
+              backgroundBlendMode: "overlay",
+            }}
+          />
+          <div className="relative z-10">
+            <LeftNotesSidebar />
+          </div>
+        </aside>
         <section className="relative overflow-hidden rounded-[28px] border border-[#f5c16c]/20 bg-linear-to-br from-[#2d1810]/60 via-[#1a0a08]/80 to-black/90 p-6">
           <div
             className="pointer-events-none absolute inset-0 opacity-20"
@@ -455,6 +524,22 @@ export default function NoteEditorPage() {
                   {queuedCount} queued
                 </span>
               )}
+              <Dialog>
+                <DialogTrigger asChild>
+                  <Button variant="secondary" size="sm" aria-label="Arsenal info">Info</Button>
+                </DialogTrigger>
+                <DialogContent aria-describedby="arsenal-info-desc">
+                  <DialogHeader>
+                    <DialogTitle>Arsenal Guide</DialogTitle>
+                  </DialogHeader>
+                  <div id="arsenal-info-desc" className="space-y-3 text-sm text-foreground/80">
+                    <p>Embed images by pasting or using Insert Image. Uploads go to notes-media.</p>
+                    <p>Organize with tags. Drag notes into tag folders on the main Arsenal page.</p>
+                    <p>Use AI actions for suggestions and inline assistance.</p>
+                    <p>Keyboard: Tab to toolbar, ESC to close dialogs.</p>
+                  </div>
+                </DialogContent>
+              </Dialog>
               {/* Share to Party Stash */}
               <TooltipProvider>
                 <Tooltip>
@@ -602,25 +687,81 @@ export default function NoteEditorPage() {
             <SuggestionMenuController
               triggerCharacter="/"
               getItems={async (query) => {
-                const items = [
-                  ...getDefaultReactSlashMenuItems(editor),
-                  ...(AI_BASE_URL ? getAISlashMenuItems(editor) : []),
-                ];
-                const q = (query ?? "").toLowerCase();
-                if (!q) return items;
-                return items.filter((item: any) => {
-                  const title = (
-                    item?.title ||
-                    item?.label ||
-                    ""
-                  ).toLowerCase();
-                  const keywords: string[] =
-                    item?.keywords || item?.aliases || [];
-                  const matchKeywords =
-                    Array.isArray(keywords) &&
-                    keywords.some((k) => (k || "").toLowerCase().includes(q));
-                  return title.includes(q) || matchKeywords;
+                const defaultItems = getDefaultReactSlashMenuItems(editor).map((item: any) => {
+                  const t = (item?.title || item?.label || "").toLowerCase();
+                  if (
+                    t === "image" ||
+                    t === "insert image" ||
+                    t === "video" ||
+                    t === "insert video" ||
+                    t === "audio" ||
+                    t === "insert audio" ||
+                    t === "file" ||
+                    t === "insert file"
+                  ) {
+                    return {
+                      ...item,
+                      onItemClick: async () => {
+                        const input = document.createElement("input");
+                        input.type = "file";
+                        if (t.includes("image")) {
+                          input.accept = "image/png,image/jpeg,image/jpg,image/webp,image/gif,image/svg+xml";
+                        } else if (t.includes("video")) {
+                          input.accept = "video/mp4,video/webm,video/ogg";
+                        } else if (t.includes("audio")) {
+                          input.accept = "audio/mpeg";
+                        } else {
+                          input.accept = "*/*";
+                        }
+                        input.onchange = async () => {
+                          const file = input.files?.[0];
+                          if (!file) return;
+                          const supabase = createClient();
+                          const { data: { user } } = await supabase.auth.getUser();
+                          const uid = user?.id ?? authUserId;
+                          if (!uid) {
+                            toast.error("Not authenticated");
+                            return;
+                          }
+                          const nameSafe = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+                          const path = `${uid}/${Date.now()}-${nameSafe}`;
+                          const { data, error } = await supabase.storage.from("notes-media").upload(path, file, { contentType: file.type, upsert: false });
+                          if (error) {
+                            toast.error("Upload failed");
+                            return;
+                          }
+                          const { data: pub } = supabase.storage.from("notes-media").getPublicUrl(data.path);
+                          const mime = (file.type || "").toLowerCase();
+                          if (mime.startsWith("image/")) {
+                            insertOrUpdateBlock(editor, {
+                              type: "image",
+                              props: { url: pub.publicUrl, caption: "", previewWidth: 512 },
+                            });
+                          } else if (mime.startsWith("video/")) {
+                            insertOrUpdateBlock(editor, {
+                              type: "video",
+                              props: { url: pub.publicUrl, caption: "" },
+                            });
+                          } else if (mime.startsWith("audio/")) {
+                            insertOrUpdateBlock(editor, {
+                              type: "audio",
+                              props: { url: pub.publicUrl, caption: "" },
+                            });
+                          } else {
+                            insertOrUpdateBlock(editor, {
+                              type: "file",
+                              props: { url: pub.publicUrl },
+                            });
+                          }
+                        };
+                        input.click();
+                      },
+                    } as any;
+                  }
+                  return item;
                 });
+                const items = [...defaultItems, ...(AI_BASE_URL ? getAISlashMenuItems(editor) : [])];
+                return filterSuggestionItems(items as any, query ?? "");
               }}
             />
           </BlockNoteView>
@@ -834,5 +975,51 @@ export default function NoteEditorPage() {
         </aside>
       </div>
     </DashboardFrame>
+  );
+}
+
+function LeftNotesSidebar() {
+  const router = useRouter();
+  const [items, setItems] = useState<NoteDto[]>([]);
+  const [searchInput, setSearchInput] = useState("");
+  const [search, setSearch] = useState("");
+  useEffect(() => {
+    let mounted = true;
+    const load = async () => {
+      try {
+        const res = await notesApi.getMyNotes();
+        if (res.isSuccess && mounted) {
+          const list = [...res.data].sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
+          setItems(list);
+        }
+      } catch {}
+    };
+    load();
+    return () => { mounted = false; };
+  }, []);
+  useEffect(() => {
+    const h = setTimeout(() => setSearch(searchInput), 300);
+    return () => clearTimeout(h);
+  }, [searchInput]);
+  const filtered = items.filter(n => {
+    if (!search) return true;
+    const q = search.toLowerCase();
+    return n.title.toLowerCase().includes(q);
+  }).slice(0, 20);
+  return (
+    <div className="space-y-3">
+      <Input placeholder="Search notes" value={searchInput} onChange={(e) => setSearchInput(e.target.value)} aria-label="Search notes" />
+      <div className="space-y-2">
+        {filtered.map((n) => (
+          <button key={n.id} className="flex w-full items-center justify-between rounded-md border border-white/10 bg-black/30 px-3 py-2 text-left text-xs text-white hover:bg-black/40" onClick={() => router.push(`/arsenal/${n.id}`)} aria-label={`Open ${n.title}`}>
+            <span className="truncate">{n.title}</span>
+            <span className="text-foreground/60">{new Date(n.updatedAt).toLocaleDateString()}</span>
+          </button>
+        ))}
+        {filtered.length === 0 && (
+          <div className="text-xs text-foreground/60">No notes</div>
+        )}
+      </div>
+    </div>
   );
 }

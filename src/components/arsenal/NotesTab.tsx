@@ -15,6 +15,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 import { createClient } from "@/utils/supabase/client";
 import { Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
 type SortMode = "updatedAt_desc" | "title_asc";
 
@@ -94,6 +95,7 @@ export default function NotesTab() {
   const [filterTagId, setFilterTagId] = useState<string>("");
   const [authUserId, setAuthUserId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [activeGroup, setActiveGroup] = useState<string>("all");
 
   useEffect(() => {
     const supabase = createClient();
@@ -146,7 +148,15 @@ export default function NotesTab() {
         return n.title.toLowerCase().includes(q) || preview.includes(q);
       });
     }
-    if (filterTagId) {
+    if (activeGroup && activeGroup !== "all") {
+      if (activeGroup === "recent") {
+        base = [...base].sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
+      } else if (activeGroup === "untagged") {
+        base = base.filter(n => !Array.isArray(n.tagIds) || n.tagIds.length === 0);
+      } else {
+        base = base.filter(n => Array.isArray(n.tagIds) && n.tagIds.includes(activeGroup));
+      }
+    } else if (filterTagId) {
       base = base.filter(n => Array.isArray(n.tagIds) && n.tagIds.includes(filterTagId));
     }
     base = [...base];
@@ -156,7 +166,7 @@ export default function NotesTab() {
       base.sort((a, b) => a.title.localeCompare(b.title));
     }
     return base;
-  }, [notes, search, filterTagId, sort]);
+  }, [notes, search, filterTagId, sort, activeGroup]);
 
   const tagIndex = useMemo(() => {
     const map = new Map<string, Tag>();
@@ -226,6 +236,37 @@ export default function NotesTab() {
     } catch (e) {}
   };
 
+  const onDragStartNote = (e: React.DragEvent, noteId: string) => {
+    e.dataTransfer.setData("text/plain", noteId);
+  };
+
+  const dropToTag = async (tagId: string, e: React.DragEvent) => {
+    e.preventDefault();
+    const noteId = e.dataTransfer.getData("text/plain");
+    if (!noteId || !authUserId) return;
+    try {
+      await tagsApi.attachToNote({ authUserId, noteId, tagId });
+      toast.success("Moved to tag");
+      await fetchNotes();
+    } catch {}
+  };
+
+  const dropToUntagged = async (e: React.DragEvent) => {
+    e.preventDefault();
+    const noteId = e.dataTransfer.getData("text/plain");
+    if (!noteId || !authUserId) return;
+    try {
+      const target = notes.find(n => n.id === noteId);
+      const existing = Array.isArray(target?.tagIds) ? target!.tagIds : [];
+      for (const tid of existing) {
+        await tagsApi.removeFromNote({ authUserId, noteId, tagId: tid });
+      }
+      try { localStorage.setItem(`notesFolderPath:${noteId}`, JSON.stringify([])); } catch {}
+      toast.success("Moved to Untagged");
+      await fetchNotes();
+    } catch {}
+  };
+
   const [listRef, bounds] = useMeasure();
   const [scrollTop, setScrollTop] = useState(0);
   const CARD_WIDTH = 320;
@@ -271,7 +312,42 @@ export default function NotesTab() {
         </Button>
       </div>
 
-      <div className="rounded-2xl border border-white/12 bg-black/20 min-h-[80vh]">
+      <div className="rounded-2xl border border-white/12 bg-black/20 min-h-[80vh] grid grid-cols-[280px_1fr]">
+        <div className="border-r border-white/10 p-3">
+          <Accordion type="single" collapsible defaultValue="group-all">
+            <AccordionItem value="group-all">
+              <AccordionTrigger onClick={() => setActiveGroup("all")}>All Notes</AccordionTrigger>
+              <AccordionContent onDragOver={(e) => e.preventDefault()}>
+                <div className="text-xs text-foreground/60">Drop here to keep current tags.</div>
+              </AccordionContent>
+            </AccordionItem>
+            <AccordionItem value="group-recent">
+              <AccordionTrigger onClick={() => setActiveGroup("recent")}>Recently Edited</AccordionTrigger>
+              <AccordionContent onDragOver={(e) => e.preventDefault()}>
+                <div className="text-xs text-foreground/60">Sorted by update time.</div>
+              </AccordionContent>
+            </AccordionItem>
+            <AccordionItem value="group-untagged">
+              <AccordionTrigger onClick={() => setActiveGroup("untagged")}>Untagged</AccordionTrigger>
+              <AccordionContent onDragOver={(e) => e.preventDefault()} onDrop={(e) => dropToUntagged(e)}>
+                <div className="text-xs text-foreground/60">Drop note to remove all tags.</div>
+              </AccordionContent>
+            </AccordionItem>
+            {myTags.map((t) => (
+              <AccordionItem key={t.id} value={`tag-${t.id}`}>
+                <AccordionTrigger onClick={() => setActiveGroup(t.id)}>{t.name}</AccordionTrigger>
+                <AccordionContent onDragOver={(e) => e.preventDefault()} onDrop={(e) => dropToTag(t.id, e)}>
+                  <div className="text-xs text-foreground/60">Drop note to assign this tag.</div>
+                  <div className="mt-2 space-y-1">
+                    {notes.filter(n => Array.isArray(n.tagIds) && n.tagIds.includes(t.id)).slice(0, 6).map(n => (
+                      <button key={n.id} className="w-full truncate text-left text-xs text-white/80 hover:text-white" onClick={() => setActiveGroup(t.id)} aria-label={`Show ${t.name} notes`}>{n.title}</button>
+                    ))}
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
+            ))}
+          </Accordion>
+        </div>
         {loading ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 p-4">
             {Array.from({ length: 9 }).map((_, i) => (
@@ -307,6 +383,8 @@ export default function NotesTab() {
                     role="listitem"
                     tabIndex={0}
                     onKeyDown={(e) => { if ((e as any).key === "Enter") openEditNote(note.id); }}
+                    draggable
+                    onDragStart={(e) => onDragStartNote(e, note.id)}
                   >
                     <CardHeader className="relative z-10 flex items-center justify-between border-b border-white/10 py-3">
                       <CardTitle className="text-base font-semibold text-white">{note.title}</CardTitle>
