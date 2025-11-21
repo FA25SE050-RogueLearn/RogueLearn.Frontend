@@ -51,6 +51,29 @@ export default function SignupPage() {
     }
   };
 
+  const handleGoogleSignUp = async () => {
+    try {
+      setError(null);
+      const supabase = createClient();
+      const origin = window.location.origin;
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${origin}/auth/callback?next=/`,
+        },
+      });
+      if (error) {
+        setError(error.message);
+        return;
+      }
+      if (data?.url) {
+        window.location.href = data.url;
+      }
+    } catch (e: any) {
+      setError(e?.message ?? 'Failed to initiate Google sign-in');
+    }
+  };
+
   return (
     <div className="flex min-h-screen items-center justify-center bg-background p-8">
       <div className="mx-auto w-full max-w-md space-y-8">
@@ -101,6 +124,9 @@ export default function SignupPage() {
 
               <Button type="submit" size="lg" className="w-full bg-accent text-accent-foreground hover:bg-accent/90">
                 Begin Journey
+              </Button>
+              <Button type="button" variant="outline" size="lg" className="w-full mt-2" onClick={handleGoogleSignUp}>
+                Continue with Google
               </Button>
             </form>
             <div className="mt-6 text-center text-sm font-body text-foreground/70">

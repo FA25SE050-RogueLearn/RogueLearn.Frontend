@@ -32,6 +32,7 @@ import {
 } from "@/components/ui/sidebar"
 import { createClient } from "@/utils/supabase/client"
 import { usePathname, useRouter } from "next/navigation";
+import Link from "next/link";
 import { CharacterCreationWizard } from "@/components/features/character-creation/CharacterCreationWizard"
 import profileApi from "@/api/profileApi"
 import { UserProfileDto } from "@/types/user-profile"
@@ -167,7 +168,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           <SidebarMenu>
             <SidebarMenuItem>
               <SidebarMenuButton size="lg" asChild>
-                <a href="/dashboard">
+                <Link href="/">
                   <div className="flex aspect-square size-8 items-center justify-center rounded-lg border border-[#f5c16c]/40 bg-linear-to-br from-[#d23187]/80 to-[#f5c16c]/70 text-white shadow-[0_8px_24px_rgba(210,49,135,0.4)]">
                     <Skull className="size-4" />
                   </div>
@@ -175,7 +176,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                     <span className="truncate font-semibold text-[#f5c16c]">RogueLearn</span>
                     <span className="truncate text-xs text-[#f5c16c]/70">Guild Sanctum</span>
                   </div>
-                </a>
+                </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
           </SidebarMenu>
