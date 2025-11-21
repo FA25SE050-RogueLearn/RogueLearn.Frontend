@@ -29,7 +29,7 @@ import {
 const partiesApi = {
   // === Query Endpoints ===
 
-  /** GET /api/admin/parties - Get all parties */
+  /** GET /api/parties - Get all parties */
   getAll: (): Promise<ApiResponse<GetAllPartiesQueryResponse>> =>
     axiosClient.get<PartyDto[]>(`/api/parties`).then((res) => ({
       isSuccess: true,
