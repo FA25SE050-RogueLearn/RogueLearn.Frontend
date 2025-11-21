@@ -2,7 +2,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -16,7 +16,8 @@ export default function LoginPage() {
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState<string | null>(null);
+  const searchParams = useSearchParams();
+  const [error, setError] = useState<string | null>(searchParams.get('error'));
 
   const handleSignIn = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -33,6 +34,29 @@ export default function LoginPage() {
     } else {
       router.push('/'); // Redirect to dashboard on successful login
       router.refresh(); // Ensure the layout re-renders to get the new session
+    }
+  };
+
+  const handleGoogleSignIn = async () => {
+    try {
+      setError(null);
+      const supabase = createClient();
+      const origin = window.location.origin;
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${origin}/auth/callback?next=/`,
+        },
+      });
+      if (error) {
+        setError(error.message);
+        return;
+      }
+      if (data?.url) {
+        window.location.href = data.url;
+      }
+    } catch (e: any) {
+      setError(e?.message ?? 'Failed to initiate Google sign-in');
     }
   };
 
@@ -62,16 +86,19 @@ export default function LoginPage() {
                 <Input id="password" type="password" placeholder="Enter your mystical pass-phrase" className="font-body" value={password} onChange={(e) => setPassword(e.target.value)} required />
               </div>
 
-              {error && <div className="text-red-400 text-sm font-body p-3 bg-red-900/50 rounded-md flex items-center gap-2"><AlertCircle className="w-4 h-4" />{error}</div>}
+            {error && <div className="text-red-400 text-sm font-body p-3 bg-red-900/50 rounded-md flex items-center gap-2"><AlertCircle className="w-4 h-4" />{error}</div>}
 
-              <Button type="submit" size="lg" className="w-full bg-accent text-accent-foreground hover:bg-accent/90">
-                Unlock The Archives
-              </Button>
-              <div className="mt-4 text-center text-sm">
-                New to the Order?{" "}
-                <Link href="/signup" className="underline text-accent">
-                  Join the Scribes
-                </Link>
+            <Button type="submit" size="lg" className="w-full bg-accent text-accent-foreground hover:bg-accent/90">
+              Unlock The Archives
+            </Button>
+            <Button type="button" variant="outline" size="lg" className="w-full mt-2" onClick={handleGoogleSignIn}>
+              Continue with Google
+            </Button>
+            <div className="mt-4 text-center text-sm">
+              New to the Order?{" "}
+              <Link href="/signup" className="underline text-accent">
+                Join the Scribes
+              </Link>
               </div>
             </form>
           </CardContent>
