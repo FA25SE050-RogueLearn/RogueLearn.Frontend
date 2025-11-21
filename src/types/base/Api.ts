@@ -6,13 +6,6 @@
  * Mapping: T is the generic payload type returned on success.
  * @template T The type of the data payload in a successful response.
  */
-export interface ApiResponse<T> {
-  /** The data payload returned when the operation succeeds. */
-  data: T;
-  /** Indicates whether the request completed successfully. */
-  isSuccess: boolean;
-  /** Optional message, typically for user-facing feedback or debugging. */
-  message?: string;
-  /** Optional structured validation errors (usually field-level). */
-  validationErrors?: string[];
-}
+export type ApiResponse<T> = 
+  | { data: T; isSuccess: true; message?: string; validationErrors?: string[] }
+  | { data: null; isSuccess: false; message: string; validationErrors?: string[] };

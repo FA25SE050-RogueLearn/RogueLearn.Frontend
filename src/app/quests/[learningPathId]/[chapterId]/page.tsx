@@ -1,5 +1,6 @@
+// roguelearn-web/src/app/quests/[learningPathId]/[chapterId]/page.tsx
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
-import { QuestDetailView } from "@/components/quests/QuestDetailView";
+import { ChapterQuestListView } from "@/components/quests/ChapterQuestListView"; // ⭐ NEW COMPONENT
 import { ArrowLeft, Trophy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
@@ -7,11 +8,11 @@ import { createServerApiClients } from "@/lib/api-server";
 import { LearningPath } from "@/types/quest";
 
 interface PageProps {
-  params: Promise<{ questId: string; chapterId: string }>;
+  params: Promise<{ learningPathId: string; chapterId: string }>;
 }
 
 export default async function ChapterDetailPage({ params }: PageProps) {
-  const { questId: learningPathId, chapterId } = await params;
+  const { learningPathId, chapterId } = await params;
   const { coreApiClient } = await createServerApiClients();
   let learningPath: LearningPath | null = null;
 
@@ -19,7 +20,7 @@ export default async function ChapterDetailPage({ params }: PageProps) {
     const response = await coreApiClient.get<LearningPath>('/api/learning-paths/me');
     learningPath = response.data;
   } catch (error) {
-    console.error(`Failed to fetch learning path for Chapter Detail page:`, error);
+    console.error(`Failed to fetch learning path:`, error);
   }
 
   const chapter = learningPath?.chapters.find(ch => ch.id === chapterId);
@@ -43,7 +44,10 @@ export default async function ChapterDetailPage({ params }: PageProps) {
 
   return (
     <DashboardLayout>
-      <QuestDetailView learningPath={learningPath} chapter={chapter} />
+      <ChapterQuestListView
+        learningPath={learningPath}
+        chapter={chapter}
+      />
     </DashboardLayout>
   );
 }

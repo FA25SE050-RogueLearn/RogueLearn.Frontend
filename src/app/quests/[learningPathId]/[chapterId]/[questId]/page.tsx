@@ -1,5 +1,6 @@
+// roguelearn-web/src/app/quests/[learningPathId]/[chapterId]/[questId]/page.tsx
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
-import { ModuleLearningView } from "@/components/quests/ModuleLearningView";
+import { QuestDetailView } from "@/components/quests/QuestDetailView";
 import { ArrowLeft, Trophy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
@@ -7,25 +8,25 @@ import { createServerApiClients } from "@/lib/api-server";
 import { QuestDetails, LearningPath } from "@/types/quest";
 
 interface PageProps {
-  params: Promise<{ questId: string; chapterId: string; moduleId: string }>;
+  params: Promise<{ learningPathId: string; chapterId: string; questId: string }>;
 }
 
-export default async function ModuleLearningPage({ params }: PageProps) {
-  const { questId: learningPathId, chapterId, moduleId: questId } = await params;
+export default async function QuestOverviewPage({ params }: PageProps) {
+  const { learningPathId, chapterId, questId } = await params;
   const { coreApiClient } = await createServerApiClients();
 
   let questDetails: QuestDetails | null = null;
   let learningPath: LearningPath | null = null;
 
   try {
-    const [questDetailsResponse, learningPathResponse] = await Promise.all([
+    const [questResponse, pathResponse] = await Promise.all([
       coreApiClient.get<QuestDetails>(`/api/quests/${questId}`),
       coreApiClient.get<LearningPath>('/api/learning-paths/me')
     ]);
-    questDetails = questDetailsResponse.data;
-    learningPath = learningPathResponse.data;
+    questDetails = questResponse.data;
+    learningPath = pathResponse.data;
   } catch (error) {
-    console.error(`Failed to fetch data for quest ${questId}:`, error);
+    console.error(`Failed to fetch quest ${questId}:`, error);
   }
 
   const chapter = learningPath?.chapters.find(ch => ch.id === chapterId);
@@ -35,7 +36,7 @@ export default async function ModuleLearningPage({ params }: PageProps) {
       <DashboardLayout>
         <div className="flex flex-col items-center justify-center min-h-[400px] gap-4">
           <Trophy className="w-16 h-16 text-muted-foreground" />
-          <p className="text-xl text-muted-foreground">Quest content not found.</p>
+          <p className="text-xl text-muted-foreground">Quest not found.</p>
           <Button asChild variant="outline">
             <Link href={`/quests/${learningPathId}/${chapterId}`}>
               <ArrowLeft className="w-4 h-4 mr-2" />
@@ -47,12 +48,20 @@ export default async function ModuleLearningPage({ params }: PageProps) {
     );
   }
 
+  // TODO: Fetch user's progress
+  const completedSteps: number[] = [];
+  const currentStepNumber = 1;
+
   return (
     <DashboardLayout>
-      <ModuleLearningView
-        learningPath={learningPath}
-        chapter={chapter}
+      <QuestDetailView
         questDetails={questDetails}
+        learningPathId={learningPathId}
+        learningPathName={learningPath.name}
+        chapterId={chapterId}
+        chapterName={chapter.title}
+        completedSteps={completedSteps}
+        currentStepNumber={currentStepNumber}
       />
     </DashboardLayout>
   );

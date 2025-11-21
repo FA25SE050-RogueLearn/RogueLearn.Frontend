@@ -1,3 +1,4 @@
+// roguelearn-web/src/app/quests/[learningPathId]/page.tsx
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import QuestlineView from "@/components/quests/QuestlineView";
 import { ArrowLeft, Trophy } from "lucide-react";
@@ -7,22 +8,20 @@ import { createServerApiClients } from "@/lib/api-server";
 import { LearningPath } from "@/types/quest";
 
 interface PageProps {
-  params: Promise<{ questId: string }>;
+  params: Promise<{ learningPathId: string }>;
 }
 
-// This page now fetches the specific Learning Path from the backend.
-// In the future, it would use the questId to fetch a specific path.
-// For now, it fetches the user's main path.
 export default async function QuestlinePage({ params }: PageProps) {
-  const { questId } = await params;
+  const { learningPathId } = await params;
   const { coreApiClient } = await createServerApiClients();
   let learningPath: LearningPath | null = null;
 
   try {
+    // You could fetch by ID, but for now using /me is fine
     const response = await coreApiClient.get<LearningPath>('/api/learning-paths/me');
     learningPath = response.data;
   } catch (error) {
-    console.error(`Failed to fetch learning path for ID ${questId}:`, error);
+    console.error(`Failed to fetch learning path:`, error);
   }
 
   if (!learningPath) {
@@ -44,7 +43,6 @@ export default async function QuestlinePage({ params }: PageProps) {
     );
   }
 
-  // The component now receives the live learningPath object.
   return (
     <DashboardLayout>
       <QuestlineView learningPath={learningPath} />

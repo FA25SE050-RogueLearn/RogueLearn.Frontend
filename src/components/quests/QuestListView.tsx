@@ -1,4 +1,3 @@
-// roguelearn-web/src/components/quests/QuestListView.tsx
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -16,12 +15,16 @@ import {
   Sparkles,
   Flame,
   Target,
-  Loader2
+  Loader2,
+  Play
 } from 'lucide-react';
 import { QuestSummary } from '@/types/quest';
 import questApi from '@/api/questApi';
 // MODIFICATION: Import the usePageTransition hook.
 import { usePageTransition } from '@/components/layout/PageTransition';
+import { useQuestGeneration } from '@/hooks/useQuestGeneration';
+// ⭐ ADD: Import the modal
+import QuestGenerationModal from '@/components/quests/QuestGenerationModal';
 
 interface QuestListViewProps {
   activeQuests: QuestSummary[];
@@ -33,6 +36,8 @@ interface QuestListViewProps {
     totalXP: number;
   };
 }
+const LEARNING_MODE_STORAGE_KEY = 'roguelearn_learning_mode';
+
 
 export default function QuestListView({
   activeQuests,
@@ -43,14 +48,22 @@ export default function QuestListView({
   const router = useRouter();
   // MODIFICATION: Get the navigateTo function from our custom hook.
   const { navigateTo } = usePageTransition();
-  const headerRef = useRef<HTMLDivElement>(null);
-  const activeQuestsRef = useRef<HTMLDivElement>(null);
-  const completedQuestsRef = useRef<HTMLDivElement>(null);
-  const availableQuestsRef = useRef<HTMLDivElement>(null);
-  const lockedQuestsRef = useRef<HTMLDivElement>(null);
+  const { startGeneration, checkStatus } = useQuestGeneration();
+  const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const headerRef = useRef<HTMLDivElement | null>(null);
+  const activeQuestsRef = useRef<HTMLDivElement | null>(null);
+  const completedQuestsRef = useRef<HTMLDivElement | null>(null);
+  const availableQuestsRef = useRef<HTMLDivElement | null>(null);
+  const lockedQuestsRef = useRef<HTMLDivElement | null>(null);
   const [generatingQuestId, setGeneratingQuestId] = useState<string | null>(null);
 
+  // ⭐ ADD: Modal state
+  const [showGenerationModal, setShowGenerationModal] = useState(false);
+  const [generatingJobId, setGeneratingJobId] = useState<string | null>(null);
+  const [generatingQuestTitle, setGeneratingQuestTitle] = useState('');
+
   const [learningMode, setLearningMode] = useState<'structured' | 'free'>('structured');
+
 
   const { availableQuests, lockedQuests } = useMemo(() => {
     if (learningMode === 'free') {
@@ -60,10 +73,12 @@ export default function QuestListView({
       };
     }
 
+
     const available: QuestSummary[] = [];
     const locked: QuestSummary[] = [];
     const completedIds = new Set(completedQuests.map(q => q.id));
     const allSortedQuests = [...completedQuests, ...notStartedQuests].sort((a, b) => a.sequenceOrder - b.sequenceOrder);
+
 
     notStartedQuests.forEach(quest => {
       const questIndex = allSortedQuests.findIndex(q => q.id === quest.id);
@@ -79,8 +94,36 @@ export default function QuestListView({
       }
     });
 
+
     return { availableQuests: available, lockedQuests: locked };
   }, [learningMode, notStartedQuests, completedQuests]);
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+
+    try {
+      const savedMode = localStorage.getItem(LEARNING_MODE_STORAGE_KEY) as 'structured' | 'free' | null;
+      if (savedMode && (savedMode === 'structured' || savedMode === 'free')) {
+        console.log('📚 Loaded learning mode from storage:', savedMode);
+        setLearningMode(savedMode);
+      }
+    } catch (error) {
+      console.error('Failed to load learning mode from localStorage:', error);
+    }
+  }, []);
+  const handleLearningModeChange = (checked: boolean) => {
+    const newMode = checked ? 'free' : 'structured';
+    setLearningMode(newMode);
+
+
+    try {
+      localStorage.setItem(LEARNING_MODE_STORAGE_KEY, newMode);
+      console.log('💾 Saved learning mode to storage:', newMode);
+    } catch (error) {
+      console.error('Failed to save learning mode to localStorage:', error);
+    }
+  };
+
 
   useEffect(() => {
     const ctx = gsap.context(() => {
@@ -107,36 +150,148 @@ export default function QuestListView({
     return () => ctx.revert();
   }, [availableQuests, lockedQuests]);
 
+
   const handleStartQuest = async (event: React.MouseEvent, quest: QuestSummary) => {
     event.preventDefault();
     event.stopPropagation();
     setGeneratingQuestId(quest.id);
+    setGeneratingQuestTitle(quest.title);
 
     try {
+      console.log(`🔍 Checking if quest steps already exist for: ${quest.title}`);
+
+
+      // ========== STEP 1: CHECK IF STEPS ALREADY EXIST ==========
       const detailsResponse = await questApi.getQuestDetails(quest.id);
 
-      if (detailsResponse.isSuccess && detailsResponse.data?.steps && detailsResponse.data.steps.length > 0) {
-        console.log(`Quest steps for ${quest.title} already exist. Navigating directly.`);
-        // MODIFICATION: Use the navigateTo function to trigger the transition.
-        navigateTo(`/quests/${quest.learningPathId}/${quest.chapterId}/${quest.id}`);
-      } else {
-        console.log(`Quest steps for ${quest.title} not found. Generating now...`);
-        const generateResponse = await questApi.generateQuestSteps(quest.id);
 
-        if (generateResponse.isSuccess && generateResponse.data && generateResponse.data.length > 0) {
-          // MODIFICATION: Use the navigateTo function to trigger the transition.
-          navigateTo(`/quests/${quest.learningPathId}/${quest.chapterId}/${quest.id}`);
-        } else {
-          alert('Failed to generate new quest steps. Please try again.');
-        }
+      if (detailsResponse.isSuccess && detailsResponse.data?.steps && detailsResponse.data.steps.length > 0) {
+        console.log(`✅ Quest steps for ${quest.title} already exist. Navigating directly.`);
+        navigateTo(`/quests/${quest.learningPathId}/${quest.chapterId}/${quest.id}`);
+        setGeneratingQuestId(null);
+        return;
       }
-    } catch (error) {
-      console.error('Error starting quest:', error);
-      alert('An error occurred while starting the quest. It might be locked by a prerequisite in the backend.');
-    } finally {
+
+
+      console.log(`🚀 Quest steps for ${quest.title} not found. Starting background generation...`);
+
+
+      // ========== STEP 2: START BACKGROUND GENERATION ==========
+      const jobId = await startGeneration(quest.id);
+
+
+      if (!jobId) {
+        console.error('❌ Failed to start generation');
+        alert('Failed to start quest generation. Please try again.');
+        setGeneratingQuestId(null);
+        return;
+      }
+
+
+      console.log(`📡 Background job started with ID: ${jobId}`);
+      // ⭐ ADD: Show modal
+      setGeneratingJobId(jobId);
+      setShowGenerationModal(true);
+      console.log(`⏳ Starting to poll for completion...`);
+
+
+      // ========== STEP 3: POLL FOR COMPLETION ==========
+      let pollCount = 0;
+      const maxPolls = 300; // 5 minutes (1 second intervals)
+
+
+      const pollJob = async () => {
+        pollCount++;
+
+
+        if (pollCount % 10 === 0) {
+          console.log(`📊 Poll attempt ${pollCount}/${maxPolls}...`);
+        }
+
+
+        const jobStatus = await checkStatus(jobId);
+
+
+        // Success: Generation completed
+        if (jobStatus === 'Succeeded') {
+          console.log('✅ Generation completed! Fetching quest details...');
+          clearInterval(pollingIntervalRef.current!);
+
+
+          // Fetch the newly generated quest
+          const updatedQuest = await questApi.getQuestDetails(quest.id);
+
+
+          if (updatedQuest.isSuccess && updatedQuest.data?.steps && updatedQuest.data.steps.length > 0) {
+            console.log(`✅ Quest steps ready! Navigating to quest...`);
+            setShowGenerationModal(false);
+            navigateTo(`/quests/${quest.learningPathId}/${quest.chapterId}/${quest.id}`);
+          } else {
+            console.error('❌ Quest steps still empty after generation');
+            alert('Generation completed but steps are still empty. Please refresh and try again.');
+          }
+
+
+          setGeneratingQuestId(null);
+          return;
+        }
+
+
+        // Failed: Generation failed
+        if (jobStatus === 'Failed') {
+          console.error('❌ Generation failed');
+          clearInterval(pollingIntervalRef.current!);
+          alert('Quest generation failed. Please try again.');
+          setGeneratingQuestId(null);
+          setShowGenerationModal(false);
+          return;
+        }
+
+
+        // Timeout: Polling exceeded max attempts
+        if (pollCount >= maxPolls) {
+          console.error('⏱️ Polling timeout after 5 minutes');
+          clearInterval(pollingIntervalRef.current!);
+          alert('Generation is taking too long. Please try again later.');
+          setGeneratingQuestId(null);
+          setShowGenerationModal(false);
+          return;
+        }
+
+
+        // Still processing: Continue polling
+        // (no console log here to avoid spam)
+      };
+
+
+      // ========== START POLLING LOOP ==========
+      // Poll every 1 second
+      pollingIntervalRef.current = setInterval(pollJob, 1000);
+
+
+      // Immediate first poll
+      await pollJob();
+    } catch (error: any) {
+      console.error('❌ Error starting quest:', error);
+      alert('An error occurred while starting the quest. Please try again.');
       setGeneratingQuestId(null);
+      setShowGenerationModal(false);
     }
   };
+
+
+  // ========== ADD CLEANUP ON COMPONENT UNMOUNT ==========
+  // Add this useEffect at the end of your component:
+  useEffect(() => {
+    return () => {
+      // Cleanup polling interval on unmount
+      if (pollingIntervalRef.current) {
+        clearInterval(pollingIntervalRef.current);
+      }
+    };
+  }, []);
+
+
 
   const QuestCard = ({ quest, isLocked = false }: { quest: QuestSummary; isLocked?: boolean }) => (
     <button
@@ -152,10 +307,10 @@ export default function QuestListView({
     >
       <Card
         className={`relative overflow-hidden rounded-[28px] border bg-gradient-to-br from-[#2d1810] via-[#1a0a08] to-[#0a0506] shadow-[0_20px_50px_rgba(4,0,14,0.65)] transition-all duration-300 group-hover:-translate-y-1 group-hover:shadow-[0_28px_65px_rgba(245,193,108,0.25)] ${quest.status === 'InProgress'
-            ? 'border-[#f5c16c]/50'
-            : quest.status === 'Completed'
-              ? 'border-emerald-400/50'
-              : 'border-[#f5c16c]/20'
+          ? 'border-[#f5c16c]/50'
+          : quest.status === 'Completed'
+            ? 'border-emerald-400/50'
+            : 'border-[#f5c16c]/20'
           }`}
       >
         <div
@@ -169,38 +324,62 @@ export default function QuestListView({
         <div className="absolute inset-0 opacity-20 bg-[radial-gradient(circle_at_top,_rgba(245,193,108,0.2),_transparent_70%)]" />
         <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[#f5c16c]/40 to-transparent" />
 
+
         <CardContent className="relative z-10 space-y-4 p-6">
           <div className="flex items-start justify-between">
             <div className="flex flex-1 gap-4">
               <div className={`flex h-14 w-14 items-center justify-center rounded-2xl border shadow-[0_8px_20px_rgba(245,193,108,0.25)] ${quest.status === 'Completed' ? 'border-emerald-400/40 bg-emerald-400/10 text-emerald-200'
-                  : quest.status === 'InProgress' ? 'border-[#f5c16c]/40 bg-[#f5c16c]/15 text-[#f5c16c]'
-                    : 'border-[#f5c16c]/20 bg-[#f5c16c]/5 text-white/70'
+                : quest.status === 'InProgress' ? 'border-[#f5c16c]/40 bg-[#f5c16c]/15 text-[#f5c16c]'
+                  : 'border-[#f5c16c]/20 bg-[#f5c16c]/5 text-white/70'
                 }`}>
                 {quest.status === 'Completed' ? <CheckCircle className="h-7 w-7" />
                   : isLocked ? <Lock className="h-7 w-7" />
                     : <BookOpen className="h-7 w-7" />}
               </div>
               <div className="flex-1 space-y-1">
-                <h3 className="text-xl font-semibold text-white">{quest.title}</h3>
+                {/* ⭐ UPDATED: Quest title with recommendation tag inline */}
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h3 className="text-xl font-semibold text-white">{quest.title}</h3>
+
+
+                  {/* ⭐ NEW: Recommendation tag */}
+                  {quest.isRecommended && (
+                    <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-500/20 px-2.5 py-1 text-xs font-medium text-amber-300 border border-amber-500/40 whitespace-nowrap">
+                      <span className="w-1.5 h-1.5 bg-amber-400 rounded-full" />
+                      {quest.recommendationReason || 'Recommended'}
+                    </span>
+                  )}
+                </div>
+
+
                 <p className="text-xs uppercase tracking-[0.3em] text-white/50">
                   Status: {quest.status}
                 </p>
               </div>
+
+
             </div>
           </div>
 
+
           {(quest.status === 'InProgress' || quest.status === 'NotStarted') && !isLocked && (
             <div
-              className="w-full h-10 flex items-center justify-center bg-gradient-to-r from-[#f5c16c] to-[#d4a855] text-black font-semibold rounded-full"
+              className="w-full h-10 flex items-center justify-center bg-gradient-to-r from-[#f5c16c] to-[#d4a855] text-black font-semibold rounded-full hover:shadow-lg hover:shadow-[#f5c16c]/50 transition-all duration-300"
             >
               {generatingQuestId === quest.id ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                <>
+                  <Sparkles className="mr-2 h-4 w-4" />
+                  <span>Forging...</span>
+                </>
               ) : (
-                <Sparkles className="mr-2 h-4 w-4" />
+                <>
+                  <Sparkles className="mr-2 h-4 w-4" />
+                  <span>{quest.status === 'InProgress' ? 'Continue Quest' : 'Start Quest'}</span>
+                </>
               )}
-              <span>{generatingQuestId === quest.id ? 'Forging Quest...' : (quest.status === 'InProgress' ? 'Continue Quest' : 'Start Quest')}</span>
             </div>
           )}
+
 
           {isLocked && (
             <div className="rounded-2xl border border-[#f5c16c]/20 bg-black/40 p-4 text-xs uppercase tracking-[0.35em] text-white/50">
@@ -211,6 +390,7 @@ export default function QuestListView({
       </Card>
     </button>
   );
+
 
   return (
     <div className="flex flex-col gap-10 pb-24">
@@ -247,7 +427,7 @@ export default function QuestListView({
               <Switch
                 id="learning-mode"
                 checked={learningMode === 'free'}
-                onCheckedChange={(checked) => setLearningMode(checked ? 'free' : 'structured')}
+                onCheckedChange={handleLearningModeChange}
                 className="data-[state=checked]:bg-gradient-to-r data-[state=checked]:from-[#f5c16c] data-[state=checked]:to-[#d4a855]"
               />
               <Label htmlFor="learning-mode" className="pr-2 text-xs font-semibold text-white/70">
@@ -314,6 +494,7 @@ export default function QuestListView({
         </div>
       </div>
 
+
       {activeQuests.length > 0 && (
         <div ref={activeQuestsRef}>
           <div className="mb-6 flex items-center justify-between rounded-2xl border border-[#f5c16c]/20 bg-gradient-to-r from-[#f5c16c]/10 via-transparent to-transparent px-6 py-4">
@@ -333,6 +514,7 @@ export default function QuestListView({
         </div>
       )}
 
+
       {completedQuests.length > 0 && (
         <div ref={completedQuestsRef}>
           <div className="mb-6 flex items-center justify-between rounded-2xl border border-emerald-400/20 bg-gradient-to-r from-emerald-400/10 via-transparent to-transparent px-6 py-4">
@@ -348,6 +530,7 @@ export default function QuestListView({
           </div>
         </div>
       )}
+
 
       {availableQuests.length > 0 && (
         <div ref={availableQuestsRef}>
@@ -368,6 +551,7 @@ export default function QuestListView({
         </div>
       )}
 
+
       {lockedQuests.length > 0 && (
         <div ref={lockedQuestsRef}>
           <div className="mb-6 flex items-center justify-between rounded-2xl border border-white/20 bg-gradient-to-r from-white/10 via-transparent to-transparent px-6 py-4">
@@ -386,6 +570,25 @@ export default function QuestListView({
           </div>
         </div>
       )}
+
+      {/* ⭐ ADD: Modal component */}
+      <QuestGenerationModal
+        isOpen={showGenerationModal}
+        jobId={generatingJobId}
+        questTitle={generatingQuestTitle}
+        onClose={() => {
+          setShowGenerationModal(false);
+          setGeneratingJobId(null);
+          setGeneratingQuestTitle('');
+          setGeneratingQuestId(null);
+        }}
+        onComplete={() => {
+          setShowGenerationModal(false);
+          setGeneratingJobId(null);
+          setGeneratingQuestTitle('');
+          setGeneratingQuestId(null);
+        }}
+      />
     </div>
   );
 }
