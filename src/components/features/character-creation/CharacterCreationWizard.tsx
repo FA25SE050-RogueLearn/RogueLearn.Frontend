@@ -1,15 +1,15 @@
-// roguelearn-web/src/components/features/character-creation/CharacterCreationWizard.tsx
 "use client";
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { AcademicRoute, CareerClass } from "@/types/onboarding";
 import onboardingApi from "@/api/onboardingApi";
-import { SelectRouteStep } from "./SelectRouteStep";
+import profileApi from "@/api/profileApi";
+import { RouteSelectionStep } from '@/components/features/character-creation/RouteSelectionStep';
 import { SelectClassStep } from "./SelectClassStep";
 import { SummaryStep } from "./SummaryStep";
 import { Progress } from "@/components/ui/progress";
-import { Loader2, AlertCircle } from "lucide-react";
+import { Loader2, AlertCircle, CheckCircle2 } from "lucide-react";
 
 interface CharacterCreationWizardProps {
   onOnboardingComplete: () => void;
@@ -29,6 +29,7 @@ export function CharacterCreationWizard({ onOnboardingComplete }: CharacterCreat
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isCompleted, setIsCompleted] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -85,15 +86,30 @@ export function CharacterCreationWizard({ onOnboardingComplete }: CharacterCreat
     setIsSubmitting(true);
     setError(null);
     try {
-      // ARCHITECTURAL FIX: Await the API call to ensure onboarding is complete before redirecting.
-      // This prevents a race condition where the next page loads before the user's profile is updated.
-      await onboardingApi.completeOnboarding({ curriculumProgramId: selectedRoute.id, careerRoadmapId: selectedClass.id });
+      // Step 1: Call the onboarding completion API
+      await onboardingApi.completeOnboarding({
+        curriculumProgramId: selectedRoute.id,
+        careerRoadmapId: selectedClass.id
+      });
 
-      onOnboardingComplete();
+      // Step 2: Verify by checking the user profile
+      const profileResult = await profileApi.getMyProfile();
 
-      // After completing onboarding, redirect user to connect their FAP account
-      router.push("/onboarding/connect-fap");
-      router.refresh();
+      if (profileResult.isSuccess && profileResult.data?.onboardingCompleted) {
+        // ✅ Profile confirms onboarding is complete
+        setIsCompleted(true);
+        onOnboardingComplete();
+
+        // Delay redirect to show success state briefly
+        setTimeout(() => {
+          router.push("/onboarding/connect-fap");
+          router.refresh();
+        }, 1500);
+      } else {
+        // ❌ Profile check failed - show error
+        throw new Error("Failed to verify onboarding completion. Please try again.");
+      }
+
     } catch (err: any) {
       const errorMessage = (err.response?.data?.message || err.message) ?? "An unexpected error occurred. Please try again.";
       setError(errorMessage);
@@ -114,7 +130,7 @@ export function CharacterCreationWizard({ onOnboardingComplete }: CharacterCreat
     );
   }
 
-  if (error && !isSubmitting) {
+  if (error && !isSubmitting && !isCompleted) {
     return (
       <div className="flex flex-col items-center justify-center gap-4 text-center min-h-[50vh]">
         <AlertCircle className="w-12 h-12 text-red-400" />
@@ -124,14 +140,29 @@ export function CharacterCreationWizard({ onOnboardingComplete }: CharacterCreat
     );
   }
 
-  return (
-    <div>
-      <div className="flex items-center justify-between mb-4">
-        <p className="text-xs uppercase tracking-[0.4em] text-foreground/60">RogueLearn Character Creation</p>
-        <p className="text-xs uppercase tracking-[0.4em] text-foreground/60">Step {stepNumber} / 3</p>
+  // SUCCESS STATE - Show completion and prevent further interaction
+  if (isCompleted) {
+    return (
+      <div className="flex flex-col items-center justify-center gap-4 text-center min-h-[50vh]">
+        <CheckCircle2 className="w-16 h-16 text-accent animate-pulse" />
+        <h2 className="text-3xl font-semibold font-heading text-white">Path Forged Successfully!</h2>
+        <p className="text-foreground/70 max-w-md">
+          Your character has been created with Route: <span className="text-accent font-semibold">{selectedRoute?.programName}</span> and Class: <span className="text-accent font-semibold">{selectedClass?.name}</span>
+        </p>
+        <p className="text-foreground/50 text-sm">Redirecting to next step...</p>
       </div>
+    );
+  }
 
-      <div className="mb-8">
+  return (
+    <div className="h-screen overflow-hidden flex flex-col">
+      {/* Header Section - Fixed */}
+      <div className="px-6 py-6 border-b border-white/5">
+        <div className="flex items-center justify-between mb-4">
+          <p className="text-xs uppercase tracking-[0.4em] text-foreground/60">RogueLearn Character Creation</p>
+          <p className="text-xs uppercase tracking-[0.4em] text-foreground/60">Step {stepNumber} / 3</p>
+        </div>
+
         <div className="flex items-center justify-between mb-2">
           <p className="text-sm uppercase tracking-[0.3em] text-foreground/50">Progress</p>
           <p className="text-sm font-semibold text-white">{Math.round(progressValue)}%</p>
@@ -139,33 +170,39 @@ export function CharacterCreationWizard({ onOnboardingComplete }: CharacterCreat
         <Progress value={progressValue} className="h-2 bg-white/10" />
       </div>
 
-      {currentStep === "route" && (
-        <SelectRouteStep
-          routes={routes}
-          selectedRoute={selectedRoute}
-          onSelectRoute={setSelectedRoute}
-          onNext={handleNext}
-        />
-      )}
-      {currentStep === "class" && (
-        <SelectClassStep
-          classes={classes}
-          selectedClass={selectedClass}
-          onSelectClass={setSelectedClass}
-          onNext={handleNext}
-          onBack={handleBack}
-        />
-      )}
-      {currentStep === "summary" && selectedRoute && selectedClass && (
-        <SummaryStep
-          selectedRoute={selectedRoute}
-          selectedClass={selectedClass}
-          onSubmit={handleSubmit}
-          onBack={handleBack}
-          isSubmitting={isSubmitting}
-          error={error}
-        />
-      )}
+      {/* Content Section - Scrollable */}
+      <div className="flex-1 overflow-y-auto px-6 py-8">
+        <div className="max-w-6xl mx-auto">
+          {currentStep === "route" && (
+            <RouteSelectionStep
+              routes={routes}
+              selectedRoute={selectedRoute}
+              onSelectRoute={setSelectedRoute}
+              onNext={handleNext}
+              isDisabled={false}
+            />
+          )}
+          {currentStep === "class" && (
+            <SelectClassStep
+              classes={classes}
+              selectedClass={selectedClass}
+              onSelectClass={setSelectedClass}
+              onNext={handleNext}
+              onBack={handleBack}
+            />
+          )}
+          {currentStep === "summary" && selectedRoute && selectedClass && (
+            <SummaryStep
+              selectedRoute={selectedRoute}
+              selectedClass={selectedClass}
+              onSubmit={handleSubmit}
+              onBack={handleBack}
+              isSubmitting={isSubmitting}
+              error={error}
+            />
+          )}
+        </div>
+      </div>
     </div>
   );
 }

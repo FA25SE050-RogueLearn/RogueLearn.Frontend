@@ -101,10 +101,10 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const pathname = usePathname();
   const [userProfile, setUserProfile] = React.useState<UserProfileDto | null>(null);
   const [showCharacterWizard, setShowCharacterWizard] = React.useState(false)
-
+  const hasCheckedOnboarding = React.useRef(false)
   React.useEffect(() => {
     const supabase = createClient();
-    
+
     const fetchProfile = async () => {
       const response = await profileApi.getMyProfile();
       if (response.isSuccess) {
@@ -136,17 +136,17 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     router.push("/login")
     router.refresh()
   }
-  
+
   // MODIFICATION: This handler now decides where to send the user based on their onboarding status.
-  const handleForgeClick = () => {
-    if (userProfile?.onboardingCompleted) {
-      // If user is already onboarded, send them to the FAP sync page to update their progress.
-      router.push('/onboarding/connect-fap');
-    } else {
-      // If they are a new user, open the character creation wizard.
-      setShowCharacterWizard(true);
+  React.useEffect(() => {
+    if (!hasCheckedOnboarding.current && userProfile) {
+      hasCheckedOnboarding.current = true
+
+      if (!userProfile.onboardingCompleted || !userProfile.routeId || !userProfile.classId) {
+        setShowCharacterWizard(true)
+      }
     }
-  };
+  }, [userProfile])
 
   const handleOnboardingComplete = () => {
     if (userProfile) {

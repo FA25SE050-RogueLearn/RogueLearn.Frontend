@@ -57,7 +57,7 @@ export function DungeonNav() {
   const navRef = React.useRef<HTMLDivElement>(null)
   const itemRefs = React.useRef<(HTMLDivElement | null)[]>([])
   const particlesRef = React.useRef<HTMLDivElement>(null)
-
+  const hasCheckedOnboarding = React.useRef(false)
   React.useEffect(() => {
     const supabase = createClient()
     const fetchProfile = async () => {
@@ -71,9 +71,18 @@ export function DungeonNav() {
     return () => subscription?.unsubscribe()
   }, [])
   // CRITICAL FIX: Automatically trigger onboarding wizard for users who haven't completed it
+  // ✅ NEW CODE (Only checks once on mount):
+
+
   React.useEffect(() => {
-    if (userProfile && !userProfile.onboardingCompleted) {
-      setShowCharacterWizard(true)
+    // Only check once to avoid re-triggering
+    if (!hasCheckedOnboarding.current && userProfile) {
+      hasCheckedOnboarding.current = true
+
+      // Only show wizard if NOT completed AND has no route/class selected
+      if (!userProfile.onboardingCompleted || !userProfile.routeId || !userProfile.classId) {
+        setShowCharacterWizard(true)
+      }
     }
   }, [userProfile])
 
