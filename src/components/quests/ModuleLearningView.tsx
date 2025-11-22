@@ -571,7 +571,6 @@ export function ModuleLearningView({
                     ) : (
                         <WeeklyProgressCard
                             step={weeklyStep}
-                            questId={questId}  // ⭐ ADD THIS
                             completedActivities={completedActivities}
                             totalActivities={totalActivities}
                         />
