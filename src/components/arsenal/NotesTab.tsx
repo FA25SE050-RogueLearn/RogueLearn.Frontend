@@ -13,7 +13,7 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/componen
 import { Label } from "@/components/ui/label";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { createClient } from "@/utils/supabase/client";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2, MoreVertical, LayoutGrid, List } from "lucide-react";
 import { toast } from "sonner";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
@@ -96,6 +96,7 @@ export default function NotesTab() {
   const [authUserId, setAuthUserId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [activeGroup, setActiveGroup] = useState<string>("all");
+  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
 
   useEffect(() => {
     const supabase = createClient();
@@ -189,9 +190,7 @@ export default function NotesTab() {
       const res = await notesApi.createWithAiTagsFromUpload({ authUserId, fileContent: file, fileName: file.name, contentType: file.type, applySuggestions: true, maxTags: 8 });
       if (res.isSuccess) {
         toast.success("Created note from upload");
-        const noteId = res.data.noteId;
         await fetchNotes();
-        router.push(`/arsenal/${noteId}`);
       }
     } finally {
       setUploading(false);
@@ -216,9 +215,8 @@ export default function NotesTab() {
         isPublic: false,
       });
       if (res.isSuccess) {
-        const created = res.data;
+        toast.success("New note created");
         await fetchNotes();
-        router.push(`/arsenal/${created.id}`);
       }
     } catch (e) {}
   };
@@ -267,34 +265,32 @@ export default function NotesTab() {
     } catch {}
   };
 
-  const [listRef, bounds] = useMeasure();
-  const [scrollTop, setScrollTop] = useState(0);
-  const CARD_WIDTH = 320;
-  const GAP = 16;
-  const ROW_HEIGHT = 220;
-  const buffer = 2;
   const total = filteredNotes.length;
-  const containerWidth = bounds.width || 0;
-  const numCols = Math.max(1, Math.floor(containerWidth / (CARD_WIDTH + GAP)));
-  const totalRows = Math.max(1, Math.ceil(total / numCols));
-  const startRow = Math.max(0, Math.floor(scrollTop / ROW_HEIGHT) - buffer);
-  const visibleRows = Math.ceil((bounds.height || 0) / ROW_HEIGHT) + buffer * 2;
-  const endRow = Math.min(totalRows, startRow + visibleRows);
-  const startIndex = startRow * numCols;
-  const endIndex = Math.min(total, endRow * numCols);
-  const topPadding = startRow * ROW_HEIGHT;
-  const bottomPadding = Math.max(0, (totalRows - endRow) * ROW_HEIGHT);
+
+  const handleDropFiles = async (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    if (!authUserId) return;
+    const files = Array.from(e.dataTransfer.files || []);
+    if (files.length === 0) return;
+    setUploading(true);
+    try {
+      for (const file of files) {
+        const res = await notesApi.createWithAiTagsFromUpload({ authUserId, fileContent: file, fileName: file.name, contentType: file.type, applySuggestions: true, maxTags: 8 });
+        if (res.isSuccess) {
+          toast.success(`Created note from ${file.name}`);
+        }
+      }
+      await fetchNotes();
+    } finally {
+      setUploading(false);
+    }
+  };
 
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-wrap items-center gap-3">
-        <Input placeholder="Search notes..." value={searchInput} onChange={(e) => setSearchInput(e.target.value)} className="max-w-sm" />
-        <div className="flex items-center gap-2">
-          <Label htmlFor="tag-filter" className="text-xs text-[#f5c16c]/80">Tag</Label>
-          <select id="tag-filter" value={filterTagId} onChange={(e) => setFilterTagId(e.target.value)} className="rounded-md border border-[#f5c16c]/20 bg-black/40 p-2 text-sm text-white focus:border-[#f5c16c] focus:outline-none focus:ring-1 focus:ring-[#f5c16c]/30">
-            <option value="">All</option>
-            {myTags.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
-          </select>
+        <div className="flex-1">
+          <Input placeholder="Search notes..." value={searchInput} onChange={(e) => setSearchInput(e.target.value)} className="w-full max-w-xl" />
         </div>
         <div className="flex items-center gap-2">
           <Label htmlFor="sort-notes" className="text-xs text-[#f5c16c]/80">Sort</Label>
@@ -303,17 +299,21 @@ export default function NotesTab() {
             <option value="title_asc">Title (A–Z)</option>
           </select>
         </div>
-        <input id={fileInputId} type="file" accept=".txt,.md,.pdf,.doc,.docx,.pptx,.ppt" className="hidden" onChange={onFileSelected} />
-        <Button variant="secondary" onClick={onClickUpload} disabled={uploading} className="border-[#f5c16c]/20 bg-black/40 hover:border-[#f5c16c]/40 hover:bg-black/60">
-          {uploading ? "Uploading..." : "Upload file"}
-        </Button>
-        <Button onClick={openNewNote} className="ml-auto bg-gradient-to-r from-[#f5c16c] to-[#d4a855] text-black hover:from-[#d4a855] hover:to-[#f5c16c]">
-          <Plus className="mr-2 h-4 w-4" /> New Note
-        </Button>
+        <div className="flex items-center gap-1">
+          <Button variant={viewMode === "grid" ? "default" : "secondary"} size="icon" onClick={() => setViewMode("grid")} aria-label="Grid view">
+            <LayoutGrid className="h-4 w-4" />
+          </Button>
+          <Button variant={viewMode === "list" ? "default" : "secondary"} size="icon" onClick={() => setViewMode("list")} aria-label="List view">
+            <List className="h-4 w-4" />
+          </Button>
+        </div>
       </div>
 
       <div className="rounded-2xl border border-white/12 bg-black/20 min-h-[80vh] grid grid-cols-[280px_1fr]">
-        <div className="border-r border-white/10 p-3">
+        <div className="border-r border-white/10 p-3 space-y-3">
+          <Button onClick={openNewNote} className="w-full bg-linear-to-r from-[#f5c16c] to-[#d4a855] text-black">
+            <Plus className="mr-2 h-4 w-4" /> New Note
+          </Button>
           <Accordion type="single" collapsible defaultValue="group-all">
             <AccordionItem value="group-all">
               <AccordionTrigger onClick={() => setActiveGroup("all")}>All Notes</AccordionTrigger>
@@ -360,73 +360,155 @@ export default function NotesTab() {
             <Button variant="secondary" onClick={fetchNotes}>Retry</Button>
           </div>
         ) : total === 0 ? (
-          <div className="p-8 text-center">
-            <p className="mb-3 text-sm text-foreground/70">No notes found.</p>
+          <div className="p-16 text-center">
+            <div className="mx-auto mb-4 h-12 w-12 rounded-full border border-[#f5c16c]/30 bg-[#f5c16c]/10" />
+            <p className="mb-3 text-sm text-foreground/70">No scrolls found in this archive.</p>
             <Button onClick={openNewNote}><Plus className="mr-2 h-4 w-4" /> Create your first note</Button>
           </div>
         ) : (
-          <div
-            ref={listRef}
-            className="h-[80vh] overflow-y-auto p-4"
-            onScroll={(e) => setScrollTop((e.target as HTMLDivElement).scrollTop)}
-            role="list"
-            aria-label="Notes grid"
-          >
-            <div style={{ paddingTop: topPadding, paddingBottom: bottomPadding }}>
-              <div
-                style={{ display: 'grid', gridTemplateColumns: `repeat(${numCols}, minmax(0, 1fr))`, gap: `${GAP}px` }}
-              >
-                {filteredNotes.slice(startIndex, endIndex).map((note) => (
+          <div className="h-[80vh] overflow-y-auto p-4 pb-24" role="list" aria-label="Notes grid">
+            <div
+              className="mb-4 rounded-xl border border-dashed border-[#f5c16c]/40 bg-[#0c0508]/60 p-6 text-center"
+              onDragOver={(e) => e.preventDefault()}
+              onDrop={handleDropFiles}
+            >
+              <div className="text-sm text-foreground/70">Drop files here to create notes</div>
+              <div className="mt-2 flex items-center justify-center gap-2">
+                <input
+                  id={fileInputId}
+                  type="file"
+                  multiple
+                  accept=".txt,.md,.pdf,.doc,.docx,.pptx,.ppt"
+                  className="hidden"
+                  onChange={onFileSelected}
+                />
+                <Button variant="secondary" onClick={onClickUpload} disabled={uploading}>
+                  {uploading ? "Processing..." : "Choose files"}
+                </Button>
+              </div>
+            </div>
+            {viewMode === "grid" ? (
+              <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                {filteredNotes.map((note) => (
                   <Card
                     key={note.id}
-                    className="flex h-[220px] flex-col overflow-hidden rounded-[20px] border border-white/12 bg-gradient-to-br from-[#361c15]/86 via-[#1f0d12]/92 to-[#0c0508]/97"
+                    className="flex flex-col overflow-hidden rounded-[20px] border border-white/12 bg-linear-to-br from-[#361c15]/86 via-[#1f0d12]/92 to-[#0c0508]/97"
                     role="listitem"
                     tabIndex={0}
-                    onKeyDown={(e) => { if ((e as any).key === "Enter") openEditNote(note.id); }}
+                    onClick={() => openEditNote(note.id)}
+                    onKeyDown={(e) => {
+                      if ((e as any).key === "Enter") openEditNote(note.id)
+                    }}
                     draggable
                     onDragStart={(e) => onDragStartNote(e, note.id)}
                   >
-                    <CardHeader className="relative z-10 flex items-center justify-between border-b border-white/10 py-3">
+                    <CardHeader className="relative z-10 flex flex-row items-center justify-between border-b border-white/10 py-3 px-4">
                       <CardTitle className="text-base font-semibold text-white">{note.title}</CardTitle>
-                      <div className="flex items-center gap-2">
-                        {note.isPublic && (
-                          <span className="rounded-full border border-green-500/40 bg-green-500/15 px-2 py-0.5 text-xs text-green-300">Public</span>
-                        )}
-                        <span className="text-xs text-foreground/60">{new Date(note.updatedAt).toLocaleDateString()}</span>
-                      </div>
+                        <div className="flex items-center gap-2">
+                          {note.isPublic && (
+                            <span className="rounded-full border border-green-500/40 bg-green-500/15 px-2 py-0.5 text-xs text-green-300">Public</span>
+                          )}
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" aria-label="More actions" onClick={(e) => e.stopPropagation()}>
+                              <MoreVertical className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); openEditNote(note.id); }}>Open</DropdownMenuItem>
+                            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); deleteNote(note.id); }}>Delete</DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                        </div>
                     </CardHeader>
                     <CardContent className="relative z-10 flex min-h-0 flex-1 flex-col gap-3 p-4">
-                      <p className="line-clamp-2 text-sm leading-relaxed text-foreground/70">{extractNotePreview(note.content as any) || "No content"}</p>
+                      <p className="text-sm leading-relaxed text-foreground/70">
+                        {extractNotePreview(note.content as any) || "No content"}
+                      </p>
                     </CardContent>
-                    <CardFooter className="relative z-10 flex items-center gap-2 border-t border-white/10 p-3">
-                      <Button size="sm" variant="secondary" onClick={() => openEditNote(note.id)} aria-label="Open note">Open</Button>
-                      <Button size="sm" variant="destructive" onClick={() => deleteNote(note.id)} aria-label="Delete note">
-                        <Trash2 className="mr-2 h-4 w-4" /> Delete
-                      </Button>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button size="sm" variant="secondary" aria-label="Show tags">Tags</Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent className="w-48">
-                          <DropdownMenuLabel>Tags</DropdownMenuLabel>
-                          {Array.isArray(note.tagIds) && note.tagIds.length > 0 ? (
-                            note.tagIds.map((tid) => {
-                              const t = tagIndex.get(tid);
-                              const label = t?.name ?? "Unknown";
-                              return (
-                                <DropdownMenuItem key={`${note.id}-${tid}`}>{label}</DropdownMenuItem>
-                              );
-                            })
-                          ) : (
-                            <DropdownMenuItem disabled>No tags</DropdownMenuItem>
-                          )}
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+                    <CardFooter className="relative z-10 flex flex-wrap items-center gap-2 border-t border-white/10 p-3">
+                      {Array.isArray(note.tagIds) && note.tagIds.length > 0 ? (
+                        note.tagIds.map((tid) => {
+                          const t = tagIndex.get(tid)
+                          const label = t?.name ?? "Unknown"
+                          return (
+                            <span
+                              key={`${note.id}-${tid}`}
+                              className="rounded-full border border-[#f5c16c]/30 bg-[#f5c16c]/10 px-2 py-0.5 text-xs text-[#f5c16c]"
+                            >
+                              {label}
+                            </span>
+                          )
+                        })
+                      ) : (
+                        <span className="text-xs text-foreground/50">No tags</span>
+                      )}
                     </CardFooter>
                   </Card>
                 ))}
               </div>
-            </div>
+            ) : (
+              <div className="space-y-2">
+                {filteredNotes.map((note) => (
+                  <Card
+                    key={note.id}
+                    className="flex items-start gap-4 overflow-hidden rounded-[16px] border border-white/12 bg-linear-to-br from-[#361c15]/86 via-[#1f0d12]/92 to-[#0c0508]/97 p-4"
+                    role="listitem"
+                    tabIndex={0}
+                    onClick={() => openEditNote(note.id)}
+                    onKeyDown={(e) => {
+                      if ((e as any).key === "Enter") openEditNote(note.id)
+                    }}
+                  >
+                    <div className="flex-1">
+                      <div className="flex items-center justify-between">
+                        <div className="text-base font-semibold text-white">{note.title}</div>
+                        <div className="flex items-center gap-2">
+                          {note.isPublic && (
+                            <span className="rounded-full border border-green-500/40 bg-green-500/15 px-2 py-0.5 text-xs text-green-300">
+                              Public
+                            </span>
+                          )}
+                          <span className="text-xs text-foreground/60">{new Date(note.updatedAt).toLocaleDateString()}</span>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon" aria-label="More actions" onClick={(e) => e.stopPropagation()}>
+                                <MoreVertical className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); openEditNote(note.id); }}>Open</DropdownMenuItem>
+                              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); deleteNote(note.id); }}>Delete</DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
+                      </div>
+                      <p className="mt-1 text-sm leading-relaxed text-foreground/70">
+                        {extractNotePreview(note.content as any) || "No content"}
+                      </p>
+                      <div className="mt-2 flex flex-wrap items-center gap-2">
+                        {Array.isArray(note.tagIds) && note.tagIds.length > 0 ? (
+                          note.tagIds.map((tid) => {
+                            const t = tagIndex.get(tid)
+                            const label = t?.name ?? "Unknown"
+                            return (
+                              <span
+                                key={`${note.id}-${tid}`}
+                                className="rounded-full border border-[#f5c16c]/30 bg-[#f5c16c]/10 px-2 py-0.5 text-xs text-[#f5c16c]"
+                              >
+                                {label}
+                              </span>
+                            )
+                          })
+                        ) : (
+                          <span className="text-xs text-foreground/50">No tags</span>
+                        )}
+                      </div>
+                    </div>
+                  </Card>
+                ))}
+              </div>
+            )}
           </div>
         )}
       </div>
