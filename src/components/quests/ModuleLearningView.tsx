@@ -31,6 +31,7 @@ import questApi from "@/api/questApi";
 import { CodingChallengeModal } from "./CodingChallengeModal";
 import WeeklyProgressCard from "./WeeklyProgressCard";
 
+
 // --- Sub-components for Activities ---
 
 const ReadingActivityContent = ({ payload }: { payload: ReadingActivityPayload }) => {
@@ -80,7 +81,6 @@ const ReadingActivityContent = ({ payload }: { payload: ReadingActivityPayload }
                             </Button>
                         </div>
 
-                        {/* ⭐ Embedded Article Viewer */}
                         {showEmbedded && (
                             <div className="relative rounded-lg overflow-hidden border border-[#f5c16c]/30">
                                 <div className="bg-black/60 px-4 py-2 flex items-center justify-between">
@@ -121,7 +121,6 @@ const KnowledgeCheckActivityContent = ({ payload }: { payload: KnowledgeCheckAct
     const [selectedAnswers, setSelectedAnswers] = useState<Record<number, string>>({});
     const [submitted, setSubmitted] = useState(false);
 
-    // Handle both single question and multiple questions formats
     const questions: KnowledgeCheckQuestion[] = payload.questions ||
         (payload.question ? [{
             question: payload.question,
@@ -390,28 +389,30 @@ const CodingActivityContent = ({
 interface ModuleLearningViewProps {
     weeklyStep: QuestStep;
     questId: string;
-    questName?: string;  // ⭐ ADD THIS
+    questName?: string;
     learningPathId: string;
-    learningPathName?: string;  // ⭐ ADD THIS
+    learningPathName?: string;
     chapterId: string;
-    chapterName?: string;  // ⭐ ADD THIS
+    chapterName?: string;
     totalWeeks: number;
 }
 
 export function ModuleLearningView({
     weeklyStep,
     questId,
-    questName,  // ⭐ ADD THIS
+    questName,
     learningPathId,
-    learningPathName,  // ⭐ ADD THIS
+    learningPathName,
     chapterId,
-    chapterName,  // ⭐ ADD THIS
+    chapterName,
     totalWeeks
 }: ModuleLearningViewProps) {
     const [currentActivityIndex, setCurrentActivityIndex] = useState(0);
     const [completedActivities, setCompletedActivities] = useState<string[]>([]);
     const [isCompleting, setIsCompleting] = useState(false);
     const [activeCodingChallenge, setActiveCodingChallenge] = useState<CodingActivityPayload | null>(null);
+    const [isLoadingProgress, setIsLoadingProgress] = useState(true);
+    const [stepProgress, setStepProgress] = useState<any>(null);
 
     const activities = weeklyStep.content?.activities || [];
     const currentActivity = activities[currentActivityIndex];
@@ -420,10 +421,39 @@ export function ModuleLearningView({
     const isLastActivity = currentActivityIndex === totalActivities - 1;
     const isWeekComplete = completedActivities.length === totalActivities;
 
+    // ⭐ Fetch progress when component mounts
     useEffect(() => {
-        // TODO: Fetch user's completed activities for this week from API
-        // For now, using local state
-    }, [weeklyStep.id]);
+        const fetchProgress = async () => {
+            try {
+                setIsLoadingProgress(true);
+                const response = await questApi.getCompletedActivities(questId, weeklyStep.id);
+
+                // ✅ Check if the request was successful
+                if (response.isSuccess && response.data) {
+                    // Extract completed activity IDs
+                    const completed = response.data.activities
+                        .filter((a: any) => a.isCompleted)
+                        .map((a: any) => a.activityId);
+
+                    setCompletedActivities(completed);
+                    setStepProgress(response.data);
+
+                    console.log(`✅ Loaded progress: ${completed.length}/${response.data.totalCount} activities completed`);
+                } else {
+                    // Handle error response
+                    console.error("Failed to fetch progress:", response.message);
+                    alert("Failed to load your progress. Please refresh the page.");
+                }
+            } catch (error) {
+                console.error("Failed to fetch progress:", error);
+                alert("There was an error loading your progress. Please try again.");
+            } finally {
+                setIsLoadingProgress(false);
+            }
+        };
+
+        fetchProgress();
+    }, [questId, weeklyStep.id]);
 
     const handleNextActivity = () => {
         if (!isLastActivity) {
@@ -444,9 +474,7 @@ export function ModuleLearningView({
 
         setIsCompleting(true);
         try {
-            // TODO: Call API to mark activity as complete
-            // await questApi.updateActivityProgress(questId, weeklyStep.id, currentActivity.activityId, 'Completed');
-
+            await questApi.updateActivityProgress(questId, weeklyStep.id, currentActivity.activityId, 'Completed');
             setCompletedActivities(prev => [...prev, currentActivity.activityId]);
 
             // Auto-advance to next activity if not last
@@ -533,11 +561,21 @@ export function ModuleLearningView({
 
                 {/* Weekly Progress Card */}
                 <div className="w-80">
-                    <WeeklyProgressCard
-                        step={weeklyStep}
-                        completedActivities={completedActivities}
-                        totalActivities={totalActivities}
-                    />
+                    {isLoadingProgress ? (
+                        <Card className="bg-black/40 border-[#f5c16c]/20">
+                            <CardContent className="py-6 flex items-center justify-center gap-2">
+                                <Loader2 className="w-5 h-5 animate-spin text-[#f5c16c]" />
+                                <span className="text-white/60">Loading progress...</span>
+                            </CardContent>
+                        </Card>
+                    ) : (
+                        <WeeklyProgressCard
+                            step={weeklyStep}
+                            questId={questId}  // ⭐ ADD THIS
+                            completedActivities={completedActivities}
+                            totalActivities={totalActivities}
+                        />
+                    )}
                 </div>
             </div>
 

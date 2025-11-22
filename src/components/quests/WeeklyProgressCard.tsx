@@ -3,27 +3,96 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { QuestStep } from '@/types/quest';
-import { CheckCircle2, Circle, Trophy } from 'lucide-react';
+import { CheckCircle2, Circle, Trophy, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useEffect, useState } from 'react';
+import questApi from '@/api/questApi';
 
 interface WeeklyProgressCardProps {
     step: QuestStep;
-    completedActivities: string[]; // Array of completed activityIds
-    totalActivities: number;
+    questId: string; // ⭐ NEW: Need questId to fetch progress
+    completedActivities?: string[]; // Optional fallback
+    totalActivities?: number; // Optional fallback
 }
 
 /**
  * Displays progress for a weekly learning module.
  * Shows completion percentage and activity breakdown.
+ * ⭐ UPDATED: Fetches actual progress from backend
  */
 export default function WeeklyProgressCard({
     step,
-    completedActivities,
-    totalActivities,
+    questId,
+    completedActivities = [],
+    totalActivities = 0,
 }: WeeklyProgressCardProps) {
+    const [progressData, setProgressData] = useState<{
+        completed: number;
+        total: number;
+    }>({
+        completed: completedActivities.length,
+        total: totalActivities,
+    });
+    const [isLoading, setIsLoading] = useState(totalActivities === 0);
+
+    // ⭐ NEW: Fetch actual step progress
+    useEffect(() => {
+        const fetchProgress = async () => {
+            try {
+                setIsLoading(true);
+                const response = await questApi.getStepProgress(questId, step.id);
+
+                if (response.isSuccess && response.data) {
+                    setProgressData({
+                        completed: response.data.completedActivitiesCount,
+                        total: response.data.totalActivitiesCount,
+                    });
+                    console.log(`✅ Fetched progress for step ${step.stepNumber}:`, response.data);
+                } else {
+                    console.warn('Failed to fetch step progress:', response.message);
+                    // Fallback to props
+                    setProgressData({
+                        completed: completedActivities.length,
+                        total: totalActivities,
+                    });
+                }
+            } catch (error) {
+                console.error('Error fetching step progress:', error);
+                // Fallback to props
+                setProgressData({
+                    completed: completedActivities.length,
+                    total: totalActivities,
+                });
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        if (questId && step.id) {
+            fetchProgress();
+        }
+    }, [questId, step.id, completedActivities.length, totalActivities]);
+
     const completionPercentage =
-        totalActivities > 0 ? Math.round((completedActivities.length / totalActivities) * 100) : 0;
+        progressData.total > 0 ? Math.round((progressData.completed / progressData.total) * 100) : 0;
     const isComplete = completionPercentage === 100;
+
+    if (isLoading) {
+        return (
+            <Card className="bg-gradient-to-br from-slate-900/90 to-slate-950/90 border-slate-700/50">
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-amber-100">
+                        <Circle className="w-5 h-5 text-slate-400" />
+                        <span className="text-sm">Week {step.stepNumber} Progress</span>
+                    </CardTitle>
+                </CardHeader>
+                <CardContent className="flex items-center justify-center gap-2 p-6">
+                    <Loader2 className="w-4 h-4 animate-spin text-amber-400" />
+                    <span className="text-sm text-slate-400">Loading progress...</span>
+                </CardContent>
+            </Card>
+        );
+    }
 
     return (
         <Card className="bg-gradient-to-br from-slate-900/90 to-slate-950/90 border-slate-700/50">
@@ -43,7 +112,7 @@ export default function WeeklyProgressCard({
                     <div className="flex items-center justify-between mb-2">
                         <span className="text-xs text-slate-400">Activities Completed</span>
                         <span className="text-xs font-semibold text-amber-300">
-                            {completedActivities.length}/{totalActivities}
+                            {progressData.completed}/{progressData.total}
                         </span>
                     </div>
                     <div className="h-2 bg-slate-800 rounded-full overflow-hidden">
@@ -57,6 +126,12 @@ export default function WeeklyProgressCard({
                             style={{ width: `${completionPercentage}%` }}
                         />
                     </div>
+                </div>
+
+                {/* Completion Percentage */}
+                <div className="text-center">
+                    <span className="text-2xl font-bold text-amber-400">{completionPercentage}%</span>
+                    <span className="text-xs text-slate-400 ml-2">Complete</span>
                 </div>
 
                 {/* Experience Points */}
