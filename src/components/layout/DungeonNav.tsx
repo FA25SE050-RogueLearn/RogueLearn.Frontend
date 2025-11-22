@@ -71,11 +71,11 @@ export function DungeonNav() {
     return () => subscription?.unsubscribe()
   }, [])
   // CRITICAL FIX: Automatically trigger onboarding wizard for users who haven't completed it
-  React.useEffect(() => {
-    if (userProfile && !userProfile.onboardingCompleted) {
-      setShowCharacterWizard(true)
-    }
-  }, [userProfile])
+  // React.useEffect(() => {
+  //   if (userProfile && !userProfile.onboardingCompleted) {
+  //     setShowCharacterWizard(true)
+  //   }
+  // }, [userProfile])
 
 
   // Subtle entrance animation - fade in only

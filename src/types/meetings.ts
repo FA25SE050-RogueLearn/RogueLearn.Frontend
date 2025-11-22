@@ -6,26 +6,27 @@
  *   camelCase JSON serialization.
  */
 
+export enum MeetingStatus {
+  Scheduled = 'Scheduled',
+  Active = 'Active',
+  EndedProcessing = 'EndedProcessing',
+  Completed = 'Completed'
+}
+
 export interface MeetingDto {
-  /** Backend: Guid MeetingId */
   meetingId?: string;
-  /** Backend: Guid OrganizerId */
   organizerId: string;
-  /** Backend: Guid PartyId */
   partyId: string | null;
-  /** Backend: Guid GuildId */
   guildId?: string | null;
-  /** Backend: string Title (required) */
   title: string;
-  /** Backend: DateTimeOffset ScheduledStartTime */
   scheduledStartTime: string; // ISO timestamp
-  /** Backend: DateTimeOffset ScheduledEndTime */
   scheduledEndTime: string; // ISO timestamp
   meetingLink: string;
-  /** Backend: DateTimeOffset? ActualStartTime */
   actualStartTime?: string | null; // ISO timestamp
-  /** Backend: DateTimeOffset? ActualEndTime */
   actualEndTime?: string | null; // ISO timestamp
+  meetingCode?: string;
+  spaceName?: string;
+  status?: MeetingStatus;
 }
 
 export interface MeetingParticipantDto {

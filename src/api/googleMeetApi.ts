@@ -9,6 +9,7 @@ export interface SpaceConfig {
   entryPointAccess?: string;
   moderationRestrictions?: string[];
   autoArtifactConfig?: Record<string, unknown> | null;
+  title?: string;
 }
 
 export interface CreateSpaceRequest {
