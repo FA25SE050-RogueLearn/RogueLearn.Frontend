@@ -25,6 +25,9 @@ export interface GuildPostDto {
   status: GuildPostStatus;
   createdAt: string;
   updatedAt: string;
+  likeCount?: number;
+  commentCount?: number;
+  reactionCounts?: Record<string, number> | null;
 }
 
 /** Request model for creating a guild post. */
@@ -33,12 +36,12 @@ export interface CreateGuildPostRequest {
   content: string;
   tags?: string[] | null;
   attachments?: Record<string, unknown> | null;
+  images?: GuildPostImageDto[] | null;
 }
 
 /** Command payload to create a guild post. */
 export interface CreateGuildPostCommandRequest {
   guildId: string;
-  authorAuthUserId: string;
   request: CreateGuildPostRequest;
 }
 
@@ -53,13 +56,13 @@ export interface EditGuildPostRequest {
   content: string;
   tags?: string[] | null;
   attachments?: Record<string, unknown> | null;
+  images?: GuildPostImageDto[] | null;
 }
 
 /** Command payload to edit a guild post. */
 export interface EditGuildPostCommandRequest {
   guildId: string;
   postId: string;
-  authorAuthUserId: string;
   request: EditGuildPostRequest;
 }
 export type EditGuildPostResponse = void;
@@ -68,8 +71,6 @@ export type EditGuildPostResponse = void;
 export interface DeleteGuildPostCommandRequest {
   guildId: string;
   postId: string;
-  requesterAuthUserId: string;
-  force?: boolean;
 }
 export type DeleteGuildPostResponse = void;
 
@@ -142,3 +143,66 @@ export interface GetPinnedGuildPostsQueryRequest {
   guildId: string;
 }
 export type GetPinnedGuildPostsResponse = GuildPostDto[];
+
+export interface GuildPostCommentDto {
+  id: string;
+  guildId: string;
+  postId: string;
+  parentCommentId?: string | null;
+  authorId: string;
+  content: string;
+  createdAt: string;
+  updatedAt: string;
+  isDeleted?: boolean;
+}
+
+export interface CreateGuildPostCommentRequest {
+  content: string;
+  parentCommentId?: string | null;
+}
+
+export interface CreateGuildPostCommentResponse {
+  commentId: string;
+}
+
+export interface EditGuildPostCommentRequest {
+  content: string;
+}
+
+export interface GetGuildPostCommentsQueryRequest {
+  guildId: string;
+  postId: string;
+  page?: number;
+  size?: number;
+  sort?: string | null;
+}
+export type GetGuildPostCommentsResponse = GuildPostCommentDto[];
+
+export type LikeGuildPostResponse = void;
+export type UnlikeGuildPostResponse = void;
+
+export interface ForceDeleteGuildPostCommandRequest {
+  guildId: string;
+  postId: string;
+}
+export type ForceDeleteGuildPostResponse = void;
+
+export interface ForceDeleteGuildPostCommentCommandRequest {
+  guildId: string;
+  postId: string;
+  commentId: string;
+}
+export type ForceDeleteGuildPostCommentResponse = void;
+
+/** Guild post image DTO */
+export interface GuildPostImageDto {
+  id?: string;
+  url?: string;
+  fileName?: string;
+  contentType?: string;
+}
+
+/** Response after uploading images to a post */
+export interface UploadGuildPostImagesResponse {
+  images: GuildPostImageDto[];
+}
