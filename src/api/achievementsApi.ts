@@ -3,13 +3,13 @@ import axiosClient from './axiosClient';
 import { ApiResponse } from '../types/base/Api';
 import {
   AchievementDto,
-  UserAchievementDto,
   CreateAchievementCommand,
   CreateAchievementResponse,
   UpdateAchievementCommand,
   UpdateAchievementResponse,
   GetAllAchievementsResponse,
-  GetUserAchievementsByAuthIdResponse,
+  GrantAchievementsCommand,
+  GrantAchievementsResponse,
 } from '@/types/achievement';
 
 const achievementsApi = {
@@ -20,20 +20,17 @@ const achievementsApi = {
       data: { achievements: res.data },
     })),
 
-  /** GET /api/achievements/user/{authUserId} */
-  getByUserAuthId: (authUserId: string): Promise<ApiResponse<GetUserAchievementsByAuthIdResponse>> =>
-    axiosClient.get<UserAchievementDto[]>(`/api/achievements/user/${authUserId}`).then(res => ({
-      isSuccess: true,
-      data: { achievements: res.data },
-    })),
-
   /** POST /api/admin/achievements */
   create: (payload: CreateAchievementCommand): Promise<ApiResponse<CreateAchievementResponse>> =>
     axiosClient.post<CreateAchievementResponse>('/api/admin/achievements', payload).then(res => ({
       isSuccess: true,
       data: res.data,
     })),
-
+  
+    grant: (payload: GrantAchievementsCommand): Promise<ApiResponse<GrantAchievementsResponse>> =>
+  axiosClient.post<GrantAchievementsResponse>('/api/admin/achievements/grant', payload)
+    .then(res => ({ isSuccess: true, data: res.data })),
+    
   /**
    * POST /api/admin/achievements (multipart)
    * Create an achievement with icon upload.
