@@ -46,6 +46,15 @@ export default function LoginPage() {
         provider: 'google',
         options: {
           redirectTo: `${origin}/auth/callback?next=/`,
+          scopes: [
+            'https://www.googleapis.com/auth/meetings.space.created',
+            'https://www.googleapis.com/auth/meetings.space.readonly',
+            'https://www.googleapis.com/auth/drive.readonly',
+          ].join(' '),
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'consent',
+          },
         },
       });
       if (error) {

@@ -36,6 +36,19 @@ declare global {
 export function useGoogleMeet() {
   const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
 
+  async function getAccessToken(scopes: MeetScopes[] | string): Promise<string> {
+    try {
+      const { createClient } = await import('@/utils/supabase/client');
+      const supabase = createClient();
+      const { data: { session } } = await supabase.auth.getSession();
+      const providerToken = (session as any)?.provider_token as string | undefined;
+      if (providerToken) {
+        return providerToken;
+      }
+    } catch {}
+    return requestToken(scopes);
+  }
+
   async function requestToken(scopes: MeetScopes[] | string): Promise<string> {
     const scopeString = Array.isArray(scopes) ? scopes.join(" ") : scopes;
     return new Promise((resolve, reject) => {
@@ -59,7 +72,7 @@ export function useGoogleMeet() {
         const tokenClient = window.google.accounts.oauth2.initTokenClient({
           client_id: clientId,
           scope: scopeString,
-          access_type: "OPEN",
+          access_type: "offline",
           callback: (resp: { access_token: string }) => {
             if (!resp?.access_token) {
               reject(new Error("Failed to acquire access_token"));
@@ -68,7 +81,7 @@ export function useGoogleMeet() {
             }
           },
         });
-        tokenClient.requestAccessToken();
+        tokenClient.requestAccessToken({ prompt: 'consent' });
       } catch (err) {
         reject(err as Error);
       }
@@ -77,5 +90,6 @@ export function useGoogleMeet() {
 
   return {
     requestToken,
+    getAccessToken,
   };
 }

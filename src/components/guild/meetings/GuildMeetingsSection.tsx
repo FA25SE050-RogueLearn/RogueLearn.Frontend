@@ -7,9 +7,11 @@ import meetingsApi from "@/api/meetingsApi";
 import guildsApi from "@/api/guildsApi";
 import type { GuildMemberDto, GuildRole } from "@/types/guilds";
 import type { MeetingDto, MeetingParticipantDto, ArtifactInputDto, MeetingDetailsDto } from "@/types/meetings";
+import { MeetingStatus } from "@/types/meetings";
 import { createClient } from "@/utils/supabase/client";
 import { datetimeLocalBangkok, formatBangkok } from "@/utils/time";
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
+import { TooltipProvider, Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 
 interface Props {
   guildId: string;
@@ -19,6 +21,7 @@ type CreateState = {
   title: string;
   start: string;
   end: string;
+  spaceName?: string;
 };
 
 // RPG Design Constants
@@ -34,7 +37,7 @@ const MEETING_CARD_CLASS = "relative overflow-hidden rounded-[28px] border borde
 const ACTIVE_MEETING_CLASS = "relative overflow-hidden rounded-[28px] border-2 border-emerald-500/50 bg-gradient-to-br from-emerald-950/50 via-[#1a0a08] to-black shadow-[0_0_30px_rgba(16,185,129,0.2)]";
 
 export default function GuildMeetingsSection({ guildId }: Props) {
-  const { requestToken } = useGoogleMeet();
+  const { getAccessToken, requestToken } = useGoogleMeet();
   const [authUserId, setAuthUserId] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
   const [ending, setEnding] = useState(false);
@@ -46,8 +49,8 @@ export default function GuildMeetingsSection({ guildId }: Props) {
     const in30 = new Date(now.getTime() + 30 * 60 * 1000);
     return {
       title: "Guild Meetup",
-      start: now.toUTCString(),
-      end: in30.toUTCString(),
+      start: now.toISOString(),
+      end: in30.toISOString(),
     };
   });
 
@@ -57,26 +60,18 @@ export default function GuildMeetingsSection({ guildId }: Props) {
   }>({ meeting: null, google: null });
 
   const [guildMeetings, setGuildMeetings] = useState<MeetingDto[]>([]);
-  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [expandedId, setExpandedId] = useState<string>("");
   const [detailsById, setDetailsById] = useState<Record<string, MeetingDetailsDto | null>>({});
   const [detailsLoading, setDetailsLoading] = useState<Record<string, boolean>>({});
   const [loadingMeetings, setLoadingMeetings] = useState(false);
   const [members, setMembers] = useState<GuildMemberDto[]>([]);
 
   function detectActiveMeeting(list: MeetingDto[]): MeetingDto | null {
-    const now = Date.now();
-    const byActualStart = list
-      .filter((m) => !!m.actualStartTime && !m.actualEndTime)
-      .sort((a, b) => new Date(b.actualStartTime || 0).getTime() - new Date(a.actualStartTime || 0).getTime());
-    if (byActualStart.length > 0) return byActualStart[0];
-    const scheduledActive = list
-      .filter((m) => {
-        const start = new Date(m.scheduledStartTime).getTime();
-        const end = new Date(m.scheduledEndTime).getTime();
-        return start <= now && now <= end && !m.actualEndTime;
-      })
-      .sort((a, b) => new Date(a.scheduledStartTime).getTime() - new Date(b.scheduledStartTime).getTime());
-    return scheduledActive.length > 0 ? scheduledActive[0] : null;
+    const byStatus = list.filter((m) => m.status === MeetingStatus.Active);
+    if (byStatus.length > 0) {
+      return byStatus.sort((a, b) => new Date(b.actualStartTime || b.scheduledStartTime || 0).getTime() - new Date(a.actualStartTime || a.scheduledStartTime || 0).getTime())[0];
+    }
+    return null;
   }
 
   useEffect(() => {
@@ -144,12 +139,29 @@ export default function GuildMeetingsSection({ guildId }: Props) {
     setCreating(true);
     try {
       if (!authUserId) throw new Error("Not authenticated");
-      const token = await requestToken(requiredBothScopes);
+      const token = await getAccessToken(requiredBothScopes);
       setActiveToken(token);
       try {
         sessionStorage.setItem(`guildMeetingToken:${guildId}`, token);
       } catch (_) {}
-      const created = await googleMeetApi.createSpace(token, { config: {} });
+      let created = await googleMeetApi.createSpace(token, { config: {} });
+      if (!created?.meetingUri) {
+        try {
+          const gisToken = await requestToken(requiredBothScopes);
+          setActiveToken(gisToken);
+          try { sessionStorage.setItem(`guildMeetingToken:${guildId}`, gisToken); } catch (_) {}
+          created = await googleMeetApi.createSpace(gisToken, { config: {} });
+        } catch (_) {}
+      }
+      const codeMatch = (created.meetingUri ?? '').match(/[a-z0-9]+-[a-z0-9]+-[a-z0-9]+/i);
+      const meetingCode = codeMatch?.[0] ?? undefined;
+      let spaceName: string | undefined = (createState.spaceName ?? '').trim() || created.name?.split('/')?.pop?.();
+      try {
+        const space = await googleMeetApi.getSpace(token, created.name ?? meetingCode ?? '');
+        const cfg = space?.config as any;
+        const title = (cfg?.title ?? '').trim();
+        if (title) spaceName = title;
+      } catch {}
       const payload: MeetingDto = {
         organizerId: authUserId,
         partyId: null,
@@ -159,6 +171,9 @@ export default function GuildMeetingsSection({ guildId }: Props) {
         scheduledEndTime: createState.end,
         actualStartTime: new Date().toISOString(),
         meetingLink: created.meetingUri ?? "",
+        meetingCode,
+        spaceName,
+        status: MeetingStatus.Active,
       };
       const upsertRes = await meetingsApi.upsertMeeting(payload);
       const saved = upsertRes.data as MeetingDto;
@@ -185,23 +200,21 @@ export default function GuildMeetingsSection({ guildId }: Props) {
     return email || undefined;
   }
 
-  async function handleEndMeeting() {
+  async function handleEndMeetingFor(meeting: MeetingDto) {
     setError(null);
     setEnding(true);
     try {
-      if (!activeMeeting.meeting?.meetingId) throw new Error("No active meeting to end");
-      const token = activeToken ?? (await requestToken(requiredBothScopes));
+      if (!meeting?.meetingId) throw new Error("No meeting to end");
+      const token = activeToken ?? (await getAccessToken(requiredBothScopes));
       if (members.length === 0) {
         try {
           const memRes = await guildsApi.getMembers(guildId);
           setMembers(memRes.data ?? []);
-        } catch (memErr) {
-          console.warn("[Guild] failed to load members on endMeeting:", memErr);
-        }
+        } catch (_) {}
       }
       let spaceName: string | null = activeMeeting.google?.space ?? null;
       if (!spaceName) {
-        const link = activeMeeting.meeting?.meetingLink ?? "";
+        const link = meeting?.meetingLink ?? "";
         const codeMatch = link.match(/[a-z0-9]+-[a-z0-9]+-[a-z0-9]+/i);
         const code = codeMatch?.[0] ?? null;
         if (code) {
@@ -215,52 +228,20 @@ export default function GuildMeetingsSection({ guildId }: Props) {
       const latest = records[0];
       const conferenceId: string = latest?.name?.split("/")?.pop?.() ?? latest?.conferenceId ?? latest?.id;
       if (!conferenceId) throw new Error("Unable to determine conferenceId");
-
       const participantsRes = await googleMeetApi.listParticipants(token, conferenceId);
       const participantsRaw: any[] = participantsRes?.participants ?? participantsRes?.items ?? [];
-
-      const membersByName = new Map<string, GuildMemberDto>();
-      const norm = (s?: string | null) => (s ?? "").trim().toLowerCase();
-      for (const m of members) {
-        if (m.username) membersByName.set(norm(m.username), m);
-        const full = `${m.firstName ?? ""} ${m.lastName ?? ""}`.trim();
-        if (full) membersByName.set(norm(full), m);
-        if (m.email) membersByName.set(norm(m.email), m);
-      }
-
       const mapped: MeetingParticipantDto[] = [];
       for (const p of participantsRaw) {
-        const role = p?.role ?? p?.participantRole ?? "participant";
-        const join = p?.earliestStartTime ?? p?.joinTime ?? null;
-        const leave = p?.endTime ?? p?.leaveTime ?? null;
-        const type = p?.type ?? p?.participantType ?? undefined;
-        const displayName: string | undefined = p?.signedinUser?.displayName ?? p?.displayName ?? undefined;
-
-        let matched: GuildMemberDto | undefined;
-        if (displayName) {
-          matched = membersByName.get(norm(displayName));
-        }
-        const email = p?.signedinUser?.email ?? p?.email ?? undefined;
-        if (!matched && email) {
-          matched = membersByName.get(norm(email));
-        }
-
-        if (!matched) {
-          console.warn("[Mapping] Skipping participant with no guild match:", { displayName, email, role, type });
-          continue;
-        }
-
         mapped.push({
-          userId: matched.authUserId,
-          roleInMeeting: role,
-          joinTime: join,
-          leaveTime: leave,
-          type,
-          displayName: displayName ?? undefined,
-          meetingId: activeMeeting.meeting?.meetingId,
+          userId: undefined,
+          roleInMeeting: p?.role ?? p?.participantRole ?? "participant",
+          joinTime: p?.earliestStartTime ?? p?.joinTime ?? null,
+          leaveTime: p?.endTime ?? p?.leaveTime ?? null,
+          type: p?.type ?? p?.participantType ?? undefined,
+          displayName: p?.signedinUser?.displayName ?? p?.displayName ?? "Unknown",
+          meetingId: meeting?.meetingId,
         });
       }
-
       if (authUserId) {
         const already = mapped.some((mp) => mp.userId === authUserId);
         if (!already) {
@@ -269,62 +250,30 @@ export default function GuildMeetingsSection({ guildId }: Props) {
           mapped.push({
             userId: authUserId,
             roleInMeeting: "organizer",
-            joinTime: activeMeeting.meeting?.actualStartTime ?? null,
+            joinTime: meeting?.actualStartTime ?? null,
             leaveTime: new Date().toISOString(),
             type: "signedin",
             displayName: organizerDisplayName,
-            meetingId: activeMeeting.meeting?.meetingId,
+            meetingId: meeting?.meetingId,
           });
         }
       }
-
       const dedup = Array.from(
-        mapped.reduce((acc, mp) => acc.set(mp.userId ?? "", mp), new Map<string, MeetingParticipantDto>()).values()
+        mapped.reduce(
+          (acc, mp) => acc.set((mp.userId ?? mp.displayName ?? ""), mp),
+          new Map<string, MeetingParticipantDto>()
+        ).values()
       );
-
-      const transcriptsRes = await googleMeetApi.listTranscripts(token, conferenceId);
-      const transcripts: any[] = transcriptsRes?.transcripts ?? transcriptsRes?.items ?? [];
-      const artifacts: ArtifactInputDto[] = [];
-      for (const t of transcripts) {
-        const transcriptId: string = t?.name?.split("/")?.pop?.() ?? t?.transcriptId ?? t?.id;
-        const entries = await googleMeetApi.listTranscriptEntries(token, conferenceId, transcriptId);
-        const exportUri = t?.docsDocument?.uri ?? t?.docsDocument?.resourceUri ?? null;
-        artifacts.push({
-          artifactType: "transcript",
-          url: exportUri ?? `https://meet.google.com/transcript/${transcriptId}`,
-          state: t?.state ?? null,
-          exportUri: exportUri ?? null,
-          docsDocumentId: t?.docsDocument?.id ?? null,
-        });
-      }
-
-      const meetingId = activeMeeting.meeting.meetingId as string;
+      const meetingId = meeting.meetingId as string;
       if (dedup.length > 0) {
-        try {
-          await meetingsApi.upsertParticipants(meetingId, dedup);
-        } catch (err: any) {
-          console.error("[Backend] upsertParticipants 400/ERR:", err?.response?.status, err?.response?.data ?? err?.message);
-          throw err;
-        }
+        await meetingsApi.upsertParticipants(meetingId, dedup);
       }
-      if (artifacts.length > 0) {
-        await meetingsApi.processArtifactsAndSummarize(meetingId, artifacts);
-      }
-
-      const updated: MeetingDto = { ...activeMeeting.meeting, actualEndTime: new Date().toISOString() } as MeetingDto;
+      const updated: MeetingDto = { ...meeting, actualEndTime: new Date().toISOString(), status: MeetingStatus.EndedProcessing } as MeetingDto;
       setActiveMeeting((prev) => ({ ...prev, meeting: updated }));
-      try {
-        if (activeMeeting.meeting?.meetingId) {
-          await meetingsApi.upsertMeeting(updated);
-        }
-      } catch (persistErr) {
-        console.warn("[Backend] upsertMeeting failed while setting actualEndTime:", persistErr);
-      }
-
+      try { await meetingsApi.upsertMeeting(updated); } catch (_) {}
       const detailsRes = await meetingsApi.getMeetingDetails(meetingId);
       setDetailsById((prev) => ({ ...prev, [meetingId]: detailsRes.data ?? null }));
       setExpandedId(meetingId);
-
       try {
         if (!spaceName && latest?.name) {
           const record = await googleMeetApi.getConferenceRecord(token, latest.name);
@@ -334,28 +283,8 @@ export default function GuildMeetingsSection({ guildId }: Props) {
           await googleMeetApi.endActiveConference(token, spaceName);
         }
       } catch (_) {}
-
       const listRes = await meetingsApi.getGuildMeetings(guildId);
       setGuildMeetings(listRes.data ?? []);
-      const now = new Date();
-      const in30 = new Date(now.getTime() + 30 * 60 * 1000);
-      const created = await googleMeetApi.createSpace(token, { config: {} });
-      const payload: MeetingDto = {
-        organizerId: authUserId as string,
-        partyId: null,
-        guildId,
-        title: createState.title,
-        scheduledStartTime: now.toISOString(),
-        scheduledEndTime: in30.toISOString(),
-        actualStartTime: now.toISOString(),
-        meetingLink: created.meetingUri ?? "",
-      };
-      const upsertRes = await meetingsApi.upsertMeeting(payload);
-      const saved = upsertRes.data as MeetingDto;
-      setActiveMeeting({
-        meeting: saved ?? payload,
-        google: { space: created.spaceId ?? null, meetingUri: created.meetingUri ?? null },
-      });
     } catch (e: any) {
       setError(e?.message ?? "Failed to end meeting");
     } finally {
@@ -363,33 +292,44 @@ export default function GuildMeetingsSection({ guildId }: Props) {
     }
   }
 
-  async function logActiveMeetingDetails() {
+  async function handleSyncMeetingFor(meeting: MeetingDto) {
+    setError(null);
     try {
-      if (!activeMeeting.meeting) {
-        console.log("No active meeting");
-        return;
-      }
-      const token = activeToken ?? (await requestToken(requiredReadonlyScopes));
-      const link = activeMeeting.meeting.meetingLink ?? "";
-      const codeMatch = link.match(/[a-z0-9]+-[a-z0-9]+-[a-z0-9]+/i);
-      const identifier = activeMeeting.google?.space ?? codeMatch?.[0] ?? "";
-      const space = identifier ? await googleMeetApi.getSpace(token, identifier) : null;
-      const confList = await googleMeetApi.listConferenceRecords(token, { pageSize: 5 });
+      if (!meeting?.meetingId) throw new Error("No meeting to sync");
+      if (!meeting.actualEndTime) throw new Error("Meeting has no end time yet");
+      const endedAt = new Date(meeting.actualEndTime).getTime();
+      if (Date.now() - endedAt < 10 * 60 * 1000) throw new Error("Sync available ~10 minutes after meeting ends");
+      const token = activeToken ?? (await getAccessToken(requiredBothScopes));
+      const confList = await googleMeetApi.listConferenceRecords(token, { pageSize: 10 });
       const records: any[] = confList?.conferenceRecords ?? confList?.records ?? [];
+      if (!records || records.length === 0) throw new Error("No conference records found");
       const latest = records[0];
       const conferenceId: string = latest?.name?.split("/")?.pop?.() ?? latest?.conferenceId ?? latest?.id;
-      const participants = conferenceId ? await googleMeetApi.listParticipants(token, conferenceId) : null;
-      const recordings = conferenceId ? await googleMeetApi.listRecordings(token, conferenceId) : null;
-      const transcripts = conferenceId ? await googleMeetApi.listTranscripts(token, conferenceId) : null;
-      console.group("Google Meet Details");
-      console.log("Space", space);
-      console.log("ConferenceRecord", latest);
-      console.log("Participants", participants);
-      console.log("Recordings", recordings);
-      console.log("Transcripts", transcripts);
-      console.groupEnd();
+      if (!conferenceId) throw new Error("Unable to determine conferenceId");
+      const transcriptsRes = await googleMeetApi.listTranscripts(token, conferenceId);
+      const transcripts: any[] = transcriptsRes?.transcripts ?? transcriptsRes?.items ?? [];
+      const artifacts: ArtifactInputDto[] = [];
+      for (const t of transcripts) {
+        const transcriptId: string = t?.name?.split("/")?.pop?.() ?? t?.transcriptId ?? t?.id;
+        const exportUri = t?.docsDocument?.uri ?? t?.docsDocument?.resourceUri ?? null;
+        artifacts.push({
+          artifactType: "transcript",
+          url: exportUri ?? `https://meet.google.com/transcript/${transcriptId}`,
+          state: t?.state ?? null,
+          exportUri: exportUri ?? null,
+          docsDocumentId: t?.docsDocument?.id ?? null,
+        });
+      }
+      if (artifacts.length > 0) {
+        await meetingsApi.processArtifactsAndSummarize(meeting.meetingId as string, artifacts);
+      }
+      const completed: MeetingDto = { ...meeting, status: MeetingStatus.Completed } as MeetingDto;
+      setActiveMeeting((prev) => ({ ...prev, meeting: completed }));
+      try { await meetingsApi.upsertMeeting(completed); } catch {}
+      const listRes = await meetingsApi.getGuildMeetings(guildId);
+      setGuildMeetings(listRes.data ?? []);
     } catch (e: any) {
-      console.error("Failed to log Google Meet details", e?.message ?? e);
+      setError(e?.message ?? "Failed to sync transcripts");
     }
   }
 
@@ -486,95 +426,41 @@ export default function GuildMeetingsSection({ guildId }: Props) {
               <button
                 onClick={handleCreateMeeting}
                 disabled={creating}
-                className="flex items-center gap-2 rounded-lg bg-gradient-to-r from-[#f5c16c] to-[#d4a855] px-4 py-2.5 text-sm font-medium text-black transition-all hover:from-[#d4a855] hover:to-[#f5c16c] disabled:opacity-50"
+                className="flex items-center gap-2 rounded-lg bg-linear-to-r from-[#f5c16c] to-[#d4a855] px-4 py-2.5 text-sm font-medium text-black transition-all hover:from-[#d4a855] hover:to-[#f5c16c] disabled:opacity-50"
               >
                 <Play className="h-4 w-4" />
                 {creating ? "Creating..." : "Create Meeting"}
               </button>
-              {activeMeeting.meeting?.meetingLink && (
-                <a
-                  href={activeMeeting.meeting.meetingLink}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-2 rounded-lg border border-[#f5c16c]/30 bg-transparent px-4 py-2.5 text-sm font-medium text-[#f5c16c] transition-all hover:bg-[#f5c16c]/10"
-                >
-                  <Video className="h-4 w-4" />
-                  Join in Google Meet
-                  <ExternalLink className="h-3.5 w-3.5" />
-                </a>
-              )}
             </div>
           </div>
         </div>
       )}
 
-      {/* Active Meeting Card */}
-      {activeMeeting.meeting && (
-        <div className={ACTIVE_MEETING_CLASS}>
-          {/* Texture overlay */}
-          <div className="pointer-events-none absolute inset-0" style={CARD_TEXTURE} />
-          
-          <div className="relative p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="mb-1 flex items-center gap-2">
-                  <div className="h-2 w-2 animate-pulse rounded-full bg-emerald-400" />
-                  <span className="text-xs font-medium uppercase tracking-wide text-emerald-400">Live Meeting</span>
-                </div>
-                <h5 className="text-lg font-semibold text-white">{activeMeeting.meeting.title}</h5>
-                {activeMeeting.meeting?.meetingLink && (
-                  <p className="mt-1 text-xs text-white/50">{activeMeeting.meeting.meetingLink}</p>
-                )}
-              </div>
-              <div className="flex items-center gap-2">
-                {activeMeeting.meeting?.meetingLink && (
-                  <a
-                    href={activeMeeting.meeting.meetingLink}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-2 rounded-lg border border-emerald-500/50 bg-emerald-500/10 px-4 py-2.5 text-sm font-medium text-emerald-400 transition-all hover:bg-emerald-500/20"
-                  >
-                    <Video className="h-4 w-4" />
-                    Join Meeting
-                    <ExternalLink className="h-3.5 w-3.5" />
-                  </a>
-                )}
-                <button
-                  onClick={logActiveMeetingDetails}
-                  className="rounded-lg border border-[#f5c16c]/30 bg-[#f5c16c]/5 px-4 py-2.5 text-sm font-medium text-[#f5c16c] transition-all hover:bg-[#f5c16c]/10"
-                >
-                  Log Details
-                </button>
-                {(myRole === "GuildMaster" || authUserId === activeMeeting.meeting?.organizerId) && (
-                  <button
-                    onClick={handleEndMeeting}
-                    disabled={ending}
-                    className="flex items-center gap-2 rounded-lg bg-rose-600 px-4 py-2.5 text-sm font-medium text-white transition-all hover:bg-rose-700 disabled:opacity-50"
-                  >
-                    <Square className="h-4 w-4" />
-                    {ending ? "Ending..." : "End Meeting"}
-                  </button>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      
 
       <div className="rounded border border-white/10 bg-white/5 p-4">
         <div className="mb-2 flex items-center justify-between">
-          <h5 className="text-xs font-semibold">Past Meetings</h5>
+          <h5 className="text-xs font-semibold">Meetings</h5>
           {loadingMeetings && <span className="text-xs text-white/60">Loading...</span>}
         </div>
         {guildMeetings.length === 0 ? (
           <div className="text-xs text-white/60">No meetings yet.</div>
         ) : (
-          <Accordion type="single" collapsible value={expandedId ?? undefined} onValueChange={(val) => {
-            const v = typeof val === "string" ? val : null;
-            setExpandedId(v ?? null);
+          <Accordion type="single" collapsible value={expandedId} onValueChange={(val) => {
+            const v = typeof val === "string" ? val : "";
+            setExpandedId(v);
             if (v) loadDetailsIfNeeded(v);
           }}>
-            {guildMeetings.map((m) => {
+            {[...guildMeetings]
+              .sort((a, b) => {
+                const sa = (a.spaceName ?? '').toLowerCase();
+                const sb = (b.spaceName ?? '').toLowerCase();
+                if (sa && sb) return sa.localeCompare(sb);
+                if (sa) return -1;
+                if (sb) return 1;
+                return (a.title ?? '').toLowerCase().localeCompare((b.title ?? '').toLowerCase());
+              })
+              .map((m) => {
               const id = m.meetingId ?? `${m.title}-${m.scheduledStartTime}`;
               const details = m.meetingId ? detailsById[m.meetingId] : null;
               const isLoading = m.meetingId ? detailsLoading[m.meetingId] : false;
@@ -582,11 +468,69 @@ export default function GuildMeetingsSection({ guildId }: Props) {
                 <AccordionItem key={id} value={m.meetingId ?? id}>
                   <AccordionTrigger>
                     <div className="flex w-full items-center justify-between">
-                      <div>
-                        <div className="text-sm font-medium text-white">{m.title}</div>
-                        <div className="text-[11px] text-white/60">
-                          {formatBangkok(m.scheduledStartTime, { includeSeconds: false, separator: " " })} – {formatBangkok(m.scheduledEndTime, { includeSeconds: false, separator: " " })}
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2">
+                          <div className="text-sm font-medium text-white truncate">{m.title}</div>
+                          {m.status && (
+                            <span className="rounded bg-white/10 px-2 py-0.5 text-[10px] text-white/80">{m.status}</span>
+                          )}
                         </div>
+                        {m.spaceName && (
+                          <div className="text-[11px] text-white/70 truncate">Space Name: {m.spaceName}</div>
+                        )}
+                        <div className="mt-1 grid grid-cols-1 gap-1 md:grid-cols-2">
+                          <div className="text-[11px] text-white/60">
+                            <span className="text-white/70">Scheduled:</span> {formatBangkok(m.scheduledStartTime, { includeSeconds: false, separator: " " })} – {formatBangkok(m.scheduledEndTime, { includeSeconds: false, separator: " " })}
+                          </div>
+                          <div className="text-[11px] text-white/60">
+                            <span className="text-white/70">Actual:</span> {m.actualStartTime ? formatBangkok(m.actualStartTime, { includeSeconds: false, separator: " " }) : "—"} – {m.actualEndTime ? formatBangkok(m.actualEndTime, { includeSeconds: false, separator: " " }) : "—"}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="ml-4 flex items-center gap-2">
+                        {m.meetingLink && m.status === MeetingStatus.Active && (
+                          <a
+                            href={m.meetingLink}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="rounded bg-white/10 px-3 py-1.5 text-xs font-medium text-white"
+                          >
+                            Join Meet ↗
+                          </a>
+                        )}
+                        {(myRole === "GuildMaster" || authUserId === m.organizerId) && (
+                          <>
+                          {m.status === MeetingStatus.Active && (
+                            <button
+                              onClick={(e) => { e.preventDefault(); handleEndMeetingFor(m); }}
+                              disabled={ending}
+                              className="flex items-center gap-2 rounded-lg bg-rose-600 px-3 py-1.5 text-xs font-medium text-white disabled:opacity-50"
+                            >
+                              End Meeting
+                            </button>
+                          )}
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <span className={!(m.status === MeetingStatus.EndedProcessing && m.actualEndTime && (Date.now() - new Date(m.actualEndTime).getTime() >= 10 * 60 * 1000)) ? "cursor-not-allowed" : ""}>
+                                  <button
+                                    onClick={(e) => { e.preventDefault(); handleSyncMeetingFor(m); }}
+                                    disabled={!(m.status === MeetingStatus.EndedProcessing && m.actualEndTime && (Date.now() - new Date(m.actualEndTime).getTime() >= 10 * 60 * 1000))}
+                                    className="flex items-center gap-2 rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-medium text-white disabled:opacity-50"
+                                  >
+                                    Sync Transcript
+                                  </button>
+                                </span>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                {!(m.status === MeetingStatus.EndedProcessing && m.actualEndTime && (Date.now() - new Date(m.actualEndTime).getTime() >= 10 * 60 * 1000))
+                                  ? "Available ~10 minutes after meeting ends"
+                                  : "Sync transcripts from Google Meet"}
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                          </>
+                        )}
                       </div>
                     </div>
                   </AccordionTrigger>
@@ -596,13 +540,29 @@ export default function GuildMeetingsSection({ guildId }: Props) {
                     ) : details ? (
                       <div className="space-y-2">
                         <div className="text-sm font-medium text-white">{details.meeting?.title}</div>
-                        <div className="text-xs text-white/70">Participants ({details.participants?.length ?? 0})</div>
+                        <div className="text-xs text-white/70">Participants ({(details.participants?.filter((p) => (p.roleInMeeting ?? "").toLowerCase() !== "organizer").length) ?? 0})</div>
                         <ul className="grid grid-cols-1 gap-2 md:grid-cols-2">
-                          {details.participants?.map((p, idx) => (
+                          {details.participants?.filter((p) => (p.roleInMeeting ?? "").toLowerCase() !== "organizer").map((p, idx) => (
                             <li key={(p.userId ?? String(idx)) + (p.joinTime ?? "")} className="rounded border border-white/10 bg-white/5 p-2">
                               <div className="text-xs text-white">
                                 {p.displayName ?? p.userId}
                                 <span className="ml-2 text-white/60">{p.roleInMeeting ?? "participant"}</span>
+                              </div>
+                              <div className="text-[11px] text-white/60">
+                                {p.joinTime ? formatBangkok(p.joinTime, { includeSeconds: false, separator: " " }) : ""}
+                                {p.leaveTime ? ` → ${formatBangkok(p.leaveTime, { includeSeconds: false, separator: " " })}` : ""}
+                              </div>
+                            </li>
+                          ))}
+                        </ul>
+                        <div className="my-2 border-t border-white/10" />
+                        <div className="text-xs text-white/70">Organizer</div>
+                        <ul className="grid grid-cols-1 gap-2 md:grid-cols-2">
+                          {details.participants?.filter((p) => (p.roleInMeeting ?? "").toLowerCase() === "organizer").map((p, idx) => (
+                            <li key={(p.userId ?? String(idx)) + (p.joinTime ?? "")} className="rounded border border-white/10 bg-white/5 p-2">
+                              <div className="text-xs text-white">
+                                {p.displayName ?? p.userId}
+                                <span className="ml-2 text-white/60">{p.roleInMeeting ?? "organizer"}</span>
                               </div>
                               <div className="text-[11px] text-white/60">
                                 {p.joinTime ? formatBangkok(p.joinTime, { includeSeconds: false, separator: " " }) : ""}
