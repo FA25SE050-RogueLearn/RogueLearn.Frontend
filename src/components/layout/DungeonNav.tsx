@@ -28,7 +28,6 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
@@ -46,6 +45,9 @@ const navItems = [
   { title: "Adventure", url: "/game", icon: Compass, color: "from-indigo-500 to-purple-500" },
 ]
 
+// ✅ Session storage key for dismissing wizard temporarily
+const WIZARD_DISMISSED_KEY = 'character-wizard-dismissed-session'
+
 export function DungeonNav() {
   const pathname = usePathname()
   const router = useRouter()
@@ -57,6 +59,7 @@ export function DungeonNav() {
   const navRef = React.useRef<HTMLDivElement>(null)
   const itemRefs = React.useRef<(HTMLDivElement | null)[]>([])
   const particlesRef = React.useRef<HTMLDivElement>(null)
+  const hasCheckedOnboarding = React.useRef(false)
 
   React.useEffect(() => {
     const supabase = createClient()
@@ -70,13 +73,25 @@ export function DungeonNav() {
     })
     return () => subscription?.unsubscribe()
   }, [])
-  // CRITICAL FIX: Automatically trigger onboarding wizard for users who haven't completed it
+
+  // ✅ UPDATED: Check if wizard should be shown, respecting session dismissal
   React.useEffect(() => {
-    if (userProfile && !userProfile.onboardingCompleted) {
-      setShowCharacterWizard(true)
+    if (!hasCheckedOnboarding.current && userProfile) {
+      hasCheckedOnboarding.current = true
+
+      // Check if onboarding is incomplete
+      const needsOnboarding = !userProfile.onboardingCompleted || !userProfile.routeId || !userProfile.classId
+
+      if (needsOnboarding) {
+        // Check if user dismissed it in this session
+        const dismissedInSession = sessionStorage.getItem(WIZARD_DISMISSED_KEY) === 'true'
+        
+        if (!dismissedInSession) {
+          setShowCharacterWizard(true)
+        }
+      }
     }
   }, [userProfile])
-
 
   // Subtle entrance animation - fade in only
   React.useEffect(() => {
@@ -157,6 +172,17 @@ export function DungeonNav() {
   const handleOnboardingComplete = () => {
     if (userProfile) setUserProfile({ ...userProfile, onboardingCompleted: true })
     setShowCharacterWizard(false)
+    // Clear the session dismissal flag since they completed it
+    sessionStorage.removeItem(WIZARD_DISMISSED_KEY)
+  }
+
+  // ✅ NEW: Handle user closing the wizard without completing
+  const handleWizardDismiss = (open: boolean) => {
+    if (!open) {
+      // Mark as dismissed for this session only
+      sessionStorage.setItem(WIZARD_DISMISSED_KEY, 'true')
+      setShowCharacterWizard(false)
+    }
   }
 
   const activeIndex = navItems.findIndex(item => pathname === item.url || pathname?.startsWith(item.url + "/"))
@@ -433,15 +459,24 @@ export function DungeonNav() {
         </div>
       </nav>
 
-      <Dialog open={showCharacterWizard} onOpenChange={setShowCharacterWizard}>
-        <DialogContent aria-describedby="character-wizard-description" className="max-w-[1100px] overflow-hidden rounded-[40px] border border-white/12 bg-linear-to-br from-[#12060a] via-[#1d0a11] to-[#060205] p-0 shadow-[0_32px_140px_rgba(20,2,16,0.85)] backdrop-blur-2xl">
+      {/* ✅ UPDATED: Character Wizard Dialog with proper dismiss handling */}
+      <Dialog open={showCharacterWizard} onOpenChange={handleWizardDismiss}>
+        <DialogContent 
+          aria-describedby="character-wizard-description" 
+          className="max-w-[1100px] h-[85vh] overflow-hidden rounded-[40px] border border-white/12 bg-linear-to-br from-[#12060a] via-[#1d0a11] to-[#060205] p-0 shadow-[0_32px_140px_rgba(20,2,16,0.85)] backdrop-blur-2xl"
+        >
           <DialogHeader>
             <DialogTitle className="sr-only">Character Creation</DialogTitle>
+            <p id="character-wizard-description" className="sr-only">
+              Complete your character setup by choosing your academic route and career class. You can dismiss this and continue later.
+            </p>
           </DialogHeader>
-          <div className="relative max-h-[82vh] overflow-y-auto bg-linear-to-br from-[#1d0a10] via-[#240d14] to-[#090307] px-8 py-10 shadow-[0_24px_80px_rgba(10,0,16,0.65)]">
+          <div className="h-full overflow-hidden bg-linear-to-br from-[#1d0a10] via-[#240d14] to-[#090307]">
             <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(210,49,135,0.32),transparent_70%)] opacity-45" />
             <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_bottom_right,rgba(240,177,90,0.26),transparent_72%)] opacity-50" />
-            <div className="relative z-10"><CharacterCreationWizard onOnboardingComplete={handleOnboardingComplete} /></div>
+            <div className="relative z-10 h-full">
+              <CharacterCreationWizard onOnboardingComplete={handleOnboardingComplete} />
+            </div>
           </div>
         </DialogContent>
       </Dialog>
