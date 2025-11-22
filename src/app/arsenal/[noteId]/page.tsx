@@ -18,7 +18,7 @@ import { createClient } from "@/utils/supabase/client";
 import { Loader2 } from "lucide-react";
 
 // BlockNote imports
-import { PartialBlock, filterSuggestionItems, insertOrUpdateBlock } from "@blocknote/core";
+import { PartialBlock, insertOrUpdateBlock } from "@blocknote/core";
 import { en } from "@blocknote/core/locales";
 import "@blocknote/core/fonts/inter.css";
 import { BlockNoteView } from "@blocknote/shadcn";
@@ -149,7 +149,7 @@ export default function NoteEditorPage() {
               content: [{ type: "text", text: n.title ?? "", styles: {} }],
             },
           ];
-          setInitialBlocks(blocks && blocks.length > 0 ? blocks : fallback);
+          setInitialBlocks(normalizeBlocks(blocks && blocks.length > 0 ? blocks : fallback));
         }
       } finally {
         setStatus("ready");
@@ -171,7 +171,7 @@ export default function NoteEditorPage() {
         const d = JSON.parse(raw);
         if (typeof d?.title === "string") setTitle(d.title);
         if (typeof d?.isPublic === "boolean") setIsPublic(d.isPublic);
-        if (Array.isArray(d?.content) && d.content.length > 0) setInitialBlocks(d.content);
+        if (Array.isArray(d?.content) && d.content.length > 0) setInitialBlocks(normalizeBlocks(d.content));
       }
     } catch {}
     load();
@@ -687,81 +687,39 @@ export default function NoteEditorPage() {
             <SuggestionMenuController
               triggerCharacter="/"
               getItems={async (query) => {
-                const defaultItems = getDefaultReactSlashMenuItems(editor).map((item: any) => {
-                  const t = (item?.title || item?.label || "").toLowerCase();
-                  if (
-                    t === "image" ||
-                    t === "insert image" ||
-                    t === "video" ||
-                    t === "insert video" ||
-                    t === "audio" ||
-                    t === "insert audio" ||
-                    t === "file" ||
-                    t === "insert file"
-                  ) {
+                const baseItems = [
+                  ...getDefaultReactSlashMenuItems(editor),
+                  ...(AI_BASE_URL ? getAISlashMenuItems(editor) : []),
+                ];
+                const filtered = baseItems.filter((item: any) => {
+                  const title = (item?.title || item?.label || "").toLowerCase();
+                  return title !== "video";
+                });
+                const items = filtered.map((item: any) => {
+                  const title = (item?.title || item?.label || "").toLowerCase();
+                  if (title === "image") {
                     return {
                       ...item,
-                      onItemClick: async () => {
-                        const input = document.createElement("input");
-                        input.type = "file";
-                        if (t.includes("image")) {
-                          input.accept = "image/png,image/jpeg,image/jpg,image/webp,image/gif,image/svg+xml";
-                        } else if (t.includes("video")) {
-                          input.accept = "video/mp4,video/webm,video/ogg";
-                        } else if (t.includes("audio")) {
-                          input.accept = "audio/mpeg";
-                        } else {
-                          input.accept = "*/*";
-                        }
-                        input.onchange = async () => {
-                          const file = input.files?.[0];
-                          if (!file) return;
-                          const supabase = createClient();
-                          const { data: { user } } = await supabase.auth.getUser();
-                          const uid = user?.id ?? authUserId;
-                          if (!uid) {
-                            toast.error("Not authenticated");
-                            return;
-                          }
-                          const nameSafe = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
-                          const path = `${uid}/${Date.now()}-${nameSafe}`;
-                          const { data, error } = await supabase.storage.from("notes-media").upload(path, file, { contentType: file.type, upsert: false });
-                          if (error) {
-                            toast.error("Upload failed");
-                            return;
-                          }
-                          const { data: pub } = supabase.storage.from("notes-media").getPublicUrl(data.path);
-                          const mime = (file.type || "").toLowerCase();
-                          if (mime.startsWith("image/")) {
-                            insertOrUpdateBlock(editor, {
-                              type: "image",
-                              props: { url: pub.publicUrl, caption: "", previewWidth: 512 },
-                            });
-                          } else if (mime.startsWith("video/")) {
-                            insertOrUpdateBlock(editor, {
-                              type: "video",
-                              props: { url: pub.publicUrl, caption: "" },
-                            });
-                          } else if (mime.startsWith("audio/")) {
-                            insertOrUpdateBlock(editor, {
-                              type: "audio",
-                              props: { url: pub.publicUrl, caption: "" },
-                            });
-                          } else {
-                            insertOrUpdateBlock(editor, {
-                              type: "file",
-                              props: { url: pub.publicUrl },
-                            });
-                          }
-                        };
-                        input.click();
+                      onItemClick: () => {
+                        try {
+                          insertOrUpdateBlock(editor, {
+                            type: "image",
+                            props: { previewWidth: 512 },
+                          } as any);
+                        } catch {}
                       },
-                    } as any;
+                    };
                   }
                   return item;
                 });
-                const items = [...defaultItems, ...(AI_BASE_URL ? getAISlashMenuItems(editor) : [])];
-                return filterSuggestionItems(items as any, query ?? "");
+                const q = (query || "").toLowerCase();
+                if (!q) return items;
+                return items.filter((item: any) => {
+                  const title = (item?.title || item?.label || "").toLowerCase();
+                  const keywords: string[] = item?.keywords || item?.aliases || [];
+                  const matchKeywords = Array.isArray(keywords) && keywords.some((k) => (k || "").toLowerCase().includes(q));
+                  return title.includes(q) || matchKeywords;
+                });
               }}
             />
           </BlockNoteView>
@@ -826,19 +784,7 @@ export default function NoteEditorPage() {
               </Button>
             </div>
 
-            <Separator className="my-4 bg-[#f5c16c]/20" />
-            <h3 className="mb-2 text-sm font-semibold text-[#f5c16c]">
-              AI Tag Suggestions
-            </h3>
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={requestAiTags}
-              disabled={aiLoading}
-              className="border-[#f5c16c]/20 bg-black/40 hover:border-[#f5c16c]/40 hover:bg-black/60"
-            >
-              {aiLoading ? "Suggesting..." : "Suggest tags"}
-            </Button>
+            
           </div>
 
           <div className="mt-3 grid grid-cols-[1fr_auto] gap-2">
@@ -1023,3 +969,18 @@ function LeftNotesSidebar() {
     </div>
   );
 }
+  const normalizeBlocks = (blocks: PartialBlock[] | undefined): PartialBlock[] | undefined => {
+    if (!Array.isArray(blocks)) return blocks;
+    const visit = (arr: any[]): any[] => arr.map((b) => {
+      const t = (b?.type || "").toLowerCase();
+      const props = { ...(b?.props || {}) };
+      if (t === "image") {
+        if (props.previewWidth == null) props.previewWidth = 512;
+      } else {
+        if (props.previewWidth != null) delete props.previewWidth;
+      }
+      const children = Array.isArray(b?.children) ? visit(b.children) : undefined;
+      return { ...b, props, children };
+    });
+    return visit(blocks);
+  };
