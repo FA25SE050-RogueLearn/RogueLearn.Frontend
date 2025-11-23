@@ -104,7 +104,7 @@ export default function MeetingManagement({ partyId, variant = "full", showList 
     try {
       const cached = sessionStorage.getItem(`meetingToken:${partyId}`);
       if (cached) setActiveToken(cached);
-    } catch (_) {}
+    } catch (_) { }
   }, [partyId]);
 
   useEffect(() => {
@@ -165,7 +165,7 @@ export default function MeetingManagement({ partyId, variant = "full", showList 
       setActiveToken(token);
       try {
         sessionStorage.setItem(`meetingToken:${partyId}`, token);
-      } catch (_) {}
+      } catch (_) { }
       // 2) Create Google Meet space
       let created: any;
       try {
@@ -194,9 +194,9 @@ export default function MeetingManagement({ partyId, variant = "full", showList 
           setActiveToken(gisToken);
           try {
             sessionStorage.setItem(`meetingToken:${partyId}`, gisToken);
-          } catch (_) {}
+          } catch (_) { }
           created = await googleMeetApi.createSpace(gisToken, { config: {} });
-        } catch (fallbackErr) {}
+        } catch (fallbackErr) { }
       }
       const codeMatch = (created.meetingUri ?? "").match(
         /[a-z0-9]+-[a-z0-9]+-[a-z0-9]+/i
@@ -280,12 +280,12 @@ export default function MeetingManagement({ partyId, variant = "full", showList 
         if (code) {
           await googleMeetApi.endActiveConference(token, code);
         }
-      } catch (_) {}
+      } catch (_) { }
       if (partyMembers.length === 0) {
         try {
           const memRes = await partiesApi.getMembers(partyId);
           setPartyMembers(memRes.data ?? []);
-        } catch (_) {}
+        } catch (_) { }
       }
       const confList = await googleMeetApi.listConferenceRecords(token, { pageSize: 10 });
       const records: any[] = confList?.conferenceRecords ?? confList?.records ?? [];
@@ -334,7 +334,7 @@ export default function MeetingManagement({ partyId, variant = "full", showList 
         await meetingsApi.upsertParticipants(meetingId, dedup);
       }
       const updated: MeetingDto = { ...meeting, actualEndTime: new Date().toISOString(), status: MeetingStatus.EndedProcessing } as MeetingDto;
-      try { await meetingsApi.upsertMeeting(updated); } catch {}
+      try { await meetingsApi.upsertMeeting(updated); } catch { }
       const listRes = await meetingsApi.getPartyMeetings(partyId);
       setPartyMeetings(listRes.data ?? []);
       try {
@@ -436,7 +436,7 @@ export default function MeetingManagement({ partyId, variant = "full", showList 
         await meetingsApi.processArtifactsAndSummarize(meeting.meetingId as string, artifacts);
       }
       const completed: MeetingDto = { ...meeting, status: MeetingStatus.Completed } as MeetingDto;
-      try { await meetingsApi.upsertMeeting(completed); } catch {}
+      try { await meetingsApi.upsertMeeting(completed); } catch { }
       const listRes = await meetingsApi.getPartyMeetings(partyId);
       setPartyMeetings(listRes.data ?? []);
       setNeedsAuth(false);
@@ -551,7 +551,7 @@ export default function MeetingManagement({ partyId, variant = "full", showList 
         ) : null
       )}
 
-      
+
 
       {showList && (
       <div className="rounded border border-white/10 bg-white/5 p-4">
@@ -633,8 +633,8 @@ export default function MeetingManagement({ partyId, variant = "full", showList 
                             {m.actualEndTime ? new Date(m.actualEndTime).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }) : "—"}
                           </div>
                         </div>
-                      </div>
-                      <div className="ml-4 flex items-center gap-2">
+                      </AccordionTrigger>
+                      <div className="flex items-center gap-2 shrink-0">
                         {m.meetingLink && m.status === MeetingStatus.Active && (
                           <a
                             href={m.meetingLink}
@@ -649,7 +649,7 @@ export default function MeetingManagement({ partyId, variant = "full", showList 
                           <>
                             {m.status === MeetingStatus.Active && (
                               <button
-                                onClick={(e) => { e.preventDefault(); handleEndMeetingFor(m); }}
+                                onClick={() => handleEndMeetingFor(m)}
                                 disabled={ending}
                                 className="rounded bg-red-600 px-3 py-1.5 text-xs font-medium text-white disabled:opacity-50"
                               >
@@ -659,9 +659,9 @@ export default function MeetingManagement({ partyId, variant = "full", showList 
                             <TooltipProvider>
                               <Tooltip>
                                 <TooltipTrigger asChild>
-                                  <span className={!(m.status === MeetingStatus.EndedProcessing && m.actualEndTime && (Date.now() - new Date(m.actualEndTime).getTime() >= 10 * 60 * 1000)) ? "cursor-not-allowed" : ""}>
+                                  <span>
                                     <button
-                                      onClick={(e) => { e.preventDefault(); handleSyncMeetingFor(m); }}
+                                      onClick={() => handleSyncMeetingFor(m)}
                                       disabled={!(m.status === MeetingStatus.EndedProcessing && m.actualEndTime && (Date.now() - new Date(m.actualEndTime).getTime() >= 10 * 60 * 1000))}
                                       className="rounded border border-white/20 bg-transparent px-3 py-1.5 text-xs font-medium text-white disabled:opacity-50 hover:bg-white/10"
                                     >
@@ -680,7 +680,6 @@ export default function MeetingManagement({ partyId, variant = "full", showList 
                         )}
                       </div>
                     </div>
-                  </AccordionTrigger>
                     <AccordionContent>
                       {!m.meetingId ? (
                         <div className="text-[11px] text-white/60">
