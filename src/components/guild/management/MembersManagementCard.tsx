@@ -15,7 +15,6 @@ import { Shield, Search, UserCog, UserMinus, Crown } from "lucide-react";
 import type { GuildMemberDto, GuildRole } from "@/types/guilds";
 
 const ROLE_OPTIONS: GuildRole[] = [
-  "GuildMaster",
   "Officer",
   "Veteran",
   "Member",
