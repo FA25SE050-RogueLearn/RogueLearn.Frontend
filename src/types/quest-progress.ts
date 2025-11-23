@@ -61,3 +61,12 @@ export interface StepSummaryDto {
   completedActivities: number;
   totalActivities: number;
 }
+export interface SubmitQuizAnswerResponse {
+  submissionId: string;
+  correctAnswerCount: number;
+  totalQuestions: number;
+  scorePercentage: number;
+  isPassed: boolean;
+  message: string;
+  canCompleteActivity: boolean;
+}
