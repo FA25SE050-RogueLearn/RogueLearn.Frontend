@@ -5,7 +5,8 @@ import { QuestDetails, QuestStep, QuestProgress } from '../types/quest';
 import { 
   GetStepProgressResponse, 
   GetCompletedActivitiesResponse, 
-  GetQuestProgressResponse 
+  GetQuestProgressResponse, 
+  SubmitQuizAnswerResponse
 } from '../types/quest-progress';
 
 
@@ -266,6 +267,42 @@ const questApi = {
         data: null,
         message: error.response?.data?.message || error.message
       })),
+      submitQuizAnswer: async (
+  questId: string,
+  stepId: string,
+  activityId: string,
+  answers: Record<string, string>,
+  correctAnswerCount: number,
+  totalQuestions: number
+): Promise<ApiResponse<SubmitQuizAnswerResponse>> => {
+  try {
+    const response = await axiosClient.post<SubmitQuizAnswerResponse>(
+      `/api/quests/${questId}/steps/${stepId}/activities/${activityId}/submit-quiz`,
+      {
+        answers,
+        correctAnswerCount,
+        totalQuestions
+      }
+    );
+
+    // ✅ Explicitly return success response with literal true
+    return {
+      isSuccess: true,
+      data: response.data,
+    };
+  } catch (error) {
+    // ✅ Explicitly return failure response with literal false
+    const message = error instanceof Error 
+      ? error.message 
+      : 'Failed to submit quiz';
+    
+    return {
+      isSuccess: false,
+      data: null,
+      message,
+    };
+  }
+},
 };
 
 export default questApi;
