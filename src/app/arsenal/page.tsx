@@ -1,9 +1,6 @@
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
-import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, BookOpen } from "lucide-react";
+import { BookOpen } from "lucide-react";
 import NotesTab from "@/components/arsenal/NotesTab";
-import TagsTab from "@/components/arsenal/TagsTab";
 
 export default function ArsenalPage() {
   return (
@@ -34,18 +31,7 @@ export default function ArsenalPage() {
           </div>
         </section>
 
-        <Tabs defaultValue="notes" className="relative z-10">
-          <TabsList className="grid w-full max-w-[340px] grid-cols-2 rounded-lg border border-[#f5c16c]/20 bg-black/40 p-1">
-            <TabsTrigger value="notes" className="data-[state=active]:bg-linear-to-r data-[state=active]:from-[#f5c16c] data-[state=active]:to-[#d4a855] data-[state=active]:text-black data-[state=inactive]:text-white/70">Notes</TabsTrigger>
-            <TabsTrigger value="tags" className="data-[state=active]:bg-linear-to-r data-[state=active]:from-[#f5c16c] data-[state=active]:to-[#d4a855] data-[state=active]:text-black data-[state=inactive]:text-white/70">Tags</TabsTrigger>
-          </TabsList>
-          <TabsContent value="notes">
-            <NotesTab />
-          </TabsContent>
-          <TabsContent value="tags">
-            <TagsTab />
-          </TabsContent>
-        </Tabs>
+        <NotesTab />
       </div>
     </DashboardLayout>
   );

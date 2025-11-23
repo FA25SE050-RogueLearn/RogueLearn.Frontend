@@ -1,5 +1,5 @@
 "use client";
-import React from "next";
+import React from "react";
 import { useParams } from "next/navigation";
 import PartyStash from "@/components/party/PartyStash";
 

@@ -632,8 +632,8 @@ export default function MeetingManagement({ partyId, variant = "full", showList 
                             •{" "}
                             {m.actualEndTime ? new Date(m.actualEndTime).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }) : "—"}
                           </div>
-                        </div>
-                      </AccordionTrigger>
+                      </div>
+                    </div>
                       <div className="flex items-center gap-2 shrink-0">
                         {m.meetingLink && m.status === MeetingStatus.Active && (
                           <a
@@ -680,6 +680,7 @@ export default function MeetingManagement({ partyId, variant = "full", showList 
                         )}
                       </div>
                     </div>
+                    </AccordionTrigger>
                     <AccordionContent>
                       {!m.meetingId ? (
                         <div className="text-[11px] text-white/60">
