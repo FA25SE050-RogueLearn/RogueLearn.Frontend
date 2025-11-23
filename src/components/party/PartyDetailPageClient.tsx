@@ -3,26 +3,30 @@ import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import partiesApi from "@/api/partiesApi";
 import { PartyDto } from "@/types/parties";
-import PartyDetailClient, { Tabs } from "./PartyDetailClient";
-import PartyDashboard from "./PartyDashboard";
+import PartyDetailClient from "./PartyDetailClient";
 import PartyStash from "./PartyStash";
 import MeetingManagement from "./MeetingManagement";
 import InviteMemberModal from "./InviteMemberModal";
 import { createClient } from "@/utils/supabase/client";
 import RoleGate from "@/components/party/RoleGate";
 import { usePartyRole } from "@/hooks/usePartyRole";
-import { Users, Settings, UserPlus, LogOut } from "lucide-react";
+import { Users, Settings, UserPlus, LogOut, MoreVertical, Crown, HelpCircle } from "lucide-react";
+import PartyInfoModal from "./PartyInfoModal";
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "@/components/ui/dropdown-menu";
+import type { PartyMemberDto, PartyInvitationDto, PartyRole } from "@/types/parties";
+import * as usersApi from "@/api/usersApi";
 
 export default function PartyDetailPageClient({ partyId }: { partyId: string }) {
   const [authUserId, setAuthUserId] = useState<string | null>(null);
   const [party, setParty] = useState<PartyDto | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<string>("dashboard");
+  const [showScheduleModal, setShowScheduleModal] = useState(false);
   const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
   const [isLeaving, setIsLeaving] = useState(false);
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
+  const [showInfoModal, setShowInfoModal] = useState(false);
   const [settingsName, setSettingsName] = useState<string>("");
   const [settingsDescription, setSettingsDescription] = useState<string>("");
   const [settingsIsPublic, setSettingsIsPublic] = useState<boolean>(true);
@@ -31,6 +35,10 @@ export default function PartyDetailPageClient({ partyId }: { partyId: string }) 
   const [refreshAt, setRefreshAt] = useState<number>(0);
   const router = useRouter();
   const { role, refresh: refreshRole } = usePartyRole(partyId);
+  const [members, setMembers] = useState<PartyMemberDto[]>([]);
+  const [invites, setInvites] = useState<PartyInvitationDto[]>([]);
+  const [stashCount, setStashCount] = useState<number>(0);
+  const [inviteeNameById, setInviteeNameById] = useState<Record<string, string>>({});
 
   const triggerRefresh = () => {
     setRefreshAt((prev) => prev + 1);
@@ -66,6 +74,51 @@ export default function PartyDetailPageClient({ partyId }: { partyId: string }) 
       mounted = false;
     };
   }, [partyId]);
+
+  useEffect(() => {
+    let mounted = true;
+    const loadSideData = async () => {
+      try {
+        const [memRes, stashRes, invRes] = await Promise.all([
+          partiesApi.getMembers(partyId),
+          partiesApi.getResources(partyId),
+          partiesApi.getPendingInvitations(partyId),
+        ]);
+        if (!mounted) return;
+        setMembers(memRes.data ?? []);
+        setStashCount((stashRes.data ?? []).length);
+        setInvites(invRes.data ?? []);
+      } catch {
+        if (!mounted) return;
+        setMembers([]);
+        setStashCount(0);
+        setInvites([]);
+      }
+    };
+    loadSideData();
+    return () => { mounted = false; };
+  }, [partyId, refreshAt]);
+
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      const ids = Array.from(new Set(invites.map(i => i.inviteeId))).filter(id => !!id && !(id in inviteeNameById));
+      if (ids.length === 0) return;
+      try {
+        const results = await Promise.all(ids.map(id => usersApi.getUserProfileByAuthId(id)));
+        const map: Record<string, string> = { ...inviteeNameById };
+        ids.forEach((id, i) => {
+          const resp = results[i]?.data as any;
+          const fullName = resp?.fullName || [resp?.firstName, resp?.lastName].filter(Boolean).join(" ") || resp?.username || resp?.email || "External Invite";
+          map[id] = fullName;
+        });
+        if (mounted) setInviteeNameById(map);
+      } catch {
+        // ignore failures; keep fallbacks
+      }
+    })();
+    return () => { mounted = false; };
+  }, [invites, inviteeNameById]);
 
   useEffect(() => {
     // Sync settings form state when party loads
@@ -133,6 +186,14 @@ export default function PartyDetailPageClient({ partyId }: { partyId: string }) 
         </div>
       </div>
       <div className="flex gap-2">
+        <button
+          onClick={() => setShowInfoModal(true)}
+          className="flex items-center gap-2 rounded-lg border border-[#f5c16c]/20 bg-black/40 px-4 py-2 text-sm font-medium text-white/80 transition-colors hover:border-[#f5c16c]/40 hover:bg-black/60 hover:text-white"
+          title="Party overview"
+        >
+          <HelpCircle className="h-4 w-4" />
+          Info
+        </button>
         <RoleGate partyId={partyId} requireAny={["Leader", "CoLeader"]}>
           <button
             onClick={() => setShowSettingsModal(true)}
@@ -165,21 +226,132 @@ export default function PartyDetailPageClient({ partyId }: { partyId: string }) 
 
   return (
     <div className="space-y-4">
-      {loading && <div className="text-sm text-white/70">Loading...</div>}
-      {error && <div className="text-xs text-red-400">{error}</div>}
-      {!loading && role === null && (
-        <div className="rounded border border-white/10 bg-white/5 p-4 text-sm">
-          You do not have permission to view this party.
+      {(loading || role === null || !party) && (
+        <div className="flex items-center justify-center py-16">
+          <div className="h-6 w-6 animate-spin rounded-full border-2 border-white/30 border-t-[#f5c16c]" />
         </div>
       )}
-      {!loading && role !== null && (
+      {showInfoModal && (
+        <PartyInfoModal open={showInfoModal} onClose={() => setShowInfoModal(false)} partyId={partyId} />
+      )}
+      {!loading && role !== null && party && (
         <PartyDetailClient header={header}>
-          <Tabs active={activeTab} onChange={setActiveTab} />
-          {activeTab === "dashboard" && party && (
-            <PartyDashboard partyId={party.id} refreshAt={refreshAt} onChanged={triggerRefresh} />
-          )}
-          {activeTab === "stash" && party && <PartyStash partyId={party.id} />}
-          {activeTab === "meetings" && party && <MeetingManagement partyId={party.id} />}
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+            {/* Left: Social / Meta (30%) */}
+            <div className="lg:col-span-1 space-y-4">
+              <div className="rounded-lg border border-white/10 bg-white/5 p-4">
+                <div className="text-sm font-semibold text-white">Party Info</div>
+                <div className="mt-1 text-xs italic text-white/70">{(party as any).description || "No description."}</div>
+                <div className="mt-2 flex items-center gap-3 text-xs text-white/80">
+                  <span title="Members">👥 {members.length}</span>
+                  <span title="Stash">📦 {stashCount}</span>
+                  {invites.length > 0 && <span title="Invites">✉️ {invites.length}</span>}
+                </div>
+              </div>
+
+              <div>
+                <div className="mb-2 text-sm font-semibold">Members</div>
+                <ul className="space-y-2">
+                  {members.map((m) => (
+                    <li key={m.id} className="group flex items-center justify-between rounded bg-white/5 p-2">
+                      <div className="flex items-center gap-2">
+                        <div className="h-8 w-8 overflow-hidden rounded-full ring-2 ring-[#f5c16c]/40">
+                          {m.profileImageUrl ? (
+                            <img src={m.profileImageUrl} alt={m.username ?? m.email ?? "Member"} className="h-full w-full object-cover" />
+                          ) : (
+                            <div className="flex h-full w-full items-center justify-center bg-[#f5c16c]/10 text-xs text-[#f5c16c]">
+                              {(m.username ?? m.email ?? "?").slice(0, 1).toUpperCase()}
+                            </div>
+                          )}
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-1 text-xs text-white">
+                            {m.role === "Leader" && <Crown className="h-3.5 w-3.5 text-[#f5c16c]" />}
+                            <span>{m.username ?? m.email ?? "Member"}</span>
+                            {m.role === "CoLeader" && <span className="ml-1 rounded bg-amber-500/20 px-1 text-[10px] text-amber-300">Co-Leader</span>}
+                          </div>
+                        </div>
+                      </div>
+                      {role && role !== "Member" && (
+                        <DropdownMenu>
+                          <DropdownMenuTrigger className="rounded p-1 text-white/70 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-white/10">
+                            <MoreVertical className="h-4 w-4" />
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="min-w-[200px]">
+                            {role === "Leader" && m.role !== "Leader" && (
+                              <DropdownMenuItem onClick={async () => { await partiesApi.transferLeadership(party.id, { partyId: party.id, toUserId: m.authUserId }); triggerRefresh(); }}>Transfer leadership</DropdownMenuItem>
+                            )}
+                            {role === "Leader" && m.role === "Member" && (
+                              <DropdownMenuItem onClick={async () => {
+                                try {
+                                  await partiesApi.assignRole(party.id, m.authUserId, "CoLeader" as PartyRole);
+                                  triggerRefresh();
+                                } catch (e: any) {
+                                  setError(e?.message ?? "Failed to assign role");
+                                }
+                              }}>Promote to Co-Leader</DropdownMenuItem>
+                            )}
+                            {role === "Leader" && m.role === "CoLeader" && (
+                              <DropdownMenuItem onClick={async () => {
+                                try {
+                                  await partiesApi.revokeRole(party.id, m.authUserId, "CoLeader" as PartyRole);
+                                  await partiesApi.assignRole(party.id, m.authUserId, "Member" as PartyRole);
+                                  triggerRefresh();
+                                } catch (e: any) {
+                                  setError(e?.message ?? "Failed to update role");
+                                }
+                              }}>Demote to Member</DropdownMenuItem>
+                            )}
+                            {m.role !== "Leader" && (
+                              <DropdownMenuItem onClick={async () => { await partiesApi.removeMember(party.id, m.id, {}); triggerRefresh(); }}>Remove from party</DropdownMenuItem>
+                            )}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      )}
+                    </li>
+                  ))}
+                  {members.length === 0 && (
+                    <li className="text-xs text-white/50">No members yet.</li>
+                  )}
+                </ul>
+              </div>
+
+              {invites.length > 0 && (
+                <div className="rounded-lg border border-[#f5c16c]/20 bg-black/40 p-4">
+                  <div className="mb-2 text-sm font-medium text-[#f5c16c]">Pending Invitations</div>
+                  <ul className="space-y-2">
+                    {invites.map((inv) => (
+                      <li key={inv.id} className="flex items-center justify-between rounded bg-white/5 px-3 py-2 text-xs">
+                        <div className="flex items-center gap-2">
+                          <span>To: {inviteeNameById[inv.inviteeId] ?? "External Invite"}</span>
+                          <span className="rounded bg-white/10 px-2 py-0.5 text-[11px] text-white/70">{inv.status}</span>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+
+            {/* Right: Workspace (70%) */}
+            <div className="lg:col-span-2 space-y-4">
+              <div className="rounded-lg border border-white/10 bg-white/5 p-4">
+                <div className="mb-3 flex items-center justify-between">
+                  <div className="text-sm font-semibold">Study Sprints</div>
+                  <RoleGate partyId={partyId} requireAny={["Leader", "CoLeader"]}>
+                    <button onClick={() => setShowScheduleModal(true)} className="rounded bg-linear-to-r from-[#f5c16c] to-[#d4a855] px-4 py-2 text-xs font-semibold text-black">📅 Schedule Sprint</button>
+                  </RoleGate>
+                </div>
+                <div>
+                  <MeetingManagement partyId={party.id} variant="compact" />
+                </div>
+              </div>
+
+              <div className="rounded-lg border border-white/10 bg-white/5 p-4">
+                <PartyStash partyId={party.id} />
+              </div>
+            </div>
+          </div>
         </PartyDetailClient>
       )}
       {showLeaveConfirm && (
@@ -300,6 +472,24 @@ export default function PartyDetailPageClient({ partyId }: { partyId: string }) 
                 >
                   {isSavingSettings ? "Saving..." : "Save"}
                 </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      {showScheduleModal && party && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm">
+          <div className="absolute inset-0 bg-black/80" onClick={() => setShowScheduleModal(false)} />
+          <div className="relative w-full max-w-3xl overflow-hidden rounded-[28px] border border-[#f5c16c]/30 bg-linear-to-b from-[#1a0a08] to-[#0a0506] p-6 shadow-2xl">
+            <div
+              className="pointer-events-none absolute inset-0 opacity-25"
+              style={{ backgroundImage: "url('https://www.transparenttextures.com/patterns/asfalt-dark.png')", backgroundSize: "100px", backgroundBlendMode: "overlay" }}
+            />
+            <div className="relative">
+              <div className="mb-3 text-sm font-semibold text-[#f5c16c]">Schedule New Sprint</div>
+              <MeetingManagement partyId={party.id} variant="full" showList={false} />
+              <div className="mt-4 flex justify-end">
+                <button className="rounded-lg border border-[#f5c16c]/20 bg-black/40 px-4 py-2 text-sm text-white/80" onClick={() => setShowScheduleModal(false)}>Close</button>
               </div>
             </div>
           </div>
