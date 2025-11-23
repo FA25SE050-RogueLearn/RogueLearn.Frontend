@@ -1,6 +1,6 @@
 // roguelearn-web/src/lib/skillTreeLayout.ts
 import dagre from 'dagre';
-import { Edge } from 'reactflow';
+import { Edge } from '@xyflow/react';
 import { SkillNode as ApiSkillNode, SkillDependency } from '@/types/skill-tree';
 
 /**

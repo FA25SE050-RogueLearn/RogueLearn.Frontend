@@ -1,10 +1,9 @@
-"use client";
-import { useParams } from "next/navigation";
+// Converted to a Server Component to avoid importing server-only utilities into a client component
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { PostDetailView } from "@/components/guild/posts/PostDetailView";
 
-export default function GuildPostDetailPage() {
-  const { guildId, postId } = useParams<{ guildId: string; postId: string }>();
+export default function GuildPostDetailPage({ params }: { params: { guildId: string; postId: string } }) {
+  const { guildId, postId } = params;
   if (!guildId || !postId) return null;
   return (
     <DashboardLayout>

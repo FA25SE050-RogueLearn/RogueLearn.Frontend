@@ -69,6 +69,9 @@ export default function PartyCreationWizard({ open, onClose, onCreated }: PartyC
         maxMembers,
       };
       const res = await partiesApi.create(payload);
+      if (!res.isSuccess || !res.data) {
+        throw new Error(res?.message ?? "Failed to create party");
+      }
       const partyId = res.data.partyId;
 
       // Send invites (optional) — using email targets instead of auth user IDs

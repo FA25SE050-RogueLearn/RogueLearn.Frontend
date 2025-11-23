@@ -8,7 +8,6 @@
 export interface ImportRoadmapCommandRequest {
   rawText: string;
   programId?: string;
-  curriculumVersionId?: string;
 }
 
 /** Response data containing import results and warnings. */
