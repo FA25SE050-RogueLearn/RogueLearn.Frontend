@@ -20,16 +20,11 @@ export default function InviteMemberModal({ partyId, onClose, onInvited }: Invit
     setIsInviting(true);
     setError(null);
     try {
-      const res = await partiesApi.inviteMember(partyId, {
+      await partiesApi.inviteMember(partyId, {
         targets: [{ email: trimmed.toLowerCase() }],
         message: 'You have been invited to join this party.',
         expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
       });
-      if (!res?.isSuccess || !res?.data) {
-        const msg = res?.message || 'Invitation failed';
-        setError(msg);
-        return;
-      }
       try { onInvited?.(); } catch {}
       onClose();
     } catch (e: any) {
@@ -52,6 +47,10 @@ export default function InviteMemberModal({ partyId, onClose, onInvited }: Invit
           placeholder="Enter user's email"
           className="w-full rounded border border-white/20 bg-white/10 p-2 text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-fuchsia-500"
         />
+        <p className="mt-2 text-[11px] text-white/70">
+          Invitations expire in 7 days
+          <span className="ml-1 text-white/50">({new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toLocaleDateString()})</span>.
+        </p>
         {error && <p className="mt-2 text-xs text-red-400">{error}</p>}
         <div className="mt-6 flex justify-end gap-3">
           <button onClick={onClose} className="rounded bg-white/10 px-4 py-2 text-sm">

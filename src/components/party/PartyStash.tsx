@@ -3,6 +3,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import partiesApi from "@/api/partiesApi";
 import { PartyStashItemDto } from "@/types/parties";
 import Link from "next/link";
+import { FileText, Link2 } from "lucide-react";
 import { usePartyRole } from "@/hooks/usePartyRole";
 
 // Helper to convert BlockNote raw blocks to plain text for previews
@@ -42,7 +43,7 @@ export default function PartyStash({ partyId }: { partyId: string }) {
   const [submitting, setSubmitting] = useState(false);
   const [search, setSearch] = useState("");
 
-  const { role } = usePartyRole(partyId);
+  const { role, loading: roleLoading } = usePartyRole(partyId);
 
   // Management state
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -64,7 +65,9 @@ export default function PartyStash({ partyId }: { partyId: string }) {
     }
   };
 
-  useEffect(() => { load(); }, [partyId]);
+  useEffect(() => {
+    load();
+  }, [partyId]);
 
   const addResource = async () => {
     setSubmitting(true);
@@ -72,7 +75,10 @@ export default function PartyStash({ partyId }: { partyId: string }) {
     try {
       const payload = {
         title,
-        tags: tags.split(",").map(t => t.trim()).filter(Boolean),
+        tags: tags
+          .split(",")
+          .map((t) => t.trim())
+          .filter(Boolean),
         // Minimal BlockNote paragraph block from plain text
         content: [
           {
@@ -115,7 +121,10 @@ export default function PartyStash({ partyId }: { partyId: string }) {
     try {
       const payload = {
         title: editTitle,
-        tags: editTags.split(",").map((t) => t.trim()).filter(Boolean),
+        tags: editTags
+          .split(",")
+          .map((t) => t.trim())
+          .filter(Boolean),
         content: [
           {
             type: "paragraph",
@@ -154,15 +163,14 @@ export default function PartyStash({ partyId }: { partyId: string }) {
     });
   }, [items, search]);
 
-  return (
-    role === null ? (
-      <div className="rounded border border-white/10 bg-white/5 p-4 text-sm">
-        You do not have permission to view this party.
-      </div>
-    ) : (
+  return roleLoading ? (
+    <div className="flex items-center justify-center py-8">
+      <div className="h-5 w-5 animate-spin rounded-full border-2 border-white/30 border-t-[#f5c16c]" />
+    </div>
+  ) : (
     <div className="space-y-4">
       <div className="flex items-center justify-between gap-3">
-        <h4 className="text-sm font-semibold">Party Stash</h4>
+        <h4 className="text-sm font-semibold">Stash ({items.length})</h4>
         <div className="flex items-center gap-2">
           <input
             value={search}
@@ -178,15 +186,27 @@ export default function PartyStash({ partyId }: { partyId: string }) {
             Refresh
           </button>
           {role && role !== null && role !== "Member" && (
-            <button className="rounded bg-fuchsia-600 px-3 py-2 text-xs font-medium" onClick={() => setShowAdd(true)}>Add Resource</button>
+            <button
+              className="rounded bg-fuchsia-600 px-3 py-2 text-xs font-medium"
+              onClick={() => setShowAdd(true)}
+            >
+              Add Resource
+            </button>
           )}
         </div>
       </div>
-      {loading && <div className="text-sm text-white/70">Loading...</div>}
+      {loading && (
+        <div className="flex items-center justify-center py-8">
+          <div className="h-5 w-5 animate-spin rounded-full border-2 border-white/30 border-t-[#f5c16c]" />
+        </div>
+      )}
       {error && <div className="text-xs text-red-400">{error}</div>}
       <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
         {filtered.map((item) => (
-          <div key={item.id} className="rounded border border-white/10 bg-white/5 p-3">
+          <div
+            key={item.id}
+            className="group rounded border border-white/10 bg-white/5 p-3"
+          >
             {editingId === item.id ? (
               <div className="space-y-2">
                 <div>
@@ -198,7 +218,9 @@ export default function PartyStash({ partyId }: { partyId: string }) {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs">Tags (comma separated)</label>
+                  <label className="block text-xs">
+                    Tags (comma separated)
+                  </label>
                   <input
                     value={editTags}
                     onChange={(e) => setEditTags(e.target.value)}
@@ -214,7 +236,12 @@ export default function PartyStash({ partyId }: { partyId: string }) {
                   />
                 </div>
                 <div className="flex gap-2">
-                  <button className="rounded bg-white/10 px-3 py-2 text-xs" onClick={cancelEdit}>Cancel</button>
+                  <button
+                    className="rounded bg-white/10 px-3 py-2 text-xs"
+                    onClick={cancelEdit}
+                  >
+                    Cancel
+                  </button>
                   <button
                     disabled={savingEdit || !editTitle.trim()}
                     className="rounded bg-fuchsia-600 px-3 py-2 text-xs font-medium disabled:opacity-50"
@@ -226,37 +253,46 @@ export default function PartyStash({ partyId }: { partyId: string }) {
               </div>
             ) : (
               <>
-                <div className="text-sm font-medium text-white">{item.title}</div>
-                <div className="text-[11px] text-white/70">
-                  Shared by {item.sharedByUserId} • {new Date(item.sharedAt).toLocaleString()}
+                <div className="flex items-center gap-2">
+                  <FileText className="h-4 w-4 text-white/70" />
+                  <div className="text-sm font-semibold text-white transition-colors group-hover:text-[#f5c16c]">
+                    {item.title}
+                  </div>
                 </div>
                 {item.tags && item.tags.length > 0 && (
-                  <div className="mt-2 flex flex-wrap gap-2">
-                    {item.tags.map((tag) => (
-                      <span key={tag} className="rounded bg-white/10 px-2 py-1 text-xs text-white/80">#{tag}</span>
-                    ))}
+                  <div className="mt-1 flex flex-wrap gap-2">
+                    {item.tags
+                      .filter((t) => !t.toLowerCase().startsWith("source:"))
+                      .map((tag) => (
+                        <span
+                          key={tag}
+                          className="rounded bg-white/10 px-2 py-0.5 text-[10px] text-white/80"
+                        >
+                          #{tag}
+                        </span>
+                      ))}
                   </div>
                 )}
                 <div className="mt-2 text-xs text-white/70 line-clamp-3">
                   {extractPlainText(item.content) || "(no content)"}
                 </div>
-                <div className="mt-3 flex items-center gap-2">
+                <div className="mt-3 flex items-center gap-2 opacity-0 transition-opacity group-hover:opacity-100">
                   <Link
                     href={`/parties/${partyId}/stash/${item.id}`}
-                    className="rounded bg-white/10 px-3 py-2 text-xs"
+                    className="rounded bg-white/10 px-3 py-1.5 text-xs"
                   >
                     View
                   </Link>
                   {role && role !== null && role !== "Member" && (
                     <>
                       <button
-                        className="rounded bg-white/10 px-3 py-2 text-xs"
+                        className="rounded bg-white/10 px-3 py-1.5 text-xs"
                         onClick={() => startEdit(item)}
                       >
                         Edit
                       </button>
                       <button
-                        className="rounded bg-red-600/80 px-3 py-2 text-xs"
+                        className="rounded bg-rose-600/80 px-3 py-1.5 text-xs"
                         onClick={() => deleteItem(item.id)}
                       >
                         Delete
@@ -280,7 +316,7 @@ export default function PartyStash({ partyId }: { partyId: string }) {
             <label className="block text-xs">Title</label>
             <input
               value={title}
-              onChange={e => setTitle(e.target.value)}
+              onChange={(e) => setTitle(e.target.value)}
               className="w-full rounded-md border border-white/10 bg-white/5 px-3 py-2 text-sm"
             />
           </div>
@@ -288,7 +324,7 @@ export default function PartyStash({ partyId }: { partyId: string }) {
             <label className="block text-xs">Tags (comma separated)</label>
             <input
               value={tags}
-              onChange={e => setTags(e.target.value)}
+              onChange={(e) => setTags(e.target.value)}
               className="w-full rounded-md border border-white/10 bg-white/5 px-3 py-2 text-sm"
             />
           </div>
@@ -296,12 +332,17 @@ export default function PartyStash({ partyId }: { partyId: string }) {
             <label className="block text-xs">Content</label>
             <textarea
               value={contentText}
-              onChange={e => setContentText(e.target.value)}
+              onChange={(e) => setContentText(e.target.value)}
               className="min-h-24 w-full rounded-md border border-white/10 bg-white/5 px-3 py-2 text-sm"
             />
           </div>
           <div className="flex gap-2">
-            <button className="rounded bg-white/10 px-3 py-2 text-xs" onClick={() => setShowAdd(false)}>Cancel</button>
+            <button
+              className="rounded bg-white/10 px-3 py-2 text-xs"
+              onClick={() => setShowAdd(false)}
+            >
+              Cancel
+            </button>
             <button
               disabled={submitting || !title.trim()}
               className="rounded bg-fuchsia-600 px-3 py-2 text-xs font-medium disabled:opacity-50"
@@ -313,6 +354,5 @@ export default function PartyStash({ partyId }: { partyId: string }) {
         </div>
       )}
     </div>
-    )
   );
 }

@@ -1,0 +1,91 @@
+name: RogueLearn Frontend CD
+
+on:
+  workflow_run:
+    workflows: [ "RogueLearn Frontend CI" ]
+    types: [ completed ]
+
+concurrency:
+  group: docker-deploy-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    name: Publish Image to Docker Hub
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: read
+    env:
+      IMAGE_NAME: soybean2610/roguelearn-frontend
+    if: >-
+      ${{ github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push' }}
+    steps:
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Download image artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend-image
+          path: .
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ github.token }}
+
+      - name: Load image
+        run: |
+          docker load -i image.tar
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Retag and push latest
+        run: |
+          docker tag $IMAGE_NAME:build-${{ github.event.workflow_run.head_sha }} $IMAGE_NAME:latest
+          docker push $IMAGE_NAME:latest
+
+      - name: Summary
+        run: |
+          echo "Image pushed: $IMAGE_NAME:latest"
+
+  # deploy-to-server:
+  #   name: Deploy on Self-Hosted Runner
+  #   needs: publish
+  #   runs-on: self-hosted
+  #   env:
+  #     IMAGE_NAME: soybean2610/roguelearn-frontend
+  #     STACK_NAME: roguelearn
+  #   steps:
+  #     - name: Show runner context
+  #       run: |
+  #         echo "Runner name: ${{ runner.name }}"
+  #         echo "Current directory is: $(pwd)"
+  #         echo "Workspace is: $GITHUB_WORKSPACE"
+
+  #     - name: Redeploy Docker Swarm Stack
+  #       shell: bash
+  #       run: |
+  #         cd /home/ubuntu/roguelearn
+  #         docker stack rm $STACK_NAME || true
+  #         sleep 45
+  #         docker pull $IMAGE_NAME:latest
+  #         docker stack deploy -c docker-compose-swarm.yaml $STACK_NAME || true
+
+  #     - name: Create Deployment Summary
+  #       if: always()
+  #       run: |
+  #         echo "### 🚀 Deployment Summary" >> $GITHUB_STEP_SUMMARY
+  #         echo "" >> $GITHUB_STEP_SUMMARY
+  #         if [[ ${{ job.status }} == 'success' ]]; then
+  #           echo "✅ **Status:** Deployment completed successfully." >> $GITHUB_STEP_SUMMARY
+  #         else
+  #           echo "❌ **Status:** Deployment failed. Please check the logs." >> $GITHUB_STEP_SUMMARY
+  #         fi
+  #         echo "| Detail | Value |" >> $GITHUB_STEP_SUMMARY
+  #         echo "|---|---|" >> $GITHUB_STEP_SUMMARY
+  #         echo "| **Image Deployed** | \`${{ env.IMAGE_NAME }}:latest\` |" >> $GITHUB_STEP_SUMMARY
+  #         echo "| **Target Stack** | \`${{ env.STACK_NAME }}\` |" >> $GITHUB_STEP_SUMMARY
+  #         echo "| **Deployed On** | \`${{ runner.name }}\` |" >> $GITHUB_STEP_SUMMARY
