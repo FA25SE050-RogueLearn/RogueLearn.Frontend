@@ -70,7 +70,7 @@ export default function PartyCreationWizard({ open, onClose, onCreated }: PartyC
       };
       const res = await partiesApi.create(payload);
       if (!res.isSuccess || !res.data) {
-        throw new Error(res?.message ?? "Failed to create party");
+        throw new Error(res.message || "Failed to create party");
       }
       const partyId = res.data.partyId;
 

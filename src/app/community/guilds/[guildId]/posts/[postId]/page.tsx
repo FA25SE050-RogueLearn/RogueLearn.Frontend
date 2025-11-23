@@ -1,10 +1,12 @@
-// Converted to a Server Component to avoid importing server-only utilities into a client component
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { PostDetailView } from "@/components/guild/posts/PostDetailView";
 
-export default function GuildPostDetailPage({ params }: { params: { guildId: string; postId: string } }) {
-  const { guildId, postId } = params;
-  if (!guildId || !postId) return null;
+export default async function GuildPostDetailPage({
+  params,
+}: {
+  params: Promise<{ guildId: string; postId: string }>;
+}) {
+  const { guildId, postId } = await params;
   return (
     <DashboardLayout>
       <div className="mx-auto max-w-5xl py-6">

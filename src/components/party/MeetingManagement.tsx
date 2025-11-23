@@ -25,6 +25,8 @@ import { usePartyRole } from "@/hooks/usePartyRole";
 
 interface Props {
   partyId: string;
+  variant?: "full" | "compact";
+  showList?: boolean;
 }
 
 type CreateState = {
@@ -34,13 +36,14 @@ type CreateState = {
   spaceName?: string;
 };
 
-export default function MeetingManagement({ partyId }: Props) {
+export default function MeetingManagement({ partyId, variant = "full", showList = true }: Props) {
   const { getAccessToken, requestToken } = useGoogleMeet();
   const [authUserId, setAuthUserId] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
   const [ending, setEnding] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [activeToken, setActiveToken] = useState<string | null>(null);
+  const [needsAuth, setNeedsAuth] = useState<boolean>(false);
 
   const [createState, setCreateState] = useState<CreateState>(() => {
     const now = new Date();
@@ -69,7 +72,12 @@ export default function MeetingManagement({ partyId }: Props) {
   );
   const [loadingMeetings, setLoadingMeetings] = useState(false);
   const [partyMembers, setPartyMembers] = useState<PartyMemberDto[]>([]);
-  const { role } = usePartyRole(partyId);
+  const { role, loading: roleLoading } = usePartyRole(partyId);
+
+  function isUnauthorized(err: any): boolean {
+    const msg = typeof err?.message === "string" ? err.message : "";
+    return (err?.status === 401) || (err?.response?.status === 401) || /\b401\b/.test(msg);
+  }
 
   // Helper: derive a friendly display name for a party member
   function getMemberDisplayName(m?: PartyMemberDto | null): string | undefined {
@@ -153,17 +161,36 @@ export default function MeetingManagement({ partyId }: Props) {
     try {
       if (!authUserId) throw new Error("Not authenticated");
       // 1) Get token for creating a space and future readonly calls
-      const token = await getAccessToken(requiredBothScopes);
+      let token = await getAccessToken(requiredBothScopes);
       setActiveToken(token);
       try {
         sessionStorage.setItem(`meetingToken:${partyId}`, token);
       } catch (_) { }
       // 2) Create Google Meet space
-      let created = await googleMeetApi.createSpace(token, { config: {} });
+      let created: any;
+      try {
+        created = await googleMeetApi.createSpace(token, { config: {} });
+      } catch (e: any) {
+        if (isUnauthorized(e)) {
+          try {
+            const gisToken = await requestToken(requiredBothScopes);
+            token = gisToken;
+            setActiveToken(gisToken);
+            try { sessionStorage.setItem(`meetingToken:${partyId}`, gisToken); } catch (_) {}
+            created = await googleMeetApi.createSpace(gisToken, { config: {} });
+          } catch (reqErr: any) {
+            setNeedsAuth(true);
+            throw new Error("Authorization required to access Google Meet. Click Authorize and retry.");
+          }
+        } else {
+          throw e;
+        }
+      }
       // Fallback: if token lacks scopes, request via GIS and retry
       if (!created?.meetingUri) {
         try {
           const gisToken = await requestToken(requiredBothScopes);
+          token = gisToken;
           setActiveToken(gisToken);
           try {
             sessionStorage.setItem(`meetingToken:${partyId}`, gisToken);
@@ -186,7 +213,26 @@ export default function MeetingManagement({ partyId }: Props) {
         const cfg = space?.config as any;
         const title = (cfg?.title ?? "").trim();
         if (!spaceName && title) spaceName = title;
-      } catch { }
+      } catch (e: any) {
+        if (isUnauthorized(e)) {
+          try {
+            const gisToken = await requestToken(requiredBothScopes);
+            token = gisToken;
+            setActiveToken(gisToken);
+            try { sessionStorage.setItem(`meetingToken:${partyId}`, gisToken); } catch (_) {}
+            const space = await googleMeetApi.getSpace(
+              token,
+              created.name ?? meetingCode ?? ""
+            );
+            const cfg = space?.config as any;
+            const title = (cfg?.title ?? "").trim();
+            if (!spaceName && title) spaceName = title;
+          } catch (reqErr: any) {
+            setNeedsAuth(true);
+            throw new Error("Authorization required to access Google Meet. Click Authorize and retry.");
+          }
+        }
+      }
       // 3) Upsert meeting metadata to backend
       const payload: MeetingDto = {
         organizerId: authUserId,
@@ -213,6 +259,7 @@ export default function MeetingManagement({ partyId }: Props) {
       // Reload list
       const listRes = await meetingsApi.getPartyMeetings(partyId);
       setPartyMeetings(listRes.data ?? []);
+      setNeedsAuth(false);
     } catch (e: any) {
       setError(e?.message ?? "Failed to create meeting");
     } finally {
@@ -311,14 +358,67 @@ export default function MeetingManagement({ partyId }: Props) {
       const endedAt = new Date(meeting.actualEndTime).getTime();
       const canSync = Date.now() - endedAt >= 10 * 60 * 1000;
       if (!canSync) throw new Error("Sync available ~10 minutes after meeting ends");
-      const token = activeToken ?? (await getAccessToken(requiredBothScopes));
-      const confList = await googleMeetApi.listConferenceRecords(token, { pageSize: 10 });
+      const initialToken = activeToken ?? (await getAccessToken(requiredBothScopes));
+      let effectiveToken = initialToken;
+      let confList: any;
+      try {
+        confList = await googleMeetApi.listConferenceRecords(effectiveToken, { pageSize: 10 });
+      } catch (e: any) {
+        if (isUnauthorized(e)) {
+          try {
+            const newToken = await requestToken(requiredBothScopes);
+            effectiveToken = newToken;
+            setActiveToken(newToken);
+            try { sessionStorage.setItem(`meetingToken:${partyId}`, newToken); } catch (_) {}
+            try {
+              confList = await googleMeetApi.listConferenceRecords(effectiveToken, { pageSize: 10 });
+            } catch (e2: any) {
+              if (isUnauthorized(e2)) {
+                setNeedsAuth(true);
+                throw new Error("Authorization required to access Google Meet. Click Authorize and retry.");
+              }
+              throw e2;
+            }
+          } catch (reqErr: any) {
+            setNeedsAuth(true);
+            throw new Error("Authorization required to access Google Meet. Click Authorize and retry.");
+          }
+        } else {
+          throw e;
+        }
+      }
       const records: any[] = confList?.conferenceRecords ?? confList?.records ?? [];
       if (!records || records.length === 0) throw new Error("No conference records found");
       const latest = records[0];
       const conferenceId: string = latest?.name?.split("/")?.pop?.() ?? latest?.conferenceId ?? latest?.id;
       if (!conferenceId) throw new Error("Unable to determine conferenceId");
-      const transcriptsRes = await googleMeetApi.listTranscripts(token, conferenceId);
+      let transcriptsRes: any;
+      try {
+        transcriptsRes = await googleMeetApi.listTranscripts(effectiveToken, conferenceId);
+      } catch (e: any) {
+        if (isUnauthorized(e)) {
+          try {
+            const newToken = await requestToken(requiredBothScopes);
+            effectiveToken = newToken;
+            setActiveToken(newToken);
+            try { sessionStorage.setItem(`meetingToken:${partyId}`, newToken); } catch (_) {}
+            try {
+              transcriptsRes = await googleMeetApi.listTranscripts(effectiveToken, conferenceId);
+            } catch (e2: any) {
+              if (isUnauthorized(e2)) {
+                setNeedsAuth(true);
+                throw new Error("Authorization required to access Google Meet. Click Authorize and retry.");
+              }
+              throw e2;
+            }
+          } catch (reqErr: any) {
+            setNeedsAuth(true);
+            throw new Error("Authorization required to access Google Meet. Click Authorize and retry.");
+          }
+        } else {
+          throw e;
+        }
+      }
       const transcripts: any[] = transcriptsRes?.transcripts ?? transcriptsRes?.items ?? [];
       const artifacts: ArtifactInputDto[] = [];
       for (const t of transcripts) {
@@ -339,8 +439,21 @@ export default function MeetingManagement({ partyId }: Props) {
       try { await meetingsApi.upsertMeeting(completed); } catch { }
       const listRes = await meetingsApi.getPartyMeetings(partyId);
       setPartyMeetings(listRes.data ?? []);
+      setNeedsAuth(false);
     } catch (e: any) {
       setError(e?.message ?? "Failed to sync transcripts");
+    }
+  }
+
+  async function handleAuthorize() {
+    setError(null);
+    try {
+      const newToken = await requestToken(requiredBothScopes);
+      setActiveToken(newToken);
+      try { sessionStorage.setItem(`meetingToken:${partyId}`, newToken); } catch (_) {}
+      setNeedsAuth(false);
+    } catch (e: any) {
+      setError(e?.message ?? "Authorization failed");
     }
   }
 
@@ -360,13 +473,17 @@ export default function MeetingManagement({ partyId }: Props) {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h4 className="text-sm font-semibold">Meeting Management</h4>
-        {error && <span className="text-xs text-red-400">{error}</span>}
-      </div>
+      {error && <span className="text-xs text-red-400">{error}</span>}
+
+      
 
       {/* Create meeting section */}
-      {role && role !== "Member" && (
+      {variant !== "compact" && (
+        roleLoading ? (
+          <div className="flex items-center justify-center py-6">
+            <div className="h-5 w-5 animate-spin rounded-full border-2 border-white/30 border-t-[#f5c16c]" />
+          </div>
+        ) : role && role !== "Member" ? (
         <div className="rounded border border-white/10 bg-white/5 p-4">
           <h5 className="mb-3 text-xs font-semibold">Create a meeting</h5>
           <div className="grid grid-cols-1 gap-3 md:grid-cols-4">
@@ -421,18 +538,40 @@ export default function MeetingManagement({ partyId }: Props) {
             >
               {creating ? "Creating..." : "Create Meeting"}
             </button>
+            {needsAuth && (
+              <button
+                onClick={handleAuthorize}
+                className="rounded bg-linear-to-r from-[#f5c16c] to-[#d4a855] px-3 py-2 text-xs font-medium text-black"
+              >
+                Authorize Google Meet
+              </button>
+            )}
           </div>
         </div>
+        ) : null
       )}
 
 
 
+      {showList && (
       <div className="rounded border border-white/10 bg-white/5 p-4">
         <div className="mb-2 flex items-center justify-between">
           <h5 className="text-xs font-semibold">Meetings</h5>
-          {loadingMeetings && (
-            <span className="text-xs text-white/60">Loading...</span>
-          )}
+          <div className="flex items-center gap-2">
+            {loadingMeetings && (
+              <div className="flex items-center justify-center py-4">
+                <div className="h-5 w-5 animate-spin rounded-full border-2 border-white/30 border-t-[#f5c16c]" />
+              </div>
+            )}
+            {needsAuth && (
+              <button
+                onClick={handleAuthorize}
+                className="rounded bg-linear-to-r from-[#f5c16c] to-[#d4a855] px-3 py-1.5 text-xs font-medium text-black"
+              >
+                Authorize Google Meet
+              </button>
+            )}
+          </div>
         </div>
         {partyMeetings.length === 0 ? (
           <div className="text-xs text-white/60">No meetings yet.</div>
@@ -466,49 +605,42 @@ export default function MeetingManagement({ partyId }: Props) {
                   : false;
                 return (
                   <AccordionItem key={id} value={m.meetingId ?? id}>
-                    <div className="flex w-full items-center justify-between gap-4 py-4">
-                      <AccordionTrigger className="flex-1 py-0 hover:no-underline">
-                        <div className="flex w-full items-center justify-between">
-                          <div className="min-w-0 text-left">
-                            <div className="flex items-center gap-2">
-                              <div className="text-sm font-medium text-white truncate">
-                                {m.title}
-                              </div>
-                              {m.status && (
-                                <span className="rounded bg-white/10 px-2 py-0.5 text-[10px] text-white/80">
-                                  {m.status}
-                                </span>
-                              )}
-                            </div>
-                            {m.spaceName && (
-                              <div className="text-[11px] text-white/70 truncate">
-                                Space Name: {m.spaceName}
-                              </div>
-                            )}
-                            <div className="mt-1 grid grid-cols-1 gap-1 md:grid-cols-2">
-                              <div className="text-[11px] text-white/60">
-                                <span className="text-white/70">Scheduled:</span>{" "}
-                                {formatBangkok(m.scheduledStartTime, { includeSeconds: false, separator: " " })}{" "}
-                                –{" "}
-                                {formatBangkok(m.scheduledEndTime, { includeSeconds: false, separator: " " })}
-                              </div>
-                              <div className="text-[11px] text-white/60">
-                                <span className="text-white/70">Actual:</span>{" "}
-                                {m.actualStartTime ? formatBangkok(m.actualStartTime, { includeSeconds: false, separator: " " }) : "—"}{" "}
-                                –{" "}
-                                {m.actualEndTime ? formatBangkok(m.actualEndTime, { includeSeconds: false, separator: " " }) : "—"}
-                              </div>
-                            </div>
+                    <AccordionTrigger>
+                    <div className="flex w-full items-center justify-between">
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2">
+                          <div className="text-sm font-medium text-white truncate">
+                            {m.title}
                           </div>
+                          {m.status && (
+                            <span className="rounded bg-white/10 px-2 py-0.5 text-[10px] text-white/80">
+                              {m.status}
+                            </span>
+                          )}
                         </div>
-                      </AccordionTrigger>
+                        {/* Space name hidden for cleaner UI */}
+                        <div className="mt-1 grid grid-cols-1 gap-1 md:grid-cols-2">
+                          <div className="text-[11px] text-white/60">
+                            <span className="text-white/70">Scheduled:</span>{" "}
+                            {new Date(m.scheduledStartTime).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}{" "}
+                            •{" "}
+                            {new Date(m.scheduledEndTime).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}
+                          </div>
+                          <div className="text-[11px] text-white/60">
+                            <span className="text-white/70">Actual:</span>{" "}
+                            {m.actualStartTime ? new Date(m.actualStartTime).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }) : "—"}{" "}
+                            •{" "}
+                            {m.actualEndTime ? new Date(m.actualEndTime).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }) : "—"}
+                          </div>
+                      </div>
+                    </div>
                       <div className="flex items-center gap-2 shrink-0">
                         {m.meetingLink && m.status === MeetingStatus.Active && (
                           <a
                             href={m.meetingLink}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="rounded bg-white/10 px-3 py-1.5 text-xs font-medium text-white"
+                            className="rounded border border-white/20 bg-transparent px-3 py-1.5 text-xs font-medium text-white hover:bg-white/10"
                           >
                             Join Meet ↗
                           </a>
@@ -531,9 +663,9 @@ export default function MeetingManagement({ partyId }: Props) {
                                     <button
                                       onClick={() => handleSyncMeetingFor(m)}
                                       disabled={!(m.status === MeetingStatus.EndedProcessing && m.actualEndTime && (Date.now() - new Date(m.actualEndTime).getTime() >= 10 * 60 * 1000))}
-                                      className="rounded bg-blue-600 px-3 py-1.5 text-xs font-medium text-white disabled:opacity-50"
+                                      className="rounded border border-white/20 bg-transparent px-3 py-1.5 text-xs font-medium text-white disabled:opacity-50 hover:bg-white/10"
                                     >
-                                      Sync Transcript
+                                      Transcript
                                     </button>
                                   </span>
                                 </TooltipTrigger>
@@ -548,6 +680,7 @@ export default function MeetingManagement({ partyId }: Props) {
                         )}
                       </div>
                     </div>
+                    </AccordionTrigger>
                     <AccordionContent>
                       {!m.meetingId ? (
                         <div className="text-[11px] text-white/60">
@@ -618,6 +751,7 @@ export default function MeetingManagement({ partyId }: Props) {
           </Accordion>
         )}
       </div>
+      )}
     </div>
   );
 }
