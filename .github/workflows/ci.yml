@@ -9,9 +9,6 @@ on:
       - 'src/**'
       - 'Dockerfile'
       - '.github/workflows/**'
-  push:
-    branches:
-      - main
 
 concurrency:
   group: docker-publish-${{ github.ref }}
@@ -43,6 +40,13 @@ jobs:
           cache-to: type=gha,mode=max
           tags: |
             ${{ env.IMAGE_NAME }}:pr-check
+          build-args: |
+            NEXT_PUBLIC_API_URL=https://example.invalid
+            NEXT_PUBLIC_CODE_BATTLE_API_URL=https://example.invalid
+            NEXT_PUBLIC_SUPABASE_URL=https://example.invalid
+            NEXT_PUBLIC_SUPABASE_ANON_KEY=dummy
+            NEXT_PUBLIC_GOOGLE_CLIENT_ID=dummy
+            GOOGLE_GENERATIVE_AI_API_KEY=dummy
 
       - name: Summary
         run: |
@@ -74,6 +78,13 @@ jobs:
           platforms: linux/amd64
           tags: |
             ${{ env.IMAGE_NAME }}:build-${{ github.sha }}
+          build-args: |
+            NEXT_PUBLIC_API_URL=${{ secrets.NEXT_PUBLIC_API_URL }}
+            NEXT_PUBLIC_CODE_BATTLE_API_URL=${{ secrets.NEXT_PUBLIC_CODE_BATTLE_API_URL }}
+            NEXT_PUBLIC_SUPABASE_URL=${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+            NEXT_PUBLIC_SUPABASE_ANON_KEY=${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+            NEXT_PUBLIC_GOOGLE_CLIENT_ID=${{ secrets.NEXT_PUBLIC_GOOGLE_CLIENT_ID }}
+            GOOGLE_GENERATIVE_AI_API_KEY=${{ secrets.GOOGLE_GENERATIVE_AI_API_KEY }}
 
       - name: Save image as artifact
         run: |
