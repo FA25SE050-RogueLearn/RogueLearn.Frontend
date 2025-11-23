@@ -8,6 +8,7 @@ import { NoteDto } from "@/types/notes";
 import { Tag } from "@/types/tags";
 import { DashboardFrame } from "@/components/layout/DashboardFrame";
 import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Separator } from "@/components/ui/separator";
@@ -18,7 +19,7 @@ import { createClient } from "@/utils/supabase/client";
 import { Loader2 } from "lucide-react";
 
 // BlockNote imports
-import { PartialBlock, filterSuggestionItems, insertOrUpdateBlock } from "@blocknote/core";
+import { PartialBlock, insertOrUpdateBlock } from "@blocknote/core";
 import { en } from "@blocknote/core/locales";
 import "@blocknote/core/fonts/inter.css";
 import { BlockNoteView } from "@blocknote/shadcn";
@@ -52,8 +53,19 @@ import {
   DialogTrigger,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { usePartyRole } from "@/hooks/usePartyRole";
 
 type EditorStatus = "loading" | "ready" | "saving" | "dirty";
@@ -77,7 +89,11 @@ export default function NoteEditorPage() {
   const [myTags, setMyTags] = useState<Tag[]>([]);
   const [noteTags, setNoteTags] = useState<Tag[]>([]);
   const [newTagName, setNewTagName] = useState<string>("");
-  const [lastTagAction, setLastTagAction] = useState<{ type: "attach" | "detach"; tagId: string; tagName: string } | null>(null);
+  const [lastTagAction, setLastTagAction] = useState<{
+    type: "attach" | "detach";
+    tagId: string;
+    tagName: string;
+  } | null>(null);
   const [aiSuggestions, setAiSuggestions] = useState<
     {
       label: string;
@@ -128,7 +144,11 @@ export default function NoteEditorPage() {
                 const parsed = JSON.parse(raw);
                 if (Array.isArray(parsed)) {
                   blocks = parsed as PartialBlock[];
-                } else if (parsed && typeof parsed === "object" && Array.isArray((parsed as any).blocks)) {
+                } else if (
+                  parsed &&
+                  typeof parsed === "object" &&
+                  Array.isArray((parsed as any).blocks)
+                ) {
                   blocks = (parsed as any).blocks as PartialBlock[];
                 }
               } catch {
@@ -149,7 +169,9 @@ export default function NoteEditorPage() {
               content: [{ type: "text", text: n.title ?? "", styles: {} }],
             },
           ];
-          setInitialBlocks(blocks && blocks.length > 0 ? blocks : fallback);
+          setInitialBlocks(
+            normalizeBlocks(blocks && blocks.length > 0 ? blocks : fallback)
+          );
         }
       } finally {
         setStatus("ready");
@@ -171,7 +193,8 @@ export default function NoteEditorPage() {
         const d = JSON.parse(raw);
         if (typeof d?.title === "string") setTitle(d.title);
         if (typeof d?.isPublic === "boolean") setIsPublic(d.isPublic);
-        if (Array.isArray(d?.content) && d.content.length > 0) setInitialBlocks(d.content);
+        if (Array.isArray(d?.content) && d.content.length > 0)
+          setInitialBlocks(normalizeBlocks(d.content));
       }
     } catch {}
     load();
@@ -195,7 +218,9 @@ export default function NoteEditorPage() {
         : undefined,
       uploadFile: async (file: File) => {
         const supabase = createClient();
-        const { data: { user } } = await supabase.auth.getUser();
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
         const uid = user?.id ?? authUserId;
         if (!uid) {
           toast.error("Not authenticated");
@@ -203,12 +228,16 @@ export default function NoteEditorPage() {
         }
         const nameSafe = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
         const path = `${uid}/${Date.now()}-${nameSafe}`;
-        const { data, error } = await supabase.storage.from("notes-media").upload(path, file, { contentType: file.type, upsert: false });
+        const { data, error } = await supabase.storage
+          .from("notes-media")
+          .upload(path, file, { contentType: file.type, upsert: false });
         if (error) {
           toast.error("Image upload failed");
           throw error;
         }
-        const { data: pub } = supabase.storage.from("notes-media").getPublicUrl(data.path);
+        const { data: pub } = supabase.storage
+          .from("notes-media")
+          .getPublicUrl(data.path);
         return pub.publicUrl;
       },
     },
@@ -222,8 +251,8 @@ export default function NoteEditorPage() {
     const existingContentNow = editor
       ? JSON.stringify(editor.document)
       : typeof note?.content === "string" && note.content.length > 0
-        ? note.content
-        : null;
+      ? note.content
+      : null;
     if (existingContentNow != null) {
       setStatus("dirty");
     }
@@ -232,8 +261,8 @@ export default function NoteEditorPage() {
       const existingContent = editor
         ? JSON.stringify(editor.document)
         : typeof note?.content === "string" && note.content.length > 0
-          ? note.content
-          : null;
+        ? note.content
+        : null;
       if (existingContent == null) return; // avoid overwriting with empty content
       setStatus("saving");
       const payload = {
@@ -249,11 +278,25 @@ export default function NoteEditorPage() {
           const arr = raw ? JSON.parse(raw) : [];
           arr.push({ ts: Date.now(), payload });
           localStorage.setItem(qk, JSON.stringify(arr));
-          localStorage.setItem(`noteDraft:${noteId}`, JSON.stringify({ title, isPublic, content: editor ? editor.document : initialBlocks }));
+          localStorage.setItem(
+            `noteDraft:${noteId}`,
+            JSON.stringify({
+              title,
+              isPublic,
+              content: editor ? editor.document : initialBlocks,
+            })
+          );
           setQueuedCount(arr.length);
         } else {
           await notesApi.update(noteId, payload);
-          localStorage.setItem(`noteDraft:${noteId}`, JSON.stringify({ title, isPublic, content: editor ? editor.document : initialBlocks }));
+          localStorage.setItem(
+            `noteDraft:${noteId}`,
+            JSON.stringify({
+              title,
+              isPublic,
+              content: editor ? editor.document : initialBlocks,
+            })
+          );
           setLastSavedIsPublic(isPublic);
         }
       } catch (e: any) {
@@ -270,7 +313,16 @@ export default function NoteEditorPage() {
       }
     }, 1000);
     return () => clearTimeout(handle);
-  }, [title, isPublic, noteId, authUserId, editor, initialBlocks, lastSavedIsPublic, note]);
+  }, [
+    title,
+    isPublic,
+    noteId,
+    authUserId,
+    editor,
+    initialBlocks,
+    lastSavedIsPublic,
+    note,
+  ]);
 
   // Save content on change (debounced by BlockNoteView onChange frequency)
   const onEditorChange = () => {
@@ -284,7 +336,8 @@ export default function NoteEditorPage() {
             const u = b?.props?.url;
             if (typeof u === "string" && u) urls.add(u);
           }
-          if (Array.isArray(b?.children) && b.children.length) visit(b.children);
+          if (Array.isArray(b?.children) && b.children.length)
+            visit(b.children);
         }
       };
       visit(blocks);
@@ -311,7 +364,10 @@ export default function NoteEditorPage() {
           deleteSupabaseObjectByUrl(u);
         }
       }
-      localStorage.setItem(`noteMedia:${noteId}`, JSON.stringify(Array.from(current)));
+      localStorage.setItem(
+        `noteMedia:${noteId}`,
+        JSON.stringify(Array.from(current))
+      );
     } catch {}
     // Debounce saves to avoid spamming the API and to make status updates visible
     if (saveTimerRef.current) {
@@ -335,11 +391,17 @@ export default function NoteEditorPage() {
           const arr = raw ? JSON.parse(raw) : [];
           arr.push({ ts: Date.now(), payload });
           localStorage.setItem(qk, JSON.stringify(arr));
-          localStorage.setItem(`noteDraft:${noteId}`, JSON.stringify({ title, isPublic, content: json }));
+          localStorage.setItem(
+            `noteDraft:${noteId}`,
+            JSON.stringify({ title, isPublic, content: json })
+          );
           setQueuedCount(arr.length);
         } else {
           await notesApi.update(noteId, payload);
-          localStorage.setItem(`noteDraft:${noteId}`, JSON.stringify({ title, isPublic, content: json }));
+          localStorage.setItem(
+            `noteDraft:${noteId}`,
+            JSON.stringify({ title, isPublic, content: json })
+          );
         }
       } catch (e: any) {
         if (navigator.onLine) {
@@ -425,9 +487,14 @@ export default function NoteEditorPage() {
   const keyForSuggestion = (s: { label: string; matchedTagId?: string }) =>
     s.matchedTagId ? `id:${s.matchedTagId}` : `new:${s.label.toLowerCase()}`;
 
-  const toggleSelectSuggestion = (s: { label: string; matchedTagId?: string }) => {
+  const toggleSelectSuggestion = (s: {
+    label: string;
+    matchedTagId?: string;
+  }) => {
     const k = keyForSuggestion(s);
-    setSelectedAiKeys((prev) => (prev.includes(k) ? prev.filter((x) => x !== k) : [...prev, k]));
+    setSelectedAiKeys((prev) =>
+      prev.includes(k) ? prev.filter((x) => x !== k) : [...prev, k]
+    );
   };
 
   const applySelected = () => {
@@ -483,7 +550,8 @@ export default function NoteEditorPage() {
           <div
             className="pointer-events-none absolute inset-0 opacity-20"
             style={{
-              backgroundImage: "url('https://www.transparenttextures.com/patterns/asfalt-dark.png')",
+              backgroundImage:
+                "url('https://www.transparenttextures.com/patterns/asfalt-dark.png')",
               backgroundSize: "100px",
               backgroundBlendMode: "overlay",
             }}
@@ -496,7 +564,8 @@ export default function NoteEditorPage() {
           <div
             className="pointer-events-none absolute inset-0 opacity-20"
             style={{
-              backgroundImage: "url('https://www.transparenttextures.com/patterns/asfalt-dark.png')",
+              backgroundImage:
+                "url('https://www.transparenttextures.com/patterns/asfalt-dark.png')",
               backgroundSize: "100px",
               backgroundBlendMode: "overlay",
             }}
@@ -512,12 +581,17 @@ export default function NoteEditorPage() {
               <Label htmlFor="public-toggle" className="text-xs">
                 Public
               </Label>
+              <Switch
+                id="public-toggle"
+                checked={isPublic}
+                onCheckedChange={setIsPublic}
+              />
               <span className="text-xs text-foreground/60">
                 {status === "saving"
                   ? "Saving..."
                   : status === "dirty"
-                    ? "Unsaved changes"
-                    : "Saved"}
+                  ? "Unsaved changes"
+                  : "Saved"}
               </span>
               {queuedCount > 0 && (
                 <span className="ml-2 rounded-md border border-yellow-600/40 bg-yellow-900/20 px-2 py-1 text-xs text-yellow-200">
@@ -526,15 +600,30 @@ export default function NoteEditorPage() {
               )}
               <Dialog>
                 <DialogTrigger asChild>
-                  <Button variant="secondary" size="sm" aria-label="Arsenal info">Info</Button>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    aria-label="Arsenal info"
+                  >
+                    Info
+                  </Button>
                 </DialogTrigger>
                 <DialogContent aria-describedby="arsenal-info-desc">
                   <DialogHeader>
                     <DialogTitle>Arsenal Guide</DialogTitle>
                   </DialogHeader>
-                  <div id="arsenal-info-desc" className="space-y-3 text-sm text-foreground/80">
-                    <p>Embed images by pasting or using Insert Image. Uploads go to notes-media.</p>
-                    <p>Organize with tags. Drag notes into tag folders on the main Arsenal page.</p>
+                  <div
+                    id="arsenal-info-desc"
+                    className="space-y-3 text-sm text-foreground/80"
+                  >
+                    <p>
+                      Embed images by pasting or using Insert Image. Uploads go
+                      to notes-media.
+                    </p>
+                    <p>
+                      Organize with tags. Drag notes into tag folders on the
+                      main Arsenal page.
+                    </p>
                     <p>Use AI actions for suggestions and inline assistance.</p>
                     <p>Keyboard: Tab to toolbar, ESC to close dialogs.</p>
                   </div>
@@ -564,11 +653,15 @@ export default function NoteEditorPage() {
                               Note must be public to share.
                             </div>
                           )}
-                          {sharePartyId && !(shareRole === "Leader" || shareRole === "CoLeader") && (
-                            <div className="rounded-md border border-red-600/40 bg-red-900/20 p-2 text-xs text-red-200">
-                              Only Leader or CoLeader of the selected party can share notes.
-                            </div>
-                          )}
+                          {sharePartyId &&
+                            !(
+                              shareRole === "Leader" || shareRole === "CoLeader"
+                            ) && (
+                              <div className="rounded-md border border-red-600/40 bg-red-900/20 p-2 text-xs text-red-200">
+                                Only Leader or CoLeader of the selected party
+                                can share notes.
+                              </div>
+                            )}
                           <div className="grid grid-cols-2 gap-2 items-center">
                             <Label className="text-xs">Party</Label>
                             <Select
@@ -606,7 +699,14 @@ export default function NoteEditorPage() {
                         </div>
                         <DialogFooter>
                           <Button
-                            disabled={!isPublic || !sharePartyId || !(shareRole === "Leader" || shareRole === "CoLeader")}
+                            disabled={
+                              !isPublic ||
+                              !sharePartyId ||
+                              !(
+                                shareRole === "Leader" ||
+                                shareRole === "CoLeader"
+                              )
+                            }
                             onClick={async () => {
                               if (!isPublic) {
                                 toast.error("Note must be public to share.");
@@ -616,8 +716,15 @@ export default function NoteEditorPage() {
                                 toast.error("Please select a party.");
                                 return;
                               }
-                              if (!(shareRole === "Leader" || shareRole === "CoLeader")) {
-                                toast.error("Only Leader or CoLeader can share to this party.");
+                              if (
+                                !(
+                                  shareRole === "Leader" ||
+                                  shareRole === "CoLeader"
+                                )
+                              ) {
+                                toast.error(
+                                  "Only Leader or CoLeader can share to this party."
+                                );
                                 return;
                               }
                               try {
@@ -628,13 +735,18 @@ export default function NoteEditorPage() {
                                 // provenance tag
                                 if (noteId) tags.push(`source:note:${noteId}`);
                                 // Share raw BlockNote document array (no wrapper), same as note content
-                                const contentArray = (editor?.document ?? initialBlocks ?? []) as any[];
-                                const res = await partiesApi.addResource(sharePartyId, {
-                                  title: (shareTitle || title).trim(),
-                                  content: contentArray,
-                                  tags,
-                                  originalNoteId: noteId,
-                                });
+                                const contentArray = (editor?.document ??
+                                  initialBlocks ??
+                                  []) as any[];
+                                const res = await partiesApi.addResource(
+                                  sharePartyId,
+                                  {
+                                    title: (shareTitle || title).trim(),
+                                    content: contentArray,
+                                    tags,
+                                    originalNoteId: noteId,
+                                  }
+                                );
                                 if (res.isSuccess) {
                                   toast.success("Shared to party stash");
                                   setShareOpen(false);
@@ -642,7 +754,11 @@ export default function NoteEditorPage() {
                                   setSharePartyId(null);
                                 }
                               } catch (e: any) {
-                                toast.error(e?.response?.status === 403 ? "Permission denied" : "Failed to share");
+                                toast.error(
+                                  e?.response?.status === 403
+                                    ? "Permission denied"
+                                    : "Failed to share"
+                                );
                               }
                             }}
                           >
@@ -659,9 +775,9 @@ export default function NoteEditorPage() {
                   )}
                 </Tooltip>
               </TooltipProvider>
-        </div>
-      </div>
-      <Separator className="my-3" />
+            </div>
+          </div>
+          <Separator className="my-3" />
 
           <BlockNoteView
             editor={editor}
@@ -687,81 +803,54 @@ export default function NoteEditorPage() {
             <SuggestionMenuController
               triggerCharacter="/"
               getItems={async (query) => {
-                const defaultItems = getDefaultReactSlashMenuItems(editor).map((item: any) => {
-                  const t = (item?.title || item?.label || "").toLowerCase();
-                  if (
-                    t === "image" ||
-                    t === "insert image" ||
-                    t === "video" ||
-                    t === "insert video" ||
-                    t === "audio" ||
-                    t === "insert audio" ||
-                    t === "file" ||
-                    t === "insert file"
-                  ) {
+                const baseItems = [
+                  ...getDefaultReactSlashMenuItems(editor),
+                  ...(AI_BASE_URL ? getAISlashMenuItems(editor) : []),
+                ];
+                const filtered = baseItems.filter((item: any) => {
+                  const title = (
+                    item?.title ||
+                    item?.label ||
+                    ""
+                  ).toLowerCase();
+                  return title !== "video";
+                });
+                const items = filtered.map((item: any) => {
+                  const title = (
+                    item?.title ||
+                    item?.label ||
+                    ""
+                  ).toLowerCase();
+                  if (title === "image") {
                     return {
                       ...item,
-                      onItemClick: async () => {
-                        const input = document.createElement("input");
-                        input.type = "file";
-                        if (t.includes("image")) {
-                          input.accept = "image/png,image/jpeg,image/jpg,image/webp,image/gif,image/svg+xml";
-                        } else if (t.includes("video")) {
-                          input.accept = "video/mp4,video/webm,video/ogg";
-                        } else if (t.includes("audio")) {
-                          input.accept = "audio/mpeg";
-                        } else {
-                          input.accept = "*/*";
-                        }
-                        input.onchange = async () => {
-                          const file = input.files?.[0];
-                          if (!file) return;
-                          const supabase = createClient();
-                          const { data: { user } } = await supabase.auth.getUser();
-                          const uid = user?.id ?? authUserId;
-                          if (!uid) {
-                            toast.error("Not authenticated");
-                            return;
-                          }
-                          const nameSafe = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
-                          const path = `${uid}/${Date.now()}-${nameSafe}`;
-                          const { data, error } = await supabase.storage.from("notes-media").upload(path, file, { contentType: file.type, upsert: false });
-                          if (error) {
-                            toast.error("Upload failed");
-                            return;
-                          }
-                          const { data: pub } = supabase.storage.from("notes-media").getPublicUrl(data.path);
-                          const mime = (file.type || "").toLowerCase();
-                          if (mime.startsWith("image/")) {
-                            insertOrUpdateBlock(editor, {
-                              type: "image",
-                              props: { url: pub.publicUrl, caption: "", previewWidth: 512 },
-                            });
-                          } else if (mime.startsWith("video/")) {
-                            insertOrUpdateBlock(editor, {
-                              type: "video",
-                              props: { url: pub.publicUrl, caption: "" },
-                            });
-                          } else if (mime.startsWith("audio/")) {
-                            insertOrUpdateBlock(editor, {
-                              type: "audio",
-                              props: { url: pub.publicUrl, caption: "" },
-                            });
-                          } else {
-                            insertOrUpdateBlock(editor, {
-                              type: "file",
-                              props: { url: pub.publicUrl },
-                            });
-                          }
-                        };
-                        input.click();
+                      onItemClick: () => {
+                        try {
+                          insertOrUpdateBlock(editor, {
+                            type: "image",
+                            props: { previewWidth: 512 },
+                          } as any);
+                        } catch {}
                       },
-                    } as any;
+                    };
                   }
                   return item;
                 });
-                const items = [...defaultItems, ...(AI_BASE_URL ? getAISlashMenuItems(editor) : [])];
-                return filterSuggestionItems(items as any, query ?? "");
+                const q = (query || "").toLowerCase();
+                if (!q) return items;
+                return items.filter((item: any) => {
+                  const title = (
+                    item?.title ||
+                    item?.label ||
+                    ""
+                  ).toLowerCase();
+                  const keywords: string[] =
+                    item?.keywords || item?.aliases || [];
+                  const matchKeywords =
+                    Array.isArray(keywords) &&
+                    keywords.some((k) => (k || "").toLowerCase().includes(q));
+                  return title.includes(q) || matchKeywords;
+                });
               }}
             />
           </BlockNoteView>
@@ -772,7 +861,8 @@ export default function NoteEditorPage() {
           <div
             className="pointer-events-none absolute inset-0 opacity-20"
             style={{
-              backgroundImage: "url('https://www.transparenttextures.com/patterns/asfalt-dark.png')",
+              backgroundImage:
+                "url('https://www.transparenttextures.com/patterns/asfalt-dark.png')",
               backgroundSize: "100px",
               backgroundBlendMode: "overlay",
             }}
@@ -825,20 +915,6 @@ export default function NoteEditorPage() {
                 Attach
               </Button>
             </div>
-
-            <Separator className="my-4 bg-[#f5c16c]/20" />
-            <h3 className="mb-2 text-sm font-semibold text-[#f5c16c]">
-              AI Tag Suggestions
-            </h3>
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={requestAiTags}
-              disabled={aiLoading}
-              className="border-[#f5c16c]/20 bg-black/40 hover:border-[#f5c16c]/40 hover:bg-black/60"
-            >
-              {aiLoading ? "Suggesting..." : "Suggest tags"}
-            </Button>
           </div>
 
           <div className="mt-3 grid grid-cols-[1fr_auto] gap-2">
@@ -857,7 +933,9 @@ export default function NoteEditorPage() {
                   toast.error("Tag name cannot be empty");
                   return;
                 }
-                const exists = myTags.some((t) => t.name.toLowerCase() === name.toLowerCase());
+                const exists = myTags.some(
+                  (t) => t.name.toLowerCase() === name.toLowerCase()
+                );
                 if (exists) {
                   toast.error("Tag already exists");
                   return;
@@ -882,7 +960,9 @@ export default function NoteEditorPage() {
           {lastTagAction && (
             <div className="mt-2 flex items-center gap-2 text-xs text-foreground/70">
               <span>
-                Last action: {lastTagAction.type === "attach" ? "Attached" : "Detached"} &quot;{lastTagAction.tagName}&quot;
+                Last action:{" "}
+                {lastTagAction.type === "attach" ? "Attached" : "Detached"}{" "}
+                &quot;{lastTagAction.tagName}&quot;
               </span>
               <Button
                 size="sm"
@@ -890,9 +970,17 @@ export default function NoteEditorPage() {
                 onClick={async () => {
                   if (!authUserId || !noteId || !lastTagAction) return;
                   if (lastTagAction.type === "attach") {
-                    await tagsApi.removeFromNote({ authUserId, noteId, tagId: lastTagAction.tagId });
+                    await tagsApi.removeFromNote({
+                      authUserId,
+                      noteId,
+                      tagId: lastTagAction.tagId,
+                    });
                   } else {
-                    await tagsApi.attachToNote({ authUserId, noteId, tagId: lastTagAction.tagId });
+                    await tagsApi.attachToNote({
+                      authUserId,
+                      noteId,
+                      tagId: lastTagAction.tagId,
+                    });
                   }
                   const nt = await tagsApi.getTagsForNote(noteId);
                   if (nt.isSuccess) setNoteTags(nt.data.tags);
@@ -931,7 +1019,9 @@ export default function NoteEditorPage() {
                       </span>
                       <div className="flex items-center gap-2">
                         {s.matchedTagId && (
-                          <span className="rounded-full border border-green-500/40 bg-green-500/15 px-2 py-0.5 text-[10px] text-green-300">Existing</span>
+                          <span className="rounded-full border border-green-500/40 bg-green-500/15 px-2 py-0.5 text-[10px] text-green-300">
+                            Existing
+                          </span>
                         )}
                         <Checkbox
                           checked={selectedAiKeys.includes(keyForSuggestion(s))}
@@ -947,7 +1037,9 @@ export default function NoteEditorPage() {
                 </Card>
               ))}
               <div className="flex gap-2">
-                <Button size="sm" onClick={applySelected}>Apply selected</Button>
+                <Button size="sm" onClick={applySelected}>
+                  Apply selected
+                </Button>
                 <Button
                   size="sm"
                   onClick={() => {
@@ -965,7 +1057,10 @@ export default function NoteEditorPage() {
                 <Button
                   size="sm"
                   variant="ghost"
-                  onClick={() => { setAiSuggestions([]); setSelectedAiKeys([]); }}
+                  onClick={() => {
+                    setAiSuggestions([]);
+                    setSelectedAiKeys([]);
+                  }}
                 >
                   Clear
                 </Button>
@@ -989,31 +1084,50 @@ function LeftNotesSidebar() {
       try {
         const res = await notesApi.getMyNotes();
         if (res.isSuccess && mounted) {
-          const list = [...res.data].sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
+          const list = [...res.data].sort(
+            (a, b) =>
+              new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+          );
           setItems(list);
         }
       } catch {}
     };
     load();
-    return () => { mounted = false; };
+    return () => {
+      mounted = false;
+    };
   }, []);
   useEffect(() => {
     const h = setTimeout(() => setSearch(searchInput), 300);
     return () => clearTimeout(h);
   }, [searchInput]);
-  const filtered = items.filter(n => {
-    if (!search) return true;
-    const q = search.toLowerCase();
-    return n.title.toLowerCase().includes(q);
-  }).slice(0, 20);
+  const filtered = items
+    .filter((n) => {
+      if (!search) return true;
+      const q = search.toLowerCase();
+      return n.title.toLowerCase().includes(q);
+    })
+    .slice(0, 20);
   return (
     <div className="space-y-3">
-      <Input placeholder="Search notes" value={searchInput} onChange={(e) => setSearchInput(e.target.value)} aria-label="Search notes" />
+      <Input
+        placeholder="Search notes"
+        value={searchInput}
+        onChange={(e) => setSearchInput(e.target.value)}
+        aria-label="Search notes"
+      />
       <div className="space-y-2">
         {filtered.map((n) => (
-          <button key={n.id} className="flex w-full items-center justify-between rounded-md border border-white/10 bg-black/30 px-3 py-2 text-left text-xs text-white hover:bg-black/40" onClick={() => router.push(`/arsenal/${n.id}`)} aria-label={`Open ${n.title}`}>
+          <button
+            key={n.id}
+            className="flex w-full items-center justify-between rounded-md border border-white/10 bg-black/30 px-3 py-2 text-left text-xs text-white hover:bg-black/40"
+            onClick={() => router.push(`/arsenal/${n.id}`)}
+            aria-label={`Open ${n.title}`}
+          >
             <span className="truncate">{n.title}</span>
-            <span className="text-foreground/60">{new Date(n.updatedAt).toLocaleDateString()}</span>
+            <span className="text-foreground/60">
+              {new Date(n.updatedAt).toLocaleDateString()}
+            </span>
           </button>
         ))}
         {filtered.length === 0 && (
@@ -1023,3 +1137,23 @@ function LeftNotesSidebar() {
     </div>
   );
 }
+const normalizeBlocks = (
+  blocks: PartialBlock[] | undefined
+): PartialBlock[] | undefined => {
+  if (!Array.isArray(blocks)) return blocks;
+  const visit = (arr: any[]): any[] =>
+    arr.map((b) => {
+      const t = (b?.type || "").toLowerCase();
+      const props = { ...(b?.props || {}) };
+      if (t === "image") {
+        if (props.previewWidth == null) props.previewWidth = 512;
+      } else {
+        if (props.previewWidth != null) delete props.previewWidth;
+      }
+      const children = Array.isArray(b?.children)
+        ? visit(b.children)
+        : undefined;
+      return { ...b, props, children };
+    });
+  return visit(blocks);
+};

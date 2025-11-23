@@ -196,7 +196,7 @@ export default function TagsTab() {
         <Label htmlFor="new-tag" className="mb-2 block text-[#f5c16c]">Create Tag</Label>
         <div className="flex gap-2">
           <Input id="new-tag" placeholder="e.g. Algorithms" value={name} onChange={(e) => setName(e.target.value)} className="border-[#f5c16c]/20 bg-black/40 focus-visible:border-[#f5c16c] focus-visible:ring-[#f5c16c]/30" />
-          <Button onClick={createTag} className="bg-gradient-to-r from-[#f5c16c] to-[#d4a855] text-black hover:from-[#d4a855] hover:to-[#f5c16c]">Add</Button>
+          <Button onClick={createTag} className="bg-linear-to-r from-[#f5c16c] to-[#d4a855] text-black hover:from-[#d4a855] hover:to-[#f5c16c]">Add</Button>
         </div>
       </div>
 
