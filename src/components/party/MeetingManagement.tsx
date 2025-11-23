@@ -96,7 +96,7 @@ export default function MeetingManagement({ partyId }: Props) {
     try {
       const cached = sessionStorage.getItem(`meetingToken:${partyId}`);
       if (cached) setActiveToken(cached);
-    } catch (_) {}
+    } catch (_) { }
   }, [partyId]);
 
   useEffect(() => {
@@ -157,7 +157,7 @@ export default function MeetingManagement({ partyId }: Props) {
       setActiveToken(token);
       try {
         sessionStorage.setItem(`meetingToken:${partyId}`, token);
-      } catch (_) {}
+      } catch (_) { }
       // 2) Create Google Meet space
       let created = await googleMeetApi.createSpace(token, { config: {} });
       // Fallback: if token lacks scopes, request via GIS and retry
@@ -167,9 +167,9 @@ export default function MeetingManagement({ partyId }: Props) {
           setActiveToken(gisToken);
           try {
             sessionStorage.setItem(`meetingToken:${partyId}`, gisToken);
-          } catch (_) {}
+          } catch (_) { }
           created = await googleMeetApi.createSpace(gisToken, { config: {} });
-        } catch (fallbackErr) {}
+        } catch (fallbackErr) { }
       }
       const codeMatch = (created.meetingUri ?? "").match(
         /[a-z0-9]+-[a-z0-9]+-[a-z0-9]+/i
@@ -186,7 +186,7 @@ export default function MeetingManagement({ partyId }: Props) {
         const cfg = space?.config as any;
         const title = (cfg?.title ?? "").trim();
         if (!spaceName && title) spaceName = title;
-      } catch {}
+      } catch { }
       // 3) Upsert meeting metadata to backend
       const payload: MeetingDto = {
         organizerId: authUserId,
@@ -233,12 +233,12 @@ export default function MeetingManagement({ partyId }: Props) {
         if (code) {
           await googleMeetApi.endActiveConference(token, code);
         }
-      } catch (_) {}
+      } catch (_) { }
       if (partyMembers.length === 0) {
         try {
           const memRes = await partiesApi.getMembers(partyId);
           setPartyMembers(memRes.data ?? []);
-        } catch (_) {}
+        } catch (_) { }
       }
       const confList = await googleMeetApi.listConferenceRecords(token, { pageSize: 10 });
       const records: any[] = confList?.conferenceRecords ?? confList?.records ?? [];
@@ -287,7 +287,7 @@ export default function MeetingManagement({ partyId }: Props) {
         await meetingsApi.upsertParticipants(meetingId, dedup);
       }
       const updated: MeetingDto = { ...meeting, actualEndTime: new Date().toISOString(), status: MeetingStatus.EndedProcessing } as MeetingDto;
-      try { await meetingsApi.upsertMeeting(updated); } catch {}
+      try { await meetingsApi.upsertMeeting(updated); } catch { }
       const listRes = await meetingsApi.getPartyMeetings(partyId);
       setPartyMeetings(listRes.data ?? []);
       try {
@@ -336,7 +336,7 @@ export default function MeetingManagement({ partyId }: Props) {
         await meetingsApi.processArtifactsAndSummarize(meeting.meetingId as string, artifacts);
       }
       const completed: MeetingDto = { ...meeting, status: MeetingStatus.Completed } as MeetingDto;
-      try { await meetingsApi.upsertMeeting(completed); } catch {}
+      try { await meetingsApi.upsertMeeting(completed); } catch { }
       const listRes = await meetingsApi.getPartyMeetings(partyId);
       setPartyMeetings(listRes.data ?? []);
     } catch (e: any) {
@@ -425,7 +425,7 @@ export default function MeetingManagement({ partyId }: Props) {
         </div>
       )}
 
-      
+
 
       <div className="rounded border border-white/10 bg-white/5 p-4">
         <div className="mb-2 flex items-center justify-between">
@@ -466,40 +466,43 @@ export default function MeetingManagement({ partyId }: Props) {
                   : false;
                 return (
                   <AccordionItem key={id} value={m.meetingId ?? id}>
-                    <AccordionTrigger>
-                    <div className="flex w-full items-center justify-between">
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-2">
-                          <div className="text-sm font-medium text-white truncate">
-                            {m.title}
+                    <div className="flex w-full items-center justify-between gap-4 py-4">
+                      <AccordionTrigger className="flex-1 py-0 hover:no-underline">
+                        <div className="flex w-full items-center justify-between">
+                          <div className="min-w-0 text-left">
+                            <div className="flex items-center gap-2">
+                              <div className="text-sm font-medium text-white truncate">
+                                {m.title}
+                              </div>
+                              {m.status && (
+                                <span className="rounded bg-white/10 px-2 py-0.5 text-[10px] text-white/80">
+                                  {m.status}
+                                </span>
+                              )}
+                            </div>
+                            {m.spaceName && (
+                              <div className="text-[11px] text-white/70 truncate">
+                                Space Name: {m.spaceName}
+                              </div>
+                            )}
+                            <div className="mt-1 grid grid-cols-1 gap-1 md:grid-cols-2">
+                              <div className="text-[11px] text-white/60">
+                                <span className="text-white/70">Scheduled:</span>{" "}
+                                {formatBangkok(m.scheduledStartTime, { includeSeconds: false, separator: " " })}{" "}
+                                –{" "}
+                                {formatBangkok(m.scheduledEndTime, { includeSeconds: false, separator: " " })}
+                              </div>
+                              <div className="text-[11px] text-white/60">
+                                <span className="text-white/70">Actual:</span>{" "}
+                                {m.actualStartTime ? formatBangkok(m.actualStartTime, { includeSeconds: false, separator: " " }) : "—"}{" "}
+                                –{" "}
+                                {m.actualEndTime ? formatBangkok(m.actualEndTime, { includeSeconds: false, separator: " " }) : "—"}
+                              </div>
+                            </div>
                           </div>
-                          {m.status && (
-                            <span className="rounded bg-white/10 px-2 py-0.5 text-[10px] text-white/80">
-                              {m.status}
-                            </span>
-                          )}
                         </div>
-                        {m.spaceName && (
-                          <div className="text-[11px] text-white/70 truncate">
-                            Space Name: {m.spaceName}
-                          </div>
-                        )}
-                        <div className="mt-1 grid grid-cols-1 gap-1 md:grid-cols-2">
-                          <div className="text-[11px] text-white/60">
-                            <span className="text-white/70">Scheduled:</span>{" "}
-                            {formatBangkok(m.scheduledStartTime, { includeSeconds: false, separator: " " })}{" "}
-                            –{" "}
-                            {formatBangkok(m.scheduledEndTime, { includeSeconds: false, separator: " " })}
-                          </div>
-                          <div className="text-[11px] text-white/60">
-                            <span className="text-white/70">Actual:</span>{" "}
-                            {m.actualStartTime ? formatBangkok(m.actualStartTime, { includeSeconds: false, separator: " " }) : "—"}{" "}
-                            –{" "}
-                            {m.actualEndTime ? formatBangkok(m.actualEndTime, { includeSeconds: false, separator: " " }) : "—"}
-                          </div>
-                        </div>
-                      </div>
-                      <div className="ml-4 flex items-center gap-2">
+                      </AccordionTrigger>
+                      <div className="flex items-center gap-2 shrink-0">
                         {m.meetingLink && m.status === MeetingStatus.Active && (
                           <a
                             href={m.meetingLink}
@@ -514,7 +517,7 @@ export default function MeetingManagement({ partyId }: Props) {
                           <>
                             {m.status === MeetingStatus.Active && (
                               <button
-                                onClick={(e) => { e.preventDefault(); handleEndMeetingFor(m); }}
+                                onClick={() => handleEndMeetingFor(m)}
                                 disabled={ending}
                                 className="rounded bg-red-600 px-3 py-1.5 text-xs font-medium text-white disabled:opacity-50"
                               >
@@ -524,9 +527,9 @@ export default function MeetingManagement({ partyId }: Props) {
                             <TooltipProvider>
                               <Tooltip>
                                 <TooltipTrigger asChild>
-                                  <span className={!(m.status === MeetingStatus.EndedProcessing && m.actualEndTime && (Date.now() - new Date(m.actualEndTime).getTime() >= 10 * 60 * 1000)) ? "cursor-not-allowed" : ""}>
+                                  <span>
                                     <button
-                                      onClick={(e) => { e.preventDefault(); handleSyncMeetingFor(m); }}
+                                      onClick={() => handleSyncMeetingFor(m)}
                                       disabled={!(m.status === MeetingStatus.EndedProcessing && m.actualEndTime && (Date.now() - new Date(m.actualEndTime).getTime() >= 10 * 60 * 1000))}
                                       className="rounded bg-blue-600 px-3 py-1.5 text-xs font-medium text-white disabled:opacity-50"
                                     >
@@ -545,7 +548,6 @@ export default function MeetingManagement({ partyId }: Props) {
                         )}
                       </div>
                     </div>
-                  </AccordionTrigger>
                     <AccordionContent>
                       {!m.meetingId ? (
                         <div className="text-[11px] text-white/60">

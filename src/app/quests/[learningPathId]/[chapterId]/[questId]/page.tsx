@@ -1,14 +1,21 @@
 // roguelearn-web/src/app/quests/[learningPathId]/[chapterId]/[questId]/page.tsx
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
-import { QuestDetailView } from "@/components/quests/QuestDetailView";
 import { ArrowLeft, Trophy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { createServerApiClients } from "@/lib/api-server";
 import { QuestDetails, LearningPath } from "@/types/quest";
+import QuestDetailView from "@/components/quests/QuestDetailView";
 
 interface PageProps {
   params: Promise<{ learningPathId: string; chapterId: string; questId: string }>;
+}
+
+// ⭐ Define the quest progress type with proper enums
+interface QuestProgress {
+  questId: string;
+  questStatus: 'NotStarted' | 'InProgress' | 'Completed';
+  stepStatuses: Record<string, 'NotStarted' | 'InProgress' | 'Completed'>;
 }
 
 export default async function QuestOverviewPage({ params }: PageProps) {
@@ -17,20 +24,38 @@ export default async function QuestOverviewPage({ params }: PageProps) {
 
   let questDetails: QuestDetails | null = null;
   let learningPath: LearningPath | null = null;
+  let questProgress: QuestProgress | null = null;
 
   try {
-    const [questResponse, pathResponse] = await Promise.all([
+    // ⭐ Fetch THREE endpoints: quest details, learning path, AND progress
+    const [questResponse, pathResponse, progressResponse] = await Promise.all([
       coreApiClient.get<QuestDetails>(`/api/quests/${questId}`),
-      coreApiClient.get<LearningPath>('/api/learning-paths/me')
+      coreApiClient.get<LearningPath>('/api/learning-paths/me'),
+      coreApiClient.get<QuestProgress>(
+        `/api/user-progress/quests/${questId}`
+      )
     ]);
+
     questDetails = questResponse.data;
     learningPath = pathResponse.data;
+
+    // ⭐ Type cast the progress response to ensure proper typing
+    if (progressResponse.data) {
+      questProgress = {
+        questId: progressResponse.data.questId,
+        questStatus: progressResponse.data.questStatus as 'NotStarted' | 'InProgress' | 'Completed',
+        stepStatuses: progressResponse.data.stepStatuses as Record<string, 'NotStarted' | 'InProgress' | 'Completed'>
+      };
+    }
+
+    console.log('✅ Fetched quest details, learning path, and progress');
   } catch (error) {
     console.error(`Failed to fetch quest ${questId}:`, error);
   }
 
   const chapter = learningPath?.chapters.find(ch => ch.id === chapterId);
 
+  // Error handling
   if (!questDetails || !learningPath || !chapter) {
     return (
       <DashboardLayout>
@@ -48,20 +73,24 @@ export default async function QuestOverviewPage({ params }: PageProps) {
     );
   }
 
-  // TODO: Fetch user's progress
-  const completedSteps: number[] = [];
-  const currentStepNumber = 1;
+  // If progress not available, use default
+  if (!questProgress) {
+    questProgress = {
+      questId: questId,
+      questStatus: 'NotStarted',
+      stepStatuses: {}
+    };
+  }
 
   return (
     <DashboardLayout>
       <QuestDetailView
         questDetails={questDetails}
+        questProgress={questProgress}
         learningPathId={learningPathId}
         learningPathName={learningPath.name}
         chapterId={chapterId}
         chapterName={chapter.title}
-        completedSteps={completedSteps}
-        currentStepNumber={currentStepNumber}
       />
     </DashboardLayout>
   );

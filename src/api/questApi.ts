@@ -2,6 +2,12 @@
 import axiosClient from './axiosClient';
 import { ApiResponse } from '../types/base/Api';
 import { QuestDetails, QuestStep, QuestProgress } from '../types/quest';
+import { 
+  GetStepProgressResponse, 
+  GetCompletedActivitiesResponse, 
+  GetQuestProgressResponse 
+} from '../types/quest-progress';
+
 
 // ========== NEW RESPONSE TYPES FOR BACKGROUND JOBS ==========
 
@@ -39,9 +45,10 @@ interface QuestGenerationProgressResponse {
   updatedAt: string;
 }
 
+
 /**
  * API service for handling quest-specific interactions.
- * Corresponds to QuestsController.cs
+ * Corresponds to QuestsController.cs and UserQuestProgressController.cs
  * Updated to support weekly module structure and background job polling.
  */
 const questApi = {
@@ -203,6 +210,62 @@ const questApi = {
       isSuccess: true,
       data: res.data,
     })),
+
+  // ========== ⭐ NEW: USER PROGRESS ENDPOINTS ==========
+
+  /**
+   * ⭐ NEW: Gets the overall progress for a specific quest including all steps.
+   * Returns quest status, steps summary, and overall completion percentage.
+   * Corresponds to GET /api/user-progress/quests/{questId}
+   */
+  getQuestProgress: (questId: string): Promise<ApiResponse<GetQuestProgressResponse>> =>
+    axiosClient
+      .get<GetQuestProgressResponse>(`/api/user-progress/quests/${questId}`)
+      .then(res => ({
+  isSuccess: true as const,  // ✅ Now TypeScript sees this as literal true
+  data: res.data,
+}))
+      .catch(error => ({
+        isSuccess: false,
+        data: null,
+        message: error.response?.data?.message || error.message
+      })),
+
+  /**
+   * ⭐ NEW: Gets the progress for a specific step including completion status and percentage.
+   * Shows how many activities are completed out of total.
+   * Corresponds to GET /api/user-progress/quests/{questId}/steps/{stepId}
+   */
+  getStepProgress: (questId: string, stepId: string): Promise<ApiResponse<GetStepProgressResponse>> =>
+    axiosClient
+      .get<GetStepProgressResponse>(`/api/user-progress/quests/${questId}/steps/${stepId}`)
+      .then(res => ({
+  isSuccess: true as const,  // ✅ Now TypeScript sees this as literal true
+  data: res.data,
+}))
+      .catch(error => ({
+        isSuccess: false,
+        data: null,
+        message: error.response?.data?.message || error.message
+      })),
+
+  /**
+   * ⭐ NEW: Gets all activities in a step with their individual completion status.
+   * Returns detailed info for each activity (type, XP, skill, title, completion status).
+   * Corresponds to GET /api/user-progress/quests/{questId}/steps/{stepId}/activities
+   */
+  getCompletedActivities: (questId: string, stepId: string): Promise<ApiResponse<GetCompletedActivitiesResponse>> =>
+    axiosClient
+      .get<GetCompletedActivitiesResponse>(`/api/user-progress/quests/${questId}/steps/${stepId}/activities`)
+      .then(res => ({
+  isSuccess: true as const,  // ✅ Now TypeScript sees this as literal true
+  data: res.data,
+}))
+      .catch(error => ({
+        isSuccess: false,
+        data: null,
+        message: error.response?.data?.message || error.message
+      })),
 };
 
 export default questApi;
