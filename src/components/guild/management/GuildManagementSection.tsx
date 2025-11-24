@@ -10,6 +10,7 @@ import { MembershipCard } from "@/components/guild/management/MembershipCard";
 import { AccessRestrictedCard } from "@/components/guild/management/AccessRestrictedCard";
 import { CreateEventRequestCard } from "@/components/guild/management/CreateEventRequestCard";
 import { EventRequestsCard } from "@/components/guild/management/EventRequestsCard";
+import { RegisteredEventsCard } from "@/components/guild/management/RegisteredEventsCard";
 
 interface GuildManagementSectionProps {
   guildId: string;
@@ -163,6 +164,8 @@ export function GuildManagementSection({ guildId, onLeftGuild }: GuildManagement
           <EventRequestsCard guildId={guildId} />
         </>
       )}
+
+      <RegisteredEventsCard guildId={guildId} />
 
       <JoinRequestsCard
         loading={loading}

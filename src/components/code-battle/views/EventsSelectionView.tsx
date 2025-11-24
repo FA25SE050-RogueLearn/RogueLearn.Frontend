@@ -23,13 +23,14 @@ interface EventsSelectionViewProps {
 type StatusKey = 'all' | 'live' | 'scheduled' | 'completed' | 'cancelled';
 
 const resolveEventStatus = (event: Event) => {
-  if (event.Status === 'active') return { label: 'Live', color: 'text-emerald-400', key: 'live' as const };
-  if (event.Status === 'completed') return { label: 'Concluded', color: 'text-gray-400', key: 'completed' as const };
-  if (event.Status === 'cancelled') return { label: 'Cancelled', color: 'text-rose-400', key: 'cancelled' as const };
+  const status = event.status || event.Status;
+  if (status === 'active') return { label: 'Live', color: 'text-emerald-400', key: 'live' as const };
+  if (status === 'completed') return { label: 'Concluded', color: 'text-gray-400', key: 'completed' as const };
+  if (status === 'cancelled') return { label: 'Cancelled', color: 'text-rose-400', key: 'cancelled' as const };
 
   const now = new Date();
-  const start = new Date(event.StartedDate);
-  const end = new Date(event.EndDate);
+  const start = new Date(event.started_date || event.StartedDate || '');
+  const end = new Date(event.end_date || event.EndDate || '');
 
   if (now < start) return { label: 'Scheduled', color: 'text-blue-400', key: 'scheduled' as const };
   if (now > end) return { label: 'Concluded', color: 'text-gray-400', key: 'completed' as const };
@@ -38,7 +39,9 @@ const resolveEventStatus = (event: Event) => {
 };
 
 const formatDate = (dateString: string) => {
+  if (!dateString) return 'TBD';
   const date = new Date(dateString);
+  if (isNaN(date.getTime())) return 'TBD';
   return new Intl.DateTimeFormat('en-US', {
     month: 'short',
     day: 'numeric',
@@ -50,34 +53,13 @@ const formatDate = (dateString: string) => {
 const formatDateRange = (start: string, end: string) => `${formatDate(start)} — ${formatDate(end)}`;
 
 const calculateProgress = (event: Event) => {
-  const start = new Date(event.StartedDate).getTime();
-  const end = new Date(event.EndDate).getTime();
+  const start = new Date(event.started_date || event.StartedDate || '').getTime();
+  const end = new Date(event.end_date || event.EndDate || '').getTime();
   const now = Date.now();
 
   if (now <= start) return 0;
   if (now >= end) return 100;
   return Math.round(((now - start) / (end - start)) * 100);
-};
-
-const formatTimeRemaining = (seconds: number) => {
-  const hours = Math.floor(seconds / 3600);
-  const minutes = Math.floor((seconds % 3600) / 60);
-  const secs = seconds % 60;
-
-  if (hours > 0) {
-    return `${hours}h ${minutes}m ${secs}s`;
-  }
-  if (minutes > 0) {
-    return `${minutes}m ${secs}s`;
-  }
-  return `${secs}s`;
-};
-
-const calculateEventTimeRemaining = (endDate: string): number | null => {
-  const end = new Date(endDate).getTime();
-  const now = Date.now();
-  const secondsLeft = Math.floor((end - now) / 1000);
-  return secondsLeft > 0 ? secondsLeft : null;
 };
 
 const statusFilters: { key: StatusKey; label: string }[] = [
@@ -218,10 +200,10 @@ export default function EventsSelectionView({
     // First priority: Find the closest upcoming event (scheduled but not started yet)
     const upcomingEvents = events
       .filter((event) => {
-        const start = new Date(event.StartedDate).getTime();
+        const start = new Date(event.started_date).getTime();
         return start > now && event.Status !== 'cancelled';
       })
-      .sort((a, b) => new Date(a.StartedDate).getTime() - new Date(b.StartedDate).getTime());
+      .sort((a, b) => new Date(a.started_date).getTime() - new Date(b.started_date).getTime());
     
     if (upcomingEvents.length > 0) return upcomingEvents[0];
     
@@ -257,11 +239,11 @@ export default function EventsSelectionView({
               <div className="mt-6 flex flex-wrap items-center gap-4 text-sm text-foreground/80">
                 <div className="flex items-center gap-2 rounded-full border border-[#f5c16c]/30 bg-[#f5c16c]/10 px-4 py-1">
                   <Calendar className="h-3.5 w-3.5 text-[#f5c16c]" />
-                  <span>{formatDate(featuredEvent.StartedDate)}</span>
+                  <span>{formatDate(featuredEvent.started_date || featuredEvent.StartedDate || '')}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <Target className="h-4 w-4 text-[#d23187]" />
-                  <span className="font-semibold text-white">{featuredEvent.Title}</span>
+                  <span className="font-semibold text-white">{featuredEvent.title || featuredEvent.Title}</span>
                 </div>
               </div>
             )}
@@ -326,9 +308,6 @@ export default function EventsSelectionView({
                 Request Event
               </Button>
             )}
-            <Button variant="outline" className="border-[#d23187]/40 bg-white/5 text-xs uppercase tracking-wide text-[#f5c16c]">
-              View Battle Logs
-            </Button>
           </div>
         </div>
 
@@ -377,21 +356,19 @@ export default function EventsSelectionView({
                     <div className="space-y-2 text-[11px] text-foreground/60">
                       <div className="flex items-center gap-2">
                         <Calendar className="h-3.5 w-3.5" />
-                        <span>{formatDateRange(event.StartedDate, event.EndDate)}</span>
+                        <span>{formatDateRange(event.started_date || event.StartedDate || '', event.end_date || event.EndDate || '')}</span>
                       </div>
-                      {event.NumberOfRooms && (
-                        <div className="flex items-center gap-2">
-                          <Users className="h-3.5 w-3.5" />
-                          <span>{event.NumberOfRooms} Battle Rooms</span>
-                        </div>
-                      )}
+                      <div className="flex items-center gap-2">
+                        <Users className="h-3.5 w-3.5" />
+                        <span>Max {event.MaxGuilds} Guilds • {event.MaxPlayersPerGuild} per Guild</span>
+                      </div>
                     </div>
 
                     {/* Countdown Timer - Dedicated Section */}
                     {status.key !== 'completed' && status.key !== 'cancelled' && (
                       <div className="flex flex-col items-center gap-2 rounded-2xl border border-[#f5c16c]/30 bg-linear-to-br from-[#d23187]/15 via-[#f5c16c]/5 to-transparent p-3 shadow-[0_0_20px_rgba(245,193,108,0.2)]">
                         <p className="text-[9px] uppercase tracking-[0.4em] text-[#f5c16c]">Time Remaining</p>
-                        <EventCountdown endDate={event.EndDate} />
+                        <EventCountdown endDate={event.end_date || event.EndDate || ''} />
                       </div>
                     )}
 
@@ -405,13 +382,31 @@ export default function EventsSelectionView({
                       </div>
                     </div>
 
-                    <Button
-                      onClick={() => onSelectEvent(event.ID)}
-                      className={`w-full px-5 py-2.5 text-xs font-semibold uppercase tracking-wider ${CTA_CLASS}`}
-                    >
-                      Enter Arena
-                      <ArrowRight className="ml-2 h-3.5 w-3.5" />
-                    </Button>
+                    {status.key === 'scheduled' || (event.Status === 'pending' && new Date(event.AssignmentDate || event.started_date) > new Date()) ? (
+                      <Button
+                        onClick={() => router.push(`/code-battle/${event.ID}`)}
+                        className={`w-full px-5 py-2.5 text-xs font-semibold uppercase tracking-wider ${CTA_CLASS}`}
+                      >
+                        View Details & Register
+                        <ArrowRight className="ml-2 h-3.5 w-3.5" />
+                      </Button>
+                    ) : status.key === 'completed' ? (
+                      <Button
+                        onClick={() => router.push(`/code-battle/${event.ID}/results`)}
+                        className={`w-full px-5 py-2.5 text-xs font-semibold uppercase tracking-wider ${CTA_CLASS}`}
+                      >
+                        View Results
+                        <ArrowRight className="ml-2 h-3.5 w-3.5" />
+                      </Button>
+                    ) : (
+                      <Button
+                        onClick={() => onSelectEvent(event.id)}
+                        className={`w-full px-5 py-2.5 text-xs font-semibold uppercase tracking-wider ${CTA_CLASS}`}
+                      >
+                        Enter Arena
+                        <ArrowRight className="ml-2 h-3.5 w-3.5" />
+                      </Button>
+                    )}
                   </CardContent>
                 </Card>
               );

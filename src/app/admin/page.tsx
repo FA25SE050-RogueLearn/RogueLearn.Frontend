@@ -1,10 +1,11 @@
 import { AdminLayout } from "@/components/layout/AdminLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { 
-  Calendar, 
-  Library, 
-  Users, 
-  Activity, 
+import { StatusCard } from "@/components/admin/StatusCard";
+import {
+  Calendar,
+  Library,
+  Users,
+  Activity,
   Clock,
   CheckCircle,
   AlertCircle,
@@ -16,58 +17,50 @@ import {
 
 export default function AdminDashboard() {
   const metrics = [
-    { 
-      label: "Pending Quests", 
-      value: "3", 
-      icon: Sword, 
+    {
+      label: "Pending Requests",
+      value: "3",
+      icon: Sword,
       trend: "+2 this week",
       color: "text-amber-500",
       bgGradient: "from-amber-950/50 to-amber-900/30"
     },
-    { 
-      label: "Content Vault", 
-      value: "2 days", 
-      icon: Library, 
+    {
+      label: "Content Vault",
+      value: "2 days",
+      icon: Library,
       trend: "157 tomes updated",
       color: "text-blue-400",
       bgGradient: "from-blue-950/50 to-blue-900/30"
     },
-    { 
-      label: "Active Adventurers", 
-      value: "1,247", 
-      icon: Users, 
+    {
+      label: "Active Adventurers",
+      value: "1,247",
+      icon: Users,
       trend: "+8.3% vs last week",
       color: "text-emerald-400",
       bgGradient: "from-emerald-950/50 to-emerald-900/30"
     },
-    { 
-      label: "Sanctum Health", 
-      value: "98.7%", 
-      icon: Shield, 
-      trend: "All wards stable",
-      color: "text-purple-400",
-      bgGradient: "from-purple-950/50 to-purple-900/30"
-    },
   ];
 
   const recentActivity = [
-    { 
-      action: "Quest Approved", 
-      target: "Spring Java Championship 2025", 
+    {
+      action: "Request Approved",
+      target: "Spring Java Championship 2025",
       time: "2 hours ago",
       icon: CheckCircle,
       iconColor: "text-emerald-400"
     },
-    { 
-      action: "Vault Synced", 
-      target: "FAP Course Data (157 courses)", 
+    {
+      action: "Vault Synced",
+      target: "FAP Course Data (157 courses)",
       time: "2 days ago",
       icon: Library,
       iconColor: "text-blue-400"
     },
-    { 
-      action: "Quest Submitted", 
-      target: "Algorithm Mastery Tournament", 
+    {
+      action: "Request Submitted",
+      target: "Algorithm Mastery Tournament",
       time: "3 days ago",
       icon: Clock,
       iconColor: "text-amber-400"
@@ -120,20 +113,12 @@ export default function AdminDashboard() {
                   Master overview and realm control
                 </p>
               </div>
-
-              {/* Status indicator */}
-              <div className="hidden lg:flex items-center gap-3 rounded-xl border border-amber-900/30 bg-amber-950/30 px-4 py-3">
-                <div className="flex items-center gap-2">
-                  <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-                  <span className="text-sm font-medium text-amber-200">All Systems Operational</span>
-                </div>
-              </div>
             </div>
           </div>
         </div>
 
         {/* Enhanced Metrics Grid */}
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-6 md:grid-cols-3">
           {metrics.map((metric) => {
             const Icon = metric.icon;
             return (
@@ -160,6 +145,9 @@ export default function AdminDashboard() {
             );
           })}
         </div>
+
+        {/* System Status Card - Full Width */}
+        <StatusCard />
 
         <div className="grid gap-6 lg:grid-cols-2">
           {/* Enhanced Recent Activity */}

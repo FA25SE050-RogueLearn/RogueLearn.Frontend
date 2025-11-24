@@ -1,0 +1,331 @@
+"use client";
+
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Trophy,
+  Users,
+  Shield,
+  ArrowLeft,
+  Loader2,
+  Medal,
+  Star
+} from "lucide-react";
+import eventServiceApi from "@/api/eventServiceApi";
+import type { Event, Leaderboard, LeaderboardEntry } from "@/types/event-service";
+import type { CSSProperties } from "react";
+
+interface EventResultsContentProps {
+  eventId: string;
+}
+
+const SECTION_CARD_CLASS = 'relative overflow-hidden rounded-3xl border border-[#f5c16c]/25 bg-[#120806]/80';
+const CARD_TEXTURE: CSSProperties = {
+  backgroundImage: "url('https://www.transparenttextures.com/patterns/asfalt-dark.png')",
+  opacity: 0.25,
+};
+
+export default function EventResultsContent({ eventId }: EventResultsContentProps) {
+  const router = useRouter();
+
+  const [event, setEvent] = useState<Event | null>(null);
+  const [userLeaderboard, setUserLeaderboard] = useState<Leaderboard | null>(null);
+  const [guildLeaderboard, setGuildLeaderboard] = useState<Leaderboard | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetchEventData();
+  }, [eventId]);
+
+  const fetchEventData = async () => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      // Fetch event details
+      const eventResponse = await eventServiceApi.getEventById(eventId);
+      if (eventResponse.success && eventResponse.data) {
+        setEvent(eventResponse.data);
+      }
+
+      // Fetch user leaderboard
+      const userResponse = await eventServiceApi.getEventLeaderboards(eventId, 'user');
+      if (userResponse.success && userResponse.data) {
+        setUserLeaderboard(userResponse.data);
+      }
+
+      // Fetch guild leaderboard
+      const guildResponse = await eventServiceApi.getEventLeaderboards(eventId, 'guild');
+      if (guildResponse.success && guildResponse.data) {
+        setGuildLeaderboard(guildResponse.data);
+      }
+
+    } catch (err) {
+      setError('Failed to load event results');
+      console.error('Error fetching event results:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getRankDisplay = (rank: number) => {
+    if (rank === 1) return <Trophy className="h-6 w-6 text-yellow-500" />;
+    if (rank === 2) return <Medal className="h-6 w-6 text-gray-400" />;
+    if (rank === 3) return <Medal className="h-6 w-6 text-amber-700" />;
+    return <span className="text-[#f5c16c] font-bold">#{rank}</span>;
+  };
+
+  const renderLeaderboardEntry = (entry: LeaderboardEntry, type: 'user' | 'guild') => {
+    const isChampion = entry.rank === 1;
+    const isTopThree = entry.rank <= 3;
+
+    // Handle both old and new API response formats
+    const name = type === 'user'
+      ? entry.username || entry.player_name || entry.user_id || entry.player_id || 'Unknown Player'
+      : entry.guild_name || entry.guild_id || 'Unknown Guild';
+
+    const score = entry.score || entry.total_score || 0;
+    const problemsSolved = entry.problems_solved || 0;
+
+    return (
+      <div
+        key={entry.rank}
+        className={`relative rounded-xl border ${
+          isChampion
+            ? 'border-yellow-500/30 bg-gradient-to-r from-yellow-500/10 to-amber-500/5'
+            : isTopThree
+            ? 'border-[#f5c16c]/20 bg-[#d23187]/5'
+            : 'border-white/10 bg-white/5'
+        }`}
+      >
+        {/* Champion badge */}
+        {isChampion && (
+          <div className="absolute -top-2 left-4">
+            <div className="flex items-center gap-1 rounded-full bg-gradient-to-r from-yellow-500 to-amber-500 px-2 py-0.5">
+              <Star className="h-2.5 w-2.5 text-yellow-950 fill-yellow-950" />
+              <span className="text-[10px] font-bold text-yellow-950 tracking-wider">CHAMPION</span>
+            </div>
+          </div>
+        )}
+
+        <div className="flex items-center gap-4 p-4">
+          {/* Rank */}
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center">
+            {getRankDisplay(entry.rank)}
+          </div>
+
+          {/* Name & Stats */}
+          <div className="flex-1 min-w-0">
+            <p className={`font-semibold truncate ${
+              isChampion ? 'text-yellow-400' : 'text-white'
+            }`}>
+              {name}
+            </p>
+            <div className="mt-0.5 flex items-center gap-2 text-[10px] text-[#f9d9eb]/50">
+              {entry.snapshot_date && (
+                <span>
+                  {new Date(entry.snapshot_date).toLocaleTimeString('en-US', {
+                    hour: '2-digit',
+                    minute: '2-digit'
+                  })}
+                </span>
+              )}
+            </div>
+          </div>
+
+          {/* Score */}
+          <div className="text-right shrink-0">
+            <p className={`text-xl font-bold ${
+              isChampion ? 'text-yellow-400' : 'text-[#f5c16c]'
+            }`}>
+              {score.toLocaleString()}
+            </p>
+            <p className="text-[9px] text-[#f9d9eb]/40 uppercase tracking-wider">points</p>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <Loader2 className="h-8 w-8 animate-spin text-[#f5c16c]" />
+        <span className="ml-3 text-[#f9d9eb]/70">Loading results...</span>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center gap-4 py-12">
+        <p className="text-[#f9d9eb]/70">{error}</p>
+        <Button
+          onClick={() => router.push('/code-battle')}
+          variant="outline"
+          className="border-[#d23187]/40 bg-white/5 text-[#f5c16c] hover:bg-[#d23187]/20"
+        >
+          <ArrowLeft className="mr-2 h-4 w-4" />
+          Back to Events
+        </Button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-8 px-32 mt-12 pb-24">
+      {/* Hero Header */}
+      <Card className={SECTION_CARD_CLASS}>
+        <div aria-hidden="true" className="absolute inset-0 bg-[radial-gradient(circle_at_bottom_right,rgba(210,49,135,0.2),transparent_60%)]" />
+        <div aria-hidden="true" className="absolute inset-0" style={CARD_TEXTURE} />
+
+        <CardContent className="relative z-10 p-8">
+          <div className="mb-5 flex items-center gap-3">
+            <button
+              type="button"
+              onClick={() => router.push('/code-battle')}
+              className="inline-flex items-center text-xs uppercase tracking-[0.35em] text-[#f5c16c] hover:text-[#f9d9eb] transition-colors"
+            >
+              <ArrowLeft className="mr-2 h-3 w-3" />
+              Events
+            </button>
+            <span className="text-white/40">/</span>
+            <span className="text-white/80">{event?.title || 'Results'}</span>
+          </div>
+
+          <div className="flex-1">
+            <h1 className="text-4xl font-bold leading-tight text-white sm:text-5xl">
+              {event?.title || 'Event Results'}
+            </h1>
+            <p className="mt-4 text-base text-foreground/75">
+              Final Rankings & Scores - See who conquered the arena
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Leaderboards - Side by Side */}
+      <div className="grid gap-6 lg:grid-cols-2">
+        {/* Player Rankings */}
+        <Card className={SECTION_CARD_CLASS}>
+          <div aria-hidden="true" className="absolute inset-0" style={CARD_TEXTURE} />
+          <div aria-hidden="true" className="absolute inset-0 bg-gradient-to-br from-[#d23187]/10 via-transparent to-[#f5c16c]/5" />
+
+          <CardHeader className="relative border-b border-[#d23187]/30">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="rounded-full bg-[#d23187]/20 p-2">
+                  <Users className="h-5 w-5 text-[#f5c16c]" />
+                </div>
+                <div>
+                  <CardTitle className="text-white">Player Rankings</CardTitle>
+                  <p className="text-xs text-[#f9d9eb]/60 mt-1">
+                    {userLeaderboard?.rankings.length || 0} Warriors
+                  </p>
+                </div>
+              </div>
+              <Trophy className="h-8 w-8 text-[#f5c16c]/40" />
+            </div>
+          </CardHeader>
+
+          <CardContent className="relative pt-6">
+            {userLeaderboard && userLeaderboard.rankings.length > 0 ? (
+              <div className="space-y-3">
+                <div className="mb-4 text-xs text-[#f9d9eb]/50 text-right">
+                  Last updated: {new Date(userLeaderboard.last_updated).toLocaleString('en-US', {
+                    month: 'short',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                  })}
+                </div>
+
+                {/* Champion (Rank 1) */}
+                {userLeaderboard.rankings[0] && (
+                  <div className="mb-6">
+                    {renderLeaderboardEntry(userLeaderboard.rankings[0], 'user')}
+                  </div>
+                )}
+
+                {/* Rest of rankings */}
+                <div className="space-y-2 max-h-[600px] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-[#d23187]/30 scrollbar-track-transparent">
+                  {userLeaderboard.rankings.slice(1).map((entry) =>
+                    renderLeaderboardEntry(entry, 'user')
+                  )}
+                </div>
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center py-16 text-[#f9d9eb]/60">
+                <Users className="h-16 w-16 mb-4 opacity-30" />
+                <p className="text-sm">No player rankings available</p>
+                <p className="text-xs text-[#f9d9eb]/40 mt-1">Compete to see your name here!</p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Guild Rankings */}
+        <Card className={SECTION_CARD_CLASS}>
+          <div aria-hidden="true" className="absolute inset-0" style={CARD_TEXTURE} />
+          <div aria-hidden="true" className="absolute inset-0 bg-gradient-to-br from-[#f5c16c]/10 via-transparent to-[#d23187]/5" />
+
+          <CardHeader className="relative border-b border-[#f5c16c]/30">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="rounded-full bg-[#f5c16c]/20 p-2">
+                  <Shield className="h-5 w-5 text-[#d23187]" />
+                </div>
+                <div>
+                  <CardTitle className="text-white">Guild Rankings</CardTitle>
+                  <p className="text-xs text-[#f9d9eb]/60 mt-1">
+                    {guildLeaderboard?.rankings.length || 0} Guilds
+                  </p>
+                </div>
+              </div>
+              <Trophy className="h-8 w-8 text-[#d23187]/40" />
+            </div>
+          </CardHeader>
+
+          <CardContent className="relative pt-6">
+            {guildLeaderboard && guildLeaderboard.rankings.length > 0 ? (
+              <div className="space-y-3">
+                <div className="mb-4 text-xs text-[#f9d9eb]/50 text-right">
+                  Last updated: {new Date(guildLeaderboard.last_updated).toLocaleString('en-US', {
+                    month: 'short',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                  })}
+                </div>
+
+                {/* Champion (Rank 1) */}
+                {guildLeaderboard.rankings[0] && (
+                  <div className="mb-6">
+                    {renderLeaderboardEntry(guildLeaderboard.rankings[0], 'guild')}
+                  </div>
+                )}
+
+                {/* Rest of rankings */}
+                <div className="space-y-2 max-h-[600px] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-[#f5c16c]/30 scrollbar-track-transparent">
+                  {guildLeaderboard.rankings.slice(1).map((entry) =>
+                    renderLeaderboardEntry(entry, 'guild')
+                  )}
+                </div>
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center py-16 text-[#f9d9eb]/60">
+                <Shield className="h-16 w-16 mb-4 opacity-30" />
+                <p className="text-sm">No guild rankings available</p>
+                <p className="text-xs text-[#f9d9eb]/40 mt-1">Form a guild and dominate the arena!</p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
+}
