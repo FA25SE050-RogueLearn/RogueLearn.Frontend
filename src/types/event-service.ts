@@ -61,6 +61,7 @@ export interface Event {
   assignment_date: string | null;
   guilds_left: number;
   current_participants: number;
+  requester_guild_id?: string | null; // Guild that requested this event
   // Legacy PascalCase fields for backward compatibility
   ID?: string;
   Title?: string;
@@ -222,7 +223,9 @@ export interface RegisterGuildPayload {
 export interface RegisteredMember {
   user_id: string;
   username?: string;
+  email?: string | null;
   registered_at?: string;
+  selected_at?: string;
 }
 
 export interface RegisteredGuild {

@@ -152,7 +152,7 @@ export default function EventDetailPage({ params }: PageProps) {
       // Handle both API response formats: id and request_id
       const requestId = (eventRequest as any).id || eventRequest.request_id;
       const response = await eventServiceApi.processEventRequest(requestId, {
-        action: 'reject',
+        action: 'decline',
         rejection_reason: rejectionReason.trim()
       });
 

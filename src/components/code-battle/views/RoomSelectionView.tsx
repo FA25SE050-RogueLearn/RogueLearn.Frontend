@@ -161,33 +161,42 @@ export default function RoomSelectionView({
                     <p className="text-xs uppercase tracking-[0.3em] text-[#f5c16c]">Battle Window</p>
                     <p className="mt-1 text-lg font-semibold text-white">{formatEventWindow(event?.StartedDate, event?.EndDate)}</p>
                   </div>
-                  {event?.EndDate && (
-                    <div className="flex flex-col items-center gap-2 rounded-2xl border border-[#f5c16c]/40 bg-linear-to-br from-[#d23187]/20 via-[#f5c16c]/10 to-transparent px-4 py-3 shadow-[0_0_25px_rgba(245,193,108,0.25)]">
-                      <p className="text-[9px] uppercase tracking-[0.35em] text-[#f5c16c]">Countdown</p>
-                      <CountdownTimer
-                        endDate={event.EndDate}
-                        fontSize={24}
-                        gap={3}
-                        borderRadius={8}
-                        horizontalPadding={8}
-                        textColor="#ffffff"
-                        fontWeight="black"
-                        gradientHeight={14}
-                        gradientFrom="rgba(0, 0, 0, 0.4)"
-                        gradientTo="transparent"
-                        showLabels={false}
-                        counterStyle={{
-                          backgroundColor: 'rgba(0, 0, 0, 0.3)',
-                          border: '1px solid rgba(245, 193, 108, 0.3)',
-                          borderRadius: '8px',
-                          boxShadow: '0 0 15px rgba(245, 193, 108, 0.2)',
-                        }}
-                        digitStyle={{
-                          textShadow: '0 0 10px rgba(245, 193, 108, 0.9), 0 2px 6px rgba(0, 0, 0, 0.6)',
-                        }}
-                      />
-                    </div>
-                  )}
+                  {event?.EndDate && event?.StartedDate && (() => {
+                    const now = new Date();
+                    const startDate = new Date(event.StartedDate || event.started_date);
+                    const endDate = new Date(event.EndDate || event.end_date);
+                    const hasStarted = now >= startDate;
+                    const countdownDate = hasStarted ? endDate : startDate;
+                    const countdownLabel = hasStarted ? 'Time Left' : 'Starts In';
+
+                    return (
+                      <div className="flex flex-col items-center gap-2 rounded-2xl border border-[#f5c16c]/40 bg-linear-to-br from-[#d23187]/20 via-[#f5c16c]/10 to-transparent px-4 py-3 shadow-[0_0_25px_rgba(245,193,108,0.25)]">
+                        <p className="text-[9px] uppercase tracking-[0.35em] text-[#f5c16c]">{countdownLabel}</p>
+                        <CountdownTimer
+                          endDate={countdownDate.toISOString()}
+                          fontSize={24}
+                          gap={3}
+                          borderRadius={8}
+                          horizontalPadding={8}
+                          textColor="#ffffff"
+                          fontWeight="black"
+                          gradientHeight={14}
+                          gradientFrom="rgba(0, 0, 0, 0.4)"
+                          gradientTo="transparent"
+                          showLabels={false}
+                          counterStyle={{
+                            backgroundColor: 'rgba(0, 0, 0, 0.3)',
+                            border: '1px solid rgba(245, 193, 108, 0.3)',
+                            borderRadius: '8px',
+                            boxShadow: '0 0 15px rgba(245, 193, 108, 0.2)',
+                          }}
+                          digitStyle={{
+                            textShadow: '0 0 10px rgba(245, 193, 108, 0.9), 0 2px 6px rgba(0, 0, 0, 0.6)',
+                          }}
+                        />
+                      </div>
+                    );
+                  })()}
                 </div>
               </div>
             </div>
@@ -213,8 +222,8 @@ export default function RoomSelectionView({
         </CardContent>
       </Card>
 
-      <div className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
-        {/* Rooms */}
+      {/* Show Rooms List when no room is selected */}
+      {!selectedRoomId ? (
         <Card className={SECTION_CARD_CLASS}>
           <div aria-hidden="true" className="pointer-events-none absolute inset-0" style={CARD_TEXTURE} />
           <CardHeader className="relative z-10 flex flex-col gap-3 border-b border-white/5 pb-5 sm:flex-row sm:items-center sm:justify-between">
@@ -227,40 +236,42 @@ export default function RoomSelectionView({
             </div>
             <div className="flex items-center gap-2 text-xs text-foreground/60">
               <Trophy className="h-4 w-4 text-[#d23187]" />
-              {selectedRoom ? `${selectedRoom.Name} selected` : 'No room locked in'}
+              No room locked in
             </div>
           </CardHeader>
           <CardContent className="relative z-10 pt-5">
             {loadingRooms ? (
-              <div className="grid gap-3 sm:grid-cols-2">
-                {Array.from({ length: 4 }).map((_, index) => (
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {Array.from({ length: 6 }).map((_, index) => (
                   <div key={index} className={`${PANEL_TILE_CLASS} h-32 animate-pulse`} />
                 ))}
               </div>
             ) : rooms.length === 0 ? (
               renderEmptyState(<Users className="h-12 w-12" />, 'No rooms available yet')
             ) : (
-              <div className="grid gap-4 lg:grid-cols-2">
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 {rooms.map((room) => (
                   <button
                     type="button"
                     key={room.ID}
                     onClick={() => onSelectRoom(room.ID)}
-                    className={`group relative overflow-hidden rounded-3xl border p-5 text-left transition-all ${
-                      selectedRoomId === room.ID
-                        ? 'border-[#d23187]/60 bg-[#2b1310] shadow-[0_12px_30px_rgba(210,49,135,0.35)]'
-                        : 'border-white/10 bg-[#0f0504]/80 hover:border-[#d23187]/40 hover:bg-[#1d0b09]'
-                    }`}
+                    className="group relative overflow-hidden rounded-3xl border border-white/10 bg-[#0f0504]/80 p-6 text-left transition-all hover:border-[#d23187]/40 hover:bg-[#1d0b09] hover:scale-105"
                   >
                     <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(245,193,108,0.08),transparent_60%)] opacity-0 transition-opacity group-hover:opacity-100" />
                     <div aria-hidden="true" className="pointer-events-none absolute inset-0" style={CARD_TEXTURE} />
-                    <div className="relative z-10 flex items-start justify-between gap-4">
-                      <div>
+                    <div className="relative z-10">
+                      <div className="flex items-start justify-between gap-4 mb-3">
                         <p className="text-xs uppercase tracking-[0.35em] text-[#f5c16c]/80">{buildRoomTag(room)}</p>
-                        <h3 className="mt-2 text-xl font-semibold text-white">{room.Name}</h3>
-                        {room.Description && <p className="mt-1 text-xs text-foreground/60">{room.Description}</p>}
+                        <Swords className="h-5 w-5 text-[#d23187] group-hover:text-[#f5c16c] transition-colors" />
                       </div>
-                      <Swords className="h-5 w-5 text-[#d23187]" />
+                      <h3 className="text-xl font-semibold text-white mb-2">{room.Name}</h3>
+                      {room.Description && (
+                        <p className="text-xs text-foreground/60 line-clamp-2">{room.Description}</p>
+                      )}
+                      <div className="mt-4 flex items-center gap-2 text-xs text-[#f5c16c]">
+                        <ArrowRight className="h-3 w-3" />
+                        <span>Enter Room</span>
+                      </div>
                     </div>
                   </button>
                 ))}
@@ -281,13 +292,11 @@ export default function RoomSelectionView({
 
                 <div className="flex items-center gap-2">
                   {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => {
-                    // Show first page, last page, current page, and pages around current
                     const showPage =
                       page === 1 ||
                       page === totalPages ||
                       Math.abs(page - currentPage) <= 1;
 
-                    // Show ellipsis
                     const showEllipsis =
                       (page === currentPage - 2 && currentPage > 3) ||
                       (page === currentPage + 2 && currentPage < totalPages - 2);
@@ -331,21 +340,31 @@ export default function RoomSelectionView({
             )}
           </CardContent>
         </Card>
-
-        {/* Selected Room + Challenges */}
-        <div className="space-y-6">
+      ) : (
+        /* Show Problems and Mission Briefing when room is selected */
+        <div className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
+          {/* Challenges */}
           <Card className={SECTION_CARD_CLASS}>
             <div aria-hidden="true" className="pointer-events-none absolute inset-0" style={CARD_TEXTURE} />
             <CardHeader className="relative z-10 border-b border-white/5 pb-4">
-              <CardTitle className="flex items-center gap-2 text-lg font-semibold text-white">
-                <Code className="h-5 w-5 text-[#f5c16c]" />
-                Challenges
-              </CardTitle>
+              <div className="flex items-center justify-between">
+                <CardTitle className="flex items-center gap-2 text-lg font-semibold text-white">
+                  <Code className="h-5 w-5 text-[#f5c16c]" />
+                  Challenges
+                </CardTitle>
+                <Button
+                  onClick={() => onSelectRoom('')}
+                  size="sm"
+                  variant="ghost"
+                  className="text-xs text-[#f5c16c] hover:text-[#f9d9eb]"
+                >
+                  <ArrowLeft className="mr-2 h-3 w-3" />
+                  Change Room
+                </Button>
+              </div>
             </CardHeader>
             <CardContent className="relative z-10 pt-5">
-              {!selectedRoomId ? (
-                renderEmptyState(<Map className="h-12 w-12" />, 'Select a room to reveal contracts')
-              ) : loadingProblems ? (
+              {loadingProblems ? (
                 <div className="space-y-3">
                   {Array.from({ length: 3 }).map((_, index) => (
                     <div key={index} className={`${PANEL_TILE_CLASS} h-28 animate-pulse`} />
@@ -374,10 +393,8 @@ export default function RoomSelectionView({
                           {problem.problem_statement && (
                             <div className="mt-2 space-y-1">
                               {problem.problem_statement.split('```').map((part, index) => {
-                                // Odd indices are code blocks
                                 if (index % 2 === 1) {
                                   const lines = part.split('\n');
-                                  const lang = lines[0].trim();
                                   const code = lines.slice(1).join('\n');
                                   return (
                                     <pre key={index} className="overflow-x-auto rounded-lg border border-white/10 bg-black/40 p-2 text-[10px] text-white">
@@ -385,7 +402,6 @@ export default function RoomSelectionView({
                                     </pre>
                                   );
                                 }
-                                // Even indices are regular text
                                 return (
                                   <p key={index} className="line-clamp-2 text-xs text-foreground/60">
                                     {part.trim()}
@@ -406,69 +422,72 @@ export default function RoomSelectionView({
             </CardContent>
           </Card>
 
-          <Card className={SECTION_CARD_CLASS}>
-            <div aria-hidden="true" className="pointer-events-none absolute inset-0" style={CARD_TEXTURE} />
-            <CardHeader className="relative z-10 pb-4">
-              <CardTitle className="flex items-center gap-2 text-sm font-semibold text-white">
-                <Sparkles className="h-4 w-4 text-[#f5c16c]" />
-                Mission Briefing
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="relative z-10 space-y-4 text-sm text-foreground/70">
-              <div className={`${PANEL_TILE_CLASS} p-4`}>
-                <div aria-hidden="true" className="pointer-events-none absolute inset-0" style={CARD_TEXTURE} />
-                <p className="text-xs uppercase tracking-[0.3em] text-[#f5c16c]">Selected Room</p>
-                {selectedRoom ? (
-                  <>
-                    <p className="mt-1 text-lg font-semibold text-white">{selectedRoom.Name}</p>
-                    {selectedRoom.Description && <p className="mt-1 text-xs text-foreground/60">{selectedRoom.Description}</p>}
-                  </>
-                ) : (
-                  <p className="mt-1 text-xs text-foreground/60">Pick a room to unlock perks.</p>
-                )}
-              </div>
-
-              <div className={`${PANEL_TILE_CLASS} p-4`}>
-                <div aria-hidden="true" className="pointer-events-none absolute inset-0" style={CARD_TEXTURE} />
-                <p className="text-xs uppercase tracking-[0.3em] text-[#f5c16c]">Selected Contract</p>
-                {selectedProblem ? (
-                  <>
-                    <p className="mt-1 text-lg font-semibold text-white">{selectedProblem.title}</p>
-                    <p className="mt-1 text-xs text-foreground/60">{getDifficultyLabel(selectedProblem.difficulty)} Difficulty</p>
-                  </>
-                ) : (
-                  <p className="mt-1 text-xs text-foreground/60">Choose a challenge to view intel.</p>
-                )}
-              </div>
-
-              <div className={`${PANEL_TILE_CLASS} p-4`}>
-                <div aria-hidden="true" className="pointer-events-none absolute inset-0" style={CARD_TEXTURE} />
-                <p className="text-xs uppercase tracking-[0.3em] text-[#f5c16c]">Challenge Spread</p>
-                <div className="mt-3 flex justify-between text-xs">
-                  <span className="text-emerald-300">Easy {difficultySpread.easy}</span>
-                  <span className="text-yellow-300">Mid {difficultySpread.medium}</span>
-                  <span className="text-rose-300">Hard {difficultySpread.hard}</span>
+          {/* Mission Briefing */}
+          <div className="space-y-6">
+            <Card className={SECTION_CARD_CLASS}>
+              <div aria-hidden="true" className="pointer-events-none absolute inset-0" style={CARD_TEXTURE} />
+              <CardHeader className="relative z-10 pb-4">
+                <CardTitle className="flex items-center gap-2 text-sm font-semibold text-white">
+                  <Sparkles className="h-4 w-4 text-[#f5c16c]" />
+                  Mission Briefing
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="relative z-10 space-y-4 text-sm text-foreground/70">
+                <div className={`${PANEL_TILE_CLASS} p-4`}>
+                  <div aria-hidden="true" className="pointer-events-none absolute inset-0" style={CARD_TEXTURE} />
+                  <p className="text-xs uppercase tracking-[0.3em] text-[#f5c16c]">Selected Room</p>
+                  {selectedRoom ? (
+                    <>
+                      <p className="mt-1 text-lg font-semibold text-white">{selectedRoom.Name}</p>
+                      {selectedRoom.Description && <p className="mt-1 text-xs text-foreground/60">{selectedRoom.Description}</p>}
+                    </>
+                  ) : (
+                    <p className="mt-1 text-xs text-foreground/60">Pick a room to unlock perks.</p>
+                  )}
                 </div>
-                <div className="mt-2 flex h-2 overflow-hidden rounded-full bg-white/5">
-                  {(['easy', 'medium', 'hard'] as const).map((key) => (
-                    <span
-                      key={key}
-                      className={
-                        key === 'easy'
-                          ? 'bg-emerald-400'
-                          : key === 'medium'
-                          ? 'bg-yellow-400'
-                          : 'bg-rose-400'
-                      }
-                      style={{ width: problems.length ? `${(difficultySpread[key] / problems.length) * 100}%` : '0%' }}
-                    />
-                  ))}
+
+                <div className={`${PANEL_TILE_CLASS} p-4`}>
+                  <div aria-hidden="true" className="pointer-events-none absolute inset-0" style={CARD_TEXTURE} />
+                  <p className="text-xs uppercase tracking-[0.3em] text-[#f5c16c]">Selected Contract</p>
+                  {selectedProblem ? (
+                    <>
+                      <p className="mt-1 text-lg font-semibold text-white">{selectedProblem.title}</p>
+                      <p className="mt-1 text-xs text-foreground/60">{getDifficultyLabel(selectedProblem.difficulty)} Difficulty</p>
+                    </>
+                  ) : (
+                    <p className="mt-1 text-xs text-foreground/60">Choose a challenge to view intel.</p>
+                  )}
                 </div>
-              </div>
-            </CardContent>
-          </Card>
+
+                <div className={`${PANEL_TILE_CLASS} p-4`}>
+                  <div aria-hidden="true" className="pointer-events-none absolute inset-0" style={CARD_TEXTURE} />
+                  <p className="text-xs uppercase tracking-[0.3em] text-[#f5c16c]">Challenge Spread</p>
+                  <div className="mt-3 flex justify-between text-xs">
+                    <span className="text-emerald-300">Easy {difficultySpread.easy}</span>
+                    <span className="text-yellow-300">Mid {difficultySpread.medium}</span>
+                    <span className="text-rose-300">Hard {difficultySpread.hard}</span>
+                  </div>
+                  <div className="mt-2 flex h-2 overflow-hidden rounded-full bg-white/5">
+                    {(['easy', 'medium', 'hard'] as const).map((key) => (
+                      <span
+                        key={key}
+                        className={
+                          key === 'easy'
+                            ? 'bg-emerald-400'
+                            : key === 'medium'
+                            ? 'bg-yellow-400'
+                            : 'bg-rose-400'
+                        }
+                        style={{ width: problems.length ? `${(difficultySpread[key] / problems.length) * 100}%` : '0%' }}
+                      />
+                    ))}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         </div>
-      </div>
+      )}
 
       {selectedRoomId && selectedProblemId && (
         <div className="flex justify-center">

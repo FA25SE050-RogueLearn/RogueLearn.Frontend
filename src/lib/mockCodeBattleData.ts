@@ -76,6 +76,7 @@ export interface LeaderboardEntry {
   player_name: string;
   score: number;
   place: number;
+  state?: 'present' | 'disconnected';
 }
 
 // Submission
