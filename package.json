@@ -3,9 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --turbopack",
+    "dev": "node scripts/print-env.js && next dev --turbopack",
     "build": "next build",
-    "start": "next start",
+    "start": "node scripts/print-env.js && next start",
     "lint": "eslint ."
   },
   "dependencies": {

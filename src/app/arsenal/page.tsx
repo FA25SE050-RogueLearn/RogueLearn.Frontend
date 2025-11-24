@@ -9,8 +9,8 @@ export default function ArsenalPage() {
         <section className="relative overflow-hidden rounded-[28px] border border-[#f5c16c]/30 bg-linear-to-br from-[#2d1810]/60 via-[#1a0a08]/80 to-black/90 p-8 shadow-2xl">
           <div
             className="pointer-events-none absolute inset-0 opacity-25"
-            style={{
-              backgroundImage: "url('https://www.transparenttextures.com/patterns/asfalt-dark.png')",
+          style={{
+              backgroundImage: "url('/images/asfalt-dark.png')",
               backgroundSize: "100px",
               backgroundBlendMode: "overlay",
             }}

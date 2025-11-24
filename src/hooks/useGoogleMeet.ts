@@ -46,6 +46,10 @@ export function useGoogleMeet() {
         return providerToken;
       }
     } catch {}
+    try {
+      const stored = sessionStorage.getItem('googleProviderToken');
+      if (stored) return stored;
+    } catch {}
     return requestToken(scopes);
   }
 
@@ -77,6 +81,7 @@ export function useGoogleMeet() {
             if (!resp?.access_token) {
               reject(new Error("Failed to acquire access_token"));
             } else {
+              try { sessionStorage.setItem('googleProviderToken', resp.access_token); } catch {}
               resolve(resp.access_token);
             }
           },
@@ -88,8 +93,29 @@ export function useGoogleMeet() {
     });
   }
 
+  async function refreshAccessToken(): Promise<string> {
+    try {
+      const rt = localStorage.getItem('googleProviderRefreshToken');
+      if (!rt) throw new Error('Missing refresh token');
+      const res = await fetch('/api/google/refresh-token', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refresh_token: rt }),
+      });
+      if (!res.ok) throw new Error(String(res.status));
+      const data = await res.json();
+      const at = data?.access_token as string | undefined;
+      if (!at) throw new Error('Missing access_token');
+      try { sessionStorage.setItem('googleProviderToken', at); } catch {}
+      return at;
+    } catch (e) {
+      throw e as Error;
+    }
+  }
+
   return {
     requestToken,
     getAccessToken,
+    refreshAccessToken,
   };
 }

@@ -68,8 +68,19 @@ export function DungeonNav() {
       if (response.isSuccess) setUserProfile(response.data)
     }
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (session) fetchProfile()
-      else setUserProfile(null)
+      if (session) {
+        fetchProfile()
+        try {
+          const pt = (session as any)?.provider_token as string | undefined
+          if (pt) sessionStorage.setItem('googleProviderToken', pt)
+        } catch {}
+        try {
+          const prt = (session as any)?.provider_refresh_token as string | undefined
+          if (prt) localStorage.setItem('googleProviderRefreshToken', prt)
+        } catch {}
+      } else {
+        setUserProfile(null)
+      }
     })
     return () => subscription?.unsubscribe()
   }, [])

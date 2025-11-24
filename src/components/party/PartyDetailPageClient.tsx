@@ -249,6 +249,19 @@ export default function PartyDetailPageClient({ partyId }: { partyId: string }) 
                 </div>
               </div>
 
+              <div className="rounded-lg border border-white/10 bg-white/5 p-4">
+                <div className="text-sm font-semibold text-white">Party Details</div>
+                {party && (
+                  <div className="mt-2 space-y-2 text-xs text-white/80">
+                    <div className="flex items-center justify-between"><span>Type</span><span className="rounded bg-white/10 px-2 py-0.5 text-white/70">{party.partyType}</span></div>
+                    <div className="flex items-center justify-between"><span>Privacy</span><span className="rounded bg-white/10 px-2 py-0.5 text-white/70">{party.isPublic ? "Public" : "Private"}</span></div>
+                    <div className="flex items-center justify-between"><span>Max Members</span><span className="rounded bg-white/10 px-2 py-0.5 text-white/70">{party.maxMembers}</span></div>
+                    <div className="flex items-center justify-between"><span>Owner ID</span><span className="rounded bg-white/10 px-2 py-0.5 text-white/70">{party.createdBy}</span></div>
+                    <div className="flex items-center justify-between"><span>Created</span><span className="rounded bg-white/10 px-2 py-0.5 text-white/70">{new Date(party.createdAt).toLocaleDateString()}</span></div>
+                  </div>
+                )}
+              </div>
+
               <div>
                 <div className="mb-2 text-sm font-semibold">Members</div>
                 <ul className="space-y-2">

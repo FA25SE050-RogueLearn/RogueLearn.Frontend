@@ -24,7 +24,7 @@ import {
 } from "@blocknote/react";
 import { DefaultChatTransport } from "ai";
 import { Input } from "@/components/ui/input";
-import { getMyContext } from "@/api/usersApi";
+import { getMyContext, getUserProfileByAuthId } from "@/api/usersApi";
 import * as Y from "yjs";
 import YPartyKitProvider from "y-partykit/provider";
 import { CursorUsersProvider, nameToColor } from "@/components/collab/CursorUsersProvider";
@@ -47,6 +47,7 @@ export default function PartyStashDetailPage() {
 
   const [title, setTitle] = useState("");
   const [status, setStatus] = useState<EditorStatus>("loading");
+  const [sharedByName, setSharedByName] = useState<string>("");
   const [initialBlocks, setInitialBlocks] = useState<
     PartialBlock[] | undefined
   >(undefined);
@@ -66,6 +67,18 @@ export default function PartyStashDetailPage() {
           const n = res.data;
           setItem(n ?? null);
           setTitle(n.title ?? "");
+          const uid = n.sharedByUserId;
+          if (typeof uid === "string" && uid) {
+            try {
+              const prof = await getUserProfileByAuthId(uid);
+              const username = (prof.data as any)?.username || (prof.data as any)?.email || null;
+              setSharedByName(username ? String(username) : String(uid).slice(0, 8));
+            } catch {
+              setSharedByName(String(uid).slice(0, 8));
+            }
+          } else {
+            setSharedByName("");
+          }
           let blocks: PartialBlock[] | undefined = undefined;
           const raw = n.content;
           if (raw) {
@@ -287,7 +300,7 @@ export default function PartyStashDetailPage() {
             <h2 className="text-2xl font-bold text-[#f5c16c]">{item.title}</h2>
             
             <div className="flex items-center gap-4 text-sm text-white/60">
-              <span>Shared by <span className="text-white">{item.sharedByUserId}</span></span>
+              <span>Shared by <span className="text-white">{sharedByName || item.sharedByUserId}</span></span>
               <span>•</span>
               <span>{new Date(item.sharedAt).toLocaleString()}</span>
             </div>
@@ -302,18 +315,6 @@ export default function PartyStashDetailPage() {
                     #{t}
                   </span>
                 ))}
-              </div>
-            )}
-
-            {item.originalNoteId && (
-              <div className="rounded-lg border border-[#d23187]/20 bg-[#d23187]/10 p-3">
-                <span className="text-sm text-white/70">Origin: </span>
-                <Link
-                  href={`/arsenal/${item.originalNoteId}`}
-                  className="text-sm font-medium text-[#d23187] underline hover:text-[#d23187]/80"
-                >
-                  View original note
-                </Link>
               </div>
             )}
 

@@ -115,6 +115,19 @@ export function GuildManagementSection({ guildId, onLeftGuild }: GuildManagement
     }
   };
 
+  const transferLeadership = async (toAuthUserId: string) => {
+    if (!guildId) return;
+    const confirmed = window.confirm("Transfer guild leadership to this member?");
+    if (!confirmed) return;
+    try {
+      await guildsApi.transferLeadership(guildId, { toUserId: toAuthUserId });
+      reload();
+    } catch (err) {
+      console.error(err);
+      alert("Failed to transfer leadership.");
+    }
+  };
+
   const sendInvite = async (email: string) => {
     if (!guildId || !email.trim()) return;
     try {
@@ -181,6 +194,7 @@ export function GuildManagementSection({ guildId, onLeftGuild }: GuildManagement
         onAssignRole={(authUserId, role) => assignRoleWithRole(authUserId, role)}
         onRevokeRole={revokeRole}
         onRemoveMember={removeMember}
+        onTransferLeadership={transferLeadership}
       />
 
       <MembershipCard myRole={myRole} onLeave={leaveGuild} />

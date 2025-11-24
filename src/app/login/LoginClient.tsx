@@ -31,7 +31,7 @@ export default function LoginClient() {
     if (error) {
       setError(error.message);
     } else {
-      router.push('/');
+      router.push('/dashboard');
       router.refresh();
     }
   };
@@ -44,7 +44,7 @@ export default function LoginClient() {
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${origin}/auth/callback?next=/`,
+          redirectTo: `${origin}/auth/callback?next=/dashboard`,
           scopes: [
             'https://www.googleapis.com/auth/meetings.space.created',
             'https://www.googleapis.com/auth/meetings.space.readonly',

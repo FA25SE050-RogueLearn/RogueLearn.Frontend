@@ -6,8 +6,9 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Shield, Users, Search, Plus, Crown, Swords } from "lucide-react";
+import { Shield, Users, Search, Plus, Crown, Swords, HelpCircle } from "lucide-react";
 import guildsApi from "@/api/guildsApi";
+import GuildInfoModal from "@/components/guild/GuildInfoModal";
 import type { GuildDto } from "@/types/guilds";
 
 const HERO_CARD_CLASS = 'relative overflow-hidden rounded-[32px] border border-[#f5c16c]/25 bg-linear-to-br from-[#1c0906]/95 via-[#120605]/98 to-[#040101]';
@@ -38,6 +39,7 @@ export default function GuildDirectoryPage() {
   const [search, setSearch] = useState<string>("");
   const [myGuild, setMyGuild] = useState<GuildDto | null>(null);
   const [loadingMyGuild, setLoadingMyGuild] = useState<boolean>(true);
+  const [showInfoModal, setShowInfoModal] = useState<boolean>(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -201,11 +203,21 @@ export default function GuildDirectoryPage() {
                       <CardTitle className="text-xl text-white">{myGuild.name}</CardTitle>
                     </div>
                   </div>
-                  {myGuild.isPublic && (
-                    <span className="rounded-full border border-[#f5c16c]/30 bg-[#f5c16c]/10 px-3 py-1 text-[10px] uppercase tracking-[0.4em] text-[#f5c16c]">
-                      Public
-                    </span>
-                  )}
+                  <div className="flex items-center gap-2">
+                    {myGuild.isPublic && (
+                      <span className="rounded-full border border-[#f5c16c]/30 bg-[#f5c16c]/10 px-3 py-1 text-[10px] uppercase tracking-[0.4em] text-[#f5c16c]">
+                        Public
+                      </span>
+                    )}
+                    <button
+                      onClick={() => setShowInfoModal(true)}
+                      className="inline-flex items-center gap-1 rounded-full border border-[#f5c16c]/30 bg-[#f5c16c]/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-wide text-[#f5c16c]"
+                      title="Guild overview"
+                    >
+                      <HelpCircle className="h-3.5 w-3.5" />
+                      Info
+                    </button>
+                  </div>
                 </div>
               </CardHeader>
               <CardContent className="relative z-10 space-y-4 pt-6">
@@ -341,6 +353,9 @@ export default function GuildDirectoryPage() {
           </section>
         </div>
       </DashboardFrame>
+      {showInfoModal && myGuild && (
+        <GuildInfoModal open={showInfoModal} onClose={() => setShowInfoModal(false)} guildId={myGuild.id} />
+      )}
     </div>
   );
 }
