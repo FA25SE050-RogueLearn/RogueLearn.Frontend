@@ -6,12 +6,12 @@ on:
       - main
 
 concurrency:
-  group: docker-deploy-${{ github.ref }}
+  group: docker-publish-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
   build-check:
-    name: Build Check (no push)
+    name: Build Check
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -93,59 +93,59 @@ jobs:
         run: |
           echo "Image pushed: $IMAGE_NAME:latest"
 
-  # deploy-to-server:
-  #   name: Deploy on Self-Hosted Runner
-  #   needs: docker
-  #   runs-on: self-hosted
-  #   env:
-  #     IMAGE_NAME: soybean2610/roguelearn-frontend
-  #     STACK_NAME: roguelearn
-  #   steps:
-  #     - name: Show runner context
-  #       run: |
-  #         echo "Runner name: ${{ runner.name }}"
-  #         echo "Current directory is: $(pwd)"
-  #         echo "Workspace is: $GITHUB_WORKSPACE"
+  deploy-to-server:
+    name: Deploy on Self-Hosted Runner
+    needs: docker
+    runs-on: self-hosted
+    env:
+      IMAGE_NAME: soybean2610/roguelearn-frontend
+      STACK_NAME: roguelearn
+    steps:
+      - name: Show runner context
+        run: |
+          echo "Runner name: ${{ runner.name }}"
+          echo "Current directory is: $(pwd)"
+          echo "Workspace is: $GITHUB_WORKSPACE"
 
-  #     - name: Redeploy Docker Swarm Stack
-  #       shell: bash
-  #       run: |
-  #         echo "--- Changing to deploy directory: /home/ubuntu/roguelearn ---"
-  #         cd /home/ubuntu/roguelearn
+      - name: Redeploy Docker Swarm Stack
+        shell: bash
+        run: |
+          echo "--- Changing to deploy directory: /home/ubuntu/roguelearn ---"
+          cd /home/ubuntu/roguelearn
 
-  #         echo "--- Bringing down Docker Swarm services ---"
-  #         docker stack rm $STACK_NAME || true
-  #         echo "--- Waiting 45 seconds before bringing services up ---"
-  #         sleep 45
+          echo "--- Bringing down Docker Swarm services ---"
+          docker stack rm $STACK_NAME || true
+          echo "--- Waiting 20 seconds before bringing services up ---"
+          sleep 20
 
-  #         echo "--- Removing old Docker image (latest) ---"
-  #         OLD_IMAGE_ID=$(docker images -q $IMAGE_NAME:latest)
-  #         if [ -n "$OLD_IMAGE_ID" ]; then
-  #           docker rmi "$OLD_IMAGE_ID" || true
-  #         else
-  #           echo "No old image found to remove."
-  #         fi
+          echo "--- Removing old Docker image (latest) ---"
+          OLD_IMAGE_ID=$(docker images -q $IMAGE_NAME:latest)
+          if [ -n "$OLD_IMAGE_ID" ]; then
+            docker rmi "$OLD_IMAGE_ID" || true
+          else
+            echo "No old image found to remove."
+          fi
 
-  #         echo "--- Pulling new image from Docker Hub ---"
-  #         docker pull $IMAGE_NAME:latest
+          echo "--- Pulling new image from Docker Hub ---"
+          docker pull $IMAGE_NAME:latest
 
-  #         echo "--- Bringing up Docker Swarm services ---"
-  #         docker stack deploy -c docker-compose-swarm.yaml $STACK_NAME || true
+          echo "--- Bringing up Docker Swarm services ---"
+          docker stack deploy -c docker-compose-swarm.yaml $STACK_NAME || true
 
-  #         echo "--- Deployment complete ---"
+          echo "--- Deployment complete ---"
 
-  #     - name: Create Deployment Summary
-  #       if: always()
-  #       run: |
-  #         echo "### 🚀 Deployment Summary" >> $GITHUB_STEP_SUMMARY
-  #         echo "" >> $GITHUB_STEP_SUMMARY
-  #         if [[ ${{ job.status }} == 'success' ]]; then
-  #           echo "✅ **Status:** Deployment completed successfully." >> $GITHUB_STEP_SUMMARY
-  #         else
-  #           echo "❌ **Status:** Deployment failed. Please check the logs." >> $GITHUB_STEP_SUMMARY
-  #         fi
-  #         echo "| Detail | Value |" >> $GITHUB_STEP_SUMMARY
-  #         echo "|---|---|" >> $GITHUB_STEP_SUMMARY
-  #         echo "| **Image Deployed** | \`${{ env.IMAGE_NAME }}:latest\` |" >> $GITHUB_STEP_SUMMARY
-  #         echo "| **Target Stack** | \`${{ env.STACK_NAME }}\` |" >> $GITHUB_STEP_SUMMARY
-  #         echo "| **Deployed On** | \`${{ runner.name }}\` |" >> $GITHUB_STEP_SUMMARY
+      - name: Create Deployment Summary
+        if: always()
+        run: |
+          echo "### 🚀 Deployment Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          if [[ ${{ job.status }} == 'success' ]]; then
+            echo "✅ **Status:** Deployment completed successfully." >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ **Status:** Deployment failed. Please check the logs." >> $GITHUB_STEP_SUMMARY
+          fi
+          echo "| Detail | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|---|---|" >> $GITHUB_STEP_SUMMARY
+          echo "| **Image Deployed** | \`${{ env.IMAGE_NAME }}:latest\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Target Stack** | \`${{ env.STACK_NAME }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Deployed On** | \`${{ runner.name }}\` |" >> $GITHUB_STEP_SUMMARY
