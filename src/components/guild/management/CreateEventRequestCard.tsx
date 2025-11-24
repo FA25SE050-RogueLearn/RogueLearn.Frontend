@@ -15,7 +15,6 @@ import {
   Loader2,
   Calendar,
   Users,
-  LayoutGrid,
   Code
 } from "lucide-react";
 import { toast } from "sonner";
@@ -50,9 +49,6 @@ export function CreateEventRequestCard({ guildId, onRequestCreated }: CreateEven
   const [endDate, setEndDate] = useState<Date | undefined>();
   const [maxGuilds, setMaxGuilds] = useState(8);
   const [maxPlayersPerGuild, setMaxPlayersPerGuild] = useState(5);
-  const [numberOfRooms, setNumberOfRooms] = useState(4);
-  const [guildsPerRoom, setGuildsPerRoom] = useState(2);
-  const [roomPrefix, setRoomPrefix] = useState("ROOM");
   const [topics, setTopics] = useState<string[]>([]); // Tag IDs
   const [distributions, setDistributions] = useState<ProblemDistribution[]>([
     { difficulty: 1, number_of_problems: 3, score: 100 },
@@ -144,10 +140,6 @@ export function CreateEventRequestCard({ guildId, onRequestCreated }: CreateEven
       toast.error("At least 2 guilds are required");
       return;
     }
-    if (numberOfRooms < 1) {
-      toast.error("At least 1 room is required");
-      return;
-    }
     if (topics.length === 0) {
       toast.error("At least one topic is required");
       return;
@@ -184,11 +176,6 @@ export function CreateEventRequestCard({ guildId, onRequestCreated }: CreateEven
       participation: {
         max_guilds: maxGuilds,
         max_players_per_guild: maxPlayersPerGuild
-      },
-      room_configuration: {
-        number_of_rooms: numberOfRooms,
-        guilds_per_room: guildsPerRoom,
-        room_naming_prefix: roomPrefix
       },
       event_specifics: {
         code_battle: eventType === "code_battle" ? {
@@ -360,50 +347,6 @@ export function CreateEventRequestCard({ guildId, onRequestCreated }: CreateEven
                 min="1"
                 value={maxPlayersPerGuild}
                 onChange={(e) => setMaxPlayersPerGuild(parseInt(e.target.value))}
-                className="border-[#f5c16c]/20 bg-black/40 text-white focus:border-[#f5c16c]/50 focus:ring-[#f5c16c]/30"
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* Room Configuration */}
-        <div className="space-y-4">
-          <h3 className="flex items-center gap-2 text-sm font-semibold text-[#f5c16c]">
-            <LayoutGrid className="h-4 w-4" />
-            Room Configuration
-          </h3>
-
-          <div className="grid gap-4 sm:grid-cols-3">
-            <div className="space-y-2">
-              <Label htmlFor="rooms" className="text-[#f5c16c]/80">Number of Rooms *</Label>
-              <Input
-                id="rooms"
-                type="number"
-                min="1"
-                value={numberOfRooms}
-                onChange={(e) => setNumberOfRooms(parseInt(e.target.value))}
-                className="border-[#f5c16c]/20 bg-black/40 text-white focus:border-[#f5c16c]/50 focus:ring-[#f5c16c]/30"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="guildsPerRoom" className="text-[#f5c16c]/80">Guilds per Room *</Label>
-              <Input
-                id="guildsPerRoom"
-                type="number"
-                min="1"
-                value={guildsPerRoom}
-                onChange={(e) => setGuildsPerRoom(parseInt(e.target.value))}
-                className="border-[#f5c16c]/20 bg-black/40 text-white focus:border-[#f5c16c]/50 focus:ring-[#f5c16c]/30"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="roomPrefix" className="text-[#f5c16c]/80">Room Prefix *</Label>
-              <Input
-                id="roomPrefix"
-                value={roomPrefix}
-                onChange={(e) => setRoomPrefix(e.target.value)}
                 className="border-[#f5c16c]/20 bg-black/40 text-white focus:border-[#f5c16c]/50 focus:ring-[#f5c16c]/30"
               />
             </div>

@@ -49,20 +49,30 @@ export interface TestResult {
 }
 
 export interface Event {
-  ID: string;
-  Title: string;
-  Description: string;
-  Type: string; // 'code_battle', 'hackathon', 'seminar', 'workshop', 'social'
-  Status: 'pending' | 'active' | 'completed' | 'cancelled';
-  StartedDate: string;
-  EndDate: string;
-  MaxGuilds: number | null;
-  MaxPlayersPerGuild: number | null;
-  NumberOfRooms: number | null;
-  GuildsPerRoom: number | null;
-  RoomNamingPrefix: string | null;
-  OriginalRequestID: string | null;
-  AssignmentDate: string | null;
+  id: string;
+  title: string;
+  description: string;
+  type: string; // 'code_battle', 'hackathon', 'seminar', 'workshop', 'social'
+  status: 'pending' | 'active' | 'completed' | 'cancelled';
+  started_date: string;
+  end_date: string;
+  max_guilds: number | null;
+  max_players_per_guild: number | null;
+  assignment_date: string | null;
+  guilds_left: number;
+  current_participants: number;
+  // Legacy PascalCase fields for backward compatibility
+  ID?: string;
+  Title?: string;
+  Description?: string;
+  Type?: string;
+  Status?: 'pending' | 'active' | 'completed' | 'cancelled';
+  StartedDate?: string;
+  EndDate?: string;
+  MaxGuilds?: number | null;
+  MaxPlayersPerGuild?: number | null;
+  OriginalRequestID?: string | null;
+  AssignmentDate?: string | null;
 }
 
 export interface Room {
@@ -84,11 +94,6 @@ export interface EventRequest {
   participation: {
     max_guilds: number;
     max_players_per_guild: number;
-  };
-  room_configuration: {
-    number_of_rooms: number;
-    guilds_per_room: number;
-    room_naming_prefix: string;
   };
   event_specifics: {
     code_battle?: {
@@ -120,13 +125,20 @@ export interface Leaderboard {
 
 export interface LeaderboardEntry {
   rank: number;
+  // User leaderboard fields
+  user_id?: string;
+  username?: string;
   player_id?: string;
-  guild_id?: string;
   player_name?: string;
+  // Guild leaderboard fields
+  guild_id?: string;
   guild_name?: string;
-  total_score: number;
-  problems_solved: number;
+  // Common fields
+  total_score?: number;
+  score?: number;
+  problems_solved?: number;
   last_submission_time?: string;
+  snapshot_date?: string;
 }
 
 export interface Tag {
@@ -188,11 +200,6 @@ export interface CreateEventRequestPayload {
     max_guilds: number;
     max_players_per_guild: number;
   };
-  room_configuration: {
-    number_of_rooms: number;
-    guilds_per_room: number;
-    room_naming_prefix: string;
-  };
   event_specifics: {
     code_battle?: {
       topics: string[];
@@ -205,6 +212,28 @@ export interface CreateEventRequestPayload {
 export interface ProcessEventRequestPayload {
   action: 'approve' | 'reject';
   rejection_reason?: string;
+}
+
+// Guild Registration Types
+export interface RegisterGuildPayload {
+  members: Array<{ user_id: string }>;
+}
+
+export interface RegisteredMember {
+  user_id: string;
+  username?: string;
+  registered_at?: string;
+}
+
+export interface RegisteredGuild {
+  guild_id: string;
+  guild_name?: string;
+  members: RegisteredMember[];
+  registered_at: string;
+}
+
+export interface EventWithRegistrationInfo extends Event {
+  registered_guilds_count?: number;
 }
 
 export interface PaginationMetadata {

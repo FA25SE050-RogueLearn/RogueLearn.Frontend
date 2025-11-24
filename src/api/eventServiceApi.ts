@@ -14,6 +14,8 @@ import type {
   SubmitSolutionResponse,
   CreateEventRequestPayload,
   ProcessEventRequestPayload,
+  RegisterGuildPayload,
+  RegisteredMember,
   ApiResponse,
 } from '@/types/event-service';
 
@@ -204,17 +206,149 @@ const eventServiceApi = {
   },
 
   /**
-   * Register guild to event (authenticated)
+   * Get single event by ID (public)
    */
-  async registerGuildToEvent(eventId: string, guildId: string): Promise<ApiResponse<any>> {
+  async getEventById(eventId: string): Promise<ApiResponse<Event>> {
     try {
-      const response = await axiosCodeBattleClient.post(`/events/${eventId}/guilds/${guildId}/register`);
+      const response = await axiosCodeBattleClient.get(`/events/${eventId}`);
+      console.log('📦 Event details API response:', response.data);
+      
+      if (response.data.success && response.data.data) {
+        return { success: true, data: response.data.data };
+      }
+      return { success: false, error: { message: 'Invalid response format' } };
+    } catch (error: any) {
+      console.error('❌ Error fetching event:', error);
+      return {
+        success: false,
+        error: {
+          message: error.normalized?.message || 'Failed to fetch event',
+          details: error.normalized?.details,
+        },
+      };
+    }
+  },
+
+  /**
+   * Register guild to event (authenticated, guild master only)
+   * Step 1: Register the guild to the event
+   */
+  async registerGuildToEvent(
+    eventId: string
+  ): Promise<ApiResponse<any>> {
+    try {
+      const response = await axiosCodeBattleClient.post(
+        `/events/${eventId}/register`
+      );
       return { success: true, data: response.data };
     } catch (error: any) {
       return {
         success: false,
         error: {
           message: error.normalized?.message || 'Failed to register guild',
+          details: error.normalized?.details,
+        },
+      };
+    }
+  },
+
+  /**
+   * Add members to registered guild for event (authenticated)
+   * Step 2: Add members after guild registration
+   */
+  async addGuildMembersToEvent(
+    eventId: string,
+    payload: RegisterGuildPayload
+  ): Promise<ApiResponse<any>> {
+    try {
+      const response = await axiosCodeBattleClient.post(
+        `/events/${eventId}/guilds/members`,
+        payload
+      );
+      return { success: true, data: response.data };
+    } catch (error: any) {
+      return {
+        success: false,
+        error: {
+          message: error.normalized?.message || 'Failed to add guild members',
+          details: error.normalized?.details,
+        },
+      };
+    }
+  },
+
+  /**
+   * Get registered guild members for an event (authenticated)
+   * Uses bearer token to identify the guild
+   */
+  async getRegisteredGuildMembers(eventId: string): Promise<ApiResponse<RegisteredMember[]>> {
+    try {
+      const response = await axiosCodeBattleClient.get(`/events/${eventId}/guilds/members`);
+      if (response.data.success && response.data.data) {
+        return { success: true, data: response.data.data };
+      }
+      return { success: false, error: { message: 'Invalid response format' } };
+    } catch (error: any) {
+      return {
+        success: false,
+        error: {
+          message: error.normalized?.message || 'Failed to fetch registered members',
+          details: error.normalized?.details,
+        },
+      };
+    }
+  },
+
+  /**
+   * Remove guild members from event registration (authenticated)
+   */
+  async removeGuildMembers(
+    eventId: string,
+    guildId: string,
+    payload: RegisterGuildPayload
+  ): Promise<ApiResponse<any>> {
+    try {
+      const response = await axiosCodeBattleClient.delete(`/events/${eventId}/guilds/members`, {
+        data: payload
+      });
+      return { success: true, data: response.data };
+    } catch (error: any) {
+      return {
+        success: false,
+        error: {
+          message: error.normalized?.message || 'Failed to remove guild members',
+          details: error.normalized?.details,
+        },
+      };
+    }
+  },
+
+  /**
+   * Get event leaderboards by type (user or guild)
+   */
+  async getEventLeaderboards(
+    eventId: string,
+    type: 'user' | 'guild'
+  ): Promise<ApiResponse<Leaderboard>> {
+    try {
+      const response = await axiosCodeBattleClient.get(`/events/${eventId}/leaderboards?type=${type}`);
+      console.log('📦 Leaderboard API response:', response.data);
+
+      // The API returns { success: false/true, data: { leaderboard: [...] } }
+      if (response.data.data && response.data.data.leaderboard) {
+        const leaderboardData: Leaderboard = {
+          rankings: response.data.data.leaderboard,
+          last_updated: new Date().toISOString(), // API doesn't provide this, use current time
+          event_id: eventId
+        };
+        return { success: true, data: leaderboardData };
+      }
+      return { success: false, error: { message: 'Invalid response format' } };
+    } catch (error: any) {
+      return {
+        success: false,
+        error: {
+          message: error.normalized?.message || 'Failed to fetch leaderboards',
           details: error.normalized?.details,
         },
       };
@@ -484,6 +618,31 @@ const eventServiceApi = {
     console.log('Creating event SSE connection to:', url.replace(authToken, 'REDACTED'));
 
     return new EventSource(url);
+  },
+
+  // ============ Health Check ============
+  /**
+   * Check service health status
+   */
+  async getHealthStatus(): Promise<ApiResponse<{ status: string; timestamp: string }>> {
+    try {
+      const response = await axiosCodeBattleClient.get('/health');
+      if (response.data.success) {
+        return {
+          success: true,
+          data: response.data.data || { status: 'ok', timestamp: new Date().toISOString() }
+        };
+      }
+      return { success: false, error: { message: 'Health check failed' } };
+    } catch (error: any) {
+      return {
+        success: false,
+        error: {
+          message: error.response?.data?.message || 'Health check failed',
+          status: error.response?.status
+        }
+      };
+    }
   },
 };
 

@@ -293,18 +293,6 @@ export default function EventDetailPage({ params }: PageProps) {
                 <span className="text-sm font-semibold text-amber-200">{participation.max_players_per_guild}</span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-sm text-amber-700">Number of Rooms</span>
-                <span className="text-sm font-semibold text-amber-200">{eventRequest.room_configuration.number_of_rooms}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-amber-700">Guilds per Room</span>
-                <span className="text-sm font-semibold text-amber-200">{eventRequest.room_configuration.guilds_per_room}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-amber-700">Room Prefix</span>
-                <span className="text-sm font-semibold text-amber-200">{eventRequest.room_configuration.room_naming_prefix}</span>
-              </div>
-              <div className="flex items-center justify-between">
                 <span className="text-sm text-amber-700">Status</span>
                 <span className={`text-sm font-semibold capitalize ${
                   eventRequest.status === 'pending' ? 'text-orange-400' :

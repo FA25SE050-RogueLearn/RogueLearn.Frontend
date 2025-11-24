@@ -303,7 +303,20 @@ export default function CodeBattlePage() {
       });
 
       eventSource.addEventListener('EVENT_ENDED', () => {
-        addNotification('Event has ended', 'info');
+        addNotification('Event has ended - Redirecting to results...', 'info');
+
+        // Close SSE connection
+        if (eventSourceRef.current) {
+          eventSourceRef.current.close();
+          eventSourceRef.current = null;
+        }
+
+        // Redirect to results page after a brief delay
+        setTimeout(() => {
+          if (eventId) {
+            window.location.href = `/code-battle/${eventId}/results`;
+          }
+        }, 2000);
       });
 
       eventSource.addEventListener('initial_time', (e) => {
@@ -387,12 +400,80 @@ export default function CodeBattlePage() {
   };
 
   // Navigation handlers
-  const handleSelectEvent = (eventId: string) => {
-    setSelectedEventId(eventId);
-    setSelectedRoomId(null);
-    setSelectedProblemId(null);
-    setSelectedProblemTitle('');
-    setCurrentView('rooms');
+  const handleSelectEvent = async (eventId: string) => {
+    // Validate that user is registered for this event
+    if (!playerId) {
+      addNotification('Please log in to enter this event', 'error');
+      return;
+    }
+
+    try {
+      // Get user's guild ID
+      const supabase = createClient();
+      const { data: guilds } = await supabase
+        .from('guilds')
+        .select('id')
+        .eq('created_by', playerId)
+        .limit(1);
+
+      const guildId = guilds?.[0]?.id;
+
+      if (!guildId) {
+        // Check if user is a member of any guild
+        const { data: memberships } = await supabase
+          .from('guild_members')
+          .select('guild_id')
+          .eq('user_id', playerId)
+          .limit(1);
+
+        const memberGuildId = memberships?.[0]?.guild_id;
+
+        if (!memberGuildId) {
+          addNotification('You must be in a guild to enter events', 'error');
+          return;
+        }
+      }
+
+      const userGuildId = guildId || (await supabase
+        .from('guild_members')
+        .select('guild_id')
+        .eq('user_id', playerId)
+        .limit(1)
+        .then(res => res.data?.[0]?.guild_id));
+
+      if (!userGuildId) {
+        addNotification('You must be in a guild to enter events', 'error');
+        return;
+      }
+
+      // Check if user's guild is registered for this event
+      const registrationResponse = await eventServiceApi.getRegisteredGuildMembers(eventId);
+
+      if (!registrationResponse.success || !registrationResponse.data) {
+        addNotification('Your guild is not registered for this event', 'error');
+        return;
+      }
+
+      // Check if current user is in the registered members list
+      const registeredMembers = registrationResponse.data;
+      const isUserRegistered = registeredMembers.some((member: any) => member.user_id === playerId);
+
+      if (!isUserRegistered) {
+        addNotification('You are not registered for this event. Contact your guild master.', 'error');
+        return;
+      }
+
+      // User is validated, proceed to rooms
+      setSelectedEventId(eventId);
+      setSelectedRoomId(null);
+      setSelectedProblemId(null);
+      setSelectedProblemTitle('');
+      setCurrentView('rooms');
+      addNotification('Welcome to the event!', 'success');
+    } catch (error) {
+      console.error('Error validating registration:', error);
+      addNotification('Failed to validate registration. Please try again.', 'error');
+    }
   };
 
   const handleSelectRoom = (roomId: string) => {
@@ -447,7 +528,7 @@ export default function CodeBattlePage() {
     };
   }, []);
 
-  const selectedEvent = events.find(e => e.ID === selectedEventId) || null;
+  const selectedEvent = events.find(e => (e.id ?? e.ID) === selectedEventId) || null;
   const selectedRoom = rooms.find(r => r.ID === selectedRoomId) || null;
 
   return (

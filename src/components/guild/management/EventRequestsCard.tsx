@@ -194,16 +194,6 @@ export function EventRequestsCard({ guildId }: EventRequestsCardProps) {
                           </div>
                           <p className="text-xs font-semibold text-[#f5c16c]">{maxParticipants}</p>
                         </div>
-
-                        <div className="space-y-1">
-                          <div className="flex items-center gap-1 text-[#f5c16c]/70">
-                            <Trophy className="h-3 w-3" />
-                            <span className="text-xs">Rooms</span>
-                          </div>
-                          <p className="text-xs font-semibold text-[#f5c16c]">
-                            {request.room_configuration?.number_of_rooms ?? 0}
-                          </p>
-                        </div>
                       </div>
 
                       {request.rejection_reason && (
