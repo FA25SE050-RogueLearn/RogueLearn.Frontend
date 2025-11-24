@@ -2,6 +2,13 @@
 import axiosClient from './axiosClient';
 import { ApiResponse } from '../types/base/Api';
 import { QuestDetails, QuestStep, QuestProgress } from '../types/quest';
+import { 
+  GetStepProgressResponse, 
+  GetCompletedActivitiesResponse, 
+  GetQuestProgressResponse, 
+  SubmitQuizAnswerResponse
+} from '../types/quest-progress';
+
 
 // ========== NEW RESPONSE TYPES FOR BACKGROUND JOBS ==========
 
@@ -39,9 +46,10 @@ interface QuestGenerationProgressResponse {
   updatedAt: string;
 }
 
+
 /**
  * API service for handling quest-specific interactions.
- * Corresponds to QuestsController.cs
+ * Corresponds to QuestsController.cs and UserQuestProgressController.cs
  * Updated to support weekly module structure and background job polling.
  */
 const questApi = {
@@ -118,16 +126,27 @@ const questApi = {
    * Corresponds to GET /api/quests/generation-status/{jobId}
    */
   checkGenerationStatus: (jobId: string): Promise<ApiResponse<JobStatusResponse>> =>
-    axiosClient.get<JobStatusResponse>(`/api/quests/generation-status/${jobId}`)
-      .then(res => ({
-        isSuccess: true,
-        data: res.data,  // Contains: jobId, status, createdAt, error
-      } as const))
-      .catch(error => ({
-        isSuccess: false,
+  axiosClient.get<JobStatusResponse>(`/api/quests/generation-status/${jobId}`)
+    .then(res => ({
+      data: res.data,
+      isSuccess: true,
+      is404: false,                    // ⭐ NEW: Explicit false (no error)
+      isPollingEndpoint: true,         // ⭐ NEW: Mark as polling
+    } as const))
+    .catch(error => {
+      // ⭐ NEW: Extract flags from axios error
+      const is404 = (error as any).is404 ?? false;
+      const isPollingEndpoint = (error as any).isPollingEndpoint ?? false;
+      const message = (error as any).normalized?.message || error.message;
+      
+      return ({
         data: null,
-        message: error.response?.data?.message || error.message
-      } as const)),
+        isSuccess: false,
+        message,
+        is404,                        // ⭐ NEW: Pass 404 flag
+        isPollingEndpoint,            // ⭐ NEW: Pass polling flag
+      } as const);
+    }),
 
   /**
    * ⭐ NEW: Gets real-time progress of quest generation job.
@@ -136,17 +155,27 @@ const questApi = {
    * 
    * Corresponds to GET /api/quests/generation-progress/{jobId}
    */
-  getGenerationProgress: (jobId: string): Promise<ApiResponse<QuestGenerationProgressResponse>> =>
-    axiosClient.get<QuestGenerationProgressResponse>(`/api/quests/generation-progress/${jobId}`)
-      .then(res => ({
-        isSuccess: true,
-        data: res.data,  // Contains: currentStep, totalSteps, message, progressPercentage, updatedAt
-      } as const))
-      .catch(error => ({
-        isSuccess: false,
+ getGenerationProgress: (jobId: string): Promise<ApiResponse<QuestGenerationProgressResponse>> =>
+  axiosClient.get<QuestGenerationProgressResponse>(`/api/quests/generation-progress/${jobId}`)
+    .then(res => ({
+      data: res.data,
+      isSuccess: true,
+      is404: false,                    // ⭐ NEW
+      isPollingEndpoint: true,         // ⭐ NEW
+    } as const))
+    .catch(error => {
+      const is404 = (error as any).is404 ?? false;
+      const isPollingEndpoint = (error as any).isPollingEndpoint ?? false;
+      const message = (error as any).normalized?.message || error.message;
+      
+      return ({
         data: null,
-        message: error.response?.data?.message || error.message
-      } as const)),
+        isSuccess: false,
+        message,
+        is404,                        // ⭐ NEW
+        isPollingEndpoint,            // ⭐ NEW
+      } as const);
+    }),
 
   /**
    * ⭐ UPDATED: Marks a specific activity within a weekly step as complete.
@@ -203,6 +232,98 @@ const questApi = {
       isSuccess: true,
       data: res.data,
     })),
+
+  // ========== ⭐ NEW: USER PROGRESS ENDPOINTS ==========
+
+  /**
+   * ⭐ NEW: Gets the overall progress for a specific quest including all steps.
+   * Returns quest status, steps summary, and overall completion percentage.
+   * Corresponds to GET /api/user-progress/quests/{questId}
+   */
+  getQuestProgress: (questId: string): Promise<ApiResponse<GetQuestProgressResponse>> =>
+    axiosClient
+      .get<GetQuestProgressResponse>(`/api/user-progress/quests/${questId}`)
+      .then(res => ({
+  isSuccess: true as const,  // ✅ Now TypeScript sees this as literal true
+  data: res.data,
+}))
+      .catch(error => ({
+        isSuccess: false,
+        data: null,
+        message: error.response?.data?.message || error.message
+      })),
+
+  /**
+   * ⭐ NEW: Gets the progress for a specific step including completion status and percentage.
+   * Shows how many activities are completed out of total.
+   * Corresponds to GET /api/user-progress/quests/{questId}/steps/{stepId}
+   */
+  getStepProgress: (questId: string, stepId: string): Promise<ApiResponse<GetStepProgressResponse>> =>
+    axiosClient
+      .get<GetStepProgressResponse>(`/api/user-progress/quests/${questId}/steps/${stepId}`)
+      .then(res => ({
+  isSuccess: true as const,  // ✅ Now TypeScript sees this as literal true
+  data: res.data,
+}))
+      .catch(error => ({
+        isSuccess: false,
+        data: null,
+        message: error.response?.data?.message || error.message
+      })),
+
+  /**
+   * ⭐ NEW: Gets all activities in a step with their individual completion status.
+   * Returns detailed info for each activity (type, XP, skill, title, completion status).
+   * Corresponds to GET /api/user-progress/quests/{questId}/steps/{stepId}/activities
+   */
+  getCompletedActivities: (questId: string, stepId: string): Promise<ApiResponse<GetCompletedActivitiesResponse>> =>
+    axiosClient
+      .get<GetCompletedActivitiesResponse>(`/api/user-progress/quests/${questId}/steps/${stepId}/activities`)
+      .then(res => ({
+  isSuccess: true as const,  // ✅ Now TypeScript sees this as literal true
+  data: res.data,
+}))
+      .catch(error => ({
+        isSuccess: false,
+        data: null,
+        message: error.response?.data?.message || error.message
+      })),
+      submitQuizAnswer: async (
+  questId: string,
+  stepId: string,
+  activityId: string,
+  answers: Record<string, string>,
+  correctAnswerCount: number,
+  totalQuestions: number
+): Promise<ApiResponse<SubmitQuizAnswerResponse>> => {
+  try {
+    const response = await axiosClient.post<SubmitQuizAnswerResponse>(
+      `/api/quests/${questId}/steps/${stepId}/activities/${activityId}/submit-quiz`,
+      {
+        answers,
+        correctAnswerCount,
+        totalQuestions
+      }
+    );
+
+    // ✅ Explicitly return success response with literal true
+    return {
+      isSuccess: true,
+      data: response.data,
+    };
+  } catch (error) {
+    // ✅ Explicitly return failure response with literal false
+    const message = error instanceof Error 
+      ? error.message 
+      : 'Failed to submit quiz';
+    
+    return {
+      isSuccess: false,
+      data: null,
+      message,
+    };
+  }
+},
 };
 
 export default questApi;

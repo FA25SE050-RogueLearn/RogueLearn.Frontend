@@ -1,4 +1,3 @@
-// roguelearn-web/src/app/admin/content/subjects/page.tsx
 "use client";
 
 import { useState, useEffect } from "react";
@@ -7,18 +6,14 @@ import { AdminLayout } from "@/components/layout/AdminLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { ChevronLeft, Loader2, PlusCircle, AlertCircle } from "lucide-react";
+import { ChevronLeft, Loader2, AlertCircle } from "lucide-react";
 import adminContentApi from "@/api/adminContentApi";
 import { Subject } from "@/types/subjects";
-import { AddSyllabusForm } from "./AddSyllabusForm";
 
 export default function SubjectsPage() {
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [selectedSubject, setSelectedSubject] = useState<Subject | null>(null);
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   const fetchSubjects = async () => {
     setIsLoading(true);
@@ -41,19 +36,6 @@ export default function SubjectsPage() {
     fetchSubjects();
   }, []);
 
-  const handleAddSyllabusClick = (subject: Subject) => {
-    setSelectedSubject(subject);
-    setIsDialogOpen(true);
-  };
-
-  const handleFormSuccess = () => {
-    setIsDialogOpen(false);
-    setSelectedSubject(null);
-    // You might want to refresh the subject list or update the specific subject's data here
-    // For simplicity, we'll just log it.
-    console.log("Syllabus added successfully. Consider refreshing the data.");
-  };
-
   return (
     <AdminLayout>
       <div className="space-y-6">
@@ -65,7 +47,7 @@ export default function SubjectsPage() {
           </Button>
           <div className="flex-1">
             <h1 className="text-2xl font-bold text-amber-100">Subject Catalog</h1>
-            <p className="text-sm text-amber-700">Manage all subjects and their syllabus versions</p>
+            <p className="text-sm text-amber-700">Manage all subjects and their syllabus content</p>
           </div>
         </div>
 
@@ -106,13 +88,14 @@ export default function SubjectsPage() {
                       <TableCell className="text-amber-700">{new Date(subject.updatedAt).toLocaleDateString()}</TableCell>
                       <TableCell className="text-right">
                         <Button
+                          asChild
                           variant="outline"
                           size="sm"
-                          className="border-emerald-700/50 bg-emerald-950/30 text-emerald-300 hover:bg-emerald-900/50"
-                          onClick={() => handleAddSyllabusClick(subject)}
+                          className="border-blue-700/50 bg-blue-950/30 text-blue-300 hover:bg-blue-900/50"
                         >
-                          <PlusCircle className="mr-2 h-4 w-4" />
-                          Add Syllabus
+                          <Link href={`/admin/content/subjects/${subject.id}/edit`}>
+                            Edit Content
+                          </Link>
                         </Button>
                       </TableCell>
                     </TableRow>
@@ -123,17 +106,6 @@ export default function SubjectsPage() {
           </CardContent>
         </Card>
       </div>
-
-      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="sm:max-w-[600px] bg-gradient-to-br from-[#1f1812] to-[#1a1410] border-amber-900/30 text-amber-100">
-          <DialogHeader>
-            <DialogTitle className="text-amber-100">Add Syllabus for {selectedSubject?.subjectCode}</DialogTitle>
-          </DialogHeader>
-          {selectedSubject && (
-            <AddSyllabusForm subjectId={selectedSubject.id} onSuccess={handleFormSuccess} />
-          )}
-        </DialogContent>
-      </Dialog>
     </AdminLayout>
   );
 }

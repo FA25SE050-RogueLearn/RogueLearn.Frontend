@@ -14,7 +14,6 @@ const roadmapClassImportApi = {
     const formData = new FormData();
     formData.append('rawText', payload.rawText);
     if (payload.programId) formData.append('programId', payload.programId);
-    if (payload.curriculumVersionId) formData.append('curriculumVersionId', payload.curriculumVersionId);
     return axiosClient
       .post<ImportRoadmapCommandResponse>(`/api/admin/classes/${classId}/roadmap/import`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' },

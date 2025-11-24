@@ -1,18 +1,16 @@
 // roguelearn-web/src/app/quests/page.tsx
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
-import QuestListView from '@/components/quests/QuestListView';
+import QuestlineView from '@/components/quests/QuestlineView';
 import { createServerApiClients } from '@/lib/api-server';
-import { LearningPath, QuestSummary } from '@/types/quest';
+import { LearningPath } from '@/types/quest';
 import { redirect } from 'next/navigation';
+import { Trophy } from 'lucide-react';
+import Link from 'next/link';
+import { Button } from '@/components/ui/button';
 
 export default async function QuestsPage() {
   const { coreApiClient } = await createServerApiClients();
   let learningPath: LearningPath | null = null;
-  let userStats = {
-    streak: 0,
-    totalQuests: 0,
-    totalXP: 0
-  };
 
   try {
     const response = await coreApiClient.get<LearningPath>('/api/learning-paths/me');
@@ -24,36 +22,35 @@ export default async function QuestsPage() {
     console.error("Failed to fetch learning path:", error);
   }
 
-  // Flatten all quests with their parent context
-  const allQuests: QuestSummary[] = learningPath?.chapters.flatMap(chapter =>
-    chapter.quests.map(quest => ({
-      ...quest,
-      learningPathId: learningPath.id,
-      chapterId: chapter.id
-    }))
-  ) ?? [];
-
-  // Categorize quests on the server
-  const activeQuests = allQuests.filter(q => q.status === 'InProgress');
-  const completedQuests = allQuests.filter(q => q.status === 'Completed');
-  // Pass ALL NotStarted quests to the client. The client will handle the logic for available vs. locked.
-  const notStartedQuests = allQuests.filter(q => q.status === 'NotStarted');
-
-  // Calculate user stats
-  userStats = {
-    streak: 7,
-    totalQuests: allQuests.length,
-    totalXP: completedQuests.length * 100
-  };
+  if (!learningPath) {
+    return (
+      <DashboardLayout>
+        <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
+          <div className="p-4 rounded-full bg-[#f5c16c]/10">
+            <Trophy className="w-12 h-12 text-[#f5c16c]" />
+          </div>
+          <h2 className="text-2xl font-bold text-white">No Questline Found</h2>
+          <p className="text-white/60 max-w-md text-center">
+            Your learning path hasn&apos;t been forged yet. Please complete the onboarding process.
+          </p>
+          <Button asChild variant="outline" className="mt-4 border-[#f5c16c]/50 text-[#f5c16c] hover:bg-[#f5c16c]/10">
+            <Link href="/onboarding/connect-fap">
+              Begin Onboarding
+            </Link>
+          </Button>
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout>
-      <QuestListView
-        activeQuests={activeQuests}
-        completedQuests={completedQuests}
-        notStartedQuests={notStartedQuests} // Pass the combined list
-        userStats={userStats}
-      />
+      {/* 
+        We pass the full LearningPath object to QuestlineView.
+        This view now handles the hierarchical display of Chapters and Quests,
+        as well as the "Free Path" logic and Quest Generation.
+      */}
+      <QuestlineView learningPath={learningPath} />
     </DashboardLayout>
   );
 }

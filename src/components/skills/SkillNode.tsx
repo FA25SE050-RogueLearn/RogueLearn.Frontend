@@ -1,5 +1,5 @@
 // roguelearn-web/src/components/skills/SkillNode.tsx
-import { Handle, Position } from 'reactflow';
+import { Handle, Position } from '@xyflow/react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { SkillNode as ApiSkillNode } from '@/types/skill-tree';

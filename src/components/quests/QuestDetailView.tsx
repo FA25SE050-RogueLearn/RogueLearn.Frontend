@@ -1,253 +1,307 @@
 // roguelearn-web/src/components/quests/QuestDetailView.tsx
-"use client";
+'use client';
 
-import { Card, CardContent } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
-import { CheckCircle, ArrowLeft, Play, BookOpen, Loader2, Lock } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { useEffect, useRef, useState } from "react";
-import { gsap } from "gsap";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { QuestDetails, QuestStep } from "@/types/quest";
-import WeekStepSelector from "./WeekStepSelector";
+import { QuestStep, QuestDetails, Activity } from '@/types/quest';
+import { Button } from '@/components/ui/button';
+import {
+  Lock,
+  Play,
+  Trophy,
+  BookOpen,
+  BrainCircuit,
+  Code,
+  CheckCircle2,
+  ChevronDown,
+  List
+} from 'lucide-react';
+import Link from 'next/link';
+import { cn } from '@/lib/utils';
+import WeeklyProgressCard from './WeeklyProgressCard';
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 
 interface QuestDetailViewProps {
   questDetails: QuestDetails;
+  questProgress: {
+    questId: string;
+    questStatus: 'NotStarted' | 'InProgress' | 'Completed';
+    stepStatuses: Record<string, 'Completed' | 'InProgress' | 'NotStarted'>;
+  };
   learningPathId: string;
-  learningPathName?: string;  // ⭐ ADD THIS
+  learningPathName: string;
   chapterId: string;
-  chapterName?: string;  // ⭐ ADD THIS
-  completedSteps?: number[];
-  currentStepNumber?: number;
+  chapterName: string;
 }
 
-export function QuestDetailView({
+// Helper to extract displayable info from an activity
+const getActivityDisplayInfo = (activity: Activity) => {
+  let icon = BookOpen;
+  let label = 'Activity';
+  let title = 'Learning Activity';
+
+  switch (activity.type) {
+    case 'Reading':
+      icon = BookOpen;
+      label = 'Reading';
+      title = (activity.payload as any).articleTitle || 'Reading Material';
+      break;
+    case 'KnowledgeCheck':
+      icon = CheckCircle2;
+      label = 'Check';
+      title = (activity.payload as any).topic || 'Knowledge Check';
+      break;
+    case 'Quiz':
+      icon = BrainCircuit;
+      label = 'Quiz';
+      title = 'Weekly Quiz';
+      break;
+    case 'Coding':
+      icon = Code;
+      label = 'Code';
+      title = (activity.payload as any).topic || 'Coding Challenge';
+      break;
+  }
+
+  return { Icon: icon, label, title };
+};
+
+export default function QuestDetailView({
   questDetails,
+  questProgress,
   learningPathId,
-  learningPathName,  // ⭐ ADD THIS
+  learningPathName,
   chapterId,
-  chapterName,  // ⭐ ADD THIS
-  completedSteps = [],
-  currentStepNumber = 1
+  chapterName,
 }: QuestDetailViewProps) {
-  const router = useRouter();
-  const headerRef = useRef<HTMLDivElement>(null);
-  const modulesRef = useRef<HTMLDivElement>(null);
-  const [selectedStepNumber, setSelectedStepNumber] = useState(currentStepNumber);
+  // Build a map of stepId → stepNumber for reference
+  const stepIdToNumberMap = new Map<string, number>();
+  questDetails.steps.forEach(step => {
+    stepIdToNumberMap.set(step.id, step.stepNumber);
+  });
 
-  const steps = questDetails.steps || [];
-  const completedWeeks = completedSteps.length;
-  const totalWeeks = steps.length;
-  const progressPercentage = totalWeeks > 0 ? (completedWeeks / totalWeeks) * 100 : 0;
-
-  useEffect(() => {
-    const ctx = gsap.context(() => {
-      if (headerRef.current) {
-        gsap.from(headerRef.current.children, {
-          opacity: 0, y: -30, duration: 0.5, stagger: 0.1, ease: "power2.out", clearProps: "all"
-        });
+  // Find completed step numbers from the API response
+  const completedStepNumbers = new Set<number>();
+  Object.entries(questProgress.stepStatuses).forEach(([stepId, status]) => {
+    if (status === 'Completed') {
+      const stepNumber = stepIdToNumberMap.get(stepId);
+      if (stepNumber !== undefined) {
+        completedStepNumbers.add(stepNumber);
       }
-      if (modulesRef.current) {
-        const cards = modulesRef.current.querySelectorAll('.module-card');
-        if (cards.length > 0) {
-          gsap.from(cards, {
-            opacity: 0, x: -30, duration: 0.5, stagger: 0.08, delay: 0.3, ease: "power2.out", clearProps: "all"
-          });
-        }
-      }
-    });
-    return () => ctx.revert();
-  }, [questDetails.id]);
+    }
+  });
 
-  const getStepStatus = (stepNumber: number): 'completed' | 'current' | 'locked' | 'available' => {
-    if (completedSteps.includes(stepNumber)) return 'completed';
-    if (stepNumber === currentStepNumber) return 'current';
-    if (stepNumber > currentStepNumber) return 'locked';
-    return 'available';
+  // Function to determine if a step is locked
+  const isStepLocked = (stepNumber: number): boolean => {
+    if (stepNumber === 1) return false;
+    return !completedStepNumbers.has(stepNumber - 1);
   };
 
   return (
-    <div className="relative overflow-hidden rounded-[28px] border border-[#f5c16c]/20 bg-gradient-to-br from-[#2d1810] via-[#1a0a08] to-[#0a0506] p-8 pb-20 shadow-[0_32px_110px_rgba(18,5,10,0.7)]">
-      <div
-        className="pointer-events-none absolute inset-0 opacity-25 mix-blend-overlay"
-        style={{
-          backgroundImage: 'url(/images/asfalt-dark.png)',
-          backgroundSize: '350px 350px',
-          backgroundRepeat: 'repeat'
-        }}
-      />
-      <div className="absolute inset-0 opacity-20 bg-[radial-gradient(circle_at_top,_rgba(245,193,108,0.25),_transparent_70%)]" />
+    <div className="flex flex-col gap-8 pb-24">
+      {/* Header Section */}
+      <div className="relative overflow-hidden rounded-[28px] border border-[#f5c16c]/20 bg-gradient-to-br from-[#2d1810] via-[#1a0a08] to-[#0a0506] p-8 shadow-[0_25px_70px_rgba(0,0,0,0.55)]">
+        <div
+          className="pointer-events-none absolute inset-0 opacity-25 mix-blend-overlay"
+          style={{
+            backgroundImage: 'url(/images/asfalt-dark.png)',
+            backgroundSize: '350px 350px',
+            backgroundRepeat: 'repeat'
+          }}
+        />
+        <div className="absolute inset-0 opacity-30 bg-[radial-gradient(circle_at_top,_rgba(245,193,108,0.25),_transparent_70%)]" />
+        <div className="relative z-10 space-y-6">
+          <div className="flex items-center gap-2 text-xs uppercase tracking-[0.35em] text-white/50">
+            <span className="text-[#f5c16c]">Quest</span>
+            <span className="text-white/30">/</span>
+            <span className="text-white/70">{learningPathName}</span>
+            <span className="text-white/30">/</span>
+            <span className="text-white/70">{chapterName}</span>
+          </div>
 
-      <div className="relative z-10 flex flex-col gap-10">
-        <section ref={headerRef}>
-          <div className="flex flex-wrap items-start justify-between gap-8">
-            <div className="space-y-4">
-              <Link
-                href={`/quests/${learningPathId}/${chapterId}`}
-                className="inline-flex items-center gap-2 text-xs uppercase tracking-[0.35em] text-white/60 transition-colors hover:text-[#f5c16c]"
-              >
-                <ArrowLeft className="h-3.5 w-3.5" /> Back to {chapterName || 'Chapter'}
-              </Link>
-              <div className="text-xs uppercase tracking-[0.35em] text-white/60">
-                {learningPathName || 'Learning Path'} <span className="text-white/40">/</span> {chapterName || 'Chapter'} <span className="text-white/40">/</span> Quest
+          <div>
+            <h1 className="text-4xl font-semibold text-white mb-3">
+              {questDetails.title}
+            </h1>
+            <p className="text-sm text-white/70 leading-relaxed max-w-3xl">
+              {questDetails.description}
+            </p>
+          </div>
+
+          {/* Quest Stats */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="relative overflow-hidden rounded-2xl border border-[#f5c16c]/20 bg-black/40 p-5">
+              <div className="absolute inset-0 opacity-20 bg-[radial-gradient(circle_at_top,_rgba(245,193,108,0.35),_transparent_70%)]" />
+              <div className="relative z-10 space-y-2">
+                <p className="text-xs uppercase tracking-[0.3em] text-white/50">Status</p>
+                <p className="text-2xl font-semibold text-[#f5c16c]">{questProgress.questStatus}</p>
               </div>
-              <h1 className="text-4xl font-semibold text-white md:text-5xl">{questDetails.title}</h1>
-              <p className="text-sm text-white/70 max-w-3xl">{questDetails.description}</p>
+            </div>
+
+            <div className="relative overflow-hidden rounded-2xl border border-[#f5c16c]/20 bg-black/40 p-5">
+              <div className="absolute inset-0 opacity-20 bg-[radial-gradient(circle_at_top,_rgba(245,193,108,0.35),_transparent_70%)]" />
+              <div className="relative z-10 space-y-2">
+                <p className="text-xs uppercase tracking-[0.3em] text-white/50">Weeks Completed</p>
+                <p className="text-2xl font-semibold text-white">
+                  {completedStepNumbers.size} <span className="text-white/50">/ {questDetails.steps.length}</span>
+                </p>
+              </div>
+            </div>
+
+            <div className="relative overflow-hidden rounded-2xl border border-[#f5c16c]/20 bg-black/40 p-5">
+              <div className="absolute inset-0 opacity-20 bg-[radial-gradient(circle_at_top,_rgba(245,193,108,0.35),_transparent_70%)]" />
+              <div className="relative z-10 space-y-2">
+                <p className="text-xs uppercase tracking-[0.3em] text-white/50">Total XP Available</p>
+                <p className="text-2xl font-semibold text-emerald-400">
+                  {questDetails.steps.reduce((sum, step) => sum + (step.experiencePoints || 0), 0)} XP
+                </p>
+              </div>
             </div>
           </div>
+        </div>
+      </div>
 
-          {/* Quest Progress */}
-          <div className="mt-6">
-            <div className="flex items-center justify-between text-sm uppercase tracking-[0.3em] text-white/60 mb-2">
-              <span>Quest Progress</span>
-              <span className="font-semibold text-white">{progressPercentage.toFixed(0)}%</span>
+      {/* Weekly Modules Section */}
+      <div>
+        <div className="mb-6 flex items-center justify-between rounded-2xl border border-[#f5c16c]/20 bg-gradient-to-r from-[#f5c16c]/10 via-transparent to-transparent px-6 py-4">
+          <h2 className="flex items-center gap-3 text-2xl font-semibold text-white">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#f5c16c]/20 text-[#f5c16c] shadow-[0_0_20px_rgba(245,193,108,0.35)]">
+              <Trophy className="h-5 w-5" />
             </div>
-            <Progress
-              value={progressPercentage}
-              className="h-3 bg-white/10 [&>div]:bg-gradient-to-r [&>div]:from-[#f5c16c] [&>div]:to-[#d4a855]"
-            />
-            <div className="mt-2 text-xs text-white/60">
-              {completedWeeks} of {totalWeeks} weeks completed
-            </div>
-          </div>
-        </section>
+            Weekly Learning Modules
+          </h2>
+          <span className="text-xs uppercase tracking-[0.35em] text-white/60">
+            {questDetails.steps.length} weeks
+          </span>
+        </div>
 
-        {/* Main Content: Sidebar + Weekly Modules */}
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-          {/* Sidebar: Week Selector */}
-          <div className="lg:col-span-1">
-            <div className="sticky top-8">
-              <WeekStepSelector
-                steps={steps}
-                currentStepNumber={selectedStepNumber}
-                onStepSelect={setSelectedStepNumber}
-                completedSteps={completedSteps}
-              />
-            </div>
-          </div>
+        <div className="space-y-4">
+          {questDetails.steps.map((step) => {
+            const stepStatus = questProgress.stepStatuses[step.id];
+            const locked = isStepLocked(step.stepNumber);
+            const activities = step.content?.activities || [];
+            const totalActivities = activities.length;
 
-          {/* Main Content: Weekly Modules List */}
-          <div className="lg:col-span-3">
-            <div ref={modulesRef} className="space-y-4">
-              <h2 className="text-2xl font-semibold text-white flex items-center gap-2 mb-4">
-                <BookOpen className="h-6 w-6 text-[#f5c16c]" /> Weekly Learning Modules
-              </h2>
+            // If we had granular activity status from backend, we would map it here.
+            // For now, we rely on step status. If step is complete, all are complete.
+            const completedActivities = stepStatus === 'Completed'
+              ? Array.from({ length: totalActivities }, (_, i) => `${i}`)
+              : [];
 
-              {steps.length === 0 ? (
-                <Card className="rounded-[28px] border border-[#f5c16c]/20 bg-black/40">
-                  <CardContent className="p-8 text-center">
-                    <Loader2 className="h-8 w-8 text-[#f5c16c] animate-spin mx-auto mb-4" />
-                    <p className="text-sm text-white/70">Generating weekly modules...</p>
-                    <p className="text-xs text-white/50 mt-2">This may take a moment.</p>
-                  </CardContent>
-                </Card>
-              ) : (
-                steps.map((step) => {
-                  const status = getStepStatus(step.stepNumber);
-                  const isLocked = status === 'locked';
-                  const isCompleted = status === 'completed';
-                  const isCurrent = status === 'current';
-                  const activityCount = step.content?.activities?.length || 0;
-
-                  return (
-                    <Card
-                      key={step.id}
-                      className={`module-card relative overflow-hidden rounded-[28px] border transition-all duration-300 ${isCompleted
-                        ? 'border-emerald-400/40 bg-emerald-500/10 hover:border-emerald-400/60'
-                        : isCurrent
-                          ? 'border-[#f5c16c]/60 bg-[#f5c16c]/10 hover:border-[#f5c16c]/80 shadow-[0_18px_45px_rgba(245,193,108,0.25)]'
-                          : isLocked
-                            ? 'border-white/10 bg-black/20 opacity-60'
-                            : 'border-[#f5c16c]/20 bg-black/40 hover:border-[#f5c16c]/40 hover:shadow-[0_18px_45px_rgba(245,193,108,0.25)]'
-                        }`}
-                    >
-                      <div
-                        className="pointer-events-none absolute inset-0 opacity-20 mix-blend-overlay"
-                        style={{
-                          backgroundImage: 'url(/images/asfalt-dark.png)',
-                          backgroundSize: '350px 350px',
-                          backgroundRepeat: 'repeat'
-                        }}
+            return (
+              <div
+                key={step.id}
+                className={cn(
+                  'transition-all',
+                  locked && 'opacity-60'
+                )}
+              >
+                <div className="flex flex-col gap-2">
+                  {/* Header Row: Progress Bar + Button */}
+                  <div className="flex items-center gap-3">
+                    <div className="flex-1">
+                      <WeeklyProgressCard
+                        step={step}
+                        completedActivities={completedActivities}
+                        totalActivities={totalActivities}
                       />
+                    </div>
 
-                      <CardContent className="relative z-10 p-6">
-                        <div className="flex items-center justify-between gap-4">
-                          {/* Week Info */}
-                          <div className="flex-1 space-y-2">
-                            <div className="flex items-center gap-2">
-                              <span className="text-xs font-semibold uppercase tracking-[0.3em] text-[#f5c16c]">
-                                Week {step.stepNumber}
-                              </span>
-                              {isCompleted && (
-                                <span className="px-2 py-0.5 text-xs font-medium bg-emerald-500/20 text-emerald-300 rounded">
-                                  Completed
-                                </span>
-                              )}
-                              {isCurrent && (
-                                <span className="px-2 py-0.5 text-xs font-medium bg-[#f5c16c]/20 text-[#f5c16c] rounded">
-                                  Current
-                                </span>
-                              )}
-                              {isLocked && (
-                                <span className="px-2 py-0.5 text-xs font-medium bg-white/10 text-white/50 rounded flex items-center gap-1">
-                                  <Lock className="h-3 w-3" /> Locked
-                                </span>
-                              )}
-                            </div>
+                    <Button
+                      asChild={!locked}
+                      disabled={locked}
+                      size="sm"
+                      className={cn(
+                        'whitespace-nowrap shrink-0 h-16 px-6 rounded-lg font-semibold transition-all duration-300',
+                        locked
+                          ? 'cursor-not-allowed opacity-50 bg-white/5 border border-white/10 text-white/40'
+                          : stepStatus === 'Completed'
+                            ? 'bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 hover:bg-emerald-500/30'
+                            : 'bg-gradient-to-r from-[#f5c16c] to-[#d4a855] text-black hover:shadow-lg hover:shadow-[#f5c16c]/50'
+                      )}
+                    >
+                      {locked ? (
+                        <span className="flex items-center gap-2">
+                          <Lock className="w-4 h-4" />
+                          Locked
+                        </span>
+                      ) : (
+                        <Link
+                          href={`/quests/${learningPathId}/${chapterId}/${questDetails.id}/week/${step.stepNumber}`}
+                          className="flex items-center gap-2"
+                        >
+                          <Play className="w-4 h-4" />
+                          {stepStatus === 'Completed' ? 'Review' : 'Continue'}
+                        </Link>
+                      )}
+                    </Button>
+                  </div>
 
-                            <h3 className="text-lg font-semibold text-white">
-                              {step.title}
-                            </h3>
+                  {/* Expandable Activities List */}
+                  {!locked && activities.length > 0 && (
+                    <Accordion type="single" collapsible className="w-full border border-white/10 rounded-lg bg-black/20">
+                      <AccordionItem value="activities" className="border-none">
+                        <AccordionTrigger className="px-4 py-3 text-sm text-white/60 hover:text-[#f5c16c] hover:bg-white/5 rounded-lg transition-colors">
+                          <span className="flex items-center gap-2">
+                            <List className="w-4 h-4" />
+                            View {activities.length} Activities
+                          </span>
+                        </AccordionTrigger>
+                        <AccordionContent className="px-4 pb-4 pt-2">
+                          <div className="space-y-2">
+                            {activities.map((activity, idx) => {
+                              const { Icon, title } = getActivityDisplayInfo(activity);
+                              const isCompleted = stepStatus === 'Completed'; // Simple logic for now
 
-                            <p className="text-sm text-white/60 line-clamp-2">
-                              {step.description}
-                            </p>
+                              return (
+                                <div
+                                  key={idx}
+                                  className={cn(
+                                    "flex items-center gap-3 p-3 rounded-lg border text-sm transition-all",
+                                    isCompleted
+                                      ? "bg-emerald-950/20 border-emerald-500/20 text-emerald-100"
+                                      : "bg-white/5 border-white/10 text-white/80 hover:border-[#f5c16c]/30"
+                                  )}
+                                >
+                                  <div className={cn(
+                                    "flex items-center justify-center w-8 h-8 rounded-full shrink-0",
+                                    isCompleted ? "bg-emerald-500/20 text-emerald-400" : "bg-[#f5c16c]/10 text-[#f5c16c]"
+                                  )}>
+                                    <Icon className="w-4 h-4" />
+                                  </div>
 
-                            {/* Activity Count & XP */}
-                            <div className="flex items-center gap-4 text-xs text-white/60 pt-2">
-                              <span className="flex items-center gap-1">
-                                <BookOpen className="h-3.5 w-3.5" />
-                                {activityCount} activities
-                              </span>
-                              <span className="text-[#f5c16c] font-semibold">
-                                {step.experiencePoints} XP
-                              </span>
-                            </div>
+                                  <span className="flex-1 font-medium truncate">
+                                    {title}
+                                  </span>
+
+                                  {(activity.payload as any).experiencePoints > 0 && (
+                                    <span className="text-xs text-[#f5c16c]/70 px-2 py-1 rounded bg-[#f5c16c]/5 border border-[#f5c16c]/10">
+                                      +{(activity.payload as any).experiencePoints} XP
+                                    </span>
+                                  )}
+                                </div>
+                              );
+                            })}
                           </div>
+                        </AccordionContent>
+                      </AccordionItem>
+                    </Accordion>
+                  )}
+                </div>
 
-                          {/* Action Button */}
-                          {isLocked ? (
-                            <Button
-                              disabled
-                              className="rounded-full px-5 w-40 bg-white/10 text-white/40 cursor-not-allowed"
-                            >
-                              <Lock className="mr-2 h-4 w-4" /> Locked
-                            </Button>
-                          ) : (
-                            <Button
-                              asChild
-                              className="rounded-full px-5 w-40 bg-gradient-to-r from-[#f5c16c] to-[#d4a855] text-black font-semibold hover:from-[#d4a855] hover:to-[#f5c16c]"
-                            >
-                              <Link href={`/quests/${learningPathId}/${chapterId}/${questDetails.id}/week/${step.stepNumber}`}>
-                                {isCompleted ? (
-                                  <><CheckCircle className="mr-2 h-4 w-4" /> Review Week</>
-                                ) : isCurrent ? (
-                                  <><Play className="mr-2 h-4 w-4" /> Continue</>
-                                ) : (
-                                  <><Play className="mr-2 h-4 w-4" /> Start Week</>
-                                )}
-                              </Link>
-                            </Button>
-                          )}
-                        </div>
-                      </CardContent>
-                    </Card>
-                  );
-                })
-              )}
-            </div>
-          </div>
+                {/* Locked message */}
+                {locked && (
+                  <p className="text-xs text-white/40 ml-4 mt-2 flex items-center gap-2">
+                    <Lock className="w-3 h-3" />
+                    Complete Week {step.stepNumber - 1} to unlock
+                  </p>
+                )}
+              </div>
+            );
+          })}
         </div>
       </div>
     </div>

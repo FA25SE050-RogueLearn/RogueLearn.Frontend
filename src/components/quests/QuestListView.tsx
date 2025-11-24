@@ -20,10 +20,8 @@ import {
 } from 'lucide-react';
 import { QuestSummary } from '@/types/quest';
 import questApi from '@/api/questApi';
-// MODIFICATION: Import the usePageTransition hook.
 import { usePageTransition } from '@/components/layout/PageTransition';
 import { useQuestGeneration } from '@/hooks/useQuestGeneration';
-// ⭐ ADD: Import the modal
 import QuestGenerationModal from '@/components/quests/QuestGenerationModal';
 
 interface QuestListViewProps {
@@ -38,7 +36,6 @@ interface QuestListViewProps {
 }
 const LEARNING_MODE_STORAGE_KEY = 'roguelearn_learning_mode';
 
-
 export default function QuestListView({
   activeQuests,
   completedQuests,
@@ -46,10 +43,10 @@ export default function QuestListView({
   userStats
 }: QuestListViewProps) {
   const router = useRouter();
-  // MODIFICATION: Get the navigateTo function from our custom hook.
   const { navigateTo } = usePageTransition();
-  const { startGeneration, checkStatus } = useQuestGeneration();
-  const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const { startGeneration } = useQuestGeneration();
+
+  // ⭐ REMOVED: pollingIntervalRef - no longer polling here
   const headerRef = useRef<HTMLDivElement | null>(null);
   const activeQuestsRef = useRef<HTMLDivElement | null>(null);
   const completedQuestsRef = useRef<HTMLDivElement | null>(null);
@@ -57,13 +54,13 @@ export default function QuestListView({
   const lockedQuestsRef = useRef<HTMLDivElement | null>(null);
   const [generatingQuestId, setGeneratingQuestId] = useState<string | null>(null);
 
-  // ⭐ ADD: Modal state
+  // Modal state
   const [showGenerationModal, setShowGenerationModal] = useState(false);
   const [generatingJobId, setGeneratingJobId] = useState<string | null>(null);
   const [generatingQuestTitle, setGeneratingQuestTitle] = useState('');
+  const [targetQuestUrl, setTargetQuestUrl] = useState<string>('');
 
   const [learningMode, setLearningMode] = useState<'structured' | 'free'>('structured');
-
 
   const { availableQuests, lockedQuests } = useMemo(() => {
     if (learningMode === 'free') {
@@ -73,12 +70,10 @@ export default function QuestListView({
       };
     }
 
-
     const available: QuestSummary[] = [];
     const locked: QuestSummary[] = [];
     const completedIds = new Set(completedQuests.map(q => q.id));
     const allSortedQuests = [...completedQuests, ...notStartedQuests].sort((a, b) => a.sequenceOrder - b.sequenceOrder);
-
 
     notStartedQuests.forEach(quest => {
       const questIndex = allSortedQuests.findIndex(q => q.id === quest.id);
@@ -94,27 +89,27 @@ export default function QuestListView({
       }
     });
 
-
     return { availableQuests: available, lockedQuests: locked };
   }, [learningMode, notStartedQuests, completedQuests]);
+
   useEffect(() => {
     if (typeof window === 'undefined') return;
-
 
     try {
       const savedMode = localStorage.getItem(LEARNING_MODE_STORAGE_KEY) as 'structured' | 'free' | null;
       if (savedMode && (savedMode === 'structured' || savedMode === 'free')) {
         console.log('📚 Loaded learning mode from storage:', savedMode);
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setLearningMode(savedMode);
       }
     } catch (error) {
       console.error('Failed to load learning mode from localStorage:', error);
     }
   }, []);
+
   const handleLearningModeChange = (checked: boolean) => {
     const newMode = checked ? 'free' : 'structured';
     setLearningMode(newMode);
-
 
     try {
       localStorage.setItem(LEARNING_MODE_STORAGE_KEY, newMode);
@@ -123,7 +118,6 @@ export default function QuestListView({
       console.error('Failed to save learning mode to localStorage:', error);
     }
   };
-
 
   useEffect(() => {
     const ctx = gsap.context(() => {
@@ -150,35 +144,42 @@ export default function QuestListView({
     return () => ctx.revert();
   }, [availableQuests, lockedQuests]);
 
+  // ⭐ NEW: Handle quest completion from modal
+  const handleQuestComplete = () => {
+    console.log('✅ Quest generation completed! Navigating to:', targetQuestUrl);
+    setShowGenerationModal(false);
+    setGeneratingJobId(null);
+    setGeneratingQuestTitle('');
+    setGeneratingQuestId(null);
+    navigateTo(targetQuestUrl);
+  };
 
   const handleStartQuest = async (event: React.MouseEvent, quest: QuestSummary) => {
     event.preventDefault();
     event.stopPropagation();
+
+    const questUrl = `/quests/${quest.learningPathId}/${quest.chapterId}/${quest.id}`;
     setGeneratingQuestId(quest.id);
     setGeneratingQuestTitle(quest.title);
+    setTargetQuestUrl(questUrl);
 
     try {
       console.log(`🔍 Checking if quest steps already exist for: ${quest.title}`);
 
-
       // ========== STEP 1: CHECK IF STEPS ALREADY EXIST ==========
       const detailsResponse = await questApi.getQuestDetails(quest.id);
 
-
       if (detailsResponse.isSuccess && detailsResponse.data?.steps && detailsResponse.data.steps.length > 0) {
         console.log(`✅ Quest steps for ${quest.title} already exist. Navigating directly.`);
-        navigateTo(`/quests/${quest.learningPathId}/${quest.chapterId}/${quest.id}`);
+        navigateTo(questUrl);
         setGeneratingQuestId(null);
         return;
       }
 
-
       console.log(`🚀 Quest steps for ${quest.title} not found. Starting background generation...`);
-
 
       // ========== STEP 2: START BACKGROUND GENERATION ==========
       const jobId = await startGeneration(quest.id);
-
 
       if (!jobId) {
         console.error('❌ Failed to start generation');
@@ -187,90 +188,13 @@ export default function QuestListView({
         return;
       }
 
-
       console.log(`📡 Background job started with ID: ${jobId}`);
-      // ⭐ ADD: Show modal
+
+      // ⭐ UPDATED: Show modal and let IT handle all polling
       setGeneratingJobId(jobId);
       setShowGenerationModal(true);
-      console.log(`⏳ Starting to poll for completion...`);
 
-
-      // ========== STEP 3: POLL FOR COMPLETION ==========
-      let pollCount = 0;
-      const maxPolls = 300; // 5 minutes (1 second intervals)
-
-
-      const pollJob = async () => {
-        pollCount++;
-
-
-        if (pollCount % 10 === 0) {
-          console.log(`📊 Poll attempt ${pollCount}/${maxPolls}...`);
-        }
-
-
-        const jobStatus = await checkStatus(jobId);
-
-
-        // Success: Generation completed
-        if (jobStatus === 'Succeeded') {
-          console.log('✅ Generation completed! Fetching quest details...');
-          clearInterval(pollingIntervalRef.current!);
-
-
-          // Fetch the newly generated quest
-          const updatedQuest = await questApi.getQuestDetails(quest.id);
-
-
-          if (updatedQuest.isSuccess && updatedQuest.data?.steps && updatedQuest.data.steps.length > 0) {
-            console.log(`✅ Quest steps ready! Navigating to quest...`);
-            setShowGenerationModal(false);
-            navigateTo(`/quests/${quest.learningPathId}/${quest.chapterId}/${quest.id}`);
-          } else {
-            console.error('❌ Quest steps still empty after generation');
-            alert('Generation completed but steps are still empty. Please refresh and try again.');
-          }
-
-
-          setGeneratingQuestId(null);
-          return;
-        }
-
-
-        // Failed: Generation failed
-        if (jobStatus === 'Failed') {
-          console.error('❌ Generation failed');
-          clearInterval(pollingIntervalRef.current!);
-          alert('Quest generation failed. Please try again.');
-          setGeneratingQuestId(null);
-          setShowGenerationModal(false);
-          return;
-        }
-
-
-        // Timeout: Polling exceeded max attempts
-        if (pollCount >= maxPolls) {
-          console.error('⏱️ Polling timeout after 5 minutes');
-          clearInterval(pollingIntervalRef.current!);
-          alert('Generation is taking too long. Please try again later.');
-          setGeneratingQuestId(null);
-          setShowGenerationModal(false);
-          return;
-        }
-
-
-        // Still processing: Continue polling
-        // (no console log here to avoid spam)
-      };
-
-
-      // ========== START POLLING LOOP ==========
-      // Poll every 1 second
-      pollingIntervalRef.current = setInterval(pollJob, 1000);
-
-
-      // Immediate first poll
-      await pollJob();
+      // ⭐ REMOVED: All polling logic - modal will handle it
     } catch (error: any) {
       console.error('❌ Error starting quest:', error);
       alert('An error occurred while starting the quest. Please try again.');
@@ -279,19 +203,7 @@ export default function QuestListView({
     }
   };
 
-
-  // ========== ADD CLEANUP ON COMPONENT UNMOUNT ==========
-  // Add this useEffect at the end of your component:
-  useEffect(() => {
-    return () => {
-      // Cleanup polling interval on unmount
-      if (pollingIntervalRef.current) {
-        clearInterval(pollingIntervalRef.current);
-      }
-    };
-  }, []);
-
-
+  // ⭐ REMOVED: Cleanup useEffect - no longer needed since we're not polling here
 
   const QuestCard = ({ quest, isLocked = false }: { quest: QuestSummary; isLocked?: boolean }) => (
     <button
@@ -324,7 +236,6 @@ export default function QuestListView({
         <div className="absolute inset-0 opacity-20 bg-[radial-gradient(circle_at_top,_rgba(245,193,108,0.2),_transparent_70%)]" />
         <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[#f5c16c]/40 to-transparent" />
 
-
         <CardContent className="relative z-10 space-y-4 p-6">
           <div className="flex items-start justify-between">
             <div className="flex flex-1 gap-4">
@@ -337,12 +248,9 @@ export default function QuestListView({
                     : <BookOpen className="h-7 w-7" />}
               </div>
               <div className="flex-1 space-y-1">
-                {/* ⭐ UPDATED: Quest title with recommendation tag inline */}
                 <div className="flex items-center gap-2 flex-wrap">
                   <h3 className="text-xl font-semibold text-white">{quest.title}</h3>
 
-
-                  {/* ⭐ NEW: Recommendation tag */}
                   {quest.isRecommended && (
                     <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-500/20 px-2.5 py-1 text-xs font-medium text-amber-300 border border-amber-500/40 whitespace-nowrap">
                       <span className="w-1.5 h-1.5 bg-amber-400 rounded-full" />
@@ -351,16 +259,12 @@ export default function QuestListView({
                   )}
                 </div>
 
-
                 <p className="text-xs uppercase tracking-[0.3em] text-white/50">
                   Status: {quest.status}
                 </p>
               </div>
-
-
             </div>
           </div>
-
 
           {(quest.status === 'InProgress' || quest.status === 'NotStarted') && !isLocked && (
             <div
@@ -380,7 +284,6 @@ export default function QuestListView({
             </div>
           )}
 
-
           {isLocked && (
             <div className="rounded-2xl border border-[#f5c16c]/20 bg-black/40 p-4 text-xs uppercase tracking-[0.35em] text-white/50">
               <Lock className="mr-2 inline h-3 w-3" /> Complete previous quests to unlock
@@ -390,7 +293,6 @@ export default function QuestListView({
       </Card>
     </button>
   );
-
 
   return (
     <div className="flex flex-col gap-10 pb-24">
@@ -494,7 +396,6 @@ export default function QuestListView({
         </div>
       </div>
 
-
       {activeQuests.length > 0 && (
         <div ref={activeQuestsRef}>
           <div className="mb-6 flex items-center justify-between rounded-2xl border border-[#f5c16c]/20 bg-gradient-to-r from-[#f5c16c]/10 via-transparent to-transparent px-6 py-4">
@@ -514,7 +415,6 @@ export default function QuestListView({
         </div>
       )}
 
-
       {completedQuests.length > 0 && (
         <div ref={completedQuestsRef}>
           <div className="mb-6 flex items-center justify-between rounded-2xl border border-emerald-400/20 bg-gradient-to-r from-emerald-400/10 via-transparent to-transparent px-6 py-4">
@@ -530,7 +430,6 @@ export default function QuestListView({
           </div>
         </div>
       )}
-
 
       {availableQuests.length > 0 && (
         <div ref={availableQuestsRef}>
@@ -551,7 +450,6 @@ export default function QuestListView({
         </div>
       )}
 
-
       {lockedQuests.length > 0 && (
         <div ref={lockedQuestsRef}>
           <div className="mb-6 flex items-center justify-between rounded-2xl border border-white/20 bg-gradient-to-r from-white/10 via-transparent to-transparent px-6 py-4">
@@ -571,7 +469,7 @@ export default function QuestListView({
         </div>
       )}
 
-      {/* ⭐ ADD: Modal component */}
+      {/* ⭐ UPDATED: Modal with completion handler */}
       <QuestGenerationModal
         isOpen={showGenerationModal}
         jobId={generatingJobId}
@@ -582,12 +480,7 @@ export default function QuestListView({
           setGeneratingQuestTitle('');
           setGeneratingQuestId(null);
         }}
-        onComplete={() => {
-          setShowGenerationModal(false);
-          setGeneratingJobId(null);
-          setGeneratingQuestTitle('');
-          setGeneratingQuestId(null);
-        }}
+        onComplete={handleQuestComplete}
       />
     </div>
   );

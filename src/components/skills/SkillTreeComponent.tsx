@@ -3,10 +3,12 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation'; // ⭐ NEW: Import router
 import { Sparkles, Zap, Crown, Star, Lock, CheckCircle2, Circle, Loader2 } from 'lucide-react';
 import skillsApi from '@/api/skillsApi';
 import { SkillTree, SkillNode, SkillDependency } from '@/types/skill-tree';
 
+// ... (Helper functions getTierName, getTierIcon, getTierColor remain unchanged) ...
 // Convert numeric tier to string representation
 const getTierName = (tier: number): 'Foundation' | 'Intermediate' | 'Advanced' => {
   switch (tier) {
@@ -55,8 +57,8 @@ const getTierColor = (tier: number) => {
   }
 };
 
-const SkillOrb = ({ skill, position, onClick }: { 
-  skill: SkillNode; 
+const SkillOrb = ({ skill, position, onClick }: {
+  skill: SkillNode;
   position: { x: number; y: number };
   onClick: () => void;
 }) => {
@@ -78,26 +80,26 @@ const SkillOrb = ({ skill, position, onClick }: {
     >
       {/* Pulsing glow effect */}
       {!isLocked && (
-        <div 
+        <div
           className={`absolute inset-0 rounded-full bg-gradient-to-r ${tierColors.glow} blur-xl opacity-40 group-hover:opacity-70 transition-opacity animate-pulse`}
           style={{ width: '120px', height: '120px', left: '-10px', top: '-10px' }}
         />
       )}
-      
+
       {/* Main orb container */}
       <div className="relative">
         {/* Outer ring with tier color */}
-        <div 
+        <div
           className={`w-24 h-24 rounded-full border-4 ${tierColors.border} ${isLocked ? 'opacity-30' : 'opacity-100'} transition-all duration-300 group-hover:scale-110`}
           style={{
-            background: isLocked 
+            background: isLocked
               ? 'radial-gradient(circle, rgba(30,30,30,0.9), rgba(10,10,10,0.95))'
               : `radial-gradient(circle at 30% 30%, rgba(255,255,255,0.15), transparent 70%), linear-gradient(135deg, rgba(0,0,0,0.3), rgba(0,0,0,0.7))`
           }}
         >
           {/* Inner glow ring */}
           <div className={`absolute inset-2 rounded-full border-2 border-white/20 ${!isLocked && 'animate-spin'}`} style={{ animationDuration: '20s' }} />
-          
+
           {/* Content area */}
           <div className="absolute inset-0 flex items-center justify-center">
             {isLocked ? (
@@ -189,6 +191,10 @@ const SkillOrb = ({ skill, position, onClick }: {
             {isLocked && (
               <p className="text-red-400 text-xs mt-2">🔒 Complete prerequisites to unlock</p>
             )}
+            {/* ⭐ NEW: Call to action in tooltip */}
+            <p className="text-[#f5c16c] text-[10px] mt-2 uppercase tracking-widest text-center border-t border-white/10 pt-2">
+              Click to view details
+            </p>
           </div>
         </div>
       </div>
@@ -196,16 +202,16 @@ const SkillOrb = ({ skill, position, onClick }: {
   );
 };
 
-const SkillConnection = ({ from, to, isUnlocked }: { 
-  from: { x: number; y: number }; 
+const SkillConnection = ({ from, to, isUnlocked }: {
+  from: { x: number; y: number };
   to: { x: number; y: number };
   isUnlocked: boolean;
 }) => {
   const midX = (from.x + to.x) / 2;
   const midY = (from.y + to.y) / 2;
-  
+
   const path = `M ${from.x} ${from.y} Q ${midX} ${midY - 5} ${to.x} ${to.y}`;
-  
+
   return (
     <svg className="absolute inset-0 w-full h-full pointer-events-none" style={{ zIndex: 1 }}>
       <defs>
@@ -228,6 +234,7 @@ const SkillConnection = ({ from, to, isUnlocked }: {
 };
 
 export function SkillTreeComponent() {
+  const router = useRouter(); // ⭐ NEW: Initialize router
   const [treeData, setTreeData] = useState<SkillTree | null>(null);
   const [selectedSkill, setSelectedSkill] = useState<SkillNode | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -255,6 +262,15 @@ export function SkillTreeComponent() {
     fetchSkillTree();
   }, []);
 
+  // ⭐ NEW: Navigation handler
+  const handleSkillClick = (skill: SkillNode) => {
+    // Check if skillId exists before pushing
+    if (skill && skill.skillId) {
+      router.push(`/skills/${skill.skillId}`);
+    } else {
+      console.error("Cannot navigate: Skill ID is missing", skill);
+    }
+  };
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
@@ -297,7 +313,7 @@ export function SkillTreeComponent() {
     const tierIndex = treeData.nodes.filter(n => n.tier === tier).indexOf(treeData.nodes[index]);
     const spacing = 80 / (nodesInTier + 1);
     const x = 10 + spacing * (tierIndex + 1);
-    
+
     return { x, y: tierY };
   };
 
@@ -364,7 +380,7 @@ export function SkillTreeComponent() {
             key={node.skillId}
             skill={node}
             position={getNodePosition(i, node.tier)}
-            onClick={() => setSelectedSkill(node)}
+            onClick={() => handleSkillClick(node)} // ⭐ NEW: Trigger navigation
           />
         ))}
       </div>

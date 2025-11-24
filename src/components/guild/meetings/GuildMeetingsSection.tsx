@@ -37,12 +37,13 @@ const MEETING_CARD_CLASS = "relative overflow-hidden rounded-[28px] border borde
 const ACTIVE_MEETING_CLASS = "relative overflow-hidden rounded-[28px] border-2 border-emerald-500/50 bg-gradient-to-br from-emerald-950/50 via-[#1a0a08] to-black shadow-[0_0_30px_rgba(16,185,129,0.2)]";
 
 export default function GuildMeetingsSection({ guildId }: Props) {
-  const { getAccessToken, requestToken } = useGoogleMeet();
+  const { getAccessToken, requestToken, refreshAccessToken } = useGoogleMeet();
   const [authUserId, setAuthUserId] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
   const [ending, setEnding] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [activeToken, setActiveToken] = useState<string | null>(null);
+  const [needsAuth, setNeedsAuth] = useState<boolean>(false);
 
   const [createState, setCreateState] = useState<CreateState>(() => {
     const now = new Date();
@@ -65,6 +66,11 @@ export default function GuildMeetingsSection({ guildId }: Props) {
   const [detailsLoading, setDetailsLoading] = useState<Record<string, boolean>>({});
   const [loadingMeetings, setLoadingMeetings] = useState(false);
   const [members, setMembers] = useState<GuildMemberDto[]>([]);
+
+  function isUnauthorized(err: any): boolean {
+    const msg = typeof err?.message === "string" ? err.message : "";
+    return (err?.status === 401) || (err?.response?.status === 401) || /\b401\b/.test(msg);
+  }
 
   function detectActiveMeeting(list: MeetingDto[]): MeetingDto | null {
     const byStatus = list.filter((m) => m.status === MeetingStatus.Active);
@@ -139,15 +145,40 @@ export default function GuildMeetingsSection({ guildId }: Props) {
     setCreating(true);
     try {
       if (!authUserId) throw new Error("Not authenticated");
-      const token = await getAccessToken(requiredBothScopes);
+      let token = await getAccessToken(requiredBothScopes);
       setActiveToken(token);
+      try { sessionStorage.setItem(`guildMeetingToken:${guildId}`, token); } catch (_) {}
+      let created: any;
       try {
-        sessionStorage.setItem(`guildMeetingToken:${guildId}`, token);
-      } catch (_) {}
-      let created = await googleMeetApi.createSpace(token, { config: {} });
+        created = await googleMeetApi.createSpace(token, { config: {} });
+      } catch (e: any) {
+        if (isUnauthorized(e)) {
+          try {
+            const refreshed = await refreshAccessToken();
+            token = refreshed;
+            setActiveToken(refreshed);
+            try { sessionStorage.setItem(`guildMeetingToken:${guildId}`, refreshed); } catch (_) {}
+            created = await googleMeetApi.createSpace(token, { config: {} });
+          } catch {
+            try {
+              const gisToken = await requestToken(requiredBothScopes);
+              token = gisToken;
+              setActiveToken(gisToken);
+              try { sessionStorage.setItem(`guildMeetingToken:${guildId}`, gisToken); } catch (_) {}
+              created = await googleMeetApi.createSpace(gisToken, { config: {} });
+            } catch (reqErr: any) {
+              setNeedsAuth(true);
+              throw new Error("Authorization required to access Google Meet. Click Authorize and retry.");
+            }
+          }
+        } else {
+          throw e;
+        }
+      }
       if (!created?.meetingUri) {
         try {
           const gisToken = await requestToken(requiredBothScopes);
+          token = gisToken;
           setActiveToken(gisToken);
           try { sessionStorage.setItem(`guildMeetingToken:${guildId}`, gisToken); } catch (_) {}
           created = await googleMeetApi.createSpace(gisToken, { config: {} });
@@ -161,7 +192,34 @@ export default function GuildMeetingsSection({ guildId }: Props) {
         const cfg = space?.config as any;
         const title = (cfg?.title ?? '').trim();
         if (title) spaceName = title;
-      } catch {}
+      } catch (e: any) {
+        if (isUnauthorized(e)) {
+          try {
+            const refreshed = await refreshAccessToken();
+            token = refreshed;
+            setActiveToken(refreshed);
+            try { sessionStorage.setItem(`guildMeetingToken:${guildId}`, refreshed); } catch (_) {}
+            const space = await googleMeetApi.getSpace(token, created.name ?? meetingCode ?? '');
+            const cfg = space?.config as any;
+            const title = (cfg?.title ?? '').trim();
+            if (title) spaceName = title;
+          } catch {
+            try {
+              const gisToken = await requestToken(requiredBothScopes);
+              token = gisToken;
+              setActiveToken(gisToken);
+              try { sessionStorage.setItem(`guildMeetingToken:${guildId}`, gisToken); } catch (_) {}
+              const space = await googleMeetApi.getSpace(token, created.name ?? meetingCode ?? '');
+              const cfg = space?.config as any;
+              const title = (cfg?.title ?? '').trim();
+              if (title) spaceName = title;
+            } catch (reqErr: any) {
+              setNeedsAuth(true);
+              throw new Error("Authorization required to access Google Meet. Click Authorize and retry.");
+            }
+          }
+        }
+      }
       const payload: MeetingDto = {
         organizerId: authUserId,
         partyId: null,
@@ -183,6 +241,7 @@ export default function GuildMeetingsSection({ guildId }: Props) {
       });
       const listRes = await meetingsApi.getGuildMeetings(guildId);
       setGuildMeetings(listRes.data ?? []);
+      setNeedsAuth(false);
     } catch (e: any) {
       setError(e?.message ?? "Failed to create meeting");
     } finally {
@@ -205,7 +264,7 @@ export default function GuildMeetingsSection({ guildId }: Props) {
     setEnding(true);
     try {
       if (!meeting?.meetingId) throw new Error("No meeting to end");
-      const token = activeToken ?? (await getAccessToken(requiredBothScopes));
+      let token = activeToken ?? (await getAccessToken(requiredBothScopes));
       if (members.length === 0) {
         try {
           const memRes = await guildsApi.getMembers(guildId);
@@ -218,17 +277,94 @@ export default function GuildMeetingsSection({ guildId }: Props) {
         const codeMatch = link.match(/[a-z0-9]+-[a-z0-9]+-[a-z0-9]+/i);
         const code = codeMatch?.[0] ?? null;
         if (code) {
-          const space = await googleMeetApi.getSpace(token, code);
-          spaceName = space?.name ?? null;
+          try {
+            const space = await googleMeetApi.getSpace(token, code);
+            spaceName = space?.name ?? null;
+          } catch (e: any) {
+            if (isUnauthorized(e)) {
+              try {
+                const refreshed = await refreshAccessToken();
+                token = refreshed;
+                setActiveToken(refreshed);
+                try { sessionStorage.setItem(`guildMeetingToken:${guildId}`, refreshed); } catch (_) {}
+                const space = await googleMeetApi.getSpace(token, code);
+                spaceName = space?.name ?? null;
+              } catch {
+                try {
+                  const gisToken = await requestToken(requiredBothScopes);
+                  token = gisToken;
+                  setActiveToken(gisToken);
+                  try { sessionStorage.setItem(`guildMeetingToken:${guildId}`, gisToken); } catch (_) {}
+                  const space = await googleMeetApi.getSpace(token, code);
+                  spaceName = space?.name ?? null;
+                } catch (reqErr: any) {
+                  setNeedsAuth(true);
+                  throw new Error("Authorization required to access Google Meet. Click Authorize and retry.");
+                }
+              }
+            }
+          }
         }
       }
-      const confList = await googleMeetApi.listConferenceRecords(token, { pageSize: 10 });
+      let confList: any;
+      try {
+        confList = await googleMeetApi.listConferenceRecords(token, { pageSize: 10 });
+      } catch (e: any) {
+        if (isUnauthorized(e)) {
+          try {
+            const refreshed = await refreshAccessToken();
+            token = refreshed;
+            setActiveToken(refreshed);
+            try { sessionStorage.setItem(`guildMeetingToken:${guildId}`, refreshed); } catch (_) {}
+            confList = await googleMeetApi.listConferenceRecords(token, { pageSize: 10 });
+          } catch {
+            try {
+              const newToken = await requestToken(requiredBothScopes);
+              token = newToken;
+              setActiveToken(newToken);
+              try { sessionStorage.setItem(`guildMeetingToken:${guildId}`, newToken); } catch (_) {}
+              confList = await googleMeetApi.listConferenceRecords(token, { pageSize: 10 });
+            } catch (reqErr: any) {
+              setNeedsAuth(true);
+              throw new Error("Authorization required to access Google Meet. Click Authorize and retry.");
+            }
+          }
+        } else {
+          throw e;
+        }
+      }
       const records: any[] = confList?.conferenceRecords ?? confList?.records ?? [];
       if (!records || records.length === 0) throw new Error("No conference records found");
       const latest = records[0];
       const conferenceId: string = latest?.name?.split("/")?.pop?.() ?? latest?.conferenceId ?? latest?.id;
       if (!conferenceId) throw new Error("Unable to determine conferenceId");
-      const participantsRes = await googleMeetApi.listParticipants(token, conferenceId);
+      let participantsRes: any;
+      try {
+        participantsRes = await googleMeetApi.listParticipants(token, conferenceId);
+      } catch (e: any) {
+        if (isUnauthorized(e)) {
+          try {
+            const refreshed = await refreshAccessToken();
+            token = refreshed;
+            setActiveToken(refreshed);
+            try { sessionStorage.setItem(`guildMeetingToken:${guildId}`, refreshed); } catch (_) {}
+            participantsRes = await googleMeetApi.listParticipants(token, conferenceId);
+          } catch {
+            try {
+              const newToken = await requestToken(requiredBothScopes);
+              token = newToken;
+              setActiveToken(newToken);
+              try { sessionStorage.setItem(`guildMeetingToken:${guildId}`, newToken); } catch (_) {}
+              participantsRes = await googleMeetApi.listParticipants(token, conferenceId);
+            } catch (reqErr: any) {
+              setNeedsAuth(true);
+              throw new Error("Authorization required to access Google Meet. Click Authorize and retry.");
+            }
+          }
+        } else {
+          throw e;
+        }
+      }
       const participantsRaw: any[] = participantsRes?.participants ?? participantsRes?.items ?? [];
       const mapped: MeetingParticipantDto[] = [];
       for (const p of participantsRaw) {
@@ -282,7 +418,39 @@ export default function GuildMeetingsSection({ guildId }: Props) {
         if (spaceName) {
           await googleMeetApi.endActiveConference(token, spaceName);
         }
-      } catch (_) {}
+      } catch (e: any) {
+        if (isUnauthorized(e)) {
+          try {
+            const refreshed = await refreshAccessToken();
+            token = refreshed;
+            setActiveToken(refreshed);
+            try { sessionStorage.setItem(`guildMeetingToken:${guildId}`, refreshed); } catch (_) {}
+            if (!spaceName && latest?.name) {
+              const record = await googleMeetApi.getConferenceRecord(token, latest.name);
+              spaceName = record?.space ?? spaceName ?? null;
+            }
+            if (spaceName) {
+              await googleMeetApi.endActiveConference(token, spaceName);
+            }
+          } catch {
+            try {
+              const newToken = await requestToken(requiredBothScopes);
+              token = newToken;
+              setActiveToken(newToken);
+              try { sessionStorage.setItem(`guildMeetingToken:${guildId}`, newToken); } catch (_) {}
+              if (!spaceName && latest?.name) {
+                const record = await googleMeetApi.getConferenceRecord(token, latest.name);
+                spaceName = record?.space ?? spaceName ?? null;
+              }
+              if (spaceName) {
+                await googleMeetApi.endActiveConference(token, spaceName);
+              }
+            } catch (reqErr: any) {
+              setNeedsAuth(true);
+            }
+          }
+        }
+      }
       const listRes = await meetingsApi.getGuildMeetings(guildId);
       setGuildMeetings(listRes.data ?? []);
     } catch (e: any) {
@@ -299,14 +467,66 @@ export default function GuildMeetingsSection({ guildId }: Props) {
       if (!meeting.actualEndTime) throw new Error("Meeting has no end time yet");
       const endedAt = new Date(meeting.actualEndTime).getTime();
       if (Date.now() - endedAt < 10 * 60 * 1000) throw new Error("Sync available ~10 minutes after meeting ends");
-      const token = activeToken ?? (await getAccessToken(requiredBothScopes));
-      const confList = await googleMeetApi.listConferenceRecords(token, { pageSize: 10 });
+      let token = activeToken ?? (await getAccessToken(requiredBothScopes));
+      let confList: any;
+      try {
+        confList = await googleMeetApi.listConferenceRecords(token, { pageSize: 10 });
+      } catch (e: any) {
+        if (isUnauthorized(e)) {
+          try {
+            const refreshed = await refreshAccessToken();
+            token = refreshed;
+            setActiveToken(refreshed);
+            try { sessionStorage.setItem(`guildMeetingToken:${guildId}`, refreshed); } catch (_) {}
+            confList = await googleMeetApi.listConferenceRecords(token, { pageSize: 10 });
+          } catch {
+            try {
+              const newToken = await requestToken(requiredBothScopes);
+              token = newToken;
+              setActiveToken(newToken);
+              try { sessionStorage.setItem(`guildMeetingToken:${guildId}`, newToken); } catch (_) {}
+              confList = await googleMeetApi.listConferenceRecords(token, { pageSize: 10 });
+            } catch (reqErr: any) {
+              setNeedsAuth(true);
+              throw new Error("Authorization required to access Google Meet. Click Authorize and retry.");
+            }
+          }
+        } else {
+          throw e;
+        }
+      }
       const records: any[] = confList?.conferenceRecords ?? confList?.records ?? [];
       if (!records || records.length === 0) throw new Error("No conference records found");
       const latest = records[0];
       const conferenceId: string = latest?.name?.split("/")?.pop?.() ?? latest?.conferenceId ?? latest?.id;
       if (!conferenceId) throw new Error("Unable to determine conferenceId");
-      const transcriptsRes = await googleMeetApi.listTranscripts(token, conferenceId);
+      let transcriptsRes: any;
+      try {
+        transcriptsRes = await googleMeetApi.listTranscripts(token, conferenceId);
+      } catch (e: any) {
+        if (isUnauthorized(e)) {
+          try {
+            const refreshed = await refreshAccessToken();
+            token = refreshed;
+            setActiveToken(refreshed);
+            try { sessionStorage.setItem(`guildMeetingToken:${guildId}`, refreshed); } catch (_) {}
+            transcriptsRes = await googleMeetApi.listTranscripts(token, conferenceId);
+          } catch {
+            try {
+              const newToken = await requestToken(requiredBothScopes);
+              token = newToken;
+              setActiveToken(newToken);
+              try { sessionStorage.setItem(`guildMeetingToken:${guildId}`, newToken); } catch (_) {}
+              transcriptsRes = await googleMeetApi.listTranscripts(token, conferenceId);
+            } catch (reqErr: any) {
+              setNeedsAuth(true);
+              throw new Error("Authorization required to access Google Meet. Click Authorize and retry.");
+            }
+          }
+        } else {
+          throw e;
+        }
+      }
       const transcripts: any[] = transcriptsRes?.transcripts ?? transcriptsRes?.items ?? [];
       const artifacts: ArtifactInputDto[] = [];
       for (const t of transcripts) {
@@ -328,8 +548,21 @@ export default function GuildMeetingsSection({ guildId }: Props) {
       try { await meetingsApi.upsertMeeting(completed); } catch {}
       const listRes = await meetingsApi.getGuildMeetings(guildId);
       setGuildMeetings(listRes.data ?? []);
+      setNeedsAuth(false);
     } catch (e: any) {
       setError(e?.message ?? "Failed to sync transcripts");
+    }
+  }
+
+  async function handleAuthorize() {
+    setError(null);
+    try {
+      const newToken = await requestToken(requiredBothScopes);
+      setActiveToken(newToken);
+      try { sessionStorage.setItem(`guildMeetingToken:${guildId}`, newToken); } catch (_) {}
+      setNeedsAuth(false);
+    } catch (e: any) {
+      setError(e?.message ?? "Authorization failed");
     }
   }
 
@@ -431,6 +664,14 @@ export default function GuildMeetingsSection({ guildId }: Props) {
                 <Play className="h-4 w-4" />
                 {creating ? "Creating..." : "Create Meeting"}
               </button>
+              {needsAuth && (
+                <button
+                  onClick={handleAuthorize}
+                  className="rounded bg-linear-to-r from-[#f5c16c] to-[#d4a855] px-3 py-2 text-xs font-medium text-black"
+                >
+                  Authorize Google Meet
+                </button>
+              )}
             </div>
           </div>
         </div>
@@ -441,7 +682,17 @@ export default function GuildMeetingsSection({ guildId }: Props) {
       <div className="rounded border border-white/10 bg-white/5 p-4">
         <div className="mb-2 flex items-center justify-between">
           <h5 className="text-xs font-semibold">Meetings</h5>
-          {loadingMeetings && <span className="text-xs text-white/60">Loading...</span>}
+          <div className="flex items-center gap-2">
+            {loadingMeetings && <span className="text-xs text-white/60">Loading...</span>}
+            {needsAuth && (
+              <button
+                onClick={handleAuthorize}
+                className="rounded bg-linear-to-r from-[#f5c16c] to-[#d4a855] px-3 py-1.5 text-xs font-medium text-black"
+              >
+                Authorize Google Meet
+              </button>
+            )}
+          </div>
         </div>
         {guildMeetings.length === 0 ? (
           <div className="text-xs text-white/60">No meetings yet.</div>
@@ -475,15 +726,12 @@ export default function GuildMeetingsSection({ guildId }: Props) {
                             <span className="rounded bg-white/10 px-2 py-0.5 text-[10px] text-white/80">{m.status}</span>
                           )}
                         </div>
-                        {m.spaceName && (
-                          <div className="text-[11px] text-white/70 truncate">Space Name: {m.spaceName}</div>
-                        )}
                         <div className="mt-1 grid grid-cols-1 gap-1 md:grid-cols-2">
                           <div className="text-[11px] text-white/60">
-                            <span className="text-white/70">Scheduled:</span> {formatBangkok(m.scheduledStartTime, { includeSeconds: false, separator: " " })} – {formatBangkok(m.scheduledEndTime, { includeSeconds: false, separator: " " })}
+                            <span className="text-white/70">Scheduled:</span> {new Date(m.scheduledStartTime).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })} • {new Date(m.scheduledEndTime).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}
                           </div>
                           <div className="text-[11px] text-white/60">
-                            <span className="text-white/70">Actual:</span> {m.actualStartTime ? formatBangkok(m.actualStartTime, { includeSeconds: false, separator: " " }) : "—"} – {m.actualEndTime ? formatBangkok(m.actualEndTime, { includeSeconds: false, separator: " " }) : "—"}
+                            <span className="text-white/70">Actual:</span> {m.actualStartTime ? new Date(m.actualStartTime).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }) : "—"} • {m.actualEndTime ? new Date(m.actualEndTime).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }) : "—"}
                           </div>
                         </div>
                       </div>
@@ -493,7 +741,7 @@ export default function GuildMeetingsSection({ guildId }: Props) {
                             href={m.meetingLink}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="rounded bg-white/10 px-3 py-1.5 text-xs font-medium text-white"
+                            className="rounded border border-white/20 bg-transparent px-3 py-1.5 text-xs font-medium text-white hover:bg-white/10"
                           >
                             Join Meet ↗
                           </a>
@@ -504,7 +752,7 @@ export default function GuildMeetingsSection({ guildId }: Props) {
                             <button
                               onClick={(e) => { e.preventDefault(); handleEndMeetingFor(m); }}
                               disabled={ending}
-                              className="flex items-center gap-2 rounded-lg bg-rose-600 px-3 py-1.5 text-xs font-medium text-white disabled:opacity-50"
+                              className="rounded bg-red-600 px-3 py-1.5 text-xs font-medium text-white disabled:opacity-50"
                             >
                               End Meeting
                             </button>
@@ -512,13 +760,13 @@ export default function GuildMeetingsSection({ guildId }: Props) {
                           <TooltipProvider>
                             <Tooltip>
                               <TooltipTrigger asChild>
-                                <span className={!(m.status === MeetingStatus.EndedProcessing && m.actualEndTime && (Date.now() - new Date(m.actualEndTime).getTime() >= 10 * 60 * 1000)) ? "cursor-not-allowed" : ""}>
+                                <span>
                                   <button
                                     onClick={(e) => { e.preventDefault(); handleSyncMeetingFor(m); }}
                                     disabled={!(m.status === MeetingStatus.EndedProcessing && m.actualEndTime && (Date.now() - new Date(m.actualEndTime).getTime() >= 10 * 60 * 1000))}
-                                    className="flex items-center gap-2 rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-medium text-white disabled:opacity-50"
+                                    className="rounded border border-white/20 bg-transparent px-3 py-1.5 text-xs font-medium text-white disabled:opacity-50 hover:bg-white/10"
                                   >
-                                    Sync Transcript
+                                    Transcript
                                   </button>
                                 </span>
                               </TooltipTrigger>

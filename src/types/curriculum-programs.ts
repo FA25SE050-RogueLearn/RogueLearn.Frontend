@@ -1,4 +1,3 @@
-import type { CurriculumVersionDetailsDto } from "./curriculum-versions";
 /**
  * Feature: Curriculum Programs
  * Purpose: Define program metadata types and queries linking to curriculum versions and analyses.
@@ -85,18 +84,13 @@ export type GetCurriculumProgramByIdResponse = CurriculumProgramDto;
 /** Query payload to fetch program details including versions and analysis. */
 export interface GetCurriculumProgramDetailsQueryRequest {
   programId?: string | null;
-  versionId?: string | null;
 }
 
 /** Aggregated program-level analysis metrics. */
 export interface CurriculumAnalysisDto {
-  totalVersions: number;
-  activeVersions: number;
   totalSubjects: number;
   subjectsWithSyllabus: number;
   subjectsWithoutSyllabus: number;
-  totalSyllabusVersions: number;
-  syllabusCompletionPercentage: number;
   missingContentSubjects: string[];
 }
 
@@ -111,6 +105,5 @@ export interface CurriculumProgramDetailsResponse {
   durationYears?: number | null;
   createdAt: string;
   updatedAt: string;
-  curriculumVersions: CurriculumVersionDetailsDto[];
   analysis: CurriculumAnalysisDto;
 }

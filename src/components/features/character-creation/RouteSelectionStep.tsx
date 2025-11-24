@@ -104,9 +104,18 @@ export function RouteSelectionStep({
                             onMouseEnter={() => setHoveredId(route.id)}
                             onMouseLeave={() => setHoveredId(null)}
                         >
-                            <button
+                            <div
+                                role="button"
+                                tabIndex={0}
+                                aria-disabled={isDisabled || undefined}
+                                onKeyDown={(e) => {
+                                    if (isDisabled) return;
+                                    if (e.key === 'Enter' || e.key === ' ') {
+                                        e.preventDefault();
+                                        handleCardClick(route);
+                                    }
+                                }}
                                 onClick={() => handleCardClick(route)}
-                                disabled={isDisabled}
                                 className={cn(
                                     'w-full h-full relative rounded-lg overflow-hidden',
                                     'transition-all duration-300 border-2',
@@ -180,7 +189,7 @@ export function RouteSelectionStep({
                                         transition={{ type: 'spring', stiffness: 400, damping: 25 }}
                                     />
                                 )}
-                            </button>
+                            </div>
                         </motion.div>
                     ))}
                 </div>

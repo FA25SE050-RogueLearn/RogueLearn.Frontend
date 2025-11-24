@@ -11,6 +11,7 @@ import Link from "next/link";
 import { useState, useEffect, useCallback } from "react";
 // MODIFIED: Import the new API object and the complete CurriculumProgram type
 import adminContentApi from "@/api/adminContentApi";
+import curriculumImportApi from "@/api/curriculumImportApi";
 import { CurriculumProgramDto } from "@/types/curriculum-programs";
 
 // A smaller type for what the UI component needs to display
@@ -108,10 +109,10 @@ export default function CourseDataPage() {
             {importStatus && <p className="text-emerald-400">{importStatus}</p>}
             {importError && <p className="text-red-400">{importError}</p>}
             <div className="flex gap-4">
-                <Button onClick={() => handleImport(adminContentApi.importCurriculum)} disabled={!rawText || !!importStatus}>
+                <Button onClick={() => handleImport((text) => curriculumImportApi.importCurriculum({ rawText: text }))} disabled={!rawText || !!importStatus}>
                     <UploadCloud className="mr-2 h-4 w-4" /> Import Full Curriculum
                 </Button>
-                <Button onClick={() => handleImport(adminContentApi.importSubject)} disabled={!rawText || !!importStatus} variant="secondary">
+                <Button onClick={() => handleImport((text) => curriculumImportApi.importSubjectFromText({ rawText: text }))} disabled={!rawText || !!importStatus} variant="secondary">
                     <UploadCloud className="mr-2 h-4 w-4" /> Import Single Subject
                 </Button>
             </div>

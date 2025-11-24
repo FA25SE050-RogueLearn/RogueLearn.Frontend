@@ -48,12 +48,10 @@ export interface AssessmentItem {
   weightPercentage: number;
   description: string;
 }
-
 export interface ConstructiveQuestion {
   question: string;
   sessionNumber?: number;
 }
-
 export interface CourseLearningOutcome {
   id: string;
   details: string;
