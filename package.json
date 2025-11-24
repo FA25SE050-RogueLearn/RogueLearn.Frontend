@@ -19,6 +19,7 @@
     "@dagrejs/dagre": "^1.1.8",
     "@google-apps/meet": "^0.7.1",
     "@google-cloud/local-auth": "^3.0.1",
+    "@hookform/resolvers": "^5.2.2",
     "@liveblocks/client": "^3.10.0",
     "@liveblocks/react": "^3.10.0",
     "@liveblocks/react-blocknote": "^3.10.0",
@@ -29,7 +30,7 @@
     "@radix-ui/react-collapsible": "^1.1.12",
     "@radix-ui/react-dialog": "^1.1.15",
     "@radix-ui/react-dropdown-menu": "^2.1.16",
-    "@radix-ui/react-label": "^2.1.7",
+    "@radix-ui/react-label": "^2.1.8",
     "@radix-ui/react-popover": "^1.1.15",
     "@radix-ui/react-progress": "^1.1.7",
     "@radix-ui/react-select": "^2.2.6",
@@ -65,6 +66,7 @@
     "react": "19.2.0",
     "react-day-picker": "^9.11.1",
     "react-dom": "19.2.0",
+    "react-hook-form": "^7.66.1",
     "react-use-measure": "^2.1.7",
     "sonner": "^2.0.7",
     "tailwind-merge": "^3.3.1",
@@ -72,7 +74,7 @@
     "three": "^0.180.0",
     "y-partykit": "^0.0.33",
     "yjs": "^13.6.27",
-    "zod": "^4.1.12"
+    "zod": "^4.1.13"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.3.1",
