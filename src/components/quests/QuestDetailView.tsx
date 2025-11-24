@@ -1,12 +1,28 @@
 // roguelearn-web/src/components/quests/QuestDetailView.tsx
 'use client';
 
-import { QuestStep, QuestDetails } from '@/types/quest';
+import { QuestStep, QuestDetails, Activity } from '@/types/quest';
 import { Button } from '@/components/ui/button';
-import { Lock, Play, Trophy } from 'lucide-react';
+import {
+  Lock,
+  Play,
+  Trophy,
+  BookOpen,
+  BrainCircuit,
+  Code,
+  CheckCircle2,
+  ChevronDown,
+  List
+} from 'lucide-react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import WeeklyProgressCard from './WeeklyProgressCard';
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 
 interface QuestDetailViewProps {
   questDetails: QuestDetails;
@@ -20,6 +36,38 @@ interface QuestDetailViewProps {
   chapterId: string;
   chapterName: string;
 }
+
+// Helper to extract displayable info from an activity
+const getActivityDisplayInfo = (activity: Activity) => {
+  let icon = BookOpen;
+  let label = 'Activity';
+  let title = 'Learning Activity';
+
+  switch (activity.type) {
+    case 'Reading':
+      icon = BookOpen;
+      label = 'Reading';
+      title = (activity.payload as any).articleTitle || 'Reading Material';
+      break;
+    case 'KnowledgeCheck':
+      icon = CheckCircle2;
+      label = 'Check';
+      title = (activity.payload as any).topic || 'Knowledge Check';
+      break;
+    case 'Quiz':
+      icon = BrainCircuit;
+      label = 'Quiz';
+      title = 'Weekly Quiz';
+      break;
+    case 'Coding':
+      icon = Code;
+      label = 'Code';
+      title = (activity.payload as any).topic || 'Coding Challenge';
+      break;
+  }
+
+  return { Icon: icon, label, title };
+};
 
 export default function QuestDetailView({
   questDetails,
@@ -45,11 +93,6 @@ export default function QuestDetailView({
       }
     }
   });
-
-  // Determine max completed step
-  const maxCompletedStepNumber = completedStepNumbers.size > 0
-    ? Math.max(...completedStepNumbers)
-    : 0;
 
   // Function to determine if a step is locked
   const isStepLocked = (stepNumber: number): boolean => {
@@ -139,10 +182,14 @@ export default function QuestDetailView({
           {questDetails.steps.map((step) => {
             const stepStatus = questProgress.stepStatuses[step.id];
             const locked = isStepLocked(step.stepNumber);
+            const activities = step.content?.activities || [];
+            const totalActivities = activities.length;
+
+            // If we had granular activity status from backend, we would map it here.
+            // For now, we rely on step status. If step is complete, all are complete.
             const completedActivities = stepStatus === 'Completed'
-              ? (step.content?.activities?.length || 0)
-              : 0;
-            const totalActivities = step.content?.activities?.length || 0;
+              ? Array.from({ length: totalActivities }, (_, i) => `${i}`)
+              : [];
 
             return (
               <div
@@ -152,49 +199,97 @@ export default function QuestDetailView({
                   locked && 'opacity-60'
                 )}
               >
-                <div className="flex items-center gap-3">
-                  {/* Progress bar */}
-                  <div className="flex-1">
-                    <WeeklyProgressCard
-                      step={step}
-                      completedActivities={
-                        stepStatus === 'Completed'
-                          ? Array.from({ length: totalActivities }, (_, i) => `${i}`)
-                          : []
-                      }
-                      totalActivities={totalActivities}
-                    />
+                <div className="flex flex-col gap-2">
+                  {/* Header Row: Progress Bar + Button */}
+                  <div className="flex items-center gap-3">
+                    <div className="flex-1">
+                      <WeeklyProgressCard
+                        step={step}
+                        completedActivities={completedActivities}
+                        totalActivities={totalActivities}
+                      />
+                    </div>
+
+                    <Button
+                      asChild={!locked}
+                      disabled={locked}
+                      size="sm"
+                      className={cn(
+                        'whitespace-nowrap shrink-0 h-16 px-6 rounded-lg font-semibold transition-all duration-300',
+                        locked
+                          ? 'cursor-not-allowed opacity-50 bg-white/5 border border-white/10 text-white/40'
+                          : stepStatus === 'Completed'
+                            ? 'bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 hover:bg-emerald-500/30'
+                            : 'bg-gradient-to-r from-[#f5c16c] to-[#d4a855] text-black hover:shadow-lg hover:shadow-[#f5c16c]/50'
+                      )}
+                    >
+                      {locked ? (
+                        <span className="flex items-center gap-2">
+                          <Lock className="w-4 h-4" />
+                          Locked
+                        </span>
+                      ) : (
+                        <Link
+                          href={`/quests/${learningPathId}/${chapterId}/${questDetails.id}/week/${step.stepNumber}`}
+                          className="flex items-center gap-2"
+                        >
+                          <Play className="w-4 h-4" />
+                          {stepStatus === 'Completed' ? 'Review' : 'Continue'}
+                        </Link>
+                      )}
+                    </Button>
                   </div>
 
-                  {/* Action button */}
-                  <Button
-                    asChild={!locked}
-                    disabled={locked}
-                    size="sm"
-                    className={cn(
-                      'whitespace-nowrap shrink-0 h-12 px-6 rounded-full font-semibold transition-all duration-300',
-                      locked
-                        ? 'cursor-not-allowed opacity-50 bg-white/5 border border-white/10 text-white/40'
-                        : stepStatus === 'Completed'
-                          ? 'bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 hover:bg-emerald-500/30'
-                          : 'bg-gradient-to-r from-[#f5c16c] to-[#d4a855] text-black hover:shadow-lg hover:shadow-[#f5c16c]/50'
-                    )}
-                  >
-                    {locked ? (
-                      <span className="flex items-center gap-2">
-                        <Lock className="w-4 h-4" />
-                        Locked
-                      </span>
-                    ) : (
-                      <Link
-                        href={`/quests/${learningPathId}/${chapterId}/${questDetails.id}/week/${step.stepNumber}`}
-                        className="flex items-center gap-2"
-                      >
-                        <Play className="w-4 h-4" />
-                        {stepStatus === 'Completed' ? 'Review' : 'Continue'}
-                      </Link>
-                    )}
-                  </Button>
+                  {/* Expandable Activities List */}
+                  {!locked && activities.length > 0 && (
+                    <Accordion type="single" collapsible className="w-full border border-white/10 rounded-lg bg-black/20">
+                      <AccordionItem value="activities" className="border-none">
+                        <AccordionTrigger className="px-4 py-3 text-sm text-white/60 hover:text-[#f5c16c] hover:bg-white/5 rounded-lg transition-colors">
+                          <span className="flex items-center gap-2">
+                            <List className="w-4 h-4" />
+                            View {activities.length} Activities
+                          </span>
+                        </AccordionTrigger>
+                        <AccordionContent className="px-4 pb-4 pt-2">
+                          <div className="space-y-2">
+                            {activities.map((activity, idx) => {
+                              const { Icon, title } = getActivityDisplayInfo(activity);
+                              const isCompleted = stepStatus === 'Completed'; // Simple logic for now
+
+                              return (
+                                <div
+                                  key={idx}
+                                  className={cn(
+                                    "flex items-center gap-3 p-3 rounded-lg border text-sm transition-all",
+                                    isCompleted
+                                      ? "bg-emerald-950/20 border-emerald-500/20 text-emerald-100"
+                                      : "bg-white/5 border-white/10 text-white/80 hover:border-[#f5c16c]/30"
+                                  )}
+                                >
+                                  <div className={cn(
+                                    "flex items-center justify-center w-8 h-8 rounded-full shrink-0",
+                                    isCompleted ? "bg-emerald-500/20 text-emerald-400" : "bg-[#f5c16c]/10 text-[#f5c16c]"
+                                  )}>
+                                    <Icon className="w-4 h-4" />
+                                  </div>
+
+                                  <span className="flex-1 font-medium truncate">
+                                    {title}
+                                  </span>
+
+                                  {(activity.payload as any).experiencePoints > 0 && (
+                                    <span className="text-xs text-[#f5c16c]/70 px-2 py-1 rounded bg-[#f5c16c]/5 border border-[#f5c16c]/10">
+                                      +{(activity.payload as any).experiencePoints} XP
+                                    </span>
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </AccordionContent>
+                      </AccordionItem>
+                    </Accordion>
+                  )}
                 </div>
 
                 {/* Locked message */}

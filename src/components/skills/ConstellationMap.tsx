@@ -2,6 +2,7 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
+import { useRouter } from 'next/navigation'; // ⭐ NEW
 import {
     ReactFlow,
     Background,
@@ -12,7 +13,8 @@ import {
     useEdgesState,
     MarkerType,
     Node,
-    Edge
+    Edge,
+    NodeMouseHandler // ⭐ NEW
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 
@@ -27,6 +29,7 @@ import { Loader2 } from 'lucide-react';
 const nodeTypes = { constellation: ConstellationNode };
 
 export function ConstellationMap() {
+    const router = useRouter(); // ⭐ NEW
     const [rawData, setRawData] = useState<SkillTree | null>(null);
     const [filterMode, setFilterMode] = useState<FilterMode>('available');
     const [selectedDomain, setSelectedDomain] = useState<string | null>(null);
@@ -57,9 +60,9 @@ export function ConstellationMap() {
         if (!rawData) return;
 
         const { filteredNodes, visibleEdges } = filterSkillTree(
-            rawData.nodes, 
-            rawData.dependencies, 
-            filterMode, 
+            rawData.nodes,
+            rawData.dependencies,
+            filterMode,
             selectedDomain
         );
 
@@ -93,6 +96,11 @@ export function ConstellationMap() {
         setNodes(flowNodes);
         setEdges(flowEdges);
     }, [rawData, filterMode, selectedDomain, setNodes, setEdges]);
+
+    // ⭐ NEW: Handle node clicks
+    const onNodeClick: NodeMouseHandler = (event, node) => {
+        router.push(`/skills/${node.id}`);
+    };
 
     // Extract unique domains for the filter dropdown
     const domains = useMemo(() => {
@@ -130,6 +138,7 @@ export function ConstellationMap() {
                 edges={edges}
                 onNodesChange={onNodesChange}
                 onEdgesChange={onEdgesChange}
+                onNodeClick={onNodeClick} // ⭐ NEW: Attach handler
                 nodeTypes={nodeTypes}
                 fitView
                 minZoom={0.1}

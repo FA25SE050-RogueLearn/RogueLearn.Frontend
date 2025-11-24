@@ -36,10 +36,11 @@ export const ConstellationNode = ({ data }: { data: ApiSkillNode }) => {
   const isComplete = data.userLevel >= 5; // Assuming level 5 is mastery
 
   return (
-    <div className="relative group">
+    // ⭐ MODIFIED: Added cursor-pointer to indicate clickability
+    <div className="relative group cursor-pointer">
       {/* Handles are connection points for React Flow edges */}
       <Handle type="target" position={Position.Top} className="!bg-accent/60 !border-accent !w-3 !h-3" />
-      
+
       {/* Glow effect for unlocked skills on hover */}
       {!isLocked && (
         <div className={`absolute -inset-2 rounded-2xl ${theme.glow} blur-xl opacity-0 
@@ -54,29 +55,29 @@ export const ConstellationNode = ({ data }: { data: ApiSkillNode }) => {
         isLocked ? "border-gray-700/30 opacity-60" : `${theme.border} ${theme.glow}`,
         !isLocked && "hover:scale-105 hover:z-50"
       )}>
-        
+
         {/* Texture overlay */}
         <div className="absolute inset-0 rounded-2xl opacity-[0.03]"
-          style={{ 
-            backgroundImage: 'url(https://www.transparenttextures.com/patterns/dark-embroidery.png)' 
+          style={{
+            backgroundImage: 'url(https://www.transparenttextures.com/patterns/dark-embroidery.png)'
           }} />
 
         {/* Progress ring for unlocked skills */}
         {!isLocked && data.userLevel > 0 && (
           <svg className="absolute inset-0 w-full h-full -rotate-90">
-            <circle 
+            <circle
               cx="112" cy="64" r="58"
-              fill="none" 
-              stroke="rgba(255,255,255,0.05)" 
-              strokeWidth="2" 
+              fill="none"
+              stroke="rgba(255,255,255,0.05)"
+              strokeWidth="2"
             />
-            <circle 
+            <circle
               cx="112" cy="64" r="58"
-              fill="none" 
-              stroke={theme.accentColor} 
+              fill="none"
+              stroke={theme.accentColor}
               strokeWidth="3"
               strokeDasharray={`${(data.userLevel / 5) * 364} 364`}
-              className="transition-all duration-500" 
+              className="transition-all duration-500"
             />
           </svg>
         )}
