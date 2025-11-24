@@ -1,7 +1,7 @@
 // roguelearn-web/src/app/admin/mappings/page.tsx
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { AdminLayout } from "@/components/layout/AdminLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -16,10 +16,10 @@ import { SubjectSkillMappingDto } from "@/types/admin-management";
 import { ReactFlow, Background, Controls, Node, Edge, Handle, Position, MarkerType } from "@xyflow/react";
 import '@xyflow/react/dist/style.css';
 
-// --- Custom Node Components ---
+// --- Custom Node Components (Unchanged) ---
 
 const SubjectNode = ({ data }: { data: { label: string; code: string } }) => (
-    <div className="w-48 h-48 rounded-full bg-gradient-to-br from-amber-900/90 to-black border-4 border-amber-500/50 flex flex-col items-center justify-center text-center p-4 shadow-[0_0_30px_rgba(245,193,108,0.3)]">
+    <div className="w-48 h-48 rounded-full bg-gradient-to-br from-amber-900/90 to-black border-4 border-amber-500/50 flex flex-col items-center justify-center text-center p-4 shadow-[0_0_30px_rgba(245,193,108,0.3)] z-50 relative">
         <div className="text-xs font-mono text-amber-400 mb-1">{data.code}</div>
         <div className="text-sm font-bold text-white leading-tight">{data.label}</div>
         <Handle type="source" position={Position.Bottom} className="opacity-0" />
@@ -39,16 +39,16 @@ const SkillNode = ({ data }: { data: { label: string; tier: number; onDelete: ()
     const Icon = tierConfig.icon;
 
     return (
-        <div className={`relative group min-w-[140px] px-4 py-3 rounded-xl border-2 ${tierConfig.color} shadow-lg flex items-center gap-3 backdrop-blur-sm`}>
-            <Handle type="target" position={Position.Left} className="opacity-0" />
-            <Handle type="target" position={Position.Right} className="opacity-0" />
-            <Handle type="target" position={Position.Top} className="opacity-0" />
-            <Handle type="target" position={Position.Bottom} className="opacity-0" />
+        <div className={`relative group min-w-[140px] px-4 py-3 rounded-xl border-2 ${tierConfig.color} shadow-lg flex items-center gap-3 backdrop-blur-sm z-10`}>
+            {/* Handles for incoming/outgoing connections */}
+            <Handle type="target" position={Position.Left} className="w-2 h-2 !bg-white/50 border-none" />
+            <Handle type="source" position={Position.Right} className="w-2 h-2 !bg-white/50 border-none" />
+            <Handle type="target" position={Position.Top} className="w-2 h-2 !bg-white/50 border-none" />
+            <Handle type="source" position={Position.Bottom} className="w-2 h-2 !bg-white/50 border-none" />
 
             <Icon className="w-5 h-5 shrink-0" />
             <div className="text-xs font-semibold">{data.label}</div>
 
-            {/* Delete Button (visible on hover) */}
             <button
                 onClick={(e) => { e.stopPropagation(); data.onDelete(); }}
                 className="absolute -top-2 -right-2 bg-rose-600 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity shadow-md hover:bg-rose-700"
@@ -103,8 +103,9 @@ export default function CurriculumMapPage() {
         // 2. Satellite Skill Nodes (Radial Layout)
         const skillNodes: Node[] = mappedSkills.map((mapping, index) => {
             const count = mappedSkills.length;
-            const radius = 300; // Distance from center
-            const angle = (index / count) * 2 * Math.PI; // Even distribution
+            const radius = 350; // Increased radius
+            // Start from -90deg (top)
+            const angle = (index / count) * 2 * Math.PI - (Math.PI / 2);
 
             // Find full skill info to get Tier
             const fullSkill = allSkills.find(s => s.id === mapping.skillId);
@@ -125,25 +126,56 @@ export default function CurriculumMapPage() {
             };
         });
 
-        // 3. Edges from Subject to Skills
-        const graphEdges: Edge[] = mappedSkills.map((mapping) => ({
-            id: `edge-${mapping.skillId}`,
+        // 3. Edges from Subject to Skills (Radial spokes)
+        const subjectEdges: Edge[] = mappedSkills.map((mapping) => ({
+            id: `edge-subject-${mapping.skillId}`,
             source: 'subject-center',
             target: mapping.skillId,
             type: 'default',
-            animated: true,
-            style: { stroke: '#f5c16c', strokeWidth: 2, opacity: 0.5 },
+            animated: false,
+            style: { stroke: '#f5c16c', strokeWidth: 1, opacity: 0.2, strokeDasharray: '5,5' },
         }));
 
+        // 4. ⭐ NEW: Dependency Edges from mapped data
+        const dependencyEdges: Edge[] = [];
+        const mappedSkillIds = new Set(mappedSkills.map(m => m.skillId));
+
+        mappedSkills.forEach(skill => {
+            if (skill.prerequisites) {
+                skill.prerequisites.forEach(prereq => {
+                    // Only draw edge if the prerequisite is also mapped to this subject
+                    if (mappedSkillIds.has(prereq.prerequisiteSkillId)) {
+                        dependencyEdges.push({
+                            id: `dep-${prereq.prerequisiteSkillId}-${skill.skillId}`,
+                            source: prereq.prerequisiteSkillId,
+                            target: skill.skillId,
+                            type: 'default',
+                            animated: true,
+                            style: { stroke: '#3b82f6', strokeWidth: 2, opacity: 0.8 }, // Blue
+                            markerEnd: {
+                                type: MarkerType.ArrowClosed,
+                                width: 20,
+                                height: 20,
+                                color: '#3b82f6',
+                            },
+                            label: 'Requires',
+                            labelStyle: { fill: '#3b82f6', fontWeight: 700, fontSize: 10 },
+                            labelBgStyle: { fill: '#000', fillOpacity: 0.7 },
+                        });
+                    }
+                });
+            }
+        });
+
         setNodes([centerNode, ...skillNodes]);
-        setEdges(graphEdges);
+        setEdges([...subjectEdges, ...dependencyEdges]);
 
     }, [selectedSubject, mappedSkills, allSkills]);
 
     const loadInitialData = async () => {
         setLoadingSubjects(true);
         try {
-            const [subRes, skillRes] = await Promise.all([
+            const [subRes, skillsRes] = await Promise.all([
                 subjectsApi.getAll(),
                 adminManagementApi.getAllSkills(),
             ]);
@@ -152,8 +184,8 @@ export default function CurriculumMapPage() {
                 setSubjects(subRes.data);
             }
 
-            if (skillRes.isSuccess && skillRes.data) {
-                setAllSkills(skillRes.data.skills || []);
+            if (skillsRes.isSuccess && skillsRes.data) {
+                setAllSkills(skillsRes.data.skills || []);
             }
 
         } catch (e) {
@@ -226,7 +258,7 @@ export default function CurriculumMapPage() {
                         Curriculum Map
                     </h1>
                     <p className="text-amber-700 mt-1">
-                        Link abstract Skills to concrete Subjects. The central node is the Subject, and satellites are the Skills it teaches.
+                        Visualize subject composition. Blue lines indicate skill prerequisites within this subject.
                     </p>
                 </div>
 
@@ -287,10 +319,13 @@ export default function CurriculumMapPage() {
                                 </ReactFlow>
                                 {/* Legend */}
                                 <div className="absolute bottom-4 left-4 bg-black/60 backdrop-blur border border-amber-900/30 p-3 rounded-lg text-xs space-y-2">
-                                    <div className="font-bold text-amber-500 mb-1">Skill Tiers</div>
-                                    <div className="flex items-center gap-2 text-emerald-400"><Circle className="w-3 h-3" /> Foundation (Tier 1)</div>
-                                    <div className="flex items-center gap-2 text-blue-400"><Zap className="w-3 h-3" /> Intermediate (Tier 2)</div>
-                                    <div className="flex items-center gap-2 text-purple-400"><Crown className="w-3 h-3" /> Advanced (Tier 3)</div>
+                                    <div className="font-bold text-amber-500 mb-1">Legend</div>
+                                    <div className="flex items-center gap-2 text-emerald-400"><Circle className="w-3 h-3" /> Foundation</div>
+                                    <div className="flex items-center gap-2 text-blue-400"><Zap className="w-3 h-3" /> Intermediate</div>
+                                    <div className="flex items-center gap-2 text-purple-400"><Crown className="w-3 h-3" /> Advanced</div>
+                                    <div className="h-px bg-white/10 my-1" />
+                                    <div className="flex items-center gap-2 text-amber-500/50"><span className="w-4 h-0.5 bg-amber-500/50 border-dashed border-t border-amber-500" /> Subject Link</div>
+                                    <div className="flex items-center gap-2 text-blue-400"><span className="w-4 h-0.5 bg-blue-400" /> Prerequisite</div>
                                 </div>
                             </>
                         ) : (
