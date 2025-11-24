@@ -6,7 +6,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useRouter } from 'next/navigation';
 import type { Event } from '@/types/event-service';
-import CountdownTimer from '@/components/CountdownTimer';
 import { createClient } from '@/utils/supabase/client';
 
 interface EventsSelectionViewProps {
@@ -82,38 +81,6 @@ const CARD_TEXTURE: CSSProperties = {
   backgroundImage: "url('https://www.transparenttextures.com/patterns/asfalt-dark.png')",
   opacity: 0.25,
 };
-
-// Component to display per-event countdown with animation
-function EventCountdown({ endDate }: { endDate: string }) {
-  return (
-    <CountdownTimer
-      endDate={endDate}
-      fontSize={20}
-      gap={4}
-      borderRadius={8}
-      horizontalPadding={8}
-      textColor="#ffffff"
-      fontWeight="black"
-      gradientHeight={12}
-      gradientFrom="rgba(0, 0, 0, 0.4)"
-      gradientTo="transparent"
-      showLabels={false}
-      counterStyle={{
-        backgroundColor: 'rgba(0, 0, 0, 0.4)',
-        border: '1px solid rgba(245, 193, 108, 0.5)',
-        borderRadius: '8px',
-        paddingLeft: 8,
-        paddingRight: 8,
-        paddingTop: 6,
-        paddingBottom: 6,
-        boxShadow: '0 0 20px rgba(245, 193, 108, 0.3)',
-      }}
-      digitStyle={{
-        textShadow: '0 0 12px rgba(245, 193, 108, 1), 0 2px 8px rgba(0, 0, 0, 0.7)',
-      }}
-    />
-  );
-}
 
 export default function EventsSelectionView({
   events,
@@ -364,14 +331,6 @@ export default function EventsSelectionView({
                       </div>
                     </div>
 
-                    {/* Countdown Timer - Dedicated Section */}
-                    {status.key !== 'completed' && status.key !== 'cancelled' && (
-                      <div className="flex flex-col items-center gap-2 rounded-2xl border border-[#f5c16c]/30 bg-linear-to-br from-[#d23187]/15 via-[#f5c16c]/5 to-transparent p-3 shadow-[0_0_20px_rgba(245,193,108,0.2)]">
-                        <p className="text-[9px] uppercase tracking-[0.4em] text-[#f5c16c]">Time Remaining</p>
-                        <EventCountdown endDate={event.end_date || event.EndDate || ''} />
-                      </div>
-                    )}
-
                     <div>
                       <div className="mb-1 flex items-center justify-between text-[10px] uppercase tracking-wide text-foreground/50">
                         <span>Progress</span>
@@ -400,7 +359,10 @@ export default function EventsSelectionView({
                       </Button>
                     ) : (
                       <Button
-                        onClick={() => onSelectEvent(event.id)}
+                        onClick={() => {
+                          const eventId = event.id || event.ID;
+                          if (eventId) onSelectEvent(eventId);
+                        }}
                         className={`w-full px-5 py-2.5 text-xs font-semibold uppercase tracking-wider ${CTA_CLASS}`}
                       >
                         Enter Arena

@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState, startTransition, type CSSProperties } from 'react';
-import { ArrowLeft, Trophy, Users, Bell, Timer, Gauge, Activity, Cpu } from 'lucide-react';
+import { ArrowLeft, Trophy, Users, Timer, Gauge, Activity, Cpu } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import CodeEditor from '../CodeEditor';
@@ -207,22 +207,24 @@ export default function CodeArenaView({
       </div>
 
       <div className="relative z-10 flex-1 p-6">
-        <div className="grid gap-6 xl:grid-cols-[1.1fr_0.85fr]">
-          <div className="space-y-6">
-            <Card className={SECTION_CARD_CLASS}>
+        <div className="space-y-6">
+          {/* Mission Briefing and Sidebar - Two Column Layout */}
+          <div className="grid gap-6 lg:grid-cols-[2fr_1fr]">
+            {/* Mission Briefing */}
+            <Card className={`${SECTION_CARD_CLASS} h-full`}>
               <div aria-hidden="true" className="pointer-events-none absolute inset-0" style={CARD_TEXTURE} />
-              <CardContent className="relative z-10 space-y-6 p-6">
-                <div className="flex flex-col gap-4">
+              <CardContent className="relative z-10 space-y-6 p-6 h-full flex flex-col">
+                <div className="flex flex-col gap-4 flex-1">
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="rounded-full border border-[#f5c16c]/30 bg-[#f5c16c]/5 px-3 py-1 text-[10px] font-medium uppercase tracking-[0.2em] text-[#f5c16c]/80">{event?.Type || 'Code Battle'}</span>
                     <span className="rounded-full border border-[#d23187]/30 bg-[#d23187]/10 px-3 py-1 text-[10px] font-medium uppercase tracking-[0.2em] text-[#d23187]">{room?.Name || 'Unassigned Room'}</span>
                   </div>
-                  <div className="flex-1">
+                  <div className="flex-1 flex flex-col">
                     <p className="text-xs uppercase tracking-[0.35em] text-[#f5c16c]">Mission Briefing</p>
                     <h1 className="mt-2 text-3xl font-bold text-white">{problemTitle}</h1>
                     <p className="mt-2 text-sm text-foreground/60">Submit your solution to earn points and keep your guild on top.</p>
                     {problemStatement && (
-                      <div className="mt-4 space-y-3 rounded-2xl border border-[#f5c16c]/20 bg-[#0f0504]/60 p-4">
+                      <div className="mt-4 space-y-3 rounded-2xl border border-[#f5c16c]/20 bg-[#0f0504]/60 p-4 flex-1 overflow-y-auto">
                         <div className="flex items-start justify-between gap-4">
                           <p className="text-xs uppercase tracking-[0.3em] text-[#f5c16c]">Requirements</p>
                           <span className="shrink-0 rounded-full border border-[#f5c16c]/40 bg-[#f5c16c]/10 px-3 py-1 text-[9px] font-semibold uppercase tracking-[0.25em] text-[#f5c16c]">
@@ -311,206 +313,183 @@ export default function CodeArenaView({
               </CardContent>
             </Card>
 
-            <Card className={SECTION_CARD_CLASS}>
-              <div aria-hidden="true" className="pointer-events-none absolute inset-0" style={CARD_TEXTURE} />
-              <CardHeader className="relative z-10 border-b border-white/5 pb-4">
-                <CardTitle className="flex items-center gap-2 text-base font-semibold text-white">
-                  <Cpu className="h-4 w-4 text-[#f5c16c]" />
-                  Combat Console
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="relative z-10 p-6">
-                <CodeEditor
-                  code={code}
-                  setCode={setCode}
-                  language={language}
-                  setLanguage={setLanguage}
-                  onSubmit={onSubmit}
-                  submissionResult={submissionResult}
-                  isSubmitting={isSubmitting}
-                  spaceConstraintMb={spaceConstraintMb}
-                />
-              </CardContent>
-            </Card>
-          </div>
+            {/* Sidebar with Arena Status and Leaderboard stacked */}
+            <div className="space-y-6 flex flex-col">
+              <Card className={`${SECTION_CARD_CLASS} flex-1`}>
+                <div aria-hidden="true" className="pointer-events-none absolute inset-0" style={CARD_TEXTURE} />
+                <CardHeader className="relative z-10 pb-4">
+                  <CardTitle className="flex items-center gap-2 text-sm font-semibold text-white">
+                    <Activity className="h-4 w-4 text-[#f5c16c]" />
+                    Arena Status
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="relative z-10 space-y-4 text-sm text-foreground/70">
+                  <div className={`${PANEL_TILE_CLASS} p-4`}>
+                    <div aria-hidden="true" className="pointer-events-none absolute inset-0" style={CARD_TEXTURE} />
+                    <p className="text-xs uppercase tracking-[0.3em] text-[#f5c16c]">Event</p>
+                    <p className="text-lg font-semibold text-white">{event?.Title || 'Awaiting Event'}</p>
+                    <p className="text-xs text-foreground/60">{event && event.StartedDate && event.EndDate ? `${new Date(event.StartedDate).toLocaleString()} → ${new Date(event.EndDate).toLocaleString()}` : 'Dates pending'}</p>
+                  </div>
+                  <div className={`${PANEL_TILE_CLASS} p-4`}>
+                    <div aria-hidden="true" className="pointer-events-none absolute inset-0" style={CARD_TEXTURE} />
+                    <p className="text-xs uppercase tracking-[0.3em] text-[#f5c16c]">Room</p>
+                    <p className="text-lg font-semibold text-white">{room?.Name || 'No room joined'}</p>
+                    <p className="text-xs text-foreground/60">{room?.Description || 'Select a room to sync leaderboard and feed.'}</p>
+                  </div>
+                </CardContent>
+              </Card>
 
-          <div className="space-y-6">
-            <Card className={SECTION_CARD_CLASS}>
-              <div aria-hidden="true" className="pointer-events-none absolute inset-0" style={CARD_TEXTURE} />
-              <CardHeader className="relative z-10 pb-4">
-                <CardTitle className="flex items-center gap-2 text-sm font-semibold text-white">
-                  <Activity className="h-4 w-4 text-[#f5c16c]" />
-                  Arena Status
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="relative z-10 space-y-4 text-sm text-foreground/70">
-                <div className={`${PANEL_TILE_CLASS} p-4`}>
-                  <div aria-hidden="true" className="pointer-events-none absolute inset-0" style={CARD_TEXTURE} />
-                  <p className="text-xs uppercase tracking-[0.3em] text-[#f5c16c]">Event</p>
-                  <p className="text-lg font-semibold text-white">{event?.Title || 'Awaiting Event'}</p>
-                  <p className="text-xs text-foreground/60">{event ? `${new Date(event.StartedDate).toLocaleString()} → ${new Date(event.EndDate).toLocaleString()}` : 'Dates pending'}</p>
-                </div>
-                <div className={`${PANEL_TILE_CLASS} p-4`}>
-                  <div aria-hidden="true" className="pointer-events-none absolute inset-0" style={CARD_TEXTURE} />
-                  <p className="text-xs uppercase tracking-[0.3em] text-[#f5c16c]">Room</p>
-                  <p className="text-lg font-semibold text-white">{room?.Name || 'No room joined'}</p>
-                  <p className="text-xs text-foreground/60">{room?.Description || 'Select a room to sync leaderboard and feed.'}</p>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className={`${SECTION_CARD_CLASS} overflow-hidden`}>
-              <div aria-hidden="true" className="pointer-events-none absolute inset-0" style={CARD_TEXTURE} />
-              <CardHeader className="relative z-10 border-b border-white/5 pb-4">
-                <CardTitle className="flex items-start justify-between text-base font-semibold text-white">
-                  <span className="flex items-center gap-2">
-                    <Trophy className="h-4 w-4 text-[#f5c16c]" />
-                    Arena Leaderboard
-                  </span>
-                  <span className="text-[10px] uppercase tracking-[0.35em] text-[#f5c16c]/70">
-                    {eventId ? `Event ${eventId.slice(0, 8)}` : 'Event Pending'}
-                  </span>
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="relative z-10 space-y-5">
-                {!roomId ? (
-                  <p className="text-sm text-foreground/60">Join a room to sync its ranking ladder.</p>
-                ) : leaderboardEntries.length === 0 ? (
-                  <p className="text-sm text-foreground/60">No combatants ranked yet. Launch your first submission.</p>
-                ) : (
-                  <>
-                    <div className="grid gap-3 sm:grid-cols-3">
-                      <div className={`${PANEL_TILE_CLASS} p-4`}>
-                        <div aria-hidden="true" className="pointer-events-none absolute inset-0" style={CARD_TEXTURE} />
-                        <p className="text-[10px] uppercase tracking-[0.3em] text-[#f5c16c]/80">Active Fighters</p>
-                        <p className="text-xl font-semibold text-white">{leaderboardEntries.length}</p>
-                      </div>
-                      <div className={`${PANEL_TILE_CLASS} p-4`}>
-                        <div aria-hidden="true" className="pointer-events-none absolute inset-0" style={CARD_TEXTURE} />
-                        <p className="text-[10px] uppercase tracking-[0.3em] text-[#f5c16c]/80">Top Score</p>
-                        <p className="text-xl font-semibold text-white">{champion?.score ?? '—'} pts</p>
-                      </div>
-                      <div className={`${PANEL_TILE_CLASS} p-4`}>
-                        <div aria-hidden="true" className="pointer-events-none absolute inset-0" style={CARD_TEXTURE} />
-                        <p className="text-[10px] uppercase tracking-[0.3em] text-[#f5c16c]/80">Last Update</p>
-                        <p className="text-xl font-semibold text-white">{lastUpdatedLabel}</p>
-                      </div>
-                    </div>
-
-                    {champion && (
-                      <div className="relative overflow-hidden rounded-3xl border border-[#f5c16c]/30 bg-linear-to-br from-[#d23187]/20 via-[#f5c16c]/10 to-transparent p-5 shadow-[0_10px_40px_rgba(210,49,135,0.25)]">
-                        <div aria-hidden="true" className="pointer-events-none absolute inset-0" style={CARD_TEXTURE} />
-                        <div className="relative z-10 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-                          <div>
-                            <p className="text-xs uppercase tracking-[0.3em] text-[#f5c16c]">Current Champion</p>
-                            <p className="mt-1 text-3xl font-bold text-white">{champion.player_name}</p>
-                            <p className="text-sm text-foreground/70">Holding {champion.score} pts</p>
-                          </div>
-                          <div className="flex flex-col items-center gap-2 text-center md:items-end">
-                            <span className="text-[11px] uppercase tracking-[0.4em] text-white/60">Lead</span>
-                            <span className="text-4xl font-black text-[#f5c16c]">{leadGap ?? '—'}</span>
-                            <span className="text-xs text-foreground/60">vs next rival</span>
-                          </div>
+              <Card className={`${SECTION_CARD_CLASS} overflow-hidden flex-1`}>
+                <div aria-hidden="true" className="pointer-events-none absolute inset-0" style={CARD_TEXTURE} />
+                <CardHeader className="relative z-10 border-b border-white/5 pb-4">
+                  <CardTitle className="flex items-start justify-between text-base font-semibold text-white">
+                    <span className="flex items-center gap-2">
+                      <Trophy className="h-4 w-4 text-[#f5c16c]" />
+                      Arena Leaderboard
+                    </span>
+                    <span className="text-[10px] uppercase tracking-[0.35em] text-[#f5c16c]/70">
+                      {eventId ? `Event ${eventId.slice(0, 8)}` : 'Event Pending'}
+                    </span>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="relative z-10 space-y-4 overflow-y-auto max-h-[500px]">
+                  {!roomId ? (
+                    <p className="text-sm text-foreground/60">Join a room to sync its ranking ladder.</p>
+                  ) : leaderboardEntries.length === 0 ? (
+                    <p className="text-sm text-foreground/60">No combatants ranked yet. Launch your first submission.</p>
+                  ) : (
+                    <>
+                      <div className="grid gap-2 grid-cols-3">
+                        <div className={`${PANEL_TILE_CLASS} p-3`}>
+                          <div aria-hidden="true" className="pointer-events-none absolute inset-0" style={CARD_TEXTURE} />
+                          <p className="text-[9px] uppercase tracking-[0.3em] text-[#f5c16c]/80">Active</p>
+                          <p className="text-lg font-semibold text-white">{leaderboardEntries.length}</p>
+                        </div>
+                        <div className={`${PANEL_TILE_CLASS} p-3`}>
+                          <div aria-hidden="true" className="pointer-events-none absolute inset-0" style={CARD_TEXTURE} />
+                          <p className="text-[9px] uppercase tracking-[0.3em] text-[#f5c16c]/80">Top Score</p>
+                          <p className="text-lg font-semibold text-white">{champion?.score ?? '—'}</p>
+                        </div>
+                        <div className={`${PANEL_TILE_CLASS} p-3`}>
+                          <div aria-hidden="true" className="pointer-events-none absolute inset-0" style={CARD_TEXTURE} />
+                          <p className="text-[9px] uppercase tracking-[0.3em] text-[#f5c16c]/80">Updated</p>
+                          <p className="text-[10px] font-semibold text-white">{lastUpdatedLabel}</p>
                         </div>
                       </div>
-                    )}
 
-                    {challengers.length > 0 && (
-                      <div className="grid gap-3 sm:grid-cols-2">
-                        {challengers.map((entry) => (
-                          <div key={entry.place} className={`${PANEL_TILE_CLASS} flex items-center justify-between rounded-3xl p-4`}>
-                            <div aria-hidden="true" className="pointer-events-none absolute inset-0" style={CARD_TEXTURE} />
-                            <div className="relative z-10 flex items-center gap-4">
-                              <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[#d23187]/15 text-lg font-semibold text-[#f5c16c]">
-                                #{entry.place}
-                              </span>
-                              <div>
-                                <p className="text-sm font-semibold text-white">{entry.player_name}</p>
-                                <p className="text-xs uppercase tracking-[0.3em] text-[#f5c16c]/70">{entry.score} pts</p>
+                      {champion && (
+                        <div className="relative overflow-hidden rounded-2xl border border-[#f5c16c]/30 bg-linear-to-br from-[#d23187]/20 via-[#f5c16c]/10 to-transparent p-4 shadow-[0_10px_40px_rgba(210,49,135,0.25)]">
+                          <div aria-hidden="true" className="pointer-events-none absolute inset-0" style={CARD_TEXTURE} />
+                          <div className="relative z-10 flex items-center justify-between">
+                            <div>
+                              <p className="text-[10px] uppercase tracking-[0.3em] text-[#f5c16c]">Champion</p>
+                              <div className="mt-1 flex items-center gap-2">
+                                <p className="text-xl font-bold text-white">{champion.player_name}</p>
+                                {champion.state === 'present' ? (
+                                  <span className="flex h-2 w-2 relative">
+                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                                    <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                                  </span>
+                                ) : champion.state === 'disconnected' ? (
+                                  <span className="inline-flex h-2 w-2 rounded-full bg-gray-500"></span>
+                                ) : null}
                               </div>
+                              <p className="text-xs text-foreground/70">{champion.score} pts</p>
                             </div>
-                            <span className="text-[10px] uppercase tracking-[0.35em] text-foreground/50">Challenger</span>
+                            {leadGap !== null && (
+                              <div className="text-right">
+                                <p className="text-[10px] uppercase tracking-[0.3em] text-white/60">Lead</p>
+                                <p className="text-2xl font-black text-[#f5c16c]">{leadGap}</p>
+                              </div>
+                            )}
                           </div>
-                        ))}
-                      </div>
-                    )}
+                        </div>
+                      )}
 
-                    {trailingEntries.length > 0 && (
-                      <div className={`${PANEL_TILE_CLASS} rounded-3xl p-0`}>
-                        <div aria-hidden="true" className="pointer-events-none absolute inset-0" style={CARD_TEXTURE} />
-                        <div className="relative z-10 max-h-60 divide-y divide-white/5 overflow-y-auto">
-                          {trailingEntries.map((entry) => (
-                            <div key={entry.place} className="flex items-center justify-between px-4 py-3 text-sm text-foreground/80">
-                              <span className="flex items-center gap-3">
-                                <span className="text-xs uppercase tracking-[0.35em] text-[#f5c16c]/70">#{entry.place}</span>
-                                <span className="font-medium text-white">{entry.player_name}</span>
-                              </span>
-                              <span className="text-xs font-semibold text-white">{entry.score} pts</span>
+                      {challengers.length > 0 && (
+                        <div className="space-y-2">
+                          {challengers.map((entry) => (
+                            <div key={entry.place} className={`${PANEL_TILE_CLASS} flex items-center justify-between rounded-2xl p-3`}>
+                              <div aria-hidden="true" className="pointer-events-none absolute inset-0" style={CARD_TEXTURE} />
+                              <div className="relative z-10 flex items-center gap-3">
+                                <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#d23187]/15 text-base font-semibold text-[#f5c16c]">
+                                  #{entry.place}
+                                </span>
+                                <div>
+                                  <div className="flex items-center gap-2">
+                                    <p className="text-sm font-semibold text-white">{entry.player_name}</p>
+                                    {entry.state === 'present' ? (
+                                      <span className="flex h-2 w-2 relative">
+                                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                                        <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                                      </span>
+                                    ) : entry.state === 'disconnected' ? (
+                                      <span className="inline-flex h-2 w-2 rounded-full bg-gray-500"></span>
+                                    ) : null}
+                                  </div>
+                                  <p className="text-xs text-[#f5c16c]/70">{entry.score} pts</p>
+                                </div>
+                              </div>
                             </div>
                           ))}
                         </div>
-                      </div>
-                    )}
-                  </>
-                )}
-              </CardContent>
-            </Card>
+                      )}
 
-            <Card className={SECTION_CARD_CLASS}>
-              <div aria-hidden="true" className="pointer-events-none absolute inset-0" style={CARD_TEXTURE} />
-              <CardHeader className="relative z-10 pb-3">
-                <CardTitle className="flex items-center gap-2 text-base font-semibold text-white">
-                  <Bell className="h-4 w-4 text-[#f5c16c]" />
-                  Arena Feed
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="relative z-10">
-                <div className="max-h-[300px] space-y-2 overflow-y-auto pr-1">
-                  {notifications.length === 0 ? (
-                    <p className="text-xs text-foreground/50">Silence across the nexus.</p>
-                  ) : (
-                    notifications.slice(-10).reverse().map((notification, index) => {
-                      const variantClasses = getVariantClasses(notification.type);
-                      return (
-                        <div key={`${notification.time}-${index}`} className={`rounded-2xl border px-4 py-2 text-xs ${variantClasses}`}>
-                          <div className="flex items-center justify-between text-[10px] uppercase tracking-[0.35em]">
-                            <span>Arena Update</span>
-                            <span>{notification.time}</span>
+                      {trailingEntries.length > 0 && (
+                        <div className={`${PANEL_TILE_CLASS} rounded-2xl p-0`}>
+                          <div aria-hidden="true" className="pointer-events-none absolute inset-0" style={CARD_TEXTURE} />
+                          <div className="relative z-10 max-h-40 divide-y divide-white/5 overflow-y-auto">
+                            {trailingEntries.map((entry) => (
+                              <div key={entry.place} className="flex items-center justify-between px-3 py-2 text-sm text-foreground/80">
+                                <span className="flex items-center gap-2">
+                                  <span className="text-xs text-[#f5c16c]/70">#{entry.place}</span>
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-sm text-white">{entry.player_name}</span>
+                                    {entry.state === 'present' ? (
+                                      <span className="flex h-1.5 w-1.5 relative">
+                                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                                        <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500"></span>
+                                      </span>
+                                    ) : entry.state === 'disconnected' ? (
+                                      <span className="inline-flex h-1.5 w-1.5 rounded-full bg-gray-500"></span>
+                                    ) : null}
+                                  </div>
+                                </span>
+                                <span className="text-xs font-semibold text-white">{entry.score}</span>
+                              </div>
+                            ))}
                           </div>
-                          <p className="mt-1 text-sm leading-relaxed text-white">{notification.message}</p>
                         </div>
-                      );
-                    })
+                      )}
+                    </>
                   )}
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className={SECTION_CARD_CLASS}>
-              <div aria-hidden="true" className="pointer-events-none absolute inset-0" style={CARD_TEXTURE} />
-              <CardContent className="relative z-10 space-y-4 p-5">
-                <h3 className="flex items-center gap-2 text-sm font-semibold text-white">
-                  <svg className="h-4 w-4 text-[#f5c16c]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  Combat Tips
-                </h3>
-                <ul className="space-y-3 text-xs text-foreground/70">
-                  {[
-                    'Audit the full prompt before touching the keyboard.',
-                    'Sketch edge cases and input limits in comments first.',
-                    'Run sample inputs locally before submitting to the judges.',
-                    'Glance at constraints to avoid timeouts or memory traps.',
-                  ].map((tip) => (
-                    <li key={tip} className="flex items-start gap-3">
-                      <span className="mt-1 h-2 w-2 rounded-full bg-[#f5c16c]" />
-                      <span>{tip}</span>
-                    </li>
-                  ))}
-                </ul>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+            </div>
           </div>
+
+          {/* Combat Console - Full Width */}
+          <Card className={SECTION_CARD_CLASS}>
+            <div aria-hidden="true" className="pointer-events-none absolute inset-0" style={CARD_TEXTURE} />
+            <CardHeader className="relative z-10 border-b border-white/5 pb-4">
+              <CardTitle className="flex items-center gap-2 text-base font-semibold text-white">
+                <Cpu className="h-4 w-4 text-[#f5c16c]" />
+                Combat Console
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="relative z-10 p-6">
+              <CodeEditor
+                code={code}
+                setCode={setCode}
+                language={language}
+                setLanguage={setLanguage}
+                onSubmit={onSubmit}
+                submissionResult={submissionResult}
+                isSubmitting={isSubmitting}
+                spaceConstraintMb={spaceConstraintMb}
+              />
+            </CardContent>
+          </Card>
         </div>
       </div>
     </div>

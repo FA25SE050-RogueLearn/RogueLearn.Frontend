@@ -126,6 +126,17 @@ export default function EventResultsContent({ eventId }: EventResultsContentProp
               {name}
             </p>
             <div className="mt-0.5 flex items-center gap-2 text-[10px] text-[#f9d9eb]/50">
+              {/* Show guild name for user leaderboard */}
+              {type === 'user' && entry.guild_name && (
+                <>
+                  <Shield className="h-3 w-3" />
+                  <span>{entry.guild_name}</span>
+                </>
+              )}
+              {/* Show timestamp if available */}
+              {entry.snapshot_date && type === 'user' && entry.guild_name && (
+                <span className="text-[#f9d9eb]/30">•</span>
+              )}
               {entry.snapshot_date && (
                 <span>
                   {new Date(entry.snapshot_date).toLocaleTimeString('en-US', {

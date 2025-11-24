@@ -147,11 +147,37 @@ export default function EventDetailsContent({ eventId }: EventDetailsContentProp
     if (!userGuildId) return;
 
     try {
-      const response = await eventServiceApi.getRegisteredGuildMembers(eventId);
-      if (response.success && response.data) {
-        setRegisteredMembers(response.data);
-        setIsRegistered(response.data.length > 0);
+      // Step 1: Get registered member IDs from event service
+      const eventResponse = await eventServiceApi.getRegisteredGuildMembers(eventId);
+      if (!eventResponse.success || !eventResponse.data) {
+        setIsRegistered(false);
+        return;
       }
+
+      const registeredUserIds = eventResponse.data.map(m => m.user_id);
+
+      // Step 2: Get full member details from user service (guilds API)
+      const guildResponse = await guildsApi.getMembers(userGuildId);
+      if (!guildResponse.isSuccess || !guildResponse.data) {
+        setIsRegistered(false);
+        return;
+      }
+
+      // Step 3: Match and enrich the data
+      const enrichedMembers = registeredUserIds.map(userId => {
+        const guildMember = guildResponse.data.find(m => m.authUserId === userId);
+        const eventMember = eventResponse.data?.find(m => m.user_id === userId);
+        return {
+          user_id: userId,
+          username: guildMember?.username || userId,
+          email: guildMember?.email,
+          selected_at: eventMember?.selected_at,
+          registered_at: eventMember?.registered_at
+        };
+      });
+
+      setRegisteredMembers(enrichedMembers);
+      setIsRegistered(enrichedMembers.length > 0);
     } catch (err) {
       console.error('Error fetching registered members:', err);
     }
@@ -216,17 +242,25 @@ export default function EventDetailsContent({ eventId }: EventDetailsContentProp
 
     setRegistering(true);
     try {
-      // Step 1: Register guild to event (requires guild master with bearer token)
-      const registerResponse = await eventServiceApi.registerGuildToEvent(eventId);
+      // Check if this guild is the one that requested the event
+      const isRequesterGuild = event.requester_guild_id === userGuildId;
 
-      if (!registerResponse.success) {
-        toast.error('Failed to register guild', {
-          description: registerResponse.error?.message
-        });
-        return;
+      // Only register guild if not already registered and not the requester guild
+      if (!isRegistered && !isRequesterGuild) {
+        // Step 1: Register guild to event (for guilds that didn't request the event)
+        const registerResponse = await eventServiceApi.registerGuildToEvent(eventId);
+
+        if (!registerResponse.success) {
+          toast.error('Failed to register guild', {
+            description: registerResponse.error?.message
+          });
+          setRegistering(false);
+          return;
+        }
       }
 
       // Step 2: Add members to the registered guild
+      // (Requester guilds are already registered when they created the event request)
       const membersResponse = await eventServiceApi.addGuildMembersToEvent(
         eventId,
         {
@@ -235,8 +269,14 @@ export default function EventDetailsContent({ eventId }: EventDetailsContentProp
       );
 
       if (membersResponse.success) {
-        toast.success('Guild registered successfully!', {
-          description: `${selectedMembers.size} members selected for the event`
+        const successMessage = isRegistered
+          ? 'Members added successfully!'
+          : isRequesterGuild
+            ? 'Members registered successfully!'
+            : 'Guild registered successfully!';
+
+        toast.success(successMessage, {
+          description: `${selectedMembers.size} members ${isRegistered ? 'added to' : 'selected for'} the event`
         });
         setShowMemberSelection(false);
         setSelectedMembers(new Set());
@@ -251,6 +291,33 @@ export default function EventDetailsContent({ eventId }: EventDetailsContentProp
       toast.error('An unexpected error occurred');
     } finally {
       setRegistering(false);
+    }
+  };
+
+  const handleRemoveMember = async (userId: string, username?: string) => {
+    if (!event) return;
+
+    try {
+      const response = await eventServiceApi.removeGuildMembersFromEvent(
+        eventId,
+        {
+          members: [{ user_id: userId }]
+        }
+      );
+
+      if (response.success) {
+        toast.success('Member removed', {
+          description: `${username || userId} has been removed from the event`
+        });
+        await fetchRegisteredMembers();
+      } else {
+        toast.error('Failed to remove member', {
+          description: response.error?.message
+        });
+      }
+    } catch (err) {
+      console.error('Error removing member:', err);
+      toast.error('An unexpected error occurred');
     }
   };
 
@@ -533,14 +600,42 @@ export default function EventDetailsContent({ eventId }: EventDetailsContentProp
                 </div>
 
                 <div className="rounded-2xl border border-white/10 bg-[#0f0504]/80 p-5">
-                  <p className="mb-3 text-sm font-bold uppercase tracking-wider text-[#f5c16c]">
-                    Registered Warriors ({registeredMembers.length})
-                  </p>
+                  <div className="mb-4 flex items-center justify-between">
+                    <p className="text-sm font-bold uppercase tracking-wider text-[#f5c16c]">
+                      Registered Warriors ({registeredMembers.length})
+                    </p>
+                    {event.status === 'pending' && (!event.assignment_date || new Date() < new Date(event.assignment_date)) && (
+                      <Button
+                        onClick={handleShowMemberSelection}
+                        size="sm"
+                        variant="outline"
+                        className="border-[#f5c16c]/40 bg-white/5 text-[#f5c16c] hover:bg-[#f5c16c]/20"
+                      >
+                        <Users className="mr-2 h-3 w-3" />
+                        Add More
+                      </Button>
+                    )}
+                  </div>
                   <div className="space-y-2">
                     {registeredMembers.map((member, idx) => (
-                      <div key={idx} className="flex items-center gap-2 text-sm text-white/80">
-                        <Target className="h-3 w-3 text-[#d23187]" />
-                        {member.username || member.user_id}
+                      <div
+                        key={idx}
+                        className="flex items-center justify-between rounded-lg border border-white/5 bg-white/5 p-3"
+                      >
+                        <div className="flex items-center gap-2 text-sm text-white/80">
+                          <Target className="h-3 w-3 text-[#d23187]" />
+                          {member.username || member.user_id}
+                        </div>
+                        {event.status === 'pending' && (!event.assignment_date || new Date() < new Date(event.assignment_date)) && (
+                          <Button
+                            onClick={() => handleRemoveMember(member.user_id, member.username)}
+                            size="sm"
+                            variant="ghost"
+                            className="h-7 px-2 text-rose-400 hover:bg-rose-500/20 hover:text-rose-300"
+                          >
+                            <XCircle className="h-3 w-3" />
+                          </Button>
+                        )}
                       </div>
                     ))}
                   </div>
@@ -550,6 +645,90 @@ export default function EventDetailsContent({ eventId }: EventDetailsContentProp
                   <p className="text-center text-xs text-[#f9d9eb]/50">
                     Battle begins {getTimeUntil(event.started_date)}
                   </p>
+                )}
+                {/* Member Selection Modal when adding more */}
+                {showMemberSelection && (
+                  <div className="space-y-4 mt-4">
+                    <div className="flex items-center justify-between rounded-2xl border border-[#f5c16c]/30 bg-[#f5c16c]/10 p-4">
+                      <p className="text-sm font-bold uppercase tracking-wider text-[#f5c16c]">
+                        Add More Warriors
+                      </p>
+                      <span className="text-xs font-bold text-white">
+                        {selectedMembers.size} / {event.max_players_per_guild}
+                      </span>
+                    </div>
+
+                    {loadingMembers ? (
+                      <div className="flex items-center justify-center py-8">
+                        <Loader2 className="h-8 w-8 animate-spin text-[#f5c16c]" />
+                      </div>
+                    ) : (
+                      <div className="space-y-2 rounded-2xl border border-white/10 bg-[#0f0504]/60 p-4 max-h-[400px] overflow-y-auto">
+                        {guildMembers.length === 0 ? (
+                          <p className="py-8 text-center text-sm text-[#f9d9eb]/60">No guild members found</p>
+                        ) : (
+                          guildMembers.map((member) => {
+                            const isAlreadyRegistered = registeredMembers.some(rm => rm.user_id === member.user_id);
+                            return (
+                              <div
+                                key={member.user_id}
+                                className={`flex items-center justify-between rounded-lg p-3 transition ${
+                                  isAlreadyRegistered
+                                    ? 'border border-emerald-600/30 bg-emerald-600/10 opacity-50 cursor-not-allowed'
+                                    : 'border border-white/5 bg-white/5 hover:bg-white/10'
+                                }`}
+                              >
+                                <div className="flex items-center gap-3">
+                                  <Checkbox
+                                    checked={selectedMembers.has(member.user_id) || isAlreadyRegistered}
+                                    disabled={isAlreadyRegistered}
+                                    onCheckedChange={() => !isAlreadyRegistered && handleMemberToggle(member.user_id)}
+                                  />
+                                  <div>
+                                    <p className="text-sm font-medium text-white">{member.username}</p>
+                                    {isAlreadyRegistered && (
+                                      <p className="text-xs text-emerald-400">Already registered</p>
+                                    )}
+                                  </div>
+                                </div>
+                                <span className="text-xs text-[#f9d9eb]/50">{member.role}</span>
+                              </div>
+                            );
+                          })
+                        )}
+                      </div>
+                    )}
+
+                    <div className="flex gap-3">
+                      <Button
+                        onClick={() => {
+                          setShowMemberSelection(false);
+                          setSelectedMembers(new Set());
+                        }}
+                        variant="outline"
+                        className="flex-1 border-[#d23187]/40 bg-white/5 text-[#f5c16c] hover:bg-[#d23187]/20"
+                      >
+                        Cancel
+                      </Button>
+                      <Button
+                        onClick={handleRegister}
+                        disabled={selectedMembers.size === 0 || registering}
+                        className={`flex-1 ${CTA_CLASS} disabled:opacity-50 disabled:cursor-not-allowed`}
+                      >
+                        {registering ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Adding Members...
+                          </>
+                        ) : (
+                          <>
+                            <Users className="mr-2 h-4 w-4" />
+                            Add {selectedMembers.size} Member{selectedMembers.size !== 1 ? 's' : ''}
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                  </div>
                 )}
               </div>
             ) : event.status === 'pending' && (!event.assignment_date || new Date() < new Date(event.assignment_date)) ? (

@@ -8,6 +8,7 @@ import type { Event, Room, Problem } from '@/types/event-service';
 import EventsSelectionView from './views/EventsSelectionView';
 import RoomSelectionView from './views/RoomSelectionView';
 import CodeArenaView from './views/CodeArenaView';
+import { toast } from 'sonner';
 
 type ViewState = 'events' | 'rooms' | 'arena';
 
@@ -403,11 +404,20 @@ export default function CodeBattlePage() {
   const handleSelectEvent = async (eventId: string) => {
     // Validate that user is registered for this event
     if (!playerId) {
-      addNotification('Please log in to enter this event', 'error');
+      toast.error('Please log in to enter this event');
       return;
     }
 
     try {
+      // Get event details to check status
+      const eventResponse = await eventServiceApi.getEventById(eventId);
+      if (!eventResponse.success || !eventResponse.data) {
+        toast.error('Failed to load event details. Please try again.');
+        return;
+      }
+
+      const event = eventResponse.data;
+
       // Get user's guild ID
       const supabase = createClient();
       const { data: guilds } = await supabase
@@ -429,7 +439,7 @@ export default function CodeBattlePage() {
         const memberGuildId = memberships?.[0]?.guild_id;
 
         if (!memberGuildId) {
-          addNotification('You must be in a guild to enter events', 'error');
+          toast.error('You must be in a guild to enter events');
           return;
         }
       }
@@ -442,24 +452,64 @@ export default function CodeBattlePage() {
         .then(res => res.data?.[0]?.guild_id));
 
       if (!userGuildId) {
-        addNotification('You must be in a guild to enter events', 'error');
+        toast.error('You must be in a guild to enter events');
         return;
       }
 
       // Check if user's guild is registered for this event
       const registrationResponse = await eventServiceApi.getRegisteredGuildMembers(eventId);
 
-      if (!registrationResponse.success || !registrationResponse.data) {
-        addNotification('Your guild is not registered for this event', 'error');
+      if (!registrationResponse.success) {
+        toast.error('Failed to check event registration. Please try again.');
         return;
       }
 
       // Check if current user is in the registered members list
-      const registeredMembers = registrationResponse.data;
+      const registeredMembers = registrationResponse.data || [];
+
+      if (registeredMembers.length === 0) {
+        // If event is active or completed, registration window has closed
+        if (event.status === 'active') {
+          toast.error('Registration closed. This event is already live - you missed the registration window.');
+          return;
+        } else if (event.status === 'completed') {
+          toast.error('This event has ended. Registration is no longer available.');
+          return;
+        } else {
+          toast.error('Your guild has not registered any members for this event yet. Contact your guild master to register.');
+          return;
+        }
+      }
+
       const isUserRegistered = registeredMembers.some((member: any) => member.user_id === playerId);
 
       if (!isUserRegistered) {
-        addNotification('You are not registered for this event. Contact your guild master.', 'error');
+        // If event is active or completed, it's too late to register
+        if (event.status === 'active') {
+          toast.error('Registration closed. This event is already live - only registered members can participate.');
+          return;
+        } else if (event.status === 'completed') {
+          toast.error('This event has ended. You were not registered for this event.');
+          return;
+        } else {
+          toast.error('You are not registered for this event. Contact your guild master to add you to the roster.');
+          return;
+        }
+      }
+
+      // Check if event has actually started
+      const now = new Date();
+      const startDate = new Date(event.started_date);
+
+      if (now < startDate) {
+        const timeUntilStart = Math.ceil((startDate.getTime() - now.getTime()) / 1000 / 60); // minutes
+
+        if (timeUntilStart > 60) {
+          const hoursUntilStart = Math.ceil(timeUntilStart / 60);
+          toast.error(`Event hasn't started yet. The arena opens in ${hoursUntilStart} hour${hoursUntilStart > 1 ? 's' : ''}.`);
+        } else {
+          toast.error(`Event hasn't started yet. The arena opens in ${timeUntilStart} minute${timeUntilStart > 1 ? 's' : ''}.`);
+        }
         return;
       }
 
@@ -469,10 +519,10 @@ export default function CodeBattlePage() {
       setSelectedProblemId(null);
       setSelectedProblemTitle('');
       setCurrentView('rooms');
-      addNotification('Welcome to the event!', 'success');
+      toast.success('Welcome to the event!');
     } catch (error) {
       console.error('Error validating registration:', error);
-      addNotification('Failed to validate registration. Please try again.', 'error');
+      toast.error('Failed to validate registration. Please try again.');
     }
   };
 
