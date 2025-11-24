@@ -41,6 +41,7 @@ const publicVars = [
 
 const secretVars = [
   'NEXT_PUBLIC_SUPABASE_ANON_KEY',
+  'NEXT_PUBLIC_GOOGLE_CLIENT_SECRET',
   'GOOGLE_GENERATIVE_AI_API_KEY',
 ];
 

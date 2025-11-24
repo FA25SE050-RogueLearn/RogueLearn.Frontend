@@ -37,7 +37,7 @@ type CreateState = {
 };
 
 export default function MeetingManagement({ partyId, variant = "full", showList = true }: Props) {
-  const { getAccessToken, requestToken } = useGoogleMeet();
+  const { getAccessToken, requestToken, refreshAccessToken } = useGoogleMeet();
   const [authUserId, setAuthUserId] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
   const [ending, setEnding] = useState(false);
@@ -173,14 +173,22 @@ export default function MeetingManagement({ partyId, variant = "full", showList 
       } catch (e: any) {
         if (isUnauthorized(e)) {
           try {
-            const gisToken = await requestToken(requiredBothScopes);
-            token = gisToken;
-            setActiveToken(gisToken);
-            try { sessionStorage.setItem(`meetingToken:${partyId}`, gisToken); } catch (_) {}
-            created = await googleMeetApi.createSpace(gisToken, { config: {} });
-          } catch (reqErr: any) {
-            setNeedsAuth(true);
-            throw new Error("Authorization required to access Google Meet. Click Authorize and retry.");
+            const refreshed = await refreshAccessToken();
+            token = refreshed;
+            setActiveToken(refreshed);
+            try { sessionStorage.setItem(`meetingToken:${partyId}`, refreshed); } catch (_) {}
+            created = await googleMeetApi.createSpace(token, { config: {} });
+          } catch {
+            try {
+              const gisToken = await requestToken(requiredBothScopes);
+              token = gisToken;
+              setActiveToken(gisToken);
+              try { sessionStorage.setItem(`meetingToken:${partyId}`, gisToken); } catch (_) {}
+              created = await googleMeetApi.createSpace(gisToken, { config: {} });
+            } catch (reqErr: any) {
+              setNeedsAuth(true);
+              throw new Error("Authorization required to access Google Meet. Click Authorize and retry.");
+            }
           }
         } else {
           throw e;
@@ -216,10 +224,10 @@ export default function MeetingManagement({ partyId, variant = "full", showList 
       } catch (e: any) {
         if (isUnauthorized(e)) {
           try {
-            const gisToken = await requestToken(requiredBothScopes);
-            token = gisToken;
-            setActiveToken(gisToken);
-            try { sessionStorage.setItem(`meetingToken:${partyId}`, gisToken); } catch (_) {}
+            const refreshed = await refreshAccessToken();
+            token = refreshed;
+            setActiveToken(refreshed);
+            try { sessionStorage.setItem(`meetingToken:${partyId}`, refreshed); } catch (_) {}
             const space = await googleMeetApi.getSpace(
               token,
               created.name ?? meetingCode ?? ""
@@ -227,9 +235,23 @@ export default function MeetingManagement({ partyId, variant = "full", showList 
             const cfg = space?.config as any;
             const title = (cfg?.title ?? "").trim();
             if (!spaceName && title) spaceName = title;
-          } catch (reqErr: any) {
-            setNeedsAuth(true);
-            throw new Error("Authorization required to access Google Meet. Click Authorize and retry.");
+          } catch {
+            try {
+              const gisToken = await requestToken(requiredBothScopes);
+              token = gisToken;
+              setActiveToken(gisToken);
+              try { sessionStorage.setItem(`meetingToken:${partyId}`, gisToken); } catch (_) {}
+              const space = await googleMeetApi.getSpace(
+                token,
+                created.name ?? meetingCode ?? ""
+              );
+              const cfg = space?.config as any;
+              const title = (cfg?.title ?? "").trim();
+              if (!spaceName && title) spaceName = title;
+            } catch (reqErr: any) {
+              setNeedsAuth(true);
+              throw new Error("Authorization required to access Google Meet. Click Authorize and retry.");
+            }
           }
         }
       }
@@ -366,22 +388,39 @@ export default function MeetingManagement({ partyId, variant = "full", showList 
       } catch (e: any) {
         if (isUnauthorized(e)) {
           try {
-            const newToken = await requestToken(requiredBothScopes);
-            effectiveToken = newToken;
-            setActiveToken(newToken);
-            try { sessionStorage.setItem(`meetingToken:${partyId}`, newToken); } catch (_) {}
+            const refreshed = await refreshAccessToken();
+            effectiveToken = refreshed;
+            setActiveToken(refreshed);
+            try { sessionStorage.setItem(`meetingToken:${partyId}`, refreshed); } catch (_) {}
             try {
               confList = await googleMeetApi.listConferenceRecords(effectiveToken, { pageSize: 10 });
             } catch (e2: any) {
               if (isUnauthorized(e2)) {
-                setNeedsAuth(true);
-                throw new Error("Authorization required to access Google Meet. Click Authorize and retry.");
+                try {
+                  const newToken = await requestToken(requiredBothScopes);
+                  effectiveToken = newToken;
+                  setActiveToken(newToken);
+                  try { sessionStorage.setItem(`meetingToken:${partyId}`, newToken); } catch (_) {}
+                  confList = await googleMeetApi.listConferenceRecords(effectiveToken, { pageSize: 10 });
+                } catch {
+                  setNeedsAuth(true);
+                  throw new Error("Authorization required to access Google Meet. Click Authorize and retry.");
+                }
+              } else {
+                throw e2;
               }
-              throw e2;
             }
-          } catch (reqErr: any) {
-            setNeedsAuth(true);
-            throw new Error("Authorization required to access Google Meet. Click Authorize and retry.");
+          } catch {
+            try {
+              const newToken = await requestToken(requiredBothScopes);
+              effectiveToken = newToken;
+              setActiveToken(newToken);
+              try { sessionStorage.setItem(`meetingToken:${partyId}`, newToken); } catch (_) {}
+              confList = await googleMeetApi.listConferenceRecords(effectiveToken, { pageSize: 10 });
+            } catch {
+              setNeedsAuth(true);
+              throw new Error("Authorization required to access Google Meet. Click Authorize and retry.");
+            }
           }
         } else {
           throw e;
@@ -398,22 +437,39 @@ export default function MeetingManagement({ partyId, variant = "full", showList 
       } catch (e: any) {
         if (isUnauthorized(e)) {
           try {
-            const newToken = await requestToken(requiredBothScopes);
-            effectiveToken = newToken;
-            setActiveToken(newToken);
-            try { sessionStorage.setItem(`meetingToken:${partyId}`, newToken); } catch (_) {}
+            const refreshed = await refreshAccessToken();
+            effectiveToken = refreshed;
+            setActiveToken(refreshed);
+            try { sessionStorage.setItem(`meetingToken:${partyId}`, refreshed); } catch (_) {}
             try {
               transcriptsRes = await googleMeetApi.listTranscripts(effectiveToken, conferenceId);
             } catch (e2: any) {
               if (isUnauthorized(e2)) {
-                setNeedsAuth(true);
-                throw new Error("Authorization required to access Google Meet. Click Authorize and retry.");
+                try {
+                  const newToken = await requestToken(requiredBothScopes);
+                  effectiveToken = newToken;
+                  setActiveToken(newToken);
+                  try { sessionStorage.setItem(`meetingToken:${partyId}`, newToken); } catch (_) {}
+                  transcriptsRes = await googleMeetApi.listTranscripts(effectiveToken, conferenceId);
+                } catch {
+                  setNeedsAuth(true);
+                  throw new Error("Authorization required to access Google Meet. Click Authorize and retry.");
+                }
+              } else {
+                throw e2;
               }
-              throw e2;
             }
-          } catch (reqErr: any) {
-            setNeedsAuth(true);
-            throw new Error("Authorization required to access Google Meet. Click Authorize and retry.");
+          } catch {
+            try {
+              const newToken = await requestToken(requiredBothScopes);
+              effectiveToken = newToken;
+              setActiveToken(newToken);
+              try { sessionStorage.setItem(`meetingToken:${partyId}`, newToken); } catch (_) {}
+              transcriptsRes = await googleMeetApi.listTranscripts(effectiveToken, conferenceId);
+            } catch {
+              setNeedsAuth(true);
+              throw new Error("Authorization required to access Google Meet. Click Authorize and retry.");
+            }
           }
         } else {
           throw e;

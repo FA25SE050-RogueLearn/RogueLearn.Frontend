@@ -1,7 +1,7 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
-export async function middleware(request: NextRequest) {
+export default async function proxy(request: NextRequest) {
   let response = NextResponse.next({
     request,
   })
@@ -29,21 +29,22 @@ export async function middleware(request: NextRequest) {
     }
   )
 
-  // Refresh the auth token
-  await supabase.auth.getUser()
+  // Refresh the auth token only for protected paths
+  const url = new URL(request.url)
+  const protectedPrefixes = ['/dashboard', '/arsenal', '/parties', '/quests', '/admin']
+  if (protectedPrefixes.some((p) => url.pathname.startsWith(p))) {
+    await supabase.auth.getUser()
+  }
 
   return response
 }
 
 export const config = {
   matcher: [
-    /*
-     * Match all request paths except:
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     * - Public files (images, etc.)
-     */
-    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+    '/dashboard/:path*',
+    '/arsenal/:path*',
+    '/parties/:path*',
+    '/quests/:path*',
+    '/admin/:path*',
   ],
 }

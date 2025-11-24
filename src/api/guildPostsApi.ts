@@ -77,7 +77,7 @@ const guildPostsApi = {
     form.append('content', request.content);
     for (const t of request.tags ?? []) form.append('tags', t);
     for (const f of files) form.append('files', f);
-    return axiosClient.post<CreateGuildPostResponse>(`/api/guilds/${guildId}/posts`, form, {
+    return axiosClient.post<CreateGuildPostResponse>(`/api/guilds/${guildId}/posts/form`, form, {
       headers: { 'Content-Type': 'multipart/form-data' },
     }).then(res => ({ isSuccess: true, data: res.data }));
   },
@@ -98,7 +98,7 @@ const guildPostsApi = {
     form.append('content', request.content);
     for (const t of request.tags ?? []) form.append('tags', t);
     for (const f of files) form.append('files', f);
-    return axiosClient.put<void>(`/api/guilds/${guildId}/posts/${postId}`, form, {
+    return axiosClient.put<void>(`/api/guilds/${guildId}/posts/${postId}/form`, form, {
       headers: { 'Content-Type': 'multipart/form-data' },
     }).then(() => {});
   },
