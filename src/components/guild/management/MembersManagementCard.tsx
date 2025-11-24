@@ -38,6 +38,7 @@ interface MembersManagementCardProps {
   onAssignRole: (authUserId: string, role: GuildRole) => void;
   onRevokeRole: (authUserId: string, role: GuildRole) => void;
   onRemoveMember: (memberId: string) => void;
+  onTransferLeadership?: (toAuthUserId: string) => void;
 }
 
 export function MembersManagementCard({
@@ -48,6 +49,7 @@ export function MembersManagementCard({
   onAssignRole,
   onRevokeRole,
   onRemoveMember,
+  onTransferLeadership,
 }: MembersManagementCardProps) {
   const [memberSearch, setMemberSearch] = useState<string>("");
   const [roleToAssign, setRoleToAssign] = useState<GuildRole>("Member");
@@ -178,6 +180,18 @@ export function MembersManagementCard({
                         <UserMinus className="mr-1.5 h-3.5 w-3.5" />
                         Remove
                       </Button>
+                      {onTransferLeadership && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => onTransferLeadership?.(m.authUserId)}
+                          className="border-amber-400/40 bg-amber-400/10 text-amber-300 hover:bg-amber-400/20"
+                          title="Transfer leadership to this member"
+                        >
+                          <Crown className="mr-1.5 h-3.5 w-3.5" />
+                          Transfer Lead
+                        </Button>
+                      )}
                     </div>
                   )}
                   {myRole === "Officer" && m.role !== "GuildMaster" && m.role !== "Officer" && (

@@ -571,213 +571,166 @@ export default function NoteEditorPage() {
             }}
           />
           <div className="relative z-10">
-            <div className="flex items-center gap-3">
-              <Input
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                placeholder="Title"
-                className="border-[#f5c16c]/20 bg-black/40 font-semibold text-white focus-visible:border-[#f5c16c] focus-visible:ring-[#f5c16c]/30"
+            <div className="relative overflow-hidden rounded-[28px] border border-[#f5c16c]/30 bg-linear-to-br from-[#2d1810] via-[#1a0a08] to-black p-6 shadow-xl">
+              <div
+                className="pointer-events-none absolute inset-0 opacity-20"
+                style={{
+                  backgroundImage:
+                    "url('https://www.transparenttextures.com/patterns/asfalt-dark.png')",
+                  backgroundSize: "100px",
+                  backgroundBlendMode: "overlay",
+                }}
               />
-              <Label htmlFor="public-toggle" className="text-xs">
-                Public
-              </Label>
-              <Switch
-                id="public-toggle"
-                checked={isPublic}
-                onCheckedChange={setIsPublic}
-              />
-              <span className="text-xs text-foreground/60">
-                {status === "saving"
-                  ? "Saving..."
-                  : status === "dirty"
-                  ? "Unsaved changes"
-                  : "Saved"}
-              </span>
-              {queuedCount > 0 && (
-                <span className="ml-2 rounded-md border border-yellow-600/40 bg-yellow-900/20 px-2 py-1 text-xs text-yellow-200">
-                  {queuedCount} queued
-                </span>
-              )}
-              <Dialog>
-                <DialogTrigger asChild>
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    aria-label="Arsenal info"
-                  >
-                    Info
-                  </Button>
-                </DialogTrigger>
-                <DialogContent aria-describedby="arsenal-info-desc">
-                  <DialogHeader>
-                    <DialogTitle>Arsenal Guide</DialogTitle>
-                  </DialogHeader>
-                  <div
-                    id="arsenal-info-desc"
-                    className="space-y-3 text-sm text-foreground/80"
-                  >
-                    <p>
-                      Embed images by pasting or using Insert Image. Uploads go
-                      to notes-media.
-                    </p>
-                    <p>
-                      Organize with tags. Drag notes into tag folders on the
-                      main Arsenal page.
-                    </p>
-                    <p>Use AI actions for suggestions and inline assistance.</p>
-                    <p>Keyboard: Tab to toolbar, ESC to close dialogs.</p>
+              <div className="relative flex items-center gap-4">
+                <Input
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  placeholder="Document Title..."
+                  className="flex-1 border-[#f5c16c]/20 bg-black/40 text-lg font-semibold text-white placeholder:text-white/40 focus:border-[#f5c16c]/50 focus:ring-[#f5c16c]/30"
+                />
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2 rounded-lg border border-[#f5c16c]/20 bg-black/40 px-3 py-2">
+                    <div
+                      className={`h-2 w-2 rounded-full ${
+                        status === "saving"
+                          ? "animate-pulse bg-amber-400"
+                          : status === "dirty"
+                          ? "bg-amber-400"
+                          : "bg-emerald-400"
+                      }`}
+                    />
+                    <span className="text-xs text-white/70">
+                      {status === "saving"
+                        ? "Saving..."
+                        : status === "dirty"
+                        ? "Unsaved"
+                        : "Saved"}
+                    </span>
                   </div>
-                </DialogContent>
-              </Dialog>
-              {/* Share to Party Stash */}
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Dialog open={shareOpen} onOpenChange={setShareOpen}>
-                      <DialogTrigger asChild>
-                        <Button
-                          variant="secondary"
-                          size="sm"
-                          disabled={!isPublic}
-                        >
-                          Share to Party Stash
-                        </Button>
-                      </DialogTrigger>
-                      <DialogContent>
-                        <DialogHeader>
-                          <DialogTitle>Share to Party Stash</DialogTitle>
-                        </DialogHeader>
-                        <div className="space-y-3">
-                          {!isPublic && (
-                            <div className="rounded-md border border-yellow-600/40 bg-yellow-900/20 p-2 text-xs text-yellow-200">
-                              Note must be public to share.
-                            </div>
-                          )}
-                          {sharePartyId &&
-                            !(
-                              shareRole === "Leader" || shareRole === "CoLeader"
-                            ) && (
-                              <div className="rounded-md border border-red-600/40 bg-red-900/20 p-2 text-xs text-red-200">
-                                Only Leader or CoLeader of the selected party
-                                can share notes.
-                              </div>
-                            )}
-                          <div className="grid grid-cols-2 gap-2 items-center">
-                            <Label className="text-xs">Party</Label>
-                            <Select
-                              onValueChange={(v) => setSharePartyId(v)}
-                              value={sharePartyId ?? undefined}
-                            >
-                              <SelectTrigger className="h-8">
-                                <SelectValue placeholder="Select a party" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {myParties.map((p) => (
-                                  <SelectItem key={p.id} value={p.id}>
-                                    {p.name}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </div>
-                          <div className="grid grid-cols-2 gap-2 items-center">
-                            <Label className="text-xs">Title</Label>
-                            <Input
-                              value={shareTitle || title}
-                              onChange={(e) => setShareTitle(e.target.value)}
-                              placeholder="Stash item title"
-                            />
-                          </div>
-                          <div className="grid grid-cols-2 gap-2 items-center">
-                            <Label className="text-xs">Tags</Label>
-                            <Input
-                              value={shareTags}
-                              onChange={(e) => setShareTags(e.target.value)}
-                              placeholder="Comma-separated tags"
-                            />
-                          </div>
-                        </div>
-                        <DialogFooter>
-                          <Button
-                            disabled={
-                              !isPublic ||
-                              !sharePartyId ||
-                              !(
-                                shareRole === "Leader" ||
-                                shareRole === "CoLeader"
-                              )
-                            }
-                            onClick={async () => {
-                              if (!isPublic) {
-                                toast.error("Note must be public to share.");
-                                return;
-                              }
-                              if (!sharePartyId) {
-                                toast.error("Please select a party.");
-                                return;
-                              }
-                              if (
-                                !(
-                                  shareRole === "Leader" ||
-                                  shareRole === "CoLeader"
-                                )
-                              ) {
-                                toast.error(
-                                  "Only Leader or CoLeader can share to this party."
-                                );
-                                return;
-                              }
-                              try {
-                                const tags = shareTags
-                                  .split(",")
-                                  .map((t) => t.trim())
-                                  .filter((t) => t.length > 0);
-                                // provenance tag
-                                if (noteId) tags.push(`source:note:${noteId}`);
-                                // Share raw BlockNote document array (no wrapper), same as note content
-                                const contentArray = (editor?.document ??
-                                  initialBlocks ??
-                                  []) as any[];
-                                const res = await partiesApi.addResource(
-                                  sharePartyId,
-                                  {
-                                    title: (shareTitle || title).trim(),
-                                    content: contentArray,
-                                    tags,
-                                    originalNoteId: noteId,
-                                  }
-                                );
-                                if (res.isSuccess) {
-                                  toast.success("Shared to party stash");
-                                  setShareOpen(false);
-                                  setShareTags("");
-                                  setSharePartyId(null);
-                                }
-                              } catch (e: any) {
-                                toast.error(
-                                  e?.response?.status === 403
-                                    ? "Permission denied"
-                                    : "Failed to share"
-                                );
-                              }
-                            }}
-                          >
-                            Share
-                          </Button>
-                        </DialogFooter>
-                      </DialogContent>
-                    </Dialog>
-                  </TooltipTrigger>
-                  {!isPublic && (
-                    <TooltipContent>
-                      Make note public to enable sharing
-                    </TooltipContent>
+                  <Label htmlFor="public-toggle" className="text-xs">Public</Label>
+                  <Switch id="public-toggle" checked={isPublic} onCheckedChange={setIsPublic} />
+                  {queuedCount > 0 && (
+                    <span className="ml-2 rounded-md border border-yellow-600/40 bg-yellow-900/20 px-2 py-1 text-xs text-yellow-200">
+                      {queuedCount} queued
+                    </span>
                   )}
-                </Tooltip>
-              </TooltipProvider>
+                  <button
+                    onClick={() => router.back()}
+                    className="rounded-lg border border-[#f5c16c]/30 bg-transparent px-4 py-2 text-sm text-[#f5c16c] transition-all hover:bg-[#f5c16c]/10"
+                  >
+                    Back
+                  </button>
+                  <Dialog>
+                    <DialogTrigger asChild>
+                      <Button variant="secondary" size="sm" aria-label="Arsenal info">Info</Button>
+                    </DialogTrigger>
+                    <DialogContent aria-describedby="arsenal-info-desc">
+                      <DialogHeader>
+                        <DialogTitle>Arsenal Guide</DialogTitle>
+                      </DialogHeader>
+                      <div id="arsenal-info-desc" className="space-y-3 text-sm text-foreground/80">
+                        <p>Embed images by pasting or using Insert Image. Uploads go to notes-media.</p>
+                        <p>Organize with tags. Drag notes into tag folders on the main Arsenal page.</p>
+                        <p>Use AI actions for suggestions and inline assistance.</p>
+                        <p>Keyboard: Tab to toolbar, ESC to close dialogs.</p>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Dialog open={shareOpen} onOpenChange={setShareOpen}>
+                          <DialogTrigger asChild>
+                            <Button variant="secondary" size="sm" disabled={!isPublic}>Share to Party Stash</Button>
+                          </DialogTrigger>
+                          <DialogContent>
+                            <DialogHeader>
+                              <DialogTitle>Share to Party Stash</DialogTitle>
+                            </DialogHeader>
+                            <div className="space-y-3">
+                              {!isPublic && (
+                                <div className="rounded-md border border-yellow-600/40 bg-yellow-900/20 p-2 text-xs text-yellow-200">
+                                  Note must be public to share.
+                                </div>
+                              )}
+                              {sharePartyId && !(shareRole === "Leader" || shareRole === "CoLeader") && (
+                                <div className="rounded-md border border-red-600/40 bg-red-900/20 p-2 text-xs text-red-200">
+                                  Only Leader or CoLeader of the selected party can share notes.
+                                </div>
+                              )}
+                              <div className="grid grid-cols-2 gap-2 items-center">
+                                <Label className="text-xs">Party</Label>
+                                <Select onValueChange={(v) => setSharePartyId(v)} value={sharePartyId ?? undefined}>
+                                  <SelectTrigger className="h-8">
+                                    <SelectValue placeholder="Select a party" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {myParties.map((p) => (
+                                      <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                              <div className="grid grid-cols-2 gap-2 items-center">
+                                <Label className="text-xs">Title</Label>
+                                <Input value={shareTitle || title} onChange={(e) => setShareTitle(e.target.value)} placeholder="Stash item title" />
+                              </div>
+                              <div className="grid grid-cols-2 gap-2 items-center">
+                                <Label className="text-xs">Tags</Label>
+                                <Input value={shareTags} onChange={(e) => setShareTags(e.target.value)} placeholder="Comma-separated tags" />
+                              </div>
+                            </div>
+                            <DialogFooter>
+                              <Button
+                                disabled={!isPublic || !sharePartyId || !(shareRole === "Leader" || shareRole === "CoLeader")}
+                                onClick={async () => {
+                                  if (!isPublic) {
+                                    toast.error("Note must be public to share.");
+                                    return;
+                                  }
+                                  if (!sharePartyId) {
+                                    toast.error("Please select a party.");
+                                    return;
+                                  }
+                                  if (!(shareRole === "Leader" || shareRole === "CoLeader")) {
+                                    toast.error("Only Leader or CoLeader can share to this party.");
+                                    return;
+                                  }
+                                  try {
+                                    const tags = shareTags.split(",").map((t) => t.trim()).filter((t) => t.length > 0);
+                                    if (noteId) tags.push(`source:note:${noteId}`);
+                                    const contentArray = (editor?.document ?? initialBlocks ?? []) as any[];
+                                    const res = await partiesApi.addResource(sharePartyId, {
+                                      title: (shareTitle || title).trim(),
+                                      content: contentArray,
+                                      tags,
+                                      originalNoteId: noteId,
+                                    });
+                                    if (res.isSuccess) {
+                                      toast.success("Shared to party stash");
+                                      setShareOpen(false);
+                                      setShareTags("");
+                                      setSharePartyId(null);
+                                    }
+                                  } catch (e: any) {
+                                    toast.error(e?.response?.status === 403 ? "Permission denied" : "Failed to share");
+                                  }
+                                }}
+                              >
+                                Share
+                              </Button>
+                            </DialogFooter>
+                          </DialogContent>
+                        </Dialog>
+                      </TooltipTrigger>
+                      {!isPublic && <TooltipContent>Make note public to enable sharing</TooltipContent>}
+                    </Tooltip>
+                  </TooltipProvider>
+                </div>
+              </div>
             </div>
+            <Separator className="my-3" />
           </div>
-          <Separator className="my-3" />
 
           <BlockNoteView
             editor={editor}

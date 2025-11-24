@@ -19,7 +19,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
 import GuildRoleGate from "@/components/guild/RoleGate";
 import { useGuildRoles } from "@/hooks/useGuildRoles";
-import { Users, Shield, Lock, Globe, Scroll, Swords, Crown, Settings } from "lucide-react";
+import { Users, Shield, Lock, Globe, Scroll, Swords, Crown, Settings, HelpCircle } from "lucide-react";
 
 const SECTION_CARD_CLASS = 'relative overflow-hidden rounded-3xl border border-[#f5c16c]/25 bg-[#120806]/80';
 const HERO_CARD_CLASS = 'relative overflow-hidden rounded-[32px] border border-[#f5c16c]/30 bg-linear-to-br from-[#1c0906]/95 via-[#120605]/98 to-[#040101]';
@@ -46,6 +46,7 @@ export default function GuildDetailPage() {
   const [joinMessage, setJoinMessage] = useState<string>("");
   const [submitting, setSubmitting] = useState<boolean>(false);
   const [activeTab, setActiveTab] = useState<string>("home");
+  const [showInfoModal, setShowInfoModal] = useState<boolean>(false);
   const [myAuthUserId, setMyAuthUserId] = useState<string | null>(null);
   const { roles: myRoles } = useGuildRoles(guildId as string);
 
@@ -205,6 +206,14 @@ export default function GuildDetailPage() {
                 
                 <CardContent className="relative z-10 pt-6">
                   <div className="flex flex-wrap items-center gap-3">
+                    <button
+                      onClick={() => setShowInfoModal(true)}
+                      className="flex items-center gap-2 rounded-full border border-[#f5c16c]/20 bg-black/40 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-white/80 transition-colors hover:border-[#f5c16c]/40 hover:bg-black/60 hover:text-white"
+                      title="Guild overview"
+                    >
+                      <HelpCircle className="h-3.5 w-3.5" />
+                      Info
+                    </button>
                     {!isMember && (
                       <Dialog>
                         <DialogTrigger asChild>
@@ -329,6 +338,9 @@ export default function GuildDetailPage() {
                   </TabsContent>
                 )}
               </Tabs>
+              {showInfoModal && (
+                <GuildInfoModal open={showInfoModal} onClose={() => setShowInfoModal(false)} guildId={guild.id} />
+              )}
             </>
           )}
         </div>
@@ -339,3 +351,4 @@ export default function GuildDetailPage() {
 import { GuildPostsSection } from "@/components/guild/posts/GuildPostsSection";
 import { GuildManagementSection } from "@/components/guild/management/GuildManagementSection";
 import GuildMeetingsSection from "@/components/guild/meetings/GuildMeetingsSection";
+import GuildInfoModal from "@/components/guild/GuildInfoModal";

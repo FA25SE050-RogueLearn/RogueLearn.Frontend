@@ -105,6 +105,10 @@ export default function NotesTab() {
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [confirmTagId, setConfirmTagId] = useState<string | null>(null);
+  const [noteEditingId, setNoteEditingId] = useState<string | null>(null);
+  const [noteEditTitle, setNoteEditTitle] = useState("");
+  const [updatingNoteId, setUpdatingNoteId] = useState<string | null>(null);
+  const [menuOpenId, setMenuOpenId] = useState<string | null>(null);
 
   useEffect(() => {
     const supabase = createClient();
@@ -449,6 +453,39 @@ export default function NotesTab() {
     } catch (e) {}
   };
 
+  const startRenameNote = (note: NoteDto) => {
+    setNoteEditingId(note.id);
+    setNoteEditTitle(note.title);
+  };
+
+  const cancelRenameNote = () => {
+    setNoteEditingId(null);
+    setNoteEditTitle("");
+  };
+
+  const saveRenameNote = async (noteId: string) => {
+    const trimmed = noteEditTitle.trim();
+    if (!authUserId) {
+      toast.error("Not authenticated");
+      return;
+    }
+    if (!trimmed) {
+      toast.error("Title cannot be empty");
+      return;
+    }
+    try {
+      setUpdatingNoteId(noteId);
+      const res = await notesApi.update(noteId, { authUserId, title: trimmed });
+      if (res.isSuccess) {
+        toast.success("Title updated");
+        cancelRenameNote();
+        await fetchNotes();
+      }
+    } finally {
+      setUpdatingNoteId(null);
+    }
+  };
+
   const onDragStartNote = (e: React.DragEvent, noteId: string) => {
     e.dataTransfer.setData("text/plain", noteId);
   };
@@ -630,21 +667,32 @@ export default function NotesTab() {
                     }}
                     draggable
                     onDragStart={(e) => onDragStartNote(e, note.id)}
+                    onContextMenu={(e) => { e.preventDefault(); setMenuOpenId(note.id); }}
                   >
                     <CardHeader className="relative z-10 flex flex-row items-center justify-between border-b border-white/10 py-3 px-4">
-                      <CardTitle className="text-base font-semibold text-white">{note.title}</CardTitle>
+                      {noteEditingId === note.id ? (
+                        <div className="flex items-center gap-2">
+                          <Input className="h-8 w-64" value={noteEditTitle} onChange={(e) => setNoteEditTitle(e.target.value)} />
+                          <Button size="icon" variant="secondary" className="h-8 w-8" onClick={(e) => { e.stopPropagation(); saveRenameNote(note.id); }} disabled={updatingNoteId === note.id} aria-label="Save">
+                            <Check className="h-4 w-4" />
+                          </Button>
+                          <Button size="icon" variant="ghost" className="h-8 w-8" onClick={(e) => { e.stopPropagation(); cancelRenameNote(); }} aria-label="Cancel">
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      ) : (
+                        <CardTitle className="text-base font-semibold text-white">{note.title}</CardTitle>
+                      )}
                         <div className="flex items-center gap-2">
                           {note.isPublic && (
                             <span className="rounded-full border border-green-500/40 bg-green-500/15 px-2 py-0.5 text-xs text-green-300">Public</span>
                           )}
-                        <DropdownMenu>
+                        <DropdownMenu open={menuOpenId === note.id} onOpenChange={(v) => setMenuOpenId(v ? note.id : null)}>
                           <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" aria-label="More actions" onClick={(e) => e.stopPropagation()}>
-                              <MoreVertical className="h-4 w-4" />
-                            </Button>
+                            <span className="sr-only" />
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); openEditNote(note.id); }}>Open</DropdownMenuItem>
+                            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); startRenameNote(note); }}>Rename</DropdownMenuItem>
                             <DropdownMenuItem onClick={(e) => { e.stopPropagation(); deleteNote(note.id); }}>Delete</DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
@@ -691,11 +739,25 @@ export default function NotesTab() {
                       className="group grid grid-cols-[minmax(200px,1fr)_240px_140px_140px] items-center border-b border-white/5 px-4 text-sm hover:bg-white/5"
                       draggable
                       onDragStart={(e) => onDragStartNote(e, note.id)}
+                      onContextMenu={(e) => { e.preventDefault(); setMenuOpenId(note.id); }}
                     >
-                      <button className="flex items-center gap-2 py-2 text-left" onClick={() => openEditNote(note.id)}>
-                        <FileText className="h-4 w-4 text-white/70" />
-                        <span className="truncate text-white">{note.title}</span>
-                      </button>
+                      {noteEditingId === note.id ? (
+                        <div className="flex items-center gap-2 py-2">
+                          <FileText className="h-4 w-4 text-white/70" />
+                          <Input className="h-8 w-64" value={noteEditTitle} onChange={(e) => setNoteEditTitle(e.target.value)} />
+                          <Button size="icon" variant="secondary" className="h-8 w-8" onClick={(e) => { e.stopPropagation(); saveRenameNote(note.id); }} disabled={updatingNoteId === note.id} aria-label="Save">
+                            <Check className="h-4 w-4" />
+                          </Button>
+                          <Button size="icon" variant="ghost" className="h-8 w-8" onClick={(e) => { e.stopPropagation(); cancelRenameNote(); }} aria-label="Cancel">
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      ) : (
+                        <button className="flex items-center gap-2 py-2 text-left" onClick={() => openEditNote(note.id)}>
+                          <FileText className="h-4 w-4 text-white/70" />
+                          <span className="truncate text-white">{note.title}</span>
+                        </button>
+                      )}
                       <div className="flex flex-wrap items-center gap-1 py-2">
                         {Array.isArray(note.tagIds) && note.tagIds.length > 0 ? (
                           note.tagIds.map((tid) => {
@@ -715,11 +777,16 @@ export default function NotesTab() {
                       <div className="py-2 text-right text-foreground/60">{new Date(note.createdAt).toLocaleDateString()}</div>
                       <div className="relative py-2 text-right text-foreground/60">
                         {new Date(note.updatedAt).toLocaleDateString()}
-                        <div className="absolute inset-y-0 right-2 hidden items-center gap-2 group-hover:flex">
-                          <Button size="sm" variant="secondary" onClick={() => openEditNote(note.id)}>Open</Button>
-                          <Button size="sm" variant="ghost" onClick={() => deleteNote(note.id)}>
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
+                        <div className="absolute inset-y-0 right-2 flex items-center">
+                          <DropdownMenu open={menuOpenId === note.id} onOpenChange={(v) => setMenuOpenId(v ? note.id : null)}>
+                            <DropdownMenuTrigger asChild>
+                              <span className="sr-only" />
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); startRenameNote(note); }}>Rename</DropdownMenuItem>
+                              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); deleteNote(note.id); }}>Delete</DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         </div>
                       </div>
                     </div>
