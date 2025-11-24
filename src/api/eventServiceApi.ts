@@ -301,10 +301,10 @@ const eventServiceApi = {
 
   /**
    * Remove guild members from event registration (authenticated)
+   * Uses bearer token to identify the guild
    */
-  async removeGuildMembers(
+  async removeGuildMembersFromEvent(
     eventId: string,
-    guildId: string,
     payload: RegisterGuildPayload
   ): Promise<ApiResponse<any>> {
     try {
