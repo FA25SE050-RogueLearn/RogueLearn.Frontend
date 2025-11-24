@@ -39,7 +39,7 @@ export const syllabusSchema = z.object({
         sessionNumber: z.number().int().min(1, "Valid session number required"),
       })
     )
-    .default([]),
+    ,
 
   assessments: z
     .array(
@@ -52,7 +52,6 @@ export const syllabusSchema = z.object({
         description: z.string().min(5, "Description required"),
       })
     )
-    .default([])
     .refine(
       (assessments) => {
         if (assessments.length === 0) return true; // Allow empty

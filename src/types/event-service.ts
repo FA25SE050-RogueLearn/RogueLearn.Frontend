@@ -211,7 +211,7 @@ export interface CreateEventRequestPayload {
 }
 
 export interface ProcessEventRequestPayload {
-  action: 'approve' | 'reject';
+  action: 'approve' | 'decline';
   rejection_reason?: string;
 }
 

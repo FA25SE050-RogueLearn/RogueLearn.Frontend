@@ -52,13 +52,13 @@ export function RegisteredEventsCard({ guildId }: RegisteredEventsCardProps) {
       const registered: Event[] = [];
       for (const event of allEvents) {
         try {
-          const membersResponse = await eventServiceApi.getRegisteredGuildMembers(event.ID, guildId);
+          const membersResponse = await eventServiceApi.getRegisteredGuildMembers(event.ID ?? event.id);
           if (membersResponse.success && membersResponse.data && membersResponse.data.length > 0) {
             registered.push(event);
           }
         } catch (err) {
           // Guild not registered for this event, continue
-          console.log(`Guild not registered for event ${event.ID}`);
+          console.log(`Guild not registered for event ${event.ID ?? event.id}`);
         }
       }
 
@@ -78,7 +78,8 @@ export function RegisteredEventsCard({ guildId }: RegisteredEventsCardProps) {
   const getEventStatus = (event: Event) => {
     const now = new Date();
     const assignmentDate = event.AssignmentDate ? new Date(event.AssignmentDate) : null;
-    const startDate = new Date(event.StartedDate);
+    const startDateStr = event.StartedDate ?? event.started_date;
+    const startDate = startDateStr ? new Date(startDateStr) : null;
 
     if (event.Status === 'pending') {
       if (assignmentDate && now < assignmentDate) {
@@ -156,8 +157,8 @@ export function RegisteredEventsCard({ guildId }: RegisteredEventsCardProps) {
                         </span>
                       </div>
 
-                      <h3 className="text-lg font-semibold text-white">{event.Title}</h3>
-                      <p className="mt-1 line-clamp-2 text-sm text-white/60">{event.Description}</p>
+                      <h3 className="text-lg font-semibold text-white">{event.Title ?? event.title}</h3>
+                      <p className="mt-1 line-clamp-2 text-sm text-white/60">{event.Description ?? event.description}</p>
 
                       <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
                         <div className="space-y-1">
@@ -166,7 +167,7 @@ export function RegisteredEventsCard({ guildId }: RegisteredEventsCardProps) {
                             <span className="text-xs">Start Date</span>
                           </div>
                           <p className="text-xs font-semibold text-[#f5c16c]">
-                            {new Date(event.StartedDate).toLocaleDateString("en-US")}
+                            {new Date((event.StartedDate ?? event.started_date) || '').toLocaleDateString("en-US")}
                           </p>
                         </div>
 
@@ -176,7 +177,7 @@ export function RegisteredEventsCard({ guildId }: RegisteredEventsCardProps) {
                             <span className="text-xs">End Date</span>
                           </div>
                           <p className="text-xs font-semibold text-[#f5c16c]">
-                            {new Date(event.EndDate).toLocaleDateString("en-US")}
+                            {new Date((event.EndDate ?? event.end_date) || '').toLocaleDateString("en-US")}
                           </p>
                         </div>
 

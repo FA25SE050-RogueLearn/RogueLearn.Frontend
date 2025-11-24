@@ -18,10 +18,15 @@ const resolveEventStatus = (event: Event) => {
   if (event.Status === 'completed') return 'Concluded';
   if (event.Status === 'cancelled') return 'Cancelled';
 
-  // Otherwise, calculate based on dates
+  // Otherwise, calculate based on dates (support both legacy and new fields)
   const now = new Date();
-  const start = new Date(event.StartedDate);
-  const end = new Date(event.EndDate);
+  const startStr = event.StartedDate ?? event.started_date;
+  const endStr = event.EndDate ?? event.end_date;
+  if (!startStr || !endStr) {
+    return 'Live';
+  }
+  const start = new Date(startStr);
+  const end = new Date(endStr);
 
   if (now < start) {
     return 'Scheduled';
@@ -92,8 +97,8 @@ export default function EventsList({ apiBaseUrl, onEventSelect, selectedEventId 
           <ul className="space-y-3">
             {events.map((event) => (
               <li
-                key={event.ID}
-                onClick={() => onEventSelect(event.ID)}
+                key={event.ID ?? event.id}
+                onClick={() => onEventSelect(event.ID ?? event.id)}
                 className={`group rounded-2xl border px-4 py-3 text-sm transition-all duration-300 ${
                   selectedEventId === event.ID
                     ? 'border-[#d23187]/55 bg-[#d23187]/20 text-white shadow-[0_12px_30px_rgba(210,49,135,0.35)]'
@@ -101,7 +106,7 @@ export default function EventsList({ apiBaseUrl, onEventSelect, selectedEventId 
                 }`}
               >
                 <div className="flex items-center justify-between">
-                  <span className="font-medium">{event.Title}</span>
+                  <span className="font-medium">{event.Title ?? event.title}</span>
                   <span className="text-[11px] uppercase tracking-[0.35em] text-[#f5c16c]/80">
                     {resolveEventStatus(event)}
                   </span>
