@@ -7,6 +7,7 @@ import { createServerApiClients } from "@/lib/api-server";
 import { QuestDetails, LearningPath } from "@/types/quest";
 import QuestDetailView from "@/components/quests/QuestDetailView";
 import { revalidatePath } from "next/cache";
+import { checkApiHealth } from "@/lib/api-server";
 
 interface PageProps {
   params: Promise<{ learningPathId: string; chapterId: string; questId: string }>;
@@ -22,6 +23,7 @@ interface QuestProgress {
 export default async function QuestOverviewPage({ params }: PageProps) {
   const { learningPathId, chapterId, questId } = await params;
   const { coreApiClient } = await createServerApiClients();
+  const apiHealthy = await checkApiHealth(process.env.NEXT_PUBLIC_API_URL);
 
   let questDetails: QuestDetails | null = null;
   let learningPath: LearningPath | null = null;
@@ -58,6 +60,13 @@ export default async function QuestOverviewPage({ params }: PageProps) {
   }
 
   const chapter = learningPath?.chapters.find(ch => ch.id === chapterId);
+  const debugInfo = {
+    params: { learningPathId, chapterId, questId },
+    apiHealthy,
+    questDetails: questDetails ? { id: questDetails.id, title: questDetails.title, stepsCount: questDetails.steps?.length } : null,
+    learningPath: learningPath ? { id: learningPath.id, name: learningPath.name, chaptersCount: learningPath.chapters?.length, chapterIds: learningPath.chapters?.map(ch => ch.id) } : null,
+    chapterMatched: !!chapter,
+  };
 
   // Error handling
   if (!questDetails || !learningPath || !chapter) {
@@ -85,6 +94,10 @@ export default async function QuestOverviewPage({ params }: PageProps) {
               Refresh Server Data
             </button>
           </form>
+          <div className="mt-4 w-full max-w-3xl rounded-md border border-[#f5c16c]/20 bg-black/30 p-3 text-xs text-white/80">
+            <div className="mb-2 font-semibold text-[#f5c16c]">Debug</div>
+            <pre className="whitespace-pre-wrap break-all">{JSON.stringify(debugInfo, null, 2)}</pre>
+          </div>
         </div>
       </DashboardLayout>
     );
@@ -114,6 +127,10 @@ export default async function QuestOverviewPage({ params }: PageProps) {
           Refresh Server Data
         </button>
       </form>
+      <div className="mb-4 w-full max-w-3xl rounded-md border border-[#f5c16c]/20 bg-black/30 p-3 text-xs text-white/80">
+        <div className="mb-2 font-semibold text-[#f5c16c]">Debug</div>
+        <pre className="whitespace-pre-wrap break-all">{JSON.stringify(debugInfo, null, 2)}</pre>
+      </div>
       <QuestDetailView
         questDetails={questDetails}
         questProgress={questProgress}
