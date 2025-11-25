@@ -10,22 +10,28 @@ import { ApiErrorPayload, NormalizedApiErrorInfo } from '@/types/base/Error';
  * - Attach normalized error info to rejected promises
  * - Only shows user-facing toasts for genuine errors
  */
-const axiosClient = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL,
-});
+const axiosClient = axios.create({});
 
 // Developer hint
-if (!process.env.NEXT_PUBLIC_API_URL) {
-  try {
-    toast.error('API base URL is not configured. Set NEXT_PUBLIC_API_URL in your .env.local');
-  } catch {}
-  console.warn('[axiosClient] NEXT_PUBLIC_API_URL is undefined. Requests will target the Next.js dev server origin.');
-}
+let hasWarnedMissingApiUrl = false;
 
 /**
  * Auth interceptor - attaches JWT bearer token
  */
 const authInterceptor = async (config: any) => {
+  // Ensure baseURL is applied at runtime to avoid build-time inlining
+  if (!config.baseURL) {
+    const runtimeBase = process.env['NEXT_PUBLIC_API_URL'];
+    if (runtimeBase) {
+      config.baseURL = runtimeBase;
+    } else if (!hasWarnedMissingApiUrl) {
+      hasWarnedMissingApiUrl = true;
+      try {
+        toast.error('API base URL is not configured. Set NEXT_PUBLIC_API_URL');
+      } catch {}
+      console.warn('[axiosClient] NEXT_PUBLIC_API_URL is undefined.');
+    }
+  }
   const supabase = createClient();
   const { data: { session } } = await supabase.auth.getSession();
 

@@ -71,8 +71,8 @@ export async function createServerApiClients() {
     
     return {
         // The single client for the consolidated User, Quest, Social, and Meeting service.
-        coreApiClient: createClientInstance(process.env.NEXT_PUBLIC_API_URL),
+        coreApiClient: createClientInstance(process.env['NEXT_PUBLIC_API_URL']),
         // The separate client for the Code Battle service.
-        codeBattleApiClient: createClientInstance(process.env.NEXT_PUBLIC_CODE_BATTLE_API_URL),
+        codeBattleApiClient: createClientInstance(process.env['NEXT_PUBLIC_CODE_BATTLE_API_URL']),
     };
 }

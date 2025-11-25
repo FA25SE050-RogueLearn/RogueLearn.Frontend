@@ -7,14 +7,18 @@ import { ApiErrorPayload, NormalizedApiErrorInfo } from '@/types/base/Error';
  * Creates a dedicated Axios instance for the Code Battle service.
  * It uses a different baseURL from the main client.
  */
-const axiosCodeBattleClient = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_CODE_BATTLE_API_URL,
-});
+const axiosCodeBattleClient = axios.create({});
 
 /**
  * An Axios interceptor that automatically attaches the user's JWT bearer token.
  */
 const authInterceptor = async (config: any) => {
+  if (!config.baseURL) {
+    const runtimeBase = process.env['NEXT_PUBLIC_CODE_BATTLE_API_URL'];
+    if (runtimeBase) {
+      config.baseURL = runtimeBase;
+    }
+  }
   const supabase = createClient();
   const { data: { session } } = await supabase.auth.getSession();
 

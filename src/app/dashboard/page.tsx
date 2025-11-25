@@ -82,7 +82,7 @@ export default async function DashboardPage() {
   let activeQuest: QuestDetails | null = null;
 
   // Quick health check before making API calls
-  const apiHealthy = await checkApiHealth(process.env.NEXT_PUBLIC_API_URL);
+  const apiHealthy = await checkApiHealth(process.env['NEXT_PUBLIC_API_URL']);
 
   if (!apiHealthy) {
     console.warn('API health check failed - skipping data fetching');

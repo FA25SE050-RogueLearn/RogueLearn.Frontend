@@ -3,8 +3,8 @@ import { NextRequest, NextResponse } from "next/server";
 export async function POST(req: NextRequest) {
   try {
     const { refresh_token } = await req.json();
-    const client_id = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
-    const client_secret = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_SECRET;
+    const client_id = process.env['NEXT_PUBLIC_GOOGLE_CLIENT_ID'];
+    const client_secret = process.env['NEXT_PUBLIC_GOOGLE_CLIENT_SECRET'];
     if (!refresh_token || !client_id || !client_secret) {
       return NextResponse.json({ error: "invalid_request" }, { status: 400 });
     }

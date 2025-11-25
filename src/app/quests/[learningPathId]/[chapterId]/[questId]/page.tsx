@@ -24,8 +24,8 @@ interface QuestProgress {
 export default async function QuestOverviewPage({ params }: PageProps) {
   const { learningPathId, chapterId, questId } = await params;
   const { coreApiClient } = await createServerApiClients();
-  const apiHealthy = await checkApiHealth(process.env.NEXT_PUBLIC_API_URL);
-  const envApiUrl = process.env.NEXT_PUBLIC_API_URL;
+  const apiHealthy = await checkApiHealth(process.env['NEXT_PUBLIC_API_URL']);
+  const envApiUrl = process.env['NEXT_PUBLIC_API_URL'];
   const supabase = await createClient();
   const { data: { session } } = await supabase.auth.getSession();
   const hasSessionToken = !!session?.access_token;

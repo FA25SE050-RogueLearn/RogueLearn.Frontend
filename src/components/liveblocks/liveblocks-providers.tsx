@@ -9,7 +9,7 @@ import type { PartyMemberDto } from "@/types/parties";
 // You can wrap your whole app in a LiveblocksProvider
 export function LiveblocksProviders({ children }: { children: ReactNode }) {
   const LIVEBLOCKS_PUBLIC_KEY =
-    process.env.NEXT_PUBLIC_LIVEBLOCKS_PUBLIC_KEY || "";
+    process.env['NEXT_PUBLIC_LIVEBLOCKS_PUBLIC_KEY'] || "";
   const pathname = usePathname();
   const partyIdFromPath = useMemo(() => {
     const parts = (pathname || "").split("/").filter(Boolean);
