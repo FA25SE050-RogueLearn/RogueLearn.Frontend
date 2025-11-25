@@ -1,21 +1,29 @@
 import axios from 'axios';
 import { createClient } from '@/utils/supabase/server';
 import { cookies } from 'next/headers';
-import https from 'https'; // Use the native Node.js https module on the server
+import https from 'https';
+
+function sanitizeBaseURL(baseURL: string | undefined): string | undefined {
+  if (!baseURL) return baseURL;
+  const trimmed = baseURL.trim();
+  const unquoted = trimmed.replace(/^["'`]+|["'`]+$/g, '');
+  return unquoted.replace(/\/$/, '');
+}
 
 /**
  * Quick health check for the API endpoint
  * Returns true if healthy, false if unhealthy or timeout
  */
 export async function checkApiHealth(baseURL: string | undefined): Promise<boolean> {
-    if (!baseURL) return false;
+    const cleanBaseURL = sanitizeBaseURL(baseURL);
+    if (!cleanBaseURL) return false;
 
     try {
         const httpsAgent = new https.Agent({
             rejectUnauthorized: process.env.NODE_ENV === 'production',
         });
 
-        const response = await axios.get(`${baseURL}/health`, {
+        const response = await axios.get(`${cleanBaseURL}/health`, {
             httpsAgent,
             timeout: 2000, // Fast 2-second timeout for health check
         });
@@ -45,9 +53,10 @@ export async function createServerApiClients() {
     });
 
     const createClientInstance = (baseURL: string | undefined) => {
+        const cleanBaseURL = sanitizeBaseURL(baseURL);
         // Pass the httpsAgent to the axios instance with timeout
         const instance = axios.create({
-            baseURL,
+            baseURL: cleanBaseURL,
             httpsAgent,
             timeout: 5000, // 5 second timeout instead of waiting for full Cloudflare timeout
         });
