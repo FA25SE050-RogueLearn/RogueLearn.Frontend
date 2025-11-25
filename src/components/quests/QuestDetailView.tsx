@@ -23,6 +23,8 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 
 interface QuestDetailViewProps {
   questDetails: QuestDetails;
@@ -77,6 +79,19 @@ export default function QuestDetailView({
   chapterId,
   chapterName,
 }: QuestDetailViewProps) {
+  const router = useRouter();
+  useEffect(() => {
+    console.log('QuestDetailView props', {
+      questId: questDetails?.id,
+      questTitle: questDetails?.title,
+      stepsCount: questDetails?.steps?.length,
+      questProgress,
+      learningPathId,
+      learningPathName,
+      chapterId,
+      chapterName,
+    });
+  }, [questDetails, questProgress, learningPathId, learningPathName, chapterId, chapterName]);
   // Build a map of stepId → stepNumber for reference
   const stepIdToNumberMap = new Map<string, number>();
   questDetails.steps.forEach(step => {
@@ -102,6 +117,16 @@ export default function QuestDetailView({
 
   return (
     <div className="flex flex-col gap-8 pb-24">
+      <div className="flex justify-end">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => router.refresh()}
+          className="border-[#f5c16c]/30 text-[#f5c16c] hover:bg-[#f5c16c]/10"
+        >
+          Refresh Data
+        </Button>
+      </div>
       {/* Header Section */}
       <div className="relative overflow-hidden rounded-[28px] border border-[#f5c16c]/20 bg-gradient-to-br from-[#2d1810] via-[#1a0a08] to-[#0a0506] p-8 shadow-[0_25px_70px_rgba(0,0,0,0.55)]">
         <div

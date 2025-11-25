@@ -6,6 +6,7 @@ import Link from "next/link";
 import { createServerApiClients } from "@/lib/api-server";
 import { QuestDetails, LearningPath } from "@/types/quest";
 import QuestDetailView from "@/components/quests/QuestDetailView";
+import { revalidatePath } from "next/cache";
 
 interface PageProps {
   params: Promise<{ learningPathId: string; chapterId: string; questId: string }>;
@@ -49,6 +50,9 @@ export default async function QuestOverviewPage({ params }: PageProps) {
     }
 
     console.log('✅ Fetched quest details, learning path, and progress');
+    console.log('questDetails', questDetails);
+    console.log('learningPath', learningPath);
+    console.log('questProgress', questProgress);
   } catch (error) {
     console.error(`Failed to fetch quest ${questId}:`, error);
   }
@@ -68,6 +72,19 @@ export default async function QuestOverviewPage({ params }: PageProps) {
               Back to Chapter
             </Link>
           </Button>
+          <form
+            action={async () => {
+              'use server';
+              revalidatePath(`/quests/${learningPathId}/${chapterId}/${questId}`);
+            }}
+          >
+            <button
+              type="submit"
+              className="mt-2 rounded-md border border-[#f5c16c]/30 px-3 py-1 text-sm text-[#f5c16c] hover:bg-[#f5c16c]/10"
+            >
+              Refresh Server Data
+            </button>
+          </form>
         </div>
       </DashboardLayout>
     );
@@ -84,6 +101,19 @@ export default async function QuestOverviewPage({ params }: PageProps) {
 
   return (
     <DashboardLayout>
+      <form
+        action={async () => {
+          'use server';
+          revalidatePath(`/quests/${learningPathId}/${chapterId}/${questId}`);
+        }}
+      >
+        <button
+          type="submit"
+          className="mb-4 rounded-md border border-[#f5c16c]/30 px-3 py-1 text-sm text-[#f5c16c] hover:bg-[#f5c16c]/10"
+        >
+          Refresh Server Data
+        </button>
+      </form>
       <QuestDetailView
         questDetails={questDetails}
         questProgress={questProgress}
