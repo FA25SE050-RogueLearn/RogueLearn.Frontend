@@ -15,6 +15,7 @@ function sanitizeBaseURL(baseURL: string | undefined): string | undefined {
  * Returns true if healthy, false if unhealthy or timeout
  */
 export async function checkApiHealth(baseURL: string | undefined): Promise<boolean> {
+    console.log("Checking API health for in api-server.ts:", baseURL);
     const cleanBaseURL = sanitizeBaseURL(baseURL);
     if (!cleanBaseURL) return false;
 
