@@ -8,6 +8,7 @@ import { QuestDetails, LearningPath } from "@/types/quest";
 import QuestDetailView from "@/components/quests/QuestDetailView";
 import { revalidatePath } from "next/cache";
 import { checkApiHealth } from "@/lib/api-server";
+import { createClient } from "@/utils/supabase/server";
 
 interface PageProps {
   params: Promise<{ learningPathId: string; chapterId: string; questId: string }>;
@@ -24,6 +25,10 @@ export default async function QuestOverviewPage({ params }: PageProps) {
   const { learningPathId, chapterId, questId } = await params;
   const { coreApiClient } = await createServerApiClients();
   const apiHealthy = await checkApiHealth(process.env.NEXT_PUBLIC_API_URL);
+  const envApiUrl = process.env.NEXT_PUBLIC_API_URL;
+  const supabase = await createClient();
+  const { data: { session } } = await supabase.auth.getSession();
+  const hasSessionToken = !!session?.access_token;
 
   let questDetails: QuestDetails | null = null;
   let learningPath: LearningPath | null = null;
@@ -63,6 +68,8 @@ export default async function QuestOverviewPage({ params }: PageProps) {
   const debugInfo = {
     params: { learningPathId, chapterId, questId },
     apiHealthy,
+    envApiUrl,
+    hasSessionToken,
     questDetails: questDetails ? { id: questDetails.id, title: questDetails.title, stepsCount: questDetails.steps?.length } : null,
     learningPath: learningPath ? { id: learningPath.id, name: learningPath.name, chaptersCount: learningPath.chapters?.length, chapterIds: learningPath.chapters?.map(ch => ch.id) } : null,
     chapterMatched: !!chapter,
