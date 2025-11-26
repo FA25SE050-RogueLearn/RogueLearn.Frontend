@@ -19,7 +19,7 @@ const authInterceptor = async (config: any) => {
       config.baseURL = runtimeBase;
     }
   }
-  const supabase = createClient();
+  const supabase = await createClient();
   const { data: { session } } = await supabase.auth.getSession();
 
   if (session?.access_token) {

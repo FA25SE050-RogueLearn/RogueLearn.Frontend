@@ -32,7 +32,7 @@ const authInterceptor = async (config: any) => {
       console.warn('[axiosClient] NEXT_PUBLIC_API_URL is undefined.');
     }
   }
-  const supabase = createClient();
+  const supabase = await createClient();
   const { data: { session } } = await supabase.auth.getSession();
 
   if (session?.access_token) {

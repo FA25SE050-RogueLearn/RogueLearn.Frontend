@@ -62,27 +62,31 @@ export function DungeonNav() {
   const hasCheckedOnboarding = React.useRef(false)
 
   React.useEffect(() => {
-    const supabase = createClient()
-    const fetchProfile = async () => {
-      const response = await profileApi.getMyProfile()
-      if (response.isSuccess) setUserProfile(response.data)
-    }
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (session) {
-        fetchProfile()
-        try {
-          const pt = (session as any)?.provider_token as string | undefined
-          if (pt) sessionStorage.setItem('googleProviderToken', pt)
-        } catch {}
-        try {
-          const prt = (session as any)?.provider_refresh_token as string | undefined
-          if (prt) localStorage.setItem('googleProviderRefreshToken', prt)
-        } catch {}
-      } else {
-        setUserProfile(null)
+    let unsub: { unsubscribe: () => void } | null = null
+    ;(async () => {
+      const supabase = await createClient()
+      const fetchProfile = async () => {
+        const response = await profileApi.getMyProfile()
+        if (response.isSuccess) setUserProfile(response.data)
       }
-    })
-    return () => subscription?.unsubscribe()
+      const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+        if (session) {
+          fetchProfile()
+          try {
+            const pt = (session as any)?.provider_token as string | undefined
+            if (pt) sessionStorage.setItem('googleProviderToken', pt)
+          } catch {}
+          try {
+            const prt = (session as any)?.provider_refresh_token as string | undefined
+            if (prt) localStorage.setItem('googleProviderRefreshToken', prt)
+          } catch {}
+        } else {
+          setUserProfile(null)
+        }
+      })
+      unsub = subscription
+    })()
+    return () => unsub?.unsubscribe()
   }, [])
 
   // ✅ UPDATED: Check if wizard should be shown, respecting session dismissal
