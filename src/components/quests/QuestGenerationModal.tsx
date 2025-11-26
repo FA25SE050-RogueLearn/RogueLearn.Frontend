@@ -32,10 +32,10 @@ export function QuestGenerationModal({
     const [error, setError] = useState<string | null>(null);
     const [isCompleted, setIsCompleted] = useState(false);
     const [jobStatus, setJobStatus] = useState<'Processing' | 'Succeeded' | 'Failed' | null>(null);
-    
+
     // ⭐ Track the current jobId to detect changes
     const [currentJobId, setCurrentJobId] = useState<string | null>(null);
-    
+
     // ⭐ NEW: Use refs to track polling state and prevent overlapping calls
     const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
     const isPollingRef = useRef(false);
@@ -53,7 +53,7 @@ export function QuestGenerationModal({
             setError(null);
             setIsCompleted(false);
             setJobStatus(null);
-            
+
             // ✅ Safe to update refs in useEffect
             hasCompletedRef.current = false;
             pollAttemptsRef.current = 0;
@@ -71,146 +71,146 @@ export function QuestGenerationModal({
         pollAttemptsRef.current = 0;
         firstSuccessfulPollRef.current = false;
 
-      const pollForUpdates = async () => {
-  if (isPollingRef.current) {
-    console.log('⏭️ Skipping poll - previous call still in progress');
-    return;
-  }
+        const pollForUpdates = async () => {
+            if (isPollingRef.current) {
+                console.log('⏭️ Skipping poll - previous call still in progress');
+                return;
+            }
 
-  isPollingRef.current = true;
-  pollAttemptsRef.current += 1;
+            isPollingRef.current = true;
+            pollAttemptsRef.current += 1;
 
-  try {
-    // ========== STEP 1: Check job status ==========
-    const statusResponse = await questApi.checkGenerationStatus(jobId);
+            try {
+                // ========== STEP 1: Check job status ==========
+                const statusResponse = await questApi.checkGenerationStatus(jobId);
 
-    if (!statusResponse.isSuccess) {
-      // ⭐ CRITICAL FIX: 404 is EXPECTED and NORMAL during polling
-      // Treat it as "job not ready yet, keep polling"
-      if (statusResponse.is404) {
-        // If we've had a successful poll before, 404 likely means job completed & cleaned up
-        if (firstSuccessfulPollRef.current) {
-          console.log('✅ Job cleaned up after success - marking complete');
-          setJobStatus('Succeeded');
-          setIsCompleted(true);
-          hasCompletedRef.current = true;
-          
-          if (pollingIntervalRef.current) {
-            clearInterval(pollingIntervalRef.current);
-            pollingIntervalRef.current = null;
-          }
-          
-          setTimeout(() => onComplete(), 500);
-          isPollingRef.current = false;
-          return;
-        }
+                if (!statusResponse.isSuccess) {
+                    // ⭐ CRITICAL FIX: 404 is EXPECTED and NORMAL during polling
+                    // Treat it as "job not ready yet, keep polling"
+                    if (statusResponse.is404) {
+                        // If we've had a successful poll before, 404 likely means job completed & cleaned up
+                        if (firstSuccessfulPollRef.current) {
+                            console.log('✅ Job cleaned up after success - marking complete');
+                            setJobStatus('Succeeded');
+                            setIsCompleted(true);
+                            hasCompletedRef.current = true;
 
-        // First 45 seconds: treat 404 as "job being created"
-        // (job creation delay or backend startup)
-        if (pollAttemptsRef.current <= 45) {
-          console.log(`⏳ Job not ready yet (attempt ${pollAttemptsRef.current}/45)`);
-          isPollingRef.current = false;
-          return;
-        }
+                            if (pollingIntervalRef.current) {
+                                clearInterval(pollingIntervalRef.current);
+                                pollingIntervalRef.current = null;
+                            }
 
-        // After 45 seconds: if we've NEVER seen the job, creation likely failed
-        console.error('❌ Job creation timeout - 404s for 45+ seconds');
-        setError('Quest generation could not start. Please try again.');
-        hasCompletedRef.current = true;
-        
-        if (pollingIntervalRef.current) {
-          clearInterval(pollingIntervalRef.current);
-          pollingIntervalRef.current = null;
-        }
-        
-        isPollingRef.current = false;
-        return;
-      }
+                            setTimeout(() => onComplete(), 500);
+                            isPollingRef.current = false;
+                            return;
+                        }
 
-      // ⭐ Other errors (network, 500, etc.) - back off and retry
-      console.warn(`⚠️ Non-404 error (status unknown): ${statusResponse.message}`);
-      isPollingRef.current = false;
-      return;
-    }
+                        // First 45 seconds: treat 404 as "job being created"
+                        // (job creation delay or backend startup)
+                        if (pollAttemptsRef.current <= 45) {
+                            console.log(`⏳ Job not ready yet (attempt ${pollAttemptsRef.current}/45)`);
+                            isPollingRef.current = false;
+                            return;
+                        }
 
-    // ⭐ Success: First time we've reached the job
-    if (!firstSuccessfulPollRef.current) {
-      console.log('✅ Job found successfully - beginning progress tracking');
-      firstSuccessfulPollRef.current = true;
-      pollAttemptsRef.current = 0; // Reset counter after first success
-    }
+                        // After 45 seconds: if we've NEVER seen the job, creation likely failed
+                        console.error('❌ Job creation timeout - 404s for 45+ seconds');
+                        setError('Quest generation could not start. Please try again.');
+                        hasCompletedRef.current = true;
 
-    const status = statusResponse.data?.status as 'Processing' | 'Succeeded' | 'Failed';
-    console.log(`📊 Status: ${status}`);
-    setJobStatus(status);
+                        if (pollingIntervalRef.current) {
+                            clearInterval(pollingIntervalRef.current);
+                            pollingIntervalRef.current = null;
+                        }
 
-    // ========== STEP 2: Handle completion states ==========
-    if (status === 'Succeeded') {
-      console.log('✅ Generation complete!');
-      setIsCompleted(true);
-      setError(null);
-      hasCompletedRef.current = true;
-      
-      if (pollingIntervalRef.current) {
-        clearInterval(pollingIntervalRef.current);
-        pollingIntervalRef.current = null;
-      }
+                        isPollingRef.current = false;
+                        return;
+                    }
 
-      setTimeout(() => onComplete(), 1000);
-      isPollingRef.current = false;
-      return;
-    }
+                    // ⭐ Other errors (network, 500, etc.) - back off and retry
+                    console.warn(`⚠️ Non-404 error (status unknown): ${statusResponse.message}`);
+                    isPollingRef.current = false;
+                    return;
+                }
 
-    if (status === 'Failed') {
-      console.error('❌ Generation failed');
-      setError(statusResponse.data?.error || 'Quest generation failed');
-      hasCompletedRef.current = true;
+                // ⭐ Success: First time we've reached the job
+                if (!firstSuccessfulPollRef.current) {
+                    console.log('✅ Job found successfully - beginning progress tracking');
+                    firstSuccessfulPollRef.current = true;
+                    pollAttemptsRef.current = 0; // Reset counter after first success
+                }
 
-      if (pollingIntervalRef.current) {
-        clearInterval(pollingIntervalRef.current);
-        pollingIntervalRef.current = null;
-      }
+                const status = statusResponse.data?.status as 'Processing' | 'Succeeded' | 'Failed';
+                console.log(`📊 Status: ${status}`);
+                setJobStatus(status);
 
-      isPollingRef.current = false;
-      return;
-    }
+                // ========== STEP 2: Handle completion states ==========
+                if (status === 'Succeeded') {
+                    console.log('✅ Generation complete!');
+                    setIsCompleted(true);
+                    setError(null);
+                    hasCompletedRef.current = true;
 
-    // ========== STEP 3: Timeout check ==========
-    if (status === 'Processing' && firstSuccessfulPollRef.current && pollAttemptsRef.current > 300) {
-      console.error('⏱️ Timeout - processing >5 minutes');
-      setError('Generation taking too long. Please try again later.');
-      hasCompletedRef.current = true;
+                    if (pollingIntervalRef.current) {
+                        clearInterval(pollingIntervalRef.current);
+                        pollingIntervalRef.current = null;
+                    }
 
-      if (pollingIntervalRef.current) {
-        clearInterval(pollingIntervalRef.current);
-        pollingIntervalRef.current = null;
-      }
+                    setTimeout(() => onComplete(), 1000);
+                    isPollingRef.current = false;
+                    return;
+                }
 
-      isPollingRef.current = false;
-      return;
-    }
+                if (status === 'Failed') {
+                    console.error('❌ Generation failed');
+                    setError(statusResponse.data?.error || 'Quest generation failed');
+                    hasCompletedRef.current = true;
 
-    // ========== STEP 4: Get progress (non-critical) ==========
-    if (status === 'Processing') {
-      try {
-        const progressResponse = await questApi.getGenerationProgress(jobId);
-        
-        if (progressResponse.isSuccess && progressResponse.data) {
-          setProgress(progressResponse.data);
-          setError(null);
-        }
-      } catch (progressErr) {
-        console.warn('⚠️ Progress fetch failed (non-critical)');
-        // Don't break the flow - progress is optional
-      }
-    }
+                    if (pollingIntervalRef.current) {
+                        clearInterval(pollingIntervalRef.current);
+                        pollingIntervalRef.current = null;
+                    }
 
-    isPollingRef.current = false;
-  } catch (err) {
-    console.error('❌ Polling error:', err);
-    isPollingRef.current = false;
-  }
-};
+                    isPollingRef.current = false;
+                    return;
+                }
+
+                // ========== STEP 3: Timeout check ==========
+                if (status === 'Processing' && firstSuccessfulPollRef.current && pollAttemptsRef.current > 300) {
+                    console.error('⏱️ Timeout - processing >5 minutes');
+                    setError('Generation taking too long. Please try again later.');
+                    hasCompletedRef.current = true;
+
+                    if (pollingIntervalRef.current) {
+                        clearInterval(pollingIntervalRef.current);
+                        pollingIntervalRef.current = null;
+                    }
+
+                    isPollingRef.current = false;
+                    return;
+                }
+
+                // ========== STEP 4: Get progress (non-critical) ==========
+                if (status === 'Processing') {
+                    try {
+                        const progressResponse = await questApi.getGenerationProgress(jobId);
+
+                        if (progressResponse.isSuccess && progressResponse.data) {
+                            setProgress(progressResponse.data);
+                            setError(null);
+                        }
+                    } catch (progressErr) {
+                        console.warn('⚠️ Progress fetch failed (non-critical)');
+                        // Don't break the flow - progress is optional
+                    }
+                }
+
+                isPollingRef.current = false;
+            } catch (err) {
+                console.error('❌ Polling error:', err);
+                isPollingRef.current = false;
+            }
+        };
 
         // Start polling immediately
         pollForUpdates();
@@ -320,12 +320,12 @@ export function QuestGenerationModal({
 
                         {/* Activity Animation */}
                         {!isCompleted && (
-                        <div className="flex items-center justify-center gap-2 text-xs text-white/70">
-                            <Loader2 className="h-3 w-3 animate-spin text-[#f5c16c]" />
-                            <span>Generating learning modules...</span>
-                        </div>
-                    )}
-                </div>
+                            <div className="flex items-center justify-center gap-2 text-xs text-white/70">
+                                <Loader2 className="h-3 w-3 animate-spin text-[#f5c16c]" />
+                                <span>Generating learning modules...</span>
+                            </div>
+                        )}
+                    </div>
 
                     {/* Stats Grid */}
                     <div className="grid grid-cols-3 gap-3">
@@ -415,7 +415,7 @@ export function QuestGenerationModal({
                             <p className="font-semibold text-white/70">💡 Tip:</p>
                             <p>Our AI is crafting personalized learning modules tailored to your progress and skills. This typically takes 5–10 minutes.</p>
                             <p className="text-white/50 pt-2">
-                                 Can&apos;t wait? Click &quot;Start Quest Anyway&quot; to begin immediately. Content will load as it&apos;s generated.
+                                Can&apos;t wait? Click &quot;Start Quest Anyway&quot; to begin immediately. Content will load as it&apos;s generated.
                             </p>
                         </div>
                     )}
