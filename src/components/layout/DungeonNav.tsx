@@ -18,6 +18,9 @@ import {
   ChevronDown,
   Sparkles,
   Flame,
+  Shield,
+  Zap,
+  Moon,
 } from "lucide-react"
 import { createClient } from "@/utils/supabase/client"
 import profileApi from "@/api/profileApi"
@@ -30,6 +33,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import UserProfileModal from "@/components/profile/UserProfileModal"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { CharacterCreationWizard } from "@/components/features/character-creation/CharacterCreationWizard"
 import { usePageTransition } from "@/components/layout/PageTransition"
@@ -202,6 +206,10 @@ export function DungeonNav() {
 
   const activeIndex = navItems.findIndex(item => pathname === item.url || pathname?.startsWith(item.url + "/"))
 
+  const [profileModalOpen, setProfileModalOpen] = React.useState(false)
+  const [profileModalTab, setProfileModalTab] = React.useState<"profile" | "settings" | "verification">("profile")
+  const [status, setStatus] = React.useState<"ONLINE" | "AWAY" | "CLOAKED">("ONLINE")
+
   return (
     <>
       {/* Minimal Top Bar - Game HUD Style */}
@@ -270,16 +278,66 @@ export function DungeonNav() {
                 </div>
                 <ChevronDown className="size-3 text-[#f5c16c]/60" />
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56 border-2 border-[#f5c16c]/30 bg-[#0c0308]/98 backdrop-blur-xl shadow-[0_0_40px_rgba(210,49,135,0.4)]">
-                <div className="px-3 py-2 border-b border-[#f5c16c]/20">
-                  <p className="text-sm font-bold text-[#f5c16c]">{userProfile?.username || "Rogue Scholar"}</p>
-                  <p className="text-xs text-[#f5c16c]/60">Level {userProfile?.level || 1} • {userProfile?.roles || "Novice"}</p>
+              <DropdownMenuContent align="end" className="w-80 border-2 border-[#f5c16c]/30 bg-[#0c0308]/98 backdrop-blur-xl shadow-[0_0_40px_rgba(210,49,135,0.4)]">
+                <div className="p-4 border-b border-[#f5c16c]/20">
+                  <div className="flex items-center gap-3">
+                    <div className="relative">
+                      <Avatar className="size-10 border-2 border-[#f5c16c]/40">
+                        <AvatarFallback className="bg-linear-to-br from-[#d23187] to-[#f5c16c] text-white text-sm font-bold">
+                          {userProfile?.username?.slice(0, 2).toUpperCase() || "RS"}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="absolute -bottom-1 -right-1 size-4 rounded-full bg-[#161422] p-0.5">
+                        <div className={`w-3 h-3 rounded-full border border-[#161422] ${status === "ONLINE" ? "bg-emerald-500" : status === "AWAY" ? "bg-amber-400" : "bg-gray-500"}`} />
+                      </div>
+                    </div>
+                    <div className="flex-1">
+                      <div className="font-bold text-white text-sm">{userProfile?.username || "Scholar"}</div>
+                      <div className="flex items-center gap-2 text-[10px] text-[#f5c16c]">
+                        <Shield className="size-3" />
+                        <span className="uppercase tracking-widest">{(userProfile?.roles?.[0] || "Novice")}</span>
+                      </div>
+                  </div>
                 </div>
-                <DropdownMenuItem onClick={handleLogout} className="text-[#f5c16c]/70 hover:text-[#f5c16c] hover:bg-[#f5c16c]/10 cursor-pointer mt-1">
-                  <LogOut className="mr-2 size-4" />Exit Sanctum
-                </DropdownMenuItem>
+                </div>
+
+                
+
+                <div className="p-2 space-y-1">
+                  <DropdownMenuItem onClick={() => { setProfileModalTab("profile"); setProfileModalOpen(true); }} className="flex items-center gap-3 px-3 py-2 rounded-lg bg-transparent hover:bg-[#1E1B2E] text-white cursor-pointer">
+                    <div className="p-1.5 rounded-md bg-[#2D2842] text-white/80"><Users className="size-4" /></div>
+                    <div className="flex-1">
+                      <div className="text-sm font-medium">Character Codex</div>
+                      <div className="text-[10px] text-white/50 uppercase tracking-wide">Profile</div>
+                    </div>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => { setProfileModalTab("settings"); setProfileModalOpen(true); }} className="flex items-center gap-3 px-3 py-2 rounded-lg bg-transparent hover:bg-[#1E1B2E] text-white cursor-pointer">
+                    <div className="p-1.5 rounded-md bg-[#2D2842] text-white/80"><Zap className="size-4" /></div>
+                    <div className="flex-1">
+                      <div className="text-sm font-medium">Sanctum Config</div>
+                      <div className="text-[10px] text-white/50 uppercase tracking-wide">Settings</div>
+                    </div>
+                  </DropdownMenuItem>
+
+                  <div className="h-px bg-[#2D2842] my-2 mx-2" />
+
+                  <DropdownMenuItem onClick={() => { setProfileModalTab("verification"); setProfileModalOpen(true); }} className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-[#f5c16c]/10 text-[#f5c16c] cursor-pointer">
+                    <div className="p-1.5 rounded-md bg-[#f5c16c]/20 text-[#f5c16c]"><Shield className="size-4" /></div>
+                    <div className="flex-1">
+                      <div className="text-sm font-medium">Lecturer Verification</div>
+                    </div>
+                  </DropdownMenuItem>
+                </div>
+
+                <div className="p-2 border-t border-[#2D2842] bg-[#1E1B2E]">
+                  <button onClick={handleLogout} className="w-full flex items-center justify-center gap-2 text-rose-400 hover:bg-rose-500/10 hover:text-rose-300 py-2 rounded-lg transition-colors text-sm font-medium">
+                    <LogOut className="size-4" />
+                    <span>Exit Sanctum</span>
+                  </button>
+                </div>
               </DropdownMenuContent>
             </DropdownMenu>
+            <UserProfileModal open={profileModalOpen} onOpenChange={setProfileModalOpen} defaultTab={profileModalTab} />
           </div>
         </div>
       </header>
