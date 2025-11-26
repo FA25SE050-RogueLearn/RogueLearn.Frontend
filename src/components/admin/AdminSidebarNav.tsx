@@ -20,6 +20,7 @@ const navItems = [
   { href: "/admin", label: "Command Center", icon: LayoutDashboard },
   { href: "/admin/events", label: "Event Requests", icon: Calendar },
   { href: "/admin/content", label: "Content Vault", icon: Library },
+  { href: "/admin/lecturer-requests", label: "Lecturer Requests", icon: Scroll },
   { href: "/admin/programs", label: "Programs", icon: ScrollText }, // New: Manage Programs & Subjects
   { href: "/admin/classes", label: "Classes", icon: GraduationCap },
   { href: "/admin/skills", label: "Skill Tree", icon: Network },
