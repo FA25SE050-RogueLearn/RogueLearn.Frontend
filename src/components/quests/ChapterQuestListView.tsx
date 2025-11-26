@@ -3,21 +3,35 @@
 
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { CheckCircle, ArrowLeft, Play, BookOpen, Loader2 } from "lucide-react";
+import { CheckCircle, ArrowLeft, Play, BookOpen, Loader2, Sparkles, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { gsap } from "gsap";
 import Link from "next/link";
-import { LearningPath, QuestChapter } from "@/types/quest";
+import { LearningPath, QuestChapter, QuestSummary } from "@/types/quest";
+import { useQuestGeneration } from "@/hooks/useQuestGeneration";
+import questApi from "@/api/questApi";
+import QuestGenerationModal from "@/components/quests/QuestGenerationModal";
+import { useRouter } from "next/navigation";
 
 interface ChapterQuestListViewProps {
     learningPath: LearningPath;
     chapter: QuestChapter;
+    onGenerateFirstQuest?: () => Promise<void>;
 }
 
-export function ChapterQuestListView({ learningPath, chapter }: ChapterQuestListViewProps) {
+export function ChapterQuestListView({ learningPath, chapter, onGenerateFirstQuest }: ChapterQuestListViewProps) {
     const headerRef = useRef<HTMLDivElement>(null);
     const modulesRef = useRef<HTMLDivElement>(null);
+    const router = useRouter();
+
+    const { startGeneration } = useQuestGeneration();
+    const [showGenerationModal, setShowGenerationModal] = useState(false);
+    const [generatingJobId, setGeneratingJobId] = useState<string | null>(null);
+    const [generatingQuestTitle, setGeneratingQuestTitle] = useState('');
+    const [targetQuestUrl, setTargetQuestUrl] = useState<string>('');
+    const [generatingQuestId, setGeneratingQuestId] = useState<string | null>(null);
+    const [isGeneratingFirstQuest, setIsGeneratingFirstQuest] = useState(false);
 
     const quests = chapter.quests || [];
     const completedQuests = quests.filter(q => q.status === 'Completed').length;
@@ -42,6 +56,52 @@ export function ChapterQuestListView({ learningPath, chapter }: ChapterQuestList
         });
         return () => ctx.revert();
     }, [chapter.id]);
+
+    const handleQuestComplete = () => {
+        setShowGenerationModal(false);
+        setGeneratingJobId(null);
+        setGeneratingQuestTitle('');
+        setGeneratingQuestId(null);
+        router.push(targetQuestUrl);
+    };
+
+    const handleStartQuest = async (quest: QuestSummary) => {
+        const questUrl = `/quests/${learningPath.id}/${chapter.id}/${quest.id}`;
+        setGeneratingQuestId(quest.id);
+        setGeneratingQuestTitle(quest.title);
+        setTargetQuestUrl(questUrl);
+
+        try {
+            const detailsResponse = await questApi.getQuestDetails(quest.id);
+            if (detailsResponse.isSuccess && detailsResponse.data?.steps && detailsResponse.data.steps.length > 0) {
+                router.push(questUrl);
+                setGeneratingQuestId(null);
+                return;
+            }
+
+            const jobId = await startGeneration(quest.id);
+            if (!jobId) {
+                setGeneratingQuestId(null);
+                return;
+            }
+
+            setGeneratingJobId(jobId);
+            setShowGenerationModal(true);
+        } catch (error) {
+            setGeneratingQuestId(null);
+        }
+    };
+
+    const handleGenerateFirstQuest = async () => {
+        if (!onGenerateFirstQuest) return;
+        try {
+            setIsGeneratingFirstQuest(true);
+            await onGenerateFirstQuest();
+            router.refresh();
+        } finally {
+            setIsGeneratingFirstQuest(false);
+        }
+    };
 
     return (
         <div className="relative overflow-hidden rounded-[28px] border border-[#f5c16c]/20 bg-gradient-to-br from-[#2d1810] via-[#1a0a08] to-[#0a0506] p-8 pb-20 shadow-[0_32px_110px_rgba(18,5,10,0.7)]">
@@ -83,7 +143,20 @@ export function ChapterQuestListView({ learningPath, chapter }: ChapterQuestList
                         <BookOpen className="h-6 w-6 text-[#f5c16c]" /> Quests in this Chapter
                     </h2>
                     {quests.length === 0 ? (
-                        <p className="text-center text-sm text-white/70 py-8">No quests have been forged for this chapter yet.</p>
+                        <div className="flex flex-col items-center justify-center gap-4 py-12">
+                            <p className="text-center text-sm text-white/70">No quests have been forged for this chapter yet.</p>
+                            <Button
+                                onClick={handleGenerateFirstQuest}
+                                disabled={isGeneratingFirstQuest}
+                                className="rounded-full px-6 bg-gradient-to-r from-[#f5c16c] to-[#d4a855] text-black font-semibold hover:from-[#d4a855] hover:to-[#f5c16c]"
+                            >
+                                {isGeneratingFirstQuest ? (
+                                    <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Forging...</>
+                                ) : (
+                                    <><Sparkles className="mr-2 h-4 w-4" /> Forge First Quest</>
+                                )}
+                            </Button>
+                        </div>
                     ) : (
                         quests.map((quest) => (
                             <Card key={quest.id} className={`module-card relative overflow-hidden rounded-[28px] border transition-all duration-300 hover:border-[#f5c16c]/40 hover:shadow-[0_18px_45px_rgba(245,193,108,0.25)] ${quest.status === 'Completed' ? 'border-emerald-400/40 bg-emerald-500/10' : 'border-[#f5c16c]/20 bg-black/40'
@@ -101,16 +174,20 @@ export function ChapterQuestListView({ learningPath, chapter }: ChapterQuestList
                                         <div className="flex flex-1 items-start gap-4">
                                             <h3 className="text-lg font-semibold text-white">{quest.title}</h3>
                                         </div>
-                                        <Button asChild className="rounded-full px-5 w-40 bg-gradient-to-r from-[#f5c16c] to-[#d4a855] text-black font-semibold hover:from-[#d4a855] hover:to-[#f5c16c]">
-                                            <Link href={`/quests/${learningPath.id}/${chapter.id}/${quest.id}`}>
-                                                {quest.status === 'Completed' ? (
-                                                    <><CheckCircle className="mr-2 h-4 w-4" /> Review Quest</>
-                                                ) : quest.status === 'InProgress' ? (
-                                                    <><Play className="mr-2 h-4 w-4" /> Continue</>
-                                                ) : (
-                                                    <><Play className="mr-2 h-4 w-4" /> Start Quest</>
-                                                )}
-                                            </Link>
+                                        <Button
+                                            onClick={() => handleStartQuest(quest)}
+                                            disabled={generatingQuestId === quest.id}
+                                            className="rounded-full px-5 w-44 bg-gradient-to-r from-[#f5c16c] to-[#d4a855] text-black font-semibold hover:from-[#d4a855] hover:to-[#f5c16c]"
+                                        >
+                                            {generatingQuestId === quest.id ? (
+                                                <>Forging...<ChevronRight className="ml-2 h-4 w-4 opacity-60" /></>
+                                            ) : quest.status === 'Completed' ? (
+                                                <><CheckCircle className="mr-2 h-4 w-4" /> Review Quest</>
+                                            ) : quest.status === 'InProgress' ? (
+                                                <><Play className="mr-2 h-4 w-4" /> Continue</>
+                                            ) : (
+                                                <><Play className="mr-2 h-4 w-4" /> Start Quest</>
+                                            )}
                                         </Button>
                                     </div>
                                 </CardContent>
@@ -118,6 +195,19 @@ export function ChapterQuestListView({ learningPath, chapter }: ChapterQuestList
                         ))
                     )}
                 </div>
+
+                <QuestGenerationModal
+                    isOpen={showGenerationModal}
+                    jobId={generatingJobId}
+                    questTitle={generatingQuestTitle}
+                    onClose={() => {
+                        setShowGenerationModal(false);
+                        setGeneratingJobId(null);
+                        setGeneratingQuestTitle('');
+                        setGeneratingQuestId(null);
+                    }}
+                    onComplete={handleQuestComplete}
+                />
             </div>
         </div>
     );

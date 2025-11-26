@@ -1,11 +1,12 @@
 // roguelearn-web/src/app/quests/[learningPathId]/[chapterId]/page.tsx
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
-import { ChapterQuestListView } from "@/components/quests/ChapterQuestListView"; // ⭐ NEW COMPONENT
+import { ChapterQuestListView } from "@/components/quests/ChapterQuestListView";
 import { ArrowLeft, Trophy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { createServerApiClients } from "@/lib/api-server";
 import { LearningPath } from "@/types/quest";
+import { revalidatePath } from "next/cache";
 
 interface PageProps {
   params: Promise<{ learningPathId: string; chapterId: string }>;
@@ -42,11 +43,23 @@ export default async function ChapterDetailPage({ params }: PageProps) {
     );
   }
 
+  const generateFirstQuest = async () => {
+    "use server";
+    const { coreApiClient } = await createServerApiClients();
+    try {
+      await coreApiClient.post(`/api/chapters/${chapterId}/quests/generate`);
+    } catch (error) {
+      console.error('Failed to generate first quest for chapter:', error);
+    }
+    revalidatePath(`/quests/${learningPathId}/${chapterId}`);
+  };
+
   return (
     <DashboardLayout>
       <ChapterQuestListView
         learningPath={learningPath}
         chapter={chapter}
+        onGenerateFirstQuest={generateFirstQuest}
       />
     </DashboardLayout>
   );

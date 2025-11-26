@@ -240,9 +240,8 @@ export function QuestGenerationModal({
     const displaySteps = `${progress?.currentStep ?? 0}/${progress?.totalSteps ?? 12}`;
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm">
-            {/* Modal Container */}
-            <div className="relative w-full max-w-lg rounded-3xl border border-[#f5c16c]/20 bg-gradient-to-br from-[#2d1810] via-[#1a0a08] to-[#0a0506] p-8 shadow-lg">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm overflow-y-auto p-4">
+            <div className="relative w-full max-w-2xl rounded-3xl border border-[#f5c16c]/20 bg-gradient-to-br from-[#2d1810] via-[#1a0a08] to-[#0a0506] p-8 shadow-lg max-h-[90vh] overflow-y-auto my-8">
                 {/* Background Effects */}
                 <div className="pointer-events-none absolute inset-0 rounded-3xl opacity-25 mix-blend-overlay" style={{
                     backgroundImage: 'url(/images/asfalt-dark.png)',
@@ -321,12 +320,12 @@ export function QuestGenerationModal({
 
                         {/* Activity Animation */}
                         {!isCompleted && (
-                            <div className="flex items-center justify-center gap-2 text-xs text-white/70">
-                                <Loader2 className="h-3 w-3 animate-spin text-[#f5c16c]" />
-                                <span>Generating learning modules...</span>
-                            </div>
-                        )}
-                    </div>
+                        <div className="flex items-center justify-center gap-2 text-xs text-white/70">
+                            <Loader2 className="h-3 w-3 animate-spin text-[#f5c16c]" />
+                            <span>Generating learning modules...</span>
+                        </div>
+                    )}
+                </div>
 
                     {/* Stats Grid */}
                     <div className="grid grid-cols-3 gap-3">
@@ -414,7 +413,7 @@ export function QuestGenerationModal({
                     {!isCompleted && !error && (
                         <div className="text-xs text-white/60 space-y-2 rounded-lg border border-white/10 bg-white/5 p-3">
                             <p className="font-semibold text-white/70">💡 Tip:</p>
-                            <p>Our AI is crafting personalized learning modules tailored to your progress and skills. This typically takes 1-3 minutes.</p>
+                            <p>Our AI is crafting personalized learning modules tailored to your progress and skills. This typically takes 5–10 minutes.</p>
                             <p className="text-white/50 pt-2">
                                  Can&apos;t wait? Click &quot;Start Quest Anyway&quot; to begin immediately. Content will load as it&apos;s generated.
                             </p>
