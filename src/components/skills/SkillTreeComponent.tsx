@@ -65,8 +65,12 @@ const SkillOrb = ({ skill, position, onClick }: {
   const tierColors = getTierColor(skill.tier);
   const TierIcon = getTierIcon(skill.tier);
   const tierName = getTierName(skill.tier);
-  const isLocked = skill.userLevel === 0 && skill.userExperiencePoints === 0;
-  const hasProgress = skill.userLevel > 0;
+  const totalXp = skill.userExperiencePoints || 0;
+  const baseLevel = skill.userLevel || 0;
+  const derivedLevel = Math.min(5, baseLevel + Math.floor(totalXp / 1000));
+  const xpRemainder = totalXp % 1000;
+  const isLocked = baseLevel === 0 && totalXp === 0;
+  const hasProgress = derivedLevel > 0;
 
   return (
     <div
@@ -109,7 +113,7 @@ const SkillOrb = ({ skill, position, onClick }: {
                 <TierIcon className={`w-10 h-10 ${tierColors.text} drop-shadow-[0_0_8px_rgba(255,255,255,0.6)]`} />
                 {hasProgress && (
                   <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 border-2 border-black flex items-center justify-center">
-                    <span className="text-[10px] font-bold text-white">{skill.userLevel}</span>
+                    <span className="text-[10px] font-bold text-white">{derivedLevel}</span>
                   </div>
                 )}
               </div>
@@ -134,7 +138,7 @@ const SkillOrb = ({ skill, position, onClick }: {
                 fill="none"
                 stroke="url(#progress-gradient)"
                 strokeWidth="3"
-                strokeDasharray={`${(skill.userLevel / 5) * 276} 276`}
+                strokeDasharray={`${(derivedLevel / 5) * 276} 276`}
                 className="transition-all duration-500"
               />
               <defs>
@@ -155,7 +159,7 @@ const SkillOrb = ({ skill, position, onClick }: {
         </div>
 
         {/* Completion checkmark */}
-        {skill.userLevel >= 5 && !isLocked && (
+        {derivedLevel >= 5 && !isLocked && (
           <div className="absolute -bottom-2 left-1/2 -translate-x-1/2">
             <CheckCircle2 className="w-6 h-6 text-emerald-400 drop-shadow-[0_0_8px_rgba(52,211,153,0.8)]" />
           </div>
@@ -180,12 +184,12 @@ const SkillOrb = ({ skill, position, onClick }: {
             )}
             {!isLocked && (
               <>
-                <p className="text-white/80">
-                  <span className="text-white/60">Level:</span> {skill.userLevel}/5
-                </p>
-                <p className="text-amber-400">
-                  <span className="text-white/60">XP:</span> {skill.userExperiencePoints}
-                </p>
+              <p className="text-white/80">
+                <span className="text-white/60">Level:</span> {derivedLevel}/5
+              </p>
+              <p className="text-amber-400">
+                <span className="text-white/60">XP:</span> {xpRemainder}
+              </p>
               </>
             )}
             {isLocked && (
@@ -421,7 +425,14 @@ export function SkillTreeComponent() {
           <div className="flex justify-between">
             <span className="text-white/60 text-xs">Average Level</span>
             <span className="text-blue-400 font-bold text-sm">
-              {(treeData.nodes.reduce((acc, n) => acc + n.userLevel, 0) / treeData.nodes.length).toFixed(1)}
+              {(
+                treeData.nodes.reduce((acc, n) => {
+                  const totalXp = (n.userExperiencePoints || 0);
+                  const baseLevel = (n.userLevel || 0);
+                  const derivedLevel = Math.min(5, baseLevel + Math.floor(totalXp / 1000));
+                  return acc + derivedLevel;
+                }, 0) / treeData.nodes.length
+              ).toFixed(1)}
             </span>
           </div>
           <div className="flex justify-between">

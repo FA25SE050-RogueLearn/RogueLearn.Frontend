@@ -15,7 +15,8 @@ export const filterSkillTree = (
   skills: SkillNode[],
   dependencies: SkillDependency[],
   mode: FilterMode,
-  domainFilter?: string | null
+  domainFilter?: string | null,
+  trackedIds?: Set<string> | null
 ) => {
   // A set of IDs for all skills the user has made progress on.
   const unlockedIds = new Set(
@@ -23,6 +24,9 @@ export const filterSkillTree = (
       .filter(s => s.userLevel > 0 || s.userExperiencePoints > 0)
       .map(s => s.skillId)
   );
+  if (trackedIds) {
+    trackedIds.forEach(id => unlockedIds.add(id));
+  }
 
   // Helper function to check if all prerequisites for a skill are unlocked.
   const canUnlock = (skillId: string) => {
