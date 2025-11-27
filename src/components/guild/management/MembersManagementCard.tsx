@@ -202,7 +202,7 @@ export function MembersManagementCard({
                   {myRole === "Officer" && m.role !== "GuildMaster" && m.role !== "Officer" && (
                     <div className="flex items-center gap-2">
                       <Select
-                        value={roleToAssignByMemberId[m.memberId] ?? "Recruit"}
+                        value={roleToAssignByMemberId[m.memberId] ?? (["Veteran", "Member", "Recruit"].includes(m.role) ? m.role : "Recruit")}
                         onValueChange={(v) =>
                           setRoleToAssignByMemberId((prev) => ({ ...prev, [m.memberId]: v as GuildRole }))
                         }
@@ -211,14 +211,14 @@ export function MembersManagementCard({
                           <SelectValue placeholder="Role" />
                         </SelectTrigger>
                         <SelectContent>
-                          {["Veteran", "Recruit"].map((r) => (
+                          {["Veteran", "Member", "Recruit"].map((r) => (
                             <SelectItem key={r} value={r as GuildRole}>
                               {r}
                             </SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
-                      <Button size="sm" onClick={() => onAssignRole(m.authUserId, roleToAssignByMemberId[m.memberId] ?? "Recruit")}>Assign</Button>
+                      <Button size="sm" onClick={() => onAssignRole(m.authUserId, roleToAssignByMemberId[m.memberId] ?? ( ["Veteran", "Member", "Recruit"].includes(m.role) ? m.role : "Recruit"))}>Assign</Button>
                       <Button size="sm" variant="destructive" onClick={() => onRemoveMember(m.memberId)}>Remove</Button>
                     </div>
                   )}

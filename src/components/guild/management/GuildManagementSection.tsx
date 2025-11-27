@@ -57,7 +57,7 @@ export function GuildManagementSection({ guildId, onLeftGuild }: GuildManagement
         setMyResolvedRole(role);
         const mRes = await guildsApi.getMembers(guildId);
         setMembers(mRes.data ?? []);
-        if (role === "GuildMaster" || role === "Officer") {
+        if (role === "GuildMaster") {
           try {
             const jrRes = await guildsApi.getJoinRequests(guildId, true);
             setJoinRequests(jrRes.data ?? []);
@@ -184,14 +184,18 @@ export function GuildManagementSection({ guildId, onLeftGuild }: GuildManagement
       {isPrivileged && (
         <>
           <InviteMembersCard onInvite={sendInvite} />
-          <CreateEventRequestCard guildId={guildId} onRequestCreated={reload} />
-          <EventRequestsCard guildId={guildId} />
+          {myRole === "GuildMaster" && (
+            <CreateEventRequestCard guildId={guildId} onRequestCreated={reload} />
+          )}
+          {myRole === "GuildMaster" && (
+            <EventRequestsCard guildId={guildId} />
+          )}
         </>
       )}
 
       <RegisteredEventsCard guildId={guildId} />
 
-      {isPrivileged && (
+      {myRole === "GuildMaster" && (
         <JoinRequestsCard
           loading={loading}
           error={error}
