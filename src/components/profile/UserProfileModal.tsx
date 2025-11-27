@@ -10,12 +10,14 @@ import { updateMyProfile } from "@/api/usersApi";
 import type { UserProfileDto } from "@/types/user-profile";
 import Image from "next/image";
 import guildsApi from "@/api/guildsApi";
-import type { GuildJoinRequestDto } from "@/types/guilds";
+import partiesApi from "@/api/partiesApi";
+import type { GuildJoinRequestDto, GuildInvitationDto } from "@/types/guilds";
+import type { PartyInvitationDto } from "@/types/parties";
 
 interface UserProfileModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  defaultTab?: "profile" | "settings" | "verification" | "notifications" | "guildRequests";
+  defaultTab?: "profile" | "settings" | "verification" | "notifications" | "guildRequests" | "invitations";
 }
 
 export default function UserProfileModal({ open, onOpenChange, defaultTab = "profile" }: UserProfileModalProps) {
@@ -30,6 +32,12 @@ export default function UserProfileModal({ open, onOpenChange, defaultTab = "pro
   const [joinRequests, setJoinRequests] = useState<GuildJoinRequestDto[]>([]);
   const [loadingJoinRequests, setLoadingJoinRequests] = useState(false);
   const [joinRequestsError, setJoinRequestsError] = useState<string | null>(null);
+  const [partyInvites, setPartyInvites] = useState<PartyInvitationDto[]>([]);
+  const [loadingPartyInvites, setLoadingPartyInvites] = useState(false);
+  const [partyInvitesError, setPartyInvitesError] = useState<string | null>(null);
+  const [guildInvites, setGuildInvites] = useState<GuildInvitationDto[]>([]);
+  const [loadingGuildInvites, setLoadingGuildInvites] = useState(false);
+  const [guildInvitesError, setGuildInvitesError] = useState<string | null>(null);
 
   useEffect(() => {
     let mounted = true;
@@ -67,6 +75,46 @@ export default function UserProfileModal({ open, onOpenChange, defaultTab = "pro
     return () => { mounted = false; };
   }, [open, activeTab]);
 
+  useEffect(() => {
+    let mounted = true;
+    const fetchPartyInvites = async () => {
+      setLoadingPartyInvites(true);
+      setPartyInvitesError(null);
+      try {
+        const res = await partiesApi.getMyPendingInvitations();
+        if (mounted && res.isSuccess) {
+          setPartyInvites(res.data || []);
+        }
+      } catch (err: any) {
+        if (mounted) setPartyInvitesError(err?.normalized?.message || "Failed to load party invites");
+      } finally {
+        if (mounted) setLoadingPartyInvites(false);
+      }
+    };
+    if (open && activeTab === "invitations") fetchPartyInvites();
+    return () => { mounted = false; };
+  }, [open, activeTab]);
+
+  useEffect(() => {
+    let mounted = true;
+    const fetchGuildInvites = async () => {
+      setLoadingGuildInvites(true);
+      setGuildInvitesError(null);
+      try {
+        const res = await guildsApi.getMyPendingInvitations();
+        if (mounted && res.isSuccess) {
+          setGuildInvites(res.data || []);
+        }
+      } catch (err: any) {
+        if (mounted) setGuildInvitesError(err?.normalized?.message || "Failed to load guild invites");
+      } finally {
+        if (mounted) setLoadingGuildInvites(false);
+      }
+    };
+    if (open && activeTab === "invitations") fetchGuildInvites();
+    return () => { mounted = false; };
+  }, [open, activeTab]);
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="w-[95vw] max-w-[1500px] max-h-[92vh] border-[#d4a353]/20 bg-[#13111C] p-0 overflow-hidden">
@@ -80,6 +128,7 @@ export default function UserProfileModal({ open, onOpenChange, defaultTab = "pro
               <div className="h-px bg-[#2D2842] my-4" />
               <NavButton label="Lecturer Verification" active={activeTab === "verification"} isSpecial onClick={() => setActiveTab("verification")} />
               <NavButton label="Guild Join Requests" active={activeTab === "guildRequests"} onClick={() => setActiveTab("guildRequests")} />
+              <NavButton label="Invitations" active={activeTab === "invitations"} onClick={() => setActiveTab("invitations")} />
             </div>
             <Button variant="ghost" onClick={() => onOpenChange(false)} className="text-gray-500 hover:text-white text-sm flex items-center gap-2 px-0">
               <LogOut className="size-4" /> Close
@@ -205,6 +254,125 @@ export default function UserProfileModal({ open, onOpenChange, defaultTab = "pro
                 </div>
               </div>
             )}
+
+            {activeTab === "invitations" && (
+              <div className="space-y-6">
+                <div className="text-2xl font-bold text-white">Invitations</div>
+                <div className="rounded-xl border border-[#2D2842] bg-[#1E1B2E] p-6 space-y-6">
+                  <div>
+                    <div className="mb-4 text-sm font-semibold text-white">Guild Invites</div>
+                    {loadingGuildInvites && (
+                      <div className="text-sm text-white/70">Loading...</div>
+                    )}
+                    {guildInvitesError && (
+                      <div className="text-sm text-rose-400">{guildInvitesError}</div>
+                    )}
+                    {!loadingGuildInvites && !guildInvitesError && guildInvites.length === 0 && (
+                      <div className="text-sm text-white/60">No guild invites.</div>
+                    )}
+                    {!loadingGuildInvites && !guildInvitesError && guildInvites.length > 0 && (
+                      <div className="space-y-3">
+                        {guildInvites.map((inv) => (
+                          <div key={inv.id} className="flex items-center justify-between rounded-lg border border-[#2D2842] bg-[#13111C] p-4">
+                            <div>
+                              <div className="text-white font-semibold text-sm">Guild: {inv.guildId}</div>
+                              <div className="text-xs text-white/60">Invited: {new Date(inv.createdAt).toLocaleString()}</div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Button
+                                onClick={async () => {
+                                  try {
+                                    await guildsApi.acceptInvitation(inv.guildId, inv.invitationId || inv.id);
+                                  } catch {}
+                                  try {
+                                    const res = await guildsApi.getMyPendingInvitations();
+                                    setGuildInvites(res.data || []);
+                                  } catch {}
+                                }}
+                                className="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 text-xs"
+                              >
+                                Accept
+                              </Button>
+                              <Button
+                                onClick={async () => {
+                                  try {
+                                    await guildsApi.declineInvitation(inv.guildId, inv.invitationId || inv.id);
+                                  } catch {}
+                                  try {
+                                    const res = await guildsApi.getMyPendingInvitations();
+                                    setGuildInvites(res.data || []);
+                                  } catch {}
+                                }}
+                                className="bg-rose-600 hover:bg-rose-700 text-white px-3 py-1.5 text-xs"
+                              >
+                                Decline
+                              </Button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  <div>
+                    <div className="mb-4 text-sm font-semibold text-white">Party Invites</div>
+                    {loadingPartyInvites && (
+                      <div className="text-sm text-white/70">Loading...</div>
+                    )}
+                    {partyInvitesError && (
+                      <div className="text-sm text-rose-400">{partyInvitesError}</div>
+                    )}
+                    {!loadingPartyInvites && !partyInvitesError && partyInvites.length === 0 && (
+                      <div className="text-sm text-white/60">No party invites.</div>
+                    )}
+                    {!loadingPartyInvites && !partyInvitesError && partyInvites.length > 0 && (
+                      <div className="space-y-3">
+                        {partyInvites.map((p) => (
+                          <div key={p.id} className="flex items-center justify-between rounded-lg border border-[#2D2842] bg-[#13111C] p-4">
+                            <div>
+                              <div className="text-white font-semibold text-sm">Party: {p.partyId}</div>
+                              <div className="text-xs text-white/60">Invited: {new Date(p.createdAt).toLocaleString()}</div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Button
+                                onClick={async () => {
+                                  if (!profile?.authUserId) return;
+                                  try {
+                                    await partiesApi.acceptInvitation(p.partyId, p.id, { partyId: p.partyId, invitationId: p.id, authUserId: profile.authUserId });
+                                  } catch {}
+                                  try {
+                                    const res = await partiesApi.getMyPendingInvitations();
+                                    setPartyInvites(res.data || []);
+                                  } catch {}
+                                }}
+                                className="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 text-xs"
+                              >
+                                Accept
+                              </Button>
+                              <Button
+                                onClick={async () => {
+                                  if (!profile?.authUserId) return;
+                                  try {
+                                    await partiesApi.declineInvitation(p.partyId, p.id, { partyId: p.partyId, invitationId: p.id, authUserId: profile.authUserId });
+                                  } catch {}
+                                  try {
+                                    const res = await partiesApi.getMyPendingInvitations();
+                                    setPartyInvites(res.data || []);
+                                  } catch {}
+                                }}
+                                className="bg-rose-600 hover:bg-rose-700 text-white px-3 py-1.5 text-xs"
+                              >
+                                Decline
+                              </Button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </DialogContent>
@@ -223,5 +391,22 @@ function NavButton({ label, active, isSpecial, onClick }: { label: string; activ
       {label}
       {isSpecial && <Sparkles className={active ? "text-[#13111C] size-4" : "text-[#d4a353] size-4"} />}
     </button>
+  );
+}
+
+function InviteItem({ invite, type }: { invite: GuildJoinRequestDto | PartyInvitationDto; type: 'guild' | 'party' }) {
+  const title = type === 'guild' ? `Guild: ${(invite as GuildJoinRequestDto).guildId}` : `Party: ${(invite as PartyInvitationDto).partyId}`;
+  const createdAt = type === 'guild' ? (invite as GuildJoinRequestDto).createdAt : (invite as PartyInvitationDto).createdAt;
+  const status = type === 'guild' ? (invite as GuildJoinRequestDto).status : (invite as PartyInvitationDto).status as any;
+  return (
+    <div className="flex items-center justify-between rounded-lg border border-[#2D2842] bg-[#13111C] p-4">
+      <div>
+        <div className="text-white font-semibold text-sm">{title}</div>
+        <div className="text-xs text-white/60">Requested: {new Date(createdAt).toLocaleString()}</div>
+      </div>
+      <div className="text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded border">
+        {String(status)}
+      </div>
+    </div>
   );
 }

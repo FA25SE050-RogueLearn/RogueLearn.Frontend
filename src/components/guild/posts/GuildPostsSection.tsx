@@ -203,6 +203,7 @@ export function GuildPostsSection({ guildId }: GuildPostsSectionProps) {
   };
 
   const isMember = myRole !== null;
+  const canInteract = !!myRole && myRole !== "Member" && myRole !== "Recruit";
 
   const toggleExpand = async (post: GuildPostDto) => {
     const id = post.id;
@@ -233,7 +234,7 @@ export function GuildPostsSection({ guildId }: GuildPostsSectionProps) {
   };
 
   const handleLikeToggle = async (post: GuildPostDto) => {
-    if (!isMember || post.isLocked) return;
+    if (!canInteract || post.isLocked) return;
     const id = post.id;
     const prevLiked = !!likedMap[id];
     const prevCount = likeCountMap[id] ?? post.likeCount ?? 0;
@@ -259,7 +260,7 @@ export function GuildPostsSection({ guildId }: GuildPostsSectionProps) {
   };
 
   const submitComment = async (post: GuildPostDto) => {
-    if (!isMember || post.isLocked) return;
+    if (!canInteract || post.isLocked) return;
     const id = post.id;
     const text = (composeMap[id] ?? "").trim();
     if (!text) return;
@@ -277,7 +278,7 @@ export function GuildPostsSection({ guildId }: GuildPostsSectionProps) {
   };
 
   const submitReply = async (post: GuildPostDto, parentId: string) => {
-    if (!isMember || post.isLocked) return;
+    if (!canInteract || post.isLocked) return;
     const id = post.id;
     const text = (replyMap[parentId] ?? "").trim();
     if (!text) return;
@@ -685,7 +686,7 @@ export function GuildPostsSection({ guildId }: GuildPostsSectionProps) {
                       <Button 
                         size="sm" 
                         onClick={() => handleLikeToggle(post)}
-                        disabled={!isMember || post.isLocked}
+                        disabled={!canInteract || post.isLocked}
                         className={`${likedMap[post.id] ? "bg-rose-600 hover:bg-rose-700" : "bg-linear-to-r from-[#f5c16c] to-[#d4a855] hover:from-[#d4a855] hover:to-[#f5c16c]"} text-black font-medium`}
                       >
                         <Heart className="mr-1.5 h-3.5 w-3.5" />
@@ -708,13 +709,13 @@ export function GuildPostsSection({ guildId }: GuildPostsSectionProps) {
                     <Textarea 
                       value={composeMap[post.id] ?? ""}
                       onChange={(e) => setComposeMap((prev) => ({ ...prev, [post.id]: e.target.value }))}
-                      disabled={!isMember || post.isLocked}
+                      disabled={!canInteract || post.isLocked}
                       className="min-h-[80px] border-[#f5c16c]/30 bg-black/40 text-white focus:border-[#f5c16c]/50"
-                      placeholder={post.isLocked ? "This post is locked." : !isMember ? "Join the guild to comment." : "Write a comment..."}
+                      placeholder={post.isLocked ? "This post is locked." : !canInteract ? "Insufficient role to comment." : "Write a comment..."}
                     />
                     <Button 
                       onClick={() => submitComment(post)}
-                      disabled={submitting || !(composeMap[post.id] ?? "").trim() || !isMember || post.isLocked}
+                      disabled={submitting || !(composeMap[post.id] ?? "").trim() || !canInteract || post.isLocked}
                       className="bg-linear-to-r from-[#f5c16c] to-[#d4a855] text-black font-medium hover:from-[#d4a855] hover:to-[#f5c16c] disabled:opacity-50"
                     >
                       Post Comment
@@ -794,8 +795,8 @@ export function GuildPostsSection({ guildId }: GuildPostsSectionProps) {
                                     </div>
                                   ))}
                                   <div className="space-y-2">
-                                    <Textarea value={replyMap[c.id] ?? ""} onChange={(e) => setReplyMap((prev) => ({ ...prev, [c.id]: e.target.value }))} disabled={!isMember || post.isLocked} className="min-h-[60px] border-[#f5c16c]/30 bg-black/40 text-white focus:border-[#f5c16c]/50" placeholder={post.isLocked ? "This post is locked." : !isMember ? "Join the guild to comment." : "Write a reply..."} />
-                                    <Button size="sm" onClick={() => submitReply(post, c.id)} disabled={submitting || !(replyMap[c.id] ?? "").trim() || !isMember || post.isLocked} className="bg-linear-to-r from-[#f5c16c] to-[#d4a855] text-black font-medium hover:from-[#d4a855] hover:to-[#f5c16c] disabled:opacity-50">Reply</Button>
+                                    <Textarea value={replyMap[c.id] ?? ""} onChange={(e) => setReplyMap((prev) => ({ ...prev, [c.id]: e.target.value }))} disabled={!canInteract || post.isLocked} className="min-h-[60px] border-[#f5c16c]/30 bg-black/40 text-white focus:border-[#f5c16c]/50" placeholder={post.isLocked ? "This post is locked." : !canInteract ? "Insufficient role to comment." : "Write a reply..."} />
+                                    <Button size="sm" onClick={() => submitReply(post, c.id)} disabled={submitting || !(replyMap[c.id] ?? "").trim() || !canInteract || post.isLocked} className="bg-linear-to-r from-[#f5c16c] to-[#d4a855] text-black font-medium hover:from-[#d4a855] hover:to-[#f5c16c] disabled:opacity-50">Reply</Button>
                                   </div>
                                 </div>
                               </div>
