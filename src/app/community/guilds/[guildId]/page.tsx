@@ -4,7 +4,7 @@ import { useParams } from "next/navigation";
 import guildsApi from "@/api/guildsApi";
 import profileApi from "@/api/profileApi";
 import type { GuildDto, GuildMemberDto, GuildRole } from "@/types/guilds";
-import { DashboardFrame } from "@/components/layout/DashboardFrame";
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -187,7 +187,7 @@ export default function GuildDetailPage() {
       <div aria-hidden="true" className="pointer-events-none absolute inset-0" style={BACKDROP_GRADIENT} />
       <div aria-hidden="true" className="pointer-events-none absolute inset-0" style={BACKDROP_TEXTURE} />
       
-      <DashboardFrame className="relative z-20">
+      <div className="relative z-20">
         <div className="flex flex-col gap-6 pb-16">
           {loading && (
             <Card className={SECTION_CARD_CLASS}>
@@ -623,7 +623,7 @@ export default function GuildDetailPage() {
             </>
           )}
         </div>
-      </DashboardFrame>
+      </div>
     </div>
   );
 }

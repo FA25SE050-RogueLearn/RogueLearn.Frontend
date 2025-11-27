@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState, type CSSProperties } from "react";
 import { useRouter } from "next/navigation";
-import { DashboardFrame } from "@/components/layout/DashboardFrame";
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -82,8 +82,7 @@ export default function CreateGuildPage() {
       <div aria-hidden="true" className="pointer-events-none absolute inset-0" style={BACKDROP_GRADIENT} />
       <div aria-hidden="true" className="pointer-events-none absolute inset-0" style={BACKDROP_TEXTURE} />
       
-      <DashboardFrame>
-        <div className="relative z-10 mx-auto flex max-w-3xl flex-col gap-8 pb-24 pt-8">
+      <div className="relative z-10 mx-auto flex max-w-3xl flex-col gap-8 pb-24 pt-8">
           
           {/* Header */}
           <div className="text-center">
@@ -233,8 +232,7 @@ export default function CreateGuildPage() {
               </ul>
             </CardContent>
           </Card>
-        </div>
-      </DashboardFrame>
+      </div>
     </div>
   );
 }

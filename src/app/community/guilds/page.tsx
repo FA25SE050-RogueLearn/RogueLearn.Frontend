@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useMemo, useState, startTransition, type CSSProperties } from "react";
 import Link from "next/link";
-import { DashboardFrame } from "@/components/layout/DashboardFrame";
+
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -131,8 +131,7 @@ export default function GuildDirectoryPage() {
       <div aria-hidden="true" className="pointer-events-none absolute inset-0" style={BACKDROP_GRADIENT} />
       <div aria-hidden="true" className="pointer-events-none absolute inset-0" style={BACKDROP_TEXTURE} />
       
-      <DashboardFrame>
-        <div className="relative z-10 flex flex-col gap-8 pb-24">
+      <div className="relative z-10 flex flex-col gap-8 pb-24">
           
           {/* Hero Section */}
           <Card className={HERO_CARD_CLASS}>
@@ -581,8 +580,7 @@ export default function GuildDirectoryPage() {
               </aside>
             </div>
           </section>
-        </div>
-      </DashboardFrame>
+      </div>
       {showInfoModal && myGuild && (
         <GuildInfoModal open={showInfoModal} onClose={() => setShowInfoModal(false)} guildId={myGuild.id} />
       )}
