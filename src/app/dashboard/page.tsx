@@ -155,15 +155,31 @@ export default async function DashboardPage({ searchParams }: { searchParams?: {
               { label: 'Quests Done', value: fullInfo?.counts.questsCompleted ?? 0, icon: Trophy },
               { label: 'Active', value: fullInfo?.counts.questsInProgress ?? 0, icon: Sword },
               { label: 'Meetings', value: fullInfo?.counts.meetings ?? 0, icon: Calendar },
-            ].map((item) => (
-              <div key={item.label} className="relative overflow-hidden rounded-[22px] border border-[#f5c16c]/25 bg-[#1f0d09]/90 p-4 text-white h-24">
-                <div className="relative z-10 flex items-center gap-3">
-                  {item.icon && <item.icon className="h-5 w-5 text-[#f5c16c]" />}
+            ].map((item, index) => (
+              <div 
+                key={item.label} 
+                className="group relative overflow-hidden rounded-[20px] border border-[#f5c16c]/20 bg-gradient-to-br from-[#1f0d09]/95 to-[#2a1510]/95 p-5 text-white transition-all duration-300 hover:border-[#f5c16c]/40 hover:shadow-[0_0_20px_rgba(210,49,135,0.15)]"
+              >
+                {/* Background glow */}
+                <div className="pointer-events-none absolute -right-6 -top-6 h-20 w-20 rounded-full bg-[#d23187]/10 blur-2xl transition-opacity duration-300 group-hover:bg-[#d23187]/20" />
+                
+                {/* Decorative corner rune */}
+                <div className="absolute right-3 top-3 text-[#f5c16c]/10 text-lg">◆</div>
+                
+                <div className="relative z-10 flex items-start justify-between">
                   <div>
-                    <p className="text-[10px] uppercase tracking-[0.45em] text-[#f5c16c]/80">{item.label}</p>
-                    <p className="mt-1 text-xl font-semibold text-white">{item.value}</p>
+                    <p className="text-[11px] font-medium text-[#f5c16c]/60 uppercase tracking-[0.2em]">{item.label}</p>
+                    <p className="mt-2 text-3xl font-bold text-white">{item.value}</p>
+                  </div>
+                  
+                  {/* Icon with themed background */}
+                  <div className="flex h-11 w-11 items-center justify-center rounded-xl border border-[#f5c16c]/30 bg-gradient-to-br from-[#d23187]/20 to-[#f5c16c]/20 shadow-lg transition-all duration-300 group-hover:border-[#f5c16c]/50 group-hover:shadow-[0_0_15px_rgba(245,193,108,0.2)]">
+                    <item.icon className="h-5 w-5 text-[#f5c16c]" />
                   </div>
                 </div>
+                
+                {/* Bottom accent line */}
+                <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-[#f5c16c]/20 to-transparent" />
               </div>
             ))}
           </section>

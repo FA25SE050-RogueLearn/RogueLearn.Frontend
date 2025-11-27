@@ -1,9 +1,11 @@
 "use client";
 
-import { Trophy, Zap, ExternalLink } from "lucide-react";
-import { formatDistanceToNow } from "date-fns";
+import { useState, useRef } from "react";
+import { Trophy, Zap, ExternalLink, X, Calendar, Award } from "lucide-react";
+import { formatDistanceToNow, format } from "date-fns";
 import Link from "next/link";
 import Image from "next/image";
+import { motion, useMotionValue, useSpring } from "motion/react";
 
 interface RightColumnProps {
   achievements: Achievement[];
@@ -27,12 +29,134 @@ interface UserSkill {
   experiencePoints: number;
 }
 
+function TiltingCard({ children, className }: { children: React.ReactNode; className?: string }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const rotateX = useSpring(0, { damping: 20, stiffness: 100 });
+  const rotateY = useSpring(0, { damping: 20, stiffness: 100 });
+  const scale = useSpring(1, { damping: 20, stiffness: 100 });
+
+  function handleMouse(e: React.MouseEvent<HTMLDivElement>) {
+    if (!ref.current) return;
+    const rect = ref.current.getBoundingClientRect();
+    const offsetX = e.clientX - rect.left - rect.width / 2;
+    const offsetY = e.clientY - rect.top - rect.height / 2;
+    rotateX.set((offsetY / (rect.height / 2)) * -15);
+    rotateY.set((offsetX / (rect.width / 2)) * 15);
+  }
+
+  return (
+    <motion.div
+      ref={ref}
+      className={className}
+      style={{ rotateX, rotateY, scale, transformStyle: "preserve-3d" }}
+      onMouseMove={handleMouse}
+      onMouseEnter={() => scale.set(1.02)}
+      onMouseLeave={() => { rotateX.set(0); rotateY.set(0); scale.set(1); }}
+    >
+      {children}
+    </motion.div>
+  );
+}
+
 export function RightColumn({ achievements, userSkills }: RightColumnProps) {
+  const [selectedAchievement, setSelectedAchievement] = useState<Achievement | null>(null);
+
   const getSkillProgress = (xp: number) => {
     return ((xp % 1000) / 1000) * 100;
   };
 
   return (
+    <>
+    {/* Achievement Detail Modal */}
+    {selectedAchievement && (
+      <div 
+        className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 backdrop-blur-sm [perspective:1000px]"
+        onClick={() => setSelectedAchievement(null)}
+      >
+        <div 
+          className="relative mx-4 w-full max-w-md"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {/* Close button */}
+          <button
+            onClick={() => setSelectedAchievement(null)}
+            className="absolute -right-2 -top-2 z-10 flex h-8 w-8 items-center justify-center rounded-full border border-[#f5c16c]/30 bg-[#1a0b08] text-[#f5c16c] transition-all hover:border-[#f5c16c] hover:bg-[#2a1510]"
+          >
+            <X className="h-4 w-4" />
+          </button>
+
+          {/* Tilting Card Container */}
+          <TiltingCard className="overflow-hidden rounded-[24px] border-2 border-[#f5c16c]/30 bg-gradient-to-br from-[#1a0b08] via-[#2a1510] to-[#1a0b08] shadow-[0_0_60px_rgba(210,49,135,0.3)]">
+            {/* Decorative top border */}
+            <div className="h-1 bg-gradient-to-r from-transparent via-[#f5c16c] to-transparent" />
+            
+            {/* Header with runes */}
+            <div className="relative flex items-center justify-center py-4">
+              <div className="absolute left-4 text-[#f5c16c]/20 text-xl">◆</div>
+              <Award className="h-5 w-5 text-[#f5c16c]" />
+              <span className="ml-2 text-xs font-medium uppercase tracking-[0.3em] text-[#f5c16c]/80">Achievement Unlocked</span>
+              <div className="absolute right-4 text-[#f5c16c]/20 text-xl">◆</div>
+            </div>
+
+            {/* Achievement image */}
+            <div className="flex justify-center px-6 py-8" style={{ transform: "translateZ(40px)" }}>
+              <div className="relative">
+                {/* Glow effect */}
+                <div className="absolute inset-0 rounded-full bg-gradient-to-br from-[#f5c16c]/40 to-[#d23187]/40 blur-2xl scale-110" />
+                {selectedAchievement.iconUrl ? (
+                  <div className="relative h-56 w-56 overflow-hidden rounded-full border-4 border-[#f5c16c]/50 shadow-[0_0_40px_rgba(245,193,108,0.5)]">
+                    <Image
+                      src={selectedAchievement.iconUrl}
+                      alt={selectedAchievement.name}
+                      width={300}
+                      height={300}
+                      className="absolute inset-0 h-full w-full scale-150 object-cover object-center"
+                    />
+                  </div>
+                ) : (
+                  <div className="relative flex h-56 w-56 items-center justify-center rounded-full border-4 border-[#f5c16c]/50 bg-gradient-to-br from-[#d23187]/30 to-[#f5c16c]/30">
+                    <Trophy className="h-24 w-24 text-[#f5c16c]" />
+                  </div>
+                )}
+                {/* Decorative ring */}
+                <div className="absolute -inset-3 rounded-full border-2 border-dashed border-[#f5c16c]/30 animate-spin" style={{ animationDuration: "20s" }} />
+              </div>
+            </div>
+
+            {/* Achievement details */}
+            <div className="space-y-4 px-6 pb-6" style={{ transform: "translateZ(20px)" }}>
+              {/* Name */}
+              <div className="text-center">
+                <h3 className="text-2xl font-bold text-white">{selectedAchievement.name}</h3>
+                <p className="mt-2 text-sm text-[#f5c16c]/70">{selectedAchievement.description}</p>
+              </div>
+
+              {/* Stats */}
+              <div className="flex items-center justify-center gap-6 pt-2">
+                <div className="flex items-center gap-2 text-xs text-[#f5c16c]/60">
+                  <Calendar className="h-4 w-4" />
+                  <span>{format(new Date(selectedAchievement.earnedAt), "MMM d, yyyy")}</span>
+                </div>
+                <div className="h-4 w-px bg-[#f5c16c]/20" />
+                <div className="rounded-full border border-[#d23187]/30 bg-[#d23187]/10 px-3 py-1 text-xs text-[#d23187]">
+                  {selectedAchievement.sourceService}
+                </div>
+              </div>
+
+              {/* Decorative bottom */}
+              <div className="flex items-center justify-center gap-2 pt-4">
+                <div className="h-px flex-1 bg-gradient-to-r from-transparent to-[#f5c16c]/30" />
+                <Trophy className="h-4 w-4 text-[#f5c16c]/40" />
+                <div className="h-px flex-1 bg-gradient-to-l from-transparent to-[#f5c16c]/30" />
+              </div>
+            </div>
+
+            {/* Decorative bottom border */}
+            <div className="h-1 bg-gradient-to-r from-transparent via-[#d23187] to-transparent" />
+          </TiltingCard>
+        </div>
+      </div>
+    )}
     <aside className="fixed right-0 top-0 hidden h-screen w-[320px] overflow-y-auto border-l border-[#f5c16c]/20 bg-[#0c0308]/80 backdrop-blur-md xl:block">
       {/* Achievements Section */}
       <div className="p-4">
@@ -53,9 +177,10 @@ export function RightColumn({ achievements, userSkills }: RightColumnProps) {
         {achievements.length > 0 ? (
           <div className="space-y-3">
             {achievements.slice(0, 5).map((achievement) => (
-              <div
+              <button
                 key={achievement.achievementId}
-                className="group rounded-lg border border-[#f5c16c]/20 bg-[#1a0b08]/80 p-3 transition-all hover:border-[#f5c16c]/40 hover:bg-[#1a0b08]"
+                onClick={() => setSelectedAchievement(achievement)}
+                className="group w-full rounded-lg border border-[#f5c16c]/20 bg-[#1a0b08]/80 p-3 text-left transition-all hover:border-[#f5c16c]/40 hover:bg-[#1a0b08] hover:shadow-[0_0_15px_rgba(210,49,135,0.15)]"
               >
                 <div className="flex gap-3">
                   {achievement.iconUrl ? (
@@ -90,7 +215,7 @@ export function RightColumn({ achievements, userSkills }: RightColumnProps) {
                     </div>
                   </div>
                 </div>
-              </div>
+              </button>
             ))}
           </div>
         ) : (
@@ -156,5 +281,6 @@ export function RightColumn({ achievements, userSkills }: RightColumnProps) {
         )}
       </div>
     </aside>
+    </>
   );
 }
