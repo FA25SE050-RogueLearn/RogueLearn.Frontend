@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Shield, Users, Lock, Globe } from "lucide-react";
 import guildsApi from "@/api/guildsApi";
 import profileApi from "@/api/profileApi";
+import { getMyContext } from "@/api/usersApi";
 import type { CreateGuildResponse } from "@/types/guilds";
 
 const SECTION_CARD_CLASS = 'relative overflow-hidden rounded-3xl border border-[#f5c16c]/25 bg-[#120806]/80';
@@ -34,21 +35,37 @@ export default function CreateGuildPage() {
   const [maxMembers, setMaxMembers] = useState<number>(50);
   const [myAuthUserId, setMyAuthUserId] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [isLecturer, setIsLecturer] = useState<boolean>(false);
 
   useEffect(() => {
-    profileApi.getMyProfile().then((res) => setMyAuthUserId(res.data?.authUserId ?? null)).catch(() => {});
+    (async () => {
+      try {
+        const res = await profileApi.getMyProfile();
+        setMyAuthUserId(res.data?.authUserId ?? null);
+        const roles = res.data?.roles ?? [];
+        const ctx = await getMyContext().catch(() => ({ data: { roles: [] } } as any));
+        const allRoles: string[] = Array.isArray(roles) ? roles : [];
+        const ctxRoles: string[] = Array.isArray(ctx?.data?.roles) ? ctx.data.roles : [];
+        const lecturer = [...allRoles, ...ctxRoles].some((r) => /lecturer/i.test(r));
+        setIsLecturer(lecturer);
+        if (lecturer) setMaxMembers((m) => Math.max(m, 100));
+      } catch {}
+    })();
   }, []);
 
   const handleSubmit = async () => {
     if (!name.trim() || !description.trim() || !myAuthUserId) return;
     setSubmitting(true);
     try {
+      const allowedMax = isLecturer ? 100 : 50;
+      const minAllowed = 2;
+      const finalMax = Math.max(minAllowed, Math.min(maxMembers, allowedMax));
       const res = await guildsApi.create({
         creatorAuthUserId: myAuthUserId,
         name,
         description,
         privacy,
-        maxMembers,
+        maxMembers: finalMax,
       });
       const data = res.data as CreateGuildResponse;
       router.push(`/community/guilds/${data.guildId}`);
@@ -155,10 +172,15 @@ export default function CreateGuildPage() {
                     <Users className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#f5c16c]/60" />
                     <Input
                       type="number"
-                      min={1}
-                      max={9999}
+                      min={2}
+                      max={isLecturer ? 100 : 50}
                       value={maxMembers}
-                      onChange={(e) => setMaxMembers(Number(e.target.value))}
+                      onChange={(e) => {
+                        const v = Number(e.target.value);
+                        const cap = isLecturer ? 100 : 50;
+                        const clamped = Math.max(2, Math.min(v || 2, cap));
+                        setMaxMembers(clamped);
+                      }}
                       className="pl-10 border-[#f5c16c]/25 bg-[#140707]/80 text-white"
                     />
                   </div>

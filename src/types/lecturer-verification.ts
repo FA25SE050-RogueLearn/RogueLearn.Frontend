@@ -1,4 +1,4 @@
-export type LecturerVerificationStatus = 'Pending' | 'Approved' | 'Declined';
+export type LecturerVerificationStatus = 'Pending' | 'Approved' | 'Rejected';
 
 export interface CreateLecturerVerificationRequestPayload {
   email: string;
@@ -38,7 +38,7 @@ export interface AdminListLecturerVerificationRequestsResponse {
 
 export interface AdminLecturerVerificationRequestDetail {
   id: string;
-  userId: string;
+  authUserId: string;
   email?: string | null;
   staffId?: string | null;
   screenshotUrl?: string | null;

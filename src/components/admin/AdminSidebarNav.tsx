@@ -13,7 +13,8 @@ import {
   Network,
   GraduationCap,
   BookCopy,
-  ScrollText // Icon for Programs
+  ScrollText,
+  ChevronLeft
 } from "lucide-react";
 
 const navItems = [
@@ -67,6 +68,16 @@ export function AdminSidebarNav() {
             </Link>
           );
         })}
+      </div>
+
+      <div className="mt-6 border-t border-amber-900/30 pt-6">
+        <Link
+          href="/dashboard"
+          className="flex items-center gap-2 rounded-md border border-amber-700/50 bg-amber-900/20 px-3 py-2 text-amber-300 hover:bg-amber-800/30 hover:text-amber-200"
+        >
+          <ChevronLeft className="h-4 w-4" />
+          Back to Dashboard
+        </Link>
       </div>
     </nav>
   );

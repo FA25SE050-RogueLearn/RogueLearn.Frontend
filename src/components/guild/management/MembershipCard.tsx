@@ -7,6 +7,7 @@ import type { GuildRole } from "@/types/guilds";
 interface MembershipCardProps {
   myRole: GuildRole | null;
   onLeave: () => void;
+  showActions?: boolean;
 }
 
 const CARD_TEXTURE = {
@@ -18,7 +19,7 @@ const CARD_TEXTURE = {
 
 const CARD_CLASS = "relative overflow-hidden rounded-[28px] border border-[#f5c16c]/30 bg-gradient-to-br from-[#2d1810] via-[#1a0a08] to-black shadow-xl";
 
-export function MembershipCard({ myRole, onLeave }: MembershipCardProps) {
+export function MembershipCard({ myRole, onLeave, showActions = true }: MembershipCardProps) {
   return (
     <Card className={CARD_CLASS}>
       {/* Texture overlay */}
@@ -39,14 +40,16 @@ export function MembershipCard({ myRole, onLeave }: MembershipCardProps) {
             {myRole ?? "Unknown"}
           </span>
         </div>
-        <Button 
-          variant="destructive" 
-          onClick={onLeave}
-          className="bg-rose-600 hover:bg-rose-700"
-        >
-          <LogOut className="mr-2 h-4 w-4" />
-          Leave Guild
-        </Button>
+        {showActions && (
+          <Button 
+            variant="destructive" 
+            onClick={onLeave}
+            className="bg-rose-600 hover:bg-rose-700"
+          >
+            <LogOut className="mr-2 h-4 w-4" />
+            Leave Guild
+          </Button>
+        )}
       </CardContent>
     </Card>
   );

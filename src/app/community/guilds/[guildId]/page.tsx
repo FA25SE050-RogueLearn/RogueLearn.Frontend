@@ -1,11 +1,13 @@
 "use client";
-import { useEffect, useState, type CSSProperties } from "react";
+import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import { useParams } from "next/navigation";
 import guildsApi from "@/api/guildsApi";
 import profileApi from "@/api/profileApi";
-import type { GuildDto } from "@/types/guilds";
+import type { GuildDto, GuildMemberDto, GuildRole } from "@/types/guilds";
 import { DashboardFrame } from "@/components/layout/DashboardFrame";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -17,9 +19,10 @@ import {
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
-import GuildRoleGate from "@/components/guild/RoleGate";
 import { useGuildRoles } from "@/hooks/useGuildRoles";
-import { Users, Shield, Lock, Globe, Scroll, Swords, Crown, Settings, HelpCircle } from "lucide-react";
+import { Users, Shield, Lock, Globe, Scroll, Swords, Crown, Settings, HelpCircle, Trophy } from "lucide-react";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { getMyFullInfo } from "@/api/usersApi";
 
 const SECTION_CARD_CLASS = 'relative overflow-hidden rounded-3xl border border-[#f5c16c]/25 bg-[#120806]/80';
 const HERO_CARD_CLASS = 'relative overflow-hidden rounded-[32px] border border-[#f5c16c]/30 bg-linear-to-br from-[#1c0906]/95 via-[#120605]/98 to-[#040101]';
@@ -48,7 +51,16 @@ export default function GuildDetailPage() {
   const [activeTab, setActiveTab] = useState<string>("home");
   const [showInfoModal, setShowInfoModal] = useState<boolean>(false);
   const [myAuthUserId, setMyAuthUserId] = useState<string | null>(null);
+  const [members, setMembers] = useState<GuildMemberDto[]>([]);
   const { roles: myRoles } = useGuildRoles(guildId as string);
+  const [isLecturerGuild, setIsLecturerGuild] = useState<boolean>(false);
+  const [configOpen, setConfigOpen] = useState<boolean>(false);
+  const [cfgName, setCfgName] = useState<string>("");
+  const [cfgDescription, setCfgDescription] = useState<string>("");
+  const [cfgPrivacy, setCfgPrivacy] = useState<'public' | 'invite_only'>("public");
+  const [cfgMaxMembers, setCfgMaxMembers] = useState<number>(50);
+  const [cfgSubmitting, setCfgSubmitting] = useState<boolean>(false);
+  const [cfgError, setCfgError] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -59,13 +71,16 @@ export default function GuildDetailPage() {
       guildsApi.getMyGuild(),
       guildsApi.getMembers(guildId as string),
       profileApi.getMyProfile(),
+      getMyFullInfo().catch(() => ({ data: null } as any)),
     ])
-      .then(([gRes, myRes, membersRes, pRes]) => {
+      .then(([gRes, myRes, membersRes, pRes, fullRes]) => {
         if (cancelled) return;
-        setGuild(gRes.data ?? null);
+        const g = gRes.data ?? null;
+        setGuild(g);
         setMyGuildId(myRes.data?.id ?? null);
         const authId = pRes.data?.authUserId ?? null;
         setMyAuthUserId(authId);
+        setMembers(Array.isArray(membersRes.data) ? (membersRes.data as GuildMemberDto[]) : []);
         // Prefer a directly computed member count from the members endpoint.
         // Fallback to my guild count (if this is the user's guild), then to the guild dto field.
         const directCount = Array.isArray(membersRes.data)
@@ -78,6 +93,13 @@ export default function GuildDetailPage() {
         setMemberCount(
           directCount ?? fallbackMyCount ?? gRes.data?.memberCount ?? null
         );
+        setIsLecturerGuild(!!g?.isLecturerGuild);
+        if (g) {
+          setCfgName(g.name);
+          setCfgDescription(g.description);
+          setCfgPrivacy(g.isPublic ? 'public' : 'invite_only');
+          setCfgMaxMembers(g.maxMembers);
+        }
         setError(null);
       })
       .catch((err) => {
@@ -91,27 +113,48 @@ export default function GuildDetailPage() {
     };
   }, [guildId]);
 
-  // Sync tabs with hash (#home, #posts, #meetings, #manage)
+  // Sync tabs with hash (#home, #posts, #rankings, #meetings, #manage)
   useEffect(() => {
     const applyHash = () => {
       const hash =
         typeof window !== "undefined"
           ? window.location.hash.replace(/^#/, "")
           : "";
-      const canManage = myRoles.includes("GuildMaster") || myRoles.includes("Officer");
-      if (hash === "home" || hash === "posts" || hash === "meetings") {
+      const isMemberNow = !!guild && myGuildId === guild.id;
+      const canSeeMeetingsNow = isMemberNow && !myRoles.includes("Recruit");
+      if (hash === "home" || hash === "posts" || hash === "rankings") {
         setActiveTab(hash);
+      } else if (hash === "meetings") {
+        setActiveTab(canSeeMeetingsNow ? "meetings" : "home");
       } else if (hash === "manage") {
-        setActiveTab(canManage ? "manage" : "home");
+        setActiveTab(isMemberNow ? "manage" : "home");
       }
     };
     applyHash();
     window.addEventListener("hashchange", applyHash);
     return () => window.removeEventListener("hashchange", applyHash);
-  }, [myRoles]);
+  }, [myRoles, guild, myGuildId]);
 
   const isMember = guild && myGuildId === guild.id;
+  const canSeeMeetings = isMember && !myRoles.includes("Recruit");
   const canManage = isMember && (myRoles.includes("GuildMaster") || myRoles.includes("Officer"));
+
+  const displayName = (m?: GuildMemberDto | null): string | undefined => {
+    if (!m) return undefined;
+    const username = (m.username ?? "").trim();
+    if (username) return username;
+    const full = `${(m.firstName ?? "").trim()} ${(m.lastName ?? "").trim()}`.trim();
+    if (full) return full;
+    const email = (m.email ?? "").trim();
+    return email || undefined;
+  };
+  const sortedMembers = useMemo(() => {
+    return [...members].sort((a, b) => (b.contributionPoints ?? 0) - (a.contributionPoints ?? 0));
+  }, [members]);
+  const top3 = useMemo(() => sortedMembers.slice(0, 3), [sortedMembers]);
+  const rest = useMemo(() => sortedMembers.slice(3), [sortedMembers]);
+  const myEntry = useMemo(() => sortedMembers.find((m) => m.authUserId === myAuthUserId) || null, [sortedMembers, myAuthUserId]);
+  const rankOf = (m: GuildMemberDto, idx: number) => (typeof m.rankWithinGuild === "number" && m.rankWithinGuild > 0 ? m.rankWithinGuild : idx + 1);
 
   const handleApply = async () => {
     if (!guildId) return;
@@ -120,7 +163,16 @@ export default function GuildDetailPage() {
       await guildsApi.applyToJoin(guildId as string, {
         message: joinMessage || null,
       });
-      alert("Join request submitted.");
+      try {
+        const my = await guildsApi.getMyGuild();
+        if (my.data?.id === guildId) {
+          alert("Joined successfully.");
+        } else {
+          alert("Join request submitted.");
+        }
+      } catch {
+        alert("Join request submitted.");
+      }
       setJoinMessage("");
     } catch (err) {
       console.error(err);
@@ -200,6 +252,12 @@ export default function GuildDetailPage() {
                         <Users className="h-3.5 w-3.5" />
                         {memberCount ?? guild.memberCount} Heroes
                       </div>
+                      {isLecturerGuild && (
+                        <div className="flex items-center gap-2 rounded-full border border-sky-400/40 bg-sky-400/15 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-sky-300">
+                          <Scroll className="h-3.5 w-3.5" />
+                          Lecturer Guild
+                        </div>
+                      )}
                     </div>
                   </div>
                 </CardHeader>
@@ -214,6 +272,16 @@ export default function GuildDetailPage() {
                       <HelpCircle className="h-3.5 w-3.5" />
                       Info
                     </button>
+                    {canManage && (
+                      <button
+                        onClick={() => setConfigOpen(true)}
+                        className="flex items-center gap-2 rounded-full border border-amber-400/30 bg-amber-400/15 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-amber-300 hover:border-amber-400/50 hover:bg-amber-400/20"
+                        title="Configure Guild"
+                      >
+                        <Settings className="h-3.5 w-3.5" />
+                        Configure
+                      </button>
+                    )}
                     {!isMember && (
                       <Dialog>
                         <DialogTrigger asChild>
@@ -263,6 +331,98 @@ export default function GuildDetailPage() {
                 </CardContent>
               </Card>
 
+              {/* Configure Guild Modal */}
+              <Dialog open={configOpen} onOpenChange={setConfigOpen}>
+                <DialogContent className="border-[#f5c16c]/30 bg-[#1a0e0d]">
+                  <DialogHeader>
+                    <DialogTitle className="text-xl text-white">Configure Guild Settings</DialogTitle>
+                  </DialogHeader>
+                  <div className="space-y-4">
+                    <div>
+                      <label className="text-xs font-semibold uppercase tracking-wide text-white/80">Name</label>
+                      <Input value={cfgName} onChange={(e) => setCfgName(e.target.value)} className="mt-1 border-[#f5c16c]/25 bg-[#140707]/80 text-white" />
+                    </div>
+                    <div>
+                      <label className="text-xs font-semibold uppercase tracking-wide text-white/80">Description</label>
+                      <Textarea value={cfgDescription} onChange={(e) => setCfgDescription(e.target.value)} rows={4} className="mt-1 border-[#f5c16c]/25 bg-[#140707]/80 text-white" />
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <label className="text-xs font-semibold uppercase tracking-wide text-white/80">Privacy</label>
+                        <Select value={cfgPrivacy} onValueChange={(v) => setCfgPrivacy(v as 'public' | 'invite_only')}>
+                          <SelectTrigger className="mt-1 border-[#f5c16c]/25 bg-[#140707]/80 text-white">
+                            <SelectValue placeholder="Select privacy" />
+                          </SelectTrigger>
+                          <SelectContent className="border-[#f5c16c]/25 bg-[#1a0e0d] text-white">
+                            <SelectItem value="public">Public</SelectItem>
+                            <SelectItem value="invite_only">Invite Only</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div>
+                        <label className="text-xs font-semibold uppercase tracking-wide text-white/80">Max Members</label>
+                        <Input
+                          type="number"
+                          min={Math.max(1, (memberCount ?? guild?.memberCount ?? 0))}
+                          max={isLecturerGuild ? 100 : undefined}
+                          value={String(cfgMaxMembers)}
+                          onChange={(e) => {
+                            const val = Number(e.target.value) || 0;
+                            setCfgMaxMembers(val);
+                            const cc = memberCount ?? guild?.memberCount ?? 0;
+                            if (val < cc) setCfgError('Max members cannot be less than current members');
+                            else if (isLecturerGuild && val > 100) setCfgError('Lecturer guild max is 100');
+                            else if (val < 1) setCfgError('Max members must be positive');
+                            else setCfgError(null);
+                          }}
+                          className="mt-1 border-[#f5c16c]/25 bg-[#140707]/80 text-white"
+                        />
+                        {cfgError && <div className="mt-1 text-xs text-rose-400">{cfgError}</div>}
+                      </div>
+                    </div>
+                    <div className="flex gap-3">
+                      <Button
+                        onClick={async () => {
+                          if (!guildId) return;
+                          setCfgSubmitting(true);
+                          try {
+                            const cc = memberCount ?? guild?.memberCount ?? 0;
+                            if (cfgMaxMembers < cc) { setCfgError('Max members cannot be less than current members'); setCfgSubmitting(false); return; }
+                            if (isLecturerGuild && cfgMaxMembers > 100) { setCfgError('Lecturer guild max is 100'); setCfgSubmitting(false); return; }
+                            if (cfgMaxMembers < 1) { setCfgError('Max members must be positive'); setCfgSubmitting(false); return; }
+                            await guildsApi.configureSettings(guildId as string, {
+                              name: (cfgName || '').trim() || (guild?.name || ''),
+                              description: cfgDescription || '',
+                              privacy: cfgPrivacy,
+                              maxMembers: cfgMaxMembers > 0 ? cfgMaxMembers : (guild?.maxMembers || 50),
+                            });
+                            const refreshed = await guildsApi.getById(guildId as string);
+                            if (refreshed.isSuccess) setGuild(refreshed.data || guild);
+                            setConfigOpen(false);
+                            alert('Guild settings updated.');
+                          } catch (err) {
+                            alert('Failed to update settings.');
+                          } finally {
+                            setCfgSubmitting(false);
+                          }
+                        }}
+                        disabled={cfgSubmitting || !!cfgError}
+                        className="flex-1 rounded-full bg-linear-to-r from-[#d23187] via-[#f5c16c] to-[#f5c16c] text-[#2b130f]"
+                      >
+                        {cfgSubmitting ? 'Saving...' : 'Save Settings'}
+                      </Button>
+                      <Button
+                        variant="outline"
+                        onClick={() => setConfigOpen(false)}
+                        className="flex-1 rounded-full border-[#f5c16c]/30 bg-[#140707]/80 text-[#f5c16c]"
+                      >
+                        Cancel
+                      </Button>
+                    </div>
+                  </div>
+                </DialogContent>
+              </Dialog>
+
               {/* Tabs */}
               <Tabs
                 value={activeTab}
@@ -287,7 +447,14 @@ export default function GuildDetailPage() {
                     <Scroll className="mr-2 h-4 w-4" />
                     Posts
                   </TabsTrigger>
-                  {isMember && (
+                  <TabsTrigger
+                    value="rankings"
+                    className="rounded-full data-[state=active]:bg-linear-to-r data-[state=active]:from-[#d23187] data-[state=active]:via-[#f5c16c] data-[state=active]:to-[#f5c16c] data-[state=active]:text-[#2b130f] data-[state=active]:shadow-lg"
+                  >
+                    <Trophy className="mr-2 h-4 w-4" />
+                    Rankings
+                  </TabsTrigger>
+                  {canSeeMeetings && (
                     <TabsTrigger
                       value="meetings"
                       className="rounded-full data-[state=active]:bg-linear-to-r data-[state=active]:from-[#d23187] data-[state=active]:via-[#f5c16c] data-[state=active]:to-[#f5c16c] data-[state=active]:text-[#2b130f] data-[state=active]:shadow-lg"
@@ -296,7 +463,7 @@ export default function GuildDetailPage() {
                       Meetings
                     </TabsTrigger>
                   )}
-                  {canManage && (
+                  {isMember && (
                     <TabsTrigger
                       value="manage"
                       className="rounded-full data-[state=active]:bg-linear-to-r data-[state=active]:from-[#d23187] data-[state=active]:via-[#f5c16c] data-[state=active]:to-[#f5c16c] data-[state=active]:text-[#2b130f] data-[state=active]:shadow-lg"
@@ -324,17 +491,129 @@ export default function GuildDetailPage() {
                   <GuildPostsSection guildId={guild.id} />
                 </TabsContent>
 
-                {isMember && (
+                <TabsContent value="rankings" className="space-y-8">
+                  <div className="flex items-end justify-center gap-4 pt-4">
+                    <div className="flex flex-col items-center">
+                      {top3[1] && (
+                        <div className="w-20 h-20 rounded-full border-4 border-gray-400 overflow-hidden mb-2 relative">
+                          <Avatar className="w-full h-full">
+                            <AvatarImage src={top3[1].profileImageUrl ?? undefined} alt={displayName(top3[1]) ?? ""} />
+                            <AvatarFallback>{(displayName(top3[1]) ?? "").slice(0,2).toUpperCase()}</AvatarFallback>
+                          </Avatar>
+                          <div className="absolute bottom-0 w-full bg-gray-400 text-black text-center text-xs font-bold">#2</div>
+                        </div>
+                      )}
+                      <div className="text-white font-bold">{displayName(top3[1]) ?? "—"}</div>
+                      <div className="text-gray-500 text-xs">{(top3[1]?.contributionPoints ?? 0).toLocaleString()} Contribution</div>
+                      <div className="h-24 w-24 bg-linear-to-t from-gray-400/20 to-transparent rounded-t-lg mt-2"></div>
+                    </div>
+
+                    <div className="flex flex-col items-center relative -top-6">
+                      <div className="absolute -top-8 text-4xl">👑</div>
+                      {top3[0] && (
+                        <div className="w-24 h-24 rounded-full border-4 border-[#d4a353] overflow-hidden mb-2 relative">
+                          <Avatar className="w-full h-full">
+                            <AvatarImage src={top3[0].profileImageUrl ?? undefined} alt={displayName(top3[0]) ?? ""} />
+                            <AvatarFallback>{(displayName(top3[0]) ?? "").slice(0,2).toUpperCase()}</AvatarFallback>
+                          </Avatar>
+                          <div className="absolute bottom-0 w-full bg-[#d4a353] text-black text-center text-xs font-bold">#1</div>
+                        </div>
+                      )}
+                      <div className="text-[#d4a353] font-bold text-lg">{displayName(top3[0]) ?? "—"}</div>
+                      <div className="text-[#d4a353]/80 text-sm">{(top3[0]?.contributionPoints ?? 0).toLocaleString()} Contribution</div>
+                      <div className="h-32 w-32 bg-linear-to-t from-[#d4a353]/20 to-transparent rounded-t-lg mt-2 border-t border-[#d4a353]/30"></div>
+                    </div>
+
+                    <div className="flex flex-col items-center">
+                      {top3[2] && (
+                        <div className="w-20 h-20 rounded-full border-4 border-orange-700 overflow-hidden mb-2 relative">
+                          <Avatar className="w-full h-full">
+                            <AvatarImage src={top3[2].profileImageUrl ?? undefined} alt={displayName(top3[2]) ?? ""} />
+                            <AvatarFallback>{(displayName(top3[2]) ?? "").slice(0,2).toUpperCase()}</AvatarFallback>
+                          </Avatar>
+                          <div className="absolute bottom-0 w-full bg-orange-700 text-white text-center text-xs font-bold">#3</div>
+                        </div>
+                      )}
+                      <div className="text-white font-bold">{displayName(top3[2]) ?? "—"}</div>
+                      <div className="text-gray-500 text-xs">{(top3[2]?.contributionPoints ?? 0).toLocaleString()} Contribution</div>
+                      <div className="h-20 w-24 bg-linear-to-t from-orange-700/20 to-transparent rounded-t-lg mt-2"></div>
+                    </div>
+                  </div>
+
+                  <Card className={SECTION_CARD_CLASS}>
+                    <div aria-hidden="true" className="absolute inset-0" style={CARD_TEXTURE} />
+                    <CardHeader className="relative z-10 border-b border-[#f5c16c]/20 pb-3">
+                      <div className="flex items-center justify-between">
+                        <h3 className="text-white font-semibold text-sm uppercase tracking-widest flex items-center gap-2">
+                          <Trophy className="h-4 w-4 text-[#f5c16c]" /> Guild Rankings
+                        </h3>
+                        <span className="text-[10px] text-foreground/60">Merit Contributions</span>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="relative z-10 p-0">
+                      <table className="w-full text-left text-sm text-foreground/70">
+                        <thead className="bg-black/40 text-[11px] uppercase font-bold text-foreground/50 border-b border-[#f5c16c]/20">
+                          <tr>
+                            <th className="p-4 w-16">Rank</th>
+                            <th className="p-4">Hero</th>
+                            <th className="p-4">Role</th>
+                            <th className="p-4 text-right">Contribution</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-[#f5c16c]/15">
+                          {sortedMembers.map((m, i) => (
+                            <tr key={m.memberId} className="hover:bg-black/40 transition">
+                              <td className="p-4 font-bold text-foreground/60">#{rankOf(m, i)}</td>
+                              <td className="p-4 flex items-center gap-3 text-white">
+                                <div className="w-8 h-8 rounded-full overflow-hidden bg-black">
+                                  <Avatar className="w-full h-full">
+                                    <AvatarImage src={m.profileImageUrl ?? undefined} alt={displayName(m) ?? ''} />
+                                    <AvatarFallback>{(displayName(m) ?? '').slice(0,2).toUpperCase()}</AvatarFallback>
+                                  </Avatar>
+                                </div>
+                                <span>{displayName(m) ?? m.authUserId}</span>
+                              </td>
+                              <td className="p-4">
+                                <span className="px-2 py-0.5 rounded border border-[#f5c16c]/25 text-white/80 text-[10px] uppercase">{m.role}</span>
+                              </td>
+                              <td className="p-4 text-right text-white/80">{(m.contributionPoints ?? 0).toLocaleString()}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                      {myEntry && (
+                        <div className="sticky bottom-0 bg-black/40 border-t border-[#f5c16c]/20">
+                          <div className="grid grid-cols-[80px_1fr_140px_140px] items-center text-sm">
+                            <div className="p-3 font-bold text-white/80">#{rankOf(myEntry, sortedMembers.indexOf(myEntry))}</div>
+                            <div className="p-3 flex items-center gap-3 text-white">
+                              <div className="w-8 h-8 rounded-full overflow-hidden bg-black">
+                                <Avatar className="w-full h-full">
+                                  <AvatarImage src={myEntry.profileImageUrl ?? undefined} alt={displayName(myEntry) ?? ''} />
+                                  <AvatarFallback>{(displayName(myEntry) ?? '').slice(0,2).toUpperCase()}</AvatarFallback>
+                                </Avatar>
+                              </div>
+                              <span>{displayName(myEntry) ?? myEntry.authUserId}</span>
+                            </div>
+                            <div className="p-3 text-right">
+                              <span className="px-2 py-0.5 rounded border border-[#f5c16c]/25 text-white/80 text-[10px] uppercase">{myEntry.role}</span>
+                            </div>
+                            <div className="p-3 text-right font-bold text-[#d4a353]">{(myEntry.contributionPoints ?? 0).toLocaleString()}</div>
+                          </div>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                </TabsContent>
+
+                {canSeeMeetings && (
                   <TabsContent value="meetings" className="space-y-4">
                     <GuildMeetingsSection guildId={guild.id} />
                   </TabsContent>
                 )}
 
-                {canManage && (
+                {isMember && (
                   <TabsContent value="manage" className="space-y-4">
-                    <GuildRoleGate guildId={guild.id} requireAny={["GuildMaster", "Officer"]}>
-                      <GuildManagementSection guildId={guild.id} />
-                    </GuildRoleGate>
+                    <GuildManagementSection guildId={guild.id} />
                   </TabsContent>
                 )}
               </Tabs>

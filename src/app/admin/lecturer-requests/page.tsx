@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Button } from "@/components/ui/button";
 import { Loader2, AlertCircle } from "lucide-react";
 import lecturerVerificationApi from "@/api/lecturerVerificationApi";
-import { AdminLecturerVerificationRequestListItem } from "@/types/lecturer-verification";
+import { AdminLecturerVerificationRequestListItem, LecturerVerificationStatus } from "@/types/lecturer-verification";
 import Link from "next/link";
 
 export default function AdminLecturerRequestsPage() {
@@ -22,9 +22,16 @@ export default function AdminLecturerRequestsPage() {
     setLoading(true);
     setError(null);
     try {
-      const res = await lecturerVerificationApi.adminList({ status: status === 'all' ? undefined : status, page: 1, size: 20 });
+      const paramStatus = status === 'Rejected' ? 'Declined' : (status === 'all' ? undefined : status);
+      const res = await lecturerVerificationApi.adminList({ status: paramStatus, page: 1, size: 20 });
       if (res.isSuccess) {
-        let data = res.data?.items || [];
+        const normalize = (s: string | null | undefined): LecturerVerificationStatus => {
+          const v = (s || '').toLowerCase();
+          if (v === 'approved') return 'Approved';
+          if (v === 'rejected' || v === 'declined') return 'Rejected';
+          return 'Pending';
+        };
+        let data = (res.data?.items || []).map(i => ({ ...i, status: normalize(i.status) }));
         if (search.trim()) {
           const q = search.toLowerCase();
           data = data.filter(d => (d.email ?? '').toLowerCase().includes(q) || d.userId.toLowerCase().includes(q));
@@ -68,7 +75,7 @@ export default function AdminLecturerRequestsPage() {
                   <SelectItem value="all">All</SelectItem>
                   <SelectItem value="Pending">Pending</SelectItem>
                   <SelectItem value="Approved">Approved</SelectItem>
-                  <SelectItem value="Declined">Declined</SelectItem>
+                  <SelectItem value="Rejected">Rejected</SelectItem>
                 </SelectContent>
               </Select>
               <Button variant="outline" onClick={fetchList} className="border-amber-700/50 text-amber-300">Refresh</Button>
@@ -93,7 +100,7 @@ export default function AdminLecturerRequestsPage() {
                       <p className="text-xs text-amber-700">User: {it.userId} • Staff ID: {it.staffId}</p>
                     </div>
                     <div className="flex items-center gap-3">
-                      <span className="text-xs text-amber-400">{it.status}</span>
+                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-widest ${it.status === 'Approved' ? 'text-emerald-300 bg-emerald-900/30 border border-emerald-800/40' : it.status === 'Rejected' ? 'text-rose-300 bg-rose-900/30 border border-rose-800/40' : 'text-amber-200 bg-amber-900/30 border border-amber-800/40'}`}>{it.status}</span>
                       <Button asChild size="sm" className="bg-amber-600 hover:bg-amber-700 text-black">
                         <Link href={`/admin/lecturer-requests/${it.id}`}>Open</Link>
                       </Button>
