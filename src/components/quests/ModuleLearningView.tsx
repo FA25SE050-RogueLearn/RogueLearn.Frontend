@@ -35,12 +35,18 @@ import { toast } from "sonner";
 // ========== SUB-COMPONENTS FOR ACTIVITIES ==========
 
 /**
- * ReadingActivityContent: Displays reading material with optional embedded iframe
- * Features: Article summary, open in new tab, embedded reading
+ * ReadingActivityContent: Displays reading material with session engagement
+ * Features: Article summary, start session, open in new tab (no iframe)
  */
-const ReadingActivityContent = ({ payload }: { payload: ReadingActivityPayload }) => {
-    const [showEmbedded, setShowEmbedded] = useState(false);
-
+const ReadingActivityContent = ({
+    payload,
+    sessionStarted,
+    onOpenMaterial
+}: {
+    payload: ReadingActivityPayload;
+    sessionStarted: boolean;
+    onOpenMaterial: () => void;
+}) => {
     return (
         <Card className="relative overflow-hidden bg-black/40 border-[#f5c16c]/20">
             <div
@@ -63,52 +69,25 @@ const ReadingActivityContent = ({ payload }: { payload: ReadingActivityPayload }
                 </p>
 
                 {payload.url ? (
-                    <>
-                        <div className="flex gap-2">
-                            <Button
-                                variant="outline"
-                                onClick={() => setShowEmbedded(!showEmbedded)}
-                                className="flex-1 border-[#f5c16c]/40 bg-[#f5c16c]/10 text-[#f5c16c] hover:bg-[#f5c16c]/20"
-                            >
-                                <BookOpen className="w-4 h-4 mr-2" />
-                                {showEmbedded ? 'Hide Article' : 'Read Here'}
-                            </Button>
-                            <Button
-                                asChild
-                                variant="outline"
-                                className="flex-1 border-[#f5c16c]/40 bg-[#f5c16c]/10 text-[#f5c16c] hover:bg-[#f5c16c]/20"
-                            >
-                                <a href={payload.url} target="_blank" rel="noopener noreferrer">
+                    <div className="flex flex-col gap-3">
+                        <div className="rounded-2xl border border-[#f5c16c]/20 bg-gradient-to-br from-[#2d1810] via-[#1a0a08] to-[#0a0506] p-4">
+                            <div className="flex items-center justify-between">
+                                <div className="text-xs uppercase tracking-[0.3em] text-white/60">Reading</div>
+                                {sessionStarted && (
+                                    <span className="text-xs font-semibold text-emerald-300">In Progress</span>
+                                )}
+                            </div>
+                            <div className="mt-3 flex gap-2">
+                                <Button
+                                    className="flex-1 bg-gradient-to-r from-[#f5c16c] to-[#d4a855] text-black font-semibold hover:from-[#d4a855] hover:to-[#f5c16c]"
+                                    onClick={onOpenMaterial}
+                                >
                                     <LinkIcon className="w-4 h-4 mr-2" />
                                     Open in New Tab
-                                </a>
-                            </Button>
-                        </div>
-
-                        {showEmbedded && (
-                            <div className="relative rounded-lg overflow-hidden border border-[#f5c16c]/30">
-                                <div className="bg-black/60 px-4 py-2 flex items-center justify-between">
-                                    <span className="text-xs text-white/60 truncate flex-1">
-                                        {payload.url}
-                                    </span>
-                                    <Button
-                                        size="sm"
-                                        variant="ghost"
-                                        onClick={() => setShowEmbedded(false)}
-                                        className="text-white/60 hover:text-white"
-                                    >
-                                        <XCircle className="w-4 h-4" />
-                                    </Button>
-                                </div>
-                                <iframe
-                                    src={payload.url}
-                                    className="w-full h-[600px] bg-white"
-                                    title={payload.articleTitle}
-                                    sandbox="allow-same-origin allow-scripts allow-popups allow-forms"
-                                />
+                                </Button>
                             </div>
-                        )}
-                    </>
+                        </div>
+                    </div>
                 ) : (
                     <div className="p-4 rounded-lg bg-amber-950/30 border border-amber-700/50">
                         <p className="text-sm text-amber-300">
@@ -130,13 +109,35 @@ const KnowledgeCheckActivityContent = ({ payload }: { payload: KnowledgeCheckAct
     const [selectedAnswers, setSelectedAnswers] = useState<Record<number, string>>({});
     const [submitted, setSubmitted] = useState(false);
 
-    const questions: KnowledgeCheckQuestion[] = payload.questions ||
+    const deriveDefault = (text: string) => {
+        const t = (text || '').toLowerCase();
+        if (t.startsWith('define')) {
+            return { options: ['Definition', 'Property', 'Example', 'Application'], correct: 'Definition' };
+        }
+        if (t.includes('property')) {
+            return { options: ['Definition', 'Property', 'Example', 'Application'], correct: 'Property' };
+        }
+        if (t.includes('example')) {
+            return { options: ['Definition', 'Property', 'Example', 'Application'], correct: 'Example' };
+        }
+        return { options: ['Option A', 'Option B', 'Option C', 'Option D'], correct: 'Option A' };
+    };
+
+    const baseQuestions: KnowledgeCheckQuestion[] = payload.questions ||
         (payload.question ? [{
             question: payload.question,
             options: payload.options || [],
             correctAnswer: payload.correctAnswer || '',
             explanation: payload.explanation || ''
         }] : []);
+
+    const questions: KnowledgeCheckQuestion[] = baseQuestions.map(q => {
+        const hasOptions = Array.isArray(q.options) && q.options.length > 0;
+        const d = deriveDefault(q.question);
+        const opts = hasOptions ? q.options : d.options;
+        const correct = q.correctAnswer && q.correctAnswer.length > 0 ? q.correctAnswer : d.correct;
+        return { ...q, options: opts, correctAnswer: correct, explanation: q.explanation || '' };
+    });
 
     const handleSelect = (qIndex: number, option: string) => {
         if (submitted) return;
@@ -476,10 +477,31 @@ export function ModuleLearningView({
      * ⭐ UPDATED: Quiz case now uses imported QuizActivityContentComponent
      * Passes callbacks for quiz pass/fail tracking
      */
+    const [readingSessionStarted, setReadingSessionStarted] = useState(false);
+
+    useEffect(() => {
+        setReadingSessionStarted(false);
+    }, [currentActivityIndex]);
+
     const renderActivityContent = (activity: Activity) => {
         switch (activity.type) {
             case 'Reading':
-                return <ReadingActivityContent payload={activity.payload as ReadingActivityPayload} />;
+                return (
+                    <ReadingActivityContent
+                        payload={activity.payload as ReadingActivityPayload}
+                        sessionStarted={readingSessionStarted}
+                        onOpenMaterial={async () => {
+                            try {
+                                await questApi.updateActivityProgress(questId, weeklyStep.id, activity.activityId, 'InProgress');
+                                setReadingSessionStarted(true);
+                            } catch { }
+                            const url = (activity.payload as ReadingActivityPayload).url;
+                            if (url) {
+                                window.open(url, '_blank', 'noopener,noreferrer');
+                            }
+                        }}
+                    />
+                );
             case 'KnowledgeCheck':
                 return <KnowledgeCheckActivityContent payload={activity.payload as KnowledgeCheckActivityPayload} />;
             case 'Quiz':

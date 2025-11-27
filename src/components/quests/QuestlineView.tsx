@@ -107,11 +107,24 @@ export default function QuestlineView({ learningPath }: QuestlineViewProps) {
     return () => ctx.revert();
   }, [learningPath.id]);
 
-  const handleQuestComplete = () => {
+  const waitForQuestSteps = async (questId: string) => {
+    for (let i = 0; i < 20; i++) {
+      const res = await questApi.getQuestDetails(questId);
+      if (res.isSuccess && res.data?.steps && res.data.steps.length > 0) return true;
+      await new Promise(r => setTimeout(r, 800));
+    }
+    return false;
+  };
+
+  const handleQuestComplete = async () => {
+    const questId = generatingQuestId;
     setShowGenerationModal(false);
     setGeneratingJobId(null);
     setGeneratingQuestTitle('');
     setGeneratingQuestId(null);
+    if (questId) {
+      await waitForQuestSteps(questId);
+    }
     navigateTo(targetQuestUrl);
   };
 
