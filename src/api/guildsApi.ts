@@ -3,6 +3,7 @@ import axiosClient from './axiosClient';
 import { ApiResponse } from '../types/base/Api';
 import {
   GuildDto,
+  GuildFullDto,
   GuildMemberDto,
   GuildInvitationDto,
   GuildDashboardDto,
@@ -19,12 +20,20 @@ import {
   TransferGuildLeadershipCommandRequest,
   InviteGuildMembersRequest,
   ListAllPublicGuildsQueryRequest,
+  GetAllGuildsFullQueryResponse,
 } from '@/types/guilds';
 
 const guildsApi = {
   /** GET /api/guilds */
   listAllPublic: (params: ListAllPublicGuildsQueryRequest): Promise<ApiResponse<GuildDto[]>> =>
     axiosClient.get<GuildDto[]>('/api/guilds', { params }).then(res => ({
+      isSuccess: true,
+      data: res.data,
+    })),
+
+  /** GET /api/guilds/full */
+  listAllFull: (): Promise<ApiResponse<GetAllGuildsFullQueryResponse>> =>
+    axiosClient.get<GuildFullDto[]>('/api/guilds/full').then(res => ({
       isSuccess: true,
       data: res.data,
     })),
@@ -124,13 +133,13 @@ const guildsApi = {
   declineJoinRequest: (guildId: string, requestId: string): Promise<void> =>
     axiosClient.post<void>(`/api/guilds/${guildId}/join-requests/${requestId}/decline`).then(() => {}),
 
-  /** POST /api/guilds/{guildId}/roles/assign */
-  assignRole: (guildId: string, payload: Omit<AssignGuildRoleCommandRequest, 'guildId'>): Promise<void> =>
-    axiosClient.post<void>(`/api/guilds/${guildId}/roles/assign`, payload).then(() => {}),
+  /** POST /api/guilds/{guildId}/members/{memberAuthUserId}/roles/assign */
+  assignRole: (guildId: string, memberAuthUserId: string, role: GuildRole): Promise<void> =>
+    axiosClient.post<void>(`/api/guilds/${guildId}/members/${memberAuthUserId}/roles/assign`, { role }).then(() => {}),
 
-  /** POST /api/guilds/{guildId}/roles/revoke */
-  revokeRole: (guildId: string, payload: Omit<RevokeGuildRoleCommandRequest, 'guildId'>): Promise<void> =>
-    axiosClient.post<void>(`/api/guilds/${guildId}/roles/revoke`, payload).then(() => {}),
+  /** POST /api/guilds/{guildId}/members/{memberAuthUserId}/roles/revoke */
+  revokeRole: (guildId: string, memberAuthUserId: string, role: GuildRole): Promise<void> =>
+    axiosClient.post<void>(`/api/guilds/${guildId}/members/${memberAuthUserId}/roles/revoke`, { role }).then(() => {}),
 
   /** POST /api/guilds/{guildId}/members/{memberId}/remove */
   removeMember: (guildId: string, memberId: string, payload: { reason?: string | null }): Promise<void> =>

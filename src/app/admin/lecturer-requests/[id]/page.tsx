@@ -63,12 +63,12 @@ export default function AdminLecturerRequestDetailPage() {
     setActing(true);
     try {
       await lecturerVerificationApi.adminDecline(requestId, { reason: declineReason.trim() });
-      toast.success('Request declined');
+      toast.success('Request rejected');
       setDeclineOpen(false);
       setDeclineReason("");
       await fetchDetail();
     } catch (e: any) {
-      toast.error(e?.normalized?.message || 'Decline failed');
+      toast.error(e?.normalized?.message || 'Reject failed');
     } finally {
       setActing(false);
     }
@@ -106,9 +106,9 @@ export default function AdminLecturerRequestDetailPage() {
                   <div>
                     <p className="text-sm font-semibold text-amber-100">{detail.email}</p>
                     <p className="text-xs text-amber-700">Staff ID: {detail.staffId}</p>
-                    <p className="text-xs text-amber-700">User: {detail.userId}</p>
+                    <p className="text-xs text-amber-700">User: {detail.authUserId}</p>
                   </div>
-                  <span className="text-xs text-amber-400">{detail.status}</span>
+                  <span className="text-xs text-amber-400">{/^declined$/i.test(detail.status || '') ? 'Rejected' : (detail.status || '')}</span>
                 </div>
                 {detail.screenshotUrl && (
                   <div className="rounded-lg border border-amber-900/30 bg-amber-950/20 p-4">
@@ -118,12 +118,20 @@ export default function AdminLecturerRequestDetailPage() {
                 )}
                 <div className="space-y-2">
                   <label className="text-sm text-amber-300" htmlFor="note">Note (optional)</label>
-                  <Textarea id="note" value={note} onChange={(e) => setNote(e.target.value)} className="bg-black/30 border-amber-900/40 text-amber-200" />
+                  <Textarea
+                    id="note"
+                    value={note}
+                    onChange={(e) => setNote(e.target.value)}
+                    disabled={/^(approved|declined|rejected)$/i.test(detail.status || '')}
+                    className="bg-black/30 border-amber-900/40 text-amber-200 disabled:opacity-60 disabled:cursor-not-allowed"
+                  />
                 </div>
-                <div className="flex items-center gap-3">
-                  <Button disabled={acting} onClick={approve} className="bg-emerald-600 hover:bg-emerald-700 text-white">Approve</Button>
-                  <Button disabled={acting} variant="outline" onClick={() => setDeclineOpen(true)} className="border-rose-500/30 text-rose-400 hover:bg-rose-500/10">Decline</Button>
-                </div>
+                {/^(approved|declined|rejected)$/i.test(detail.status || '') ? null : (
+                  <div className="flex items-center gap-3">
+                    <Button disabled={acting} onClick={approve} className="bg-emerald-600 hover:bg-emerald-700 text-white">Approve</Button>
+                    <Button disabled={acting} variant="outline" onClick={() => setDeclineOpen(true)} className="border-rose-500/30 text-rose-400 hover:bg-rose-500/10">Reject</Button>
+                  </div>
+                )}
               </div>
             )}
           </CardContent>
@@ -132,7 +140,7 @@ export default function AdminLecturerRequestDetailPage() {
         <Dialog open={declineOpen} onOpenChange={setDeclineOpen}>
           <DialogContent className="bg-[#1a1410] border-amber-900/30 text-amber-100 max-w-md">
             <DialogHeader>
-              <DialogTitle>Decline Request</DialogTitle>
+              <DialogTitle>Reject Request</DialogTitle>
             </DialogHeader>
             <div className="space-y-2">
               <label htmlFor="declineReason" className="text-sm text-amber-300">Reason</label>
@@ -140,7 +148,7 @@ export default function AdminLecturerRequestDetailPage() {
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setDeclineOpen(false)} className="border-amber-700/50 text-amber-300">Cancel</Button>
-              <Button onClick={decline} disabled={acting} className="bg-rose-600 hover:bg-rose-700 text-white">Decline</Button>
+              <Button onClick={decline} disabled={acting} className="bg-rose-600 hover:bg-rose-700 text-white">Reject</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>

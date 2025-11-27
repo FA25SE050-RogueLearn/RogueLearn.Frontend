@@ -9,11 +9,13 @@ import profileApi from "@/api/profileApi";
 import { updateMyProfile } from "@/api/usersApi";
 import type { UserProfileDto } from "@/types/user-profile";
 import Image from "next/image";
+import guildsApi from "@/api/guildsApi";
+import type { GuildJoinRequestDto } from "@/types/guilds";
 
 interface UserProfileModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  defaultTab?: "profile" | "settings" | "verification" | "notifications";
+  defaultTab?: "profile" | "settings" | "verification" | "notifications" | "guildRequests";
 }
 
 export default function UserProfileModal({ open, onOpenChange, defaultTab = "profile" }: UserProfileModalProps) {
@@ -25,6 +27,9 @@ export default function UserProfileModal({ open, onOpenChange, defaultTab = "pro
   const [saving, setSaving] = useState(false);
   const [profileImageFile, setProfileImageFile] = useState<File | null>(null);
   const [dragActive, setDragActive] = useState(false);
+  const [joinRequests, setJoinRequests] = useState<GuildJoinRequestDto[]>([]);
+  const [loadingJoinRequests, setLoadingJoinRequests] = useState(false);
+  const [joinRequestsError, setJoinRequestsError] = useState<string | null>(null);
 
   useEffect(() => {
     let mounted = true;
@@ -42,6 +47,26 @@ export default function UserProfileModal({ open, onOpenChange, defaultTab = "pro
     return () => { mounted = false; };
   }, [open]);
 
+  useEffect(() => {
+    let mounted = true;
+    const fetchJoinRequests = async () => {
+      setLoadingJoinRequests(true);
+      setJoinRequestsError(null);
+      try {
+        const res = await guildsApi.getMyJoinRequests(true);
+        if (mounted && res.isSuccess) {
+          setJoinRequests(res.data || []);
+        }
+      } catch (err: any) {
+        if (mounted) setJoinRequestsError(err?.normalized?.message || "Failed to load join requests");
+      } finally {
+        if (mounted) setLoadingJoinRequests(false);
+      }
+    };
+    if (open && activeTab === "guildRequests") fetchJoinRequests();
+    return () => { mounted = false; };
+  }, [open, activeTab]);
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="w-[95vw] max-w-[1500px] max-h-[92vh] border-[#d4a353]/20 bg-[#13111C] p-0 overflow-hidden">
@@ -54,6 +79,7 @@ export default function UserProfileModal({ open, onOpenChange, defaultTab = "pro
               <NavButton label="Notifications" active={activeTab === "notifications"} onClick={() => setActiveTab("notifications")} />
               <div className="h-px bg-[#2D2842] my-4" />
               <NavButton label="Lecturer Verification" active={activeTab === "verification"} isSpecial onClick={() => setActiveTab("verification")} />
+              <NavButton label="Guild Join Requests" active={activeTab === "guildRequests"} onClick={() => setActiveTab("guildRequests")} />
             </div>
             <Button variant="ghost" onClick={() => onOpenChange(false)} className="text-gray-500 hover:text-white text-sm flex items-center gap-2 px-0">
               <LogOut className="size-4" /> Close
@@ -65,43 +91,31 @@ export default function UserProfileModal({ open, onOpenChange, defaultTab = "pro
             {activeTab === "profile" && (
               <div className="space-y-8">
                 <div className="text-2xl font-bold text-white">Profile</div>
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                  <div className="lg:col-span-1">
-                    <div className="rounded-xl border border-[#2D2842] bg-[#1E1B2E] p-6">
-                      <div className="flex items-center gap-4 mb-4">
-                        <div className="relative w-20 h-20 rounded-full overflow-hidden border border-[#2D2842]">
-                          {profile?.profileImageUrl ? (
-                            <Image src={profile.profileImageUrl} alt="Profile Image" fill className="object-cover" />
-                          ) : (
-                            <div className="w-full h-full flex items-center justify-center bg-[#13111C] text-white/70 text-xl font-bold">
-                              {(profile?.firstName?.[0] || profile?.username?.[0] || "").toUpperCase()}
-                            </div>
-                          )}
-                        </div>
-                        <div>
-                          <div className="text-sm font-semibold text-white/70">Name</div>
-                          <div className="text-lg font-bold text-white mt-1">{(profile?.firstName || "") + (profile?.lastName ? ` ${profile?.lastName}` : "") || profile?.username || ""}</div>
-                          <div className="mt-1 text-xs text-white/60">{profile?.email}</div>
-                        </div>
+                <div className="grid grid-cols-1 gap-6">
+                  <div className="rounded-xl border border-[#2D2842] bg-[#1E1B2E] p-6">
+                    <div className="flex items-center gap-4 mb-4">
+                      <div className="relative w-20 h-20 rounded-full overflow-hidden border border-[#2D2842]">
+                        {profile?.profileImageUrl ? (
+                          <Image src={profile.profileImageUrl} alt="Profile Image" fill className="object-cover" />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center bg-[#13111C] text-white/70 text-xl font-bold">
+                            {(profile?.firstName?.[0] || profile?.username?.[0] || "").toUpperCase()}
+                          </div>
+                        )}
                       </div>
-                      <div className="mt-2 text-xs text-white/60">Member since {profile?.createdAt ? new Date(profile.createdAt).toLocaleDateString() : ""}</div>
-                      <div className="mt-4 flex flex-wrap gap-2">
-                        {(profile?.roles || []).map(r => (
-                          <span key={r} className="px-2 py-1 text-[10px] rounded-full border border-[#2D2842] text-white/80">{r}</span>
-                        ))}
+                      <div>
+                        <div className="text-sm font-semibold text-white/70">Name</div>
+                        <div className="text-lg font-bold text-white mt-1">{(profile?.firstName || "") + (profile?.lastName ? ` ${profile?.lastName}` : "") || profile?.username || ""}</div>
+                        <div className="mt-1 text-xs text-white/60">{profile?.email}</div>
                       </div>
                     </div>
-                  </div>
-                  <div className="lg:col-span-2 grid grid-cols-2 gap-4">
-                    <div className="rounded-lg border border-[#2D2842] bg-[#1E1B2E] p-4 text-center">
-                      <div className="text-xl font-bold text-[#d4a353]">{profile?.level ?? 0}</div>
-                      <div className="text-xs text-white/60">Level</div>
+                    <div className="mt-2 text-xs text-white/60">Member since {profile?.createdAt ? new Date(profile.createdAt).toLocaleDateString() : ""}</div>
+                    <div className="mt-4 flex flex-wrap gap-2">
+                      {(profile?.roles || []).map(r => (
+                        <span key={r} className="px-2 py-1 text-[10px] rounded-full border border-[#2D2842] text-white/80">{r}</span>
+                      ))}
                     </div>
-                    <div className="rounded-lg border border-[#2D2842] bg-[#1E1B2E] p-4 text-center">
-                      <div className="text-xl font-bold text-[#d4a353]">{(profile?.experiencePoints ?? 0).toLocaleString()}</div>
-                      <div className="text-xs text-white/60">XP</div>
-                    </div>
-                    <div className="col-span-2 rounded-lg border border-[#2D2842] bg-[#1E1B2E] p-4">
+                    <div className="mt-6 rounded-lg border border-[#2D2842] bg-[#13111C] p-4">
                       <div className="text-sm font-semibold text-white/80">Bio</div>
                       <div className="text-sm text-white/70 mt-1">{bio || profile?.bio || ""}</div>
                     </div>
@@ -159,6 +173,38 @@ export default function UserProfileModal({ open, onOpenChange, defaultTab = "pro
             )}
 
             {activeTab === "verification" && <LecturerVerificationPanel />}
+
+            {activeTab === "guildRequests" && (
+              <div className="space-y-6">
+                <div className="text-2xl font-bold text-white">Guild Join Requests</div>
+                <div className="rounded-xl border border-[#2D2842] bg-[#1E1B2E] p-6">
+                  {loadingJoinRequests && (
+                    <div className="text-sm text-white/70">Loading...</div>
+                  )}
+                  {joinRequestsError && (
+                    <div className="text-sm text-rose-400">{joinRequestsError}</div>
+                  )}
+                  {!loadingJoinRequests && !joinRequestsError && joinRequests.length === 0 && (
+                    <div className="text-sm text-white/60">No join requests.</div>
+                  )}
+                  {!loadingJoinRequests && !joinRequestsError && joinRequests.length > 0 && (
+                    <div className="space-y-3">
+                      {joinRequests.map((r) => (
+                        <div key={r.id} className="flex items-center justify-between rounded-lg border border-[#2D2842] bg-[#13111C] p-4">
+                          <div>
+                            <div className="text-white font-semibold text-sm">Guild: {r.guildId}</div>
+                            <div className="text-xs text-white/60">Requested: {new Date(r.createdAt).toLocaleString()}</div>
+                          </div>
+                          <div className="text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded border">
+                            {r.status}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </DialogContent>

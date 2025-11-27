@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { Loader2, AlertCircle, UploadCloud, FileText, CheckCircle, Clock, RefreshCw } from "lucide-react";
 import { createClient } from "@/utils/supabase/client";
 import lecturerVerificationApi from "@/api/lecturerVerificationApi";
-import { MyLecturerVerificationRequestDto } from "@/types/lecturer-verification";
+import { MyLecturerVerificationRequestDto, LecturerVerificationStatus } from "@/types/lecturer-verification";
 import { toast } from "sonner";
 import { getMyContext } from "@/api/usersApi";
 
@@ -35,10 +35,15 @@ export function LecturerVerificationPanel() {
     try {
       const res = await lecturerVerificationApi.getMyRequests();
       if (res.isSuccess) {
-        console.log(res.data);
-        
-        setItems(res.data || []);
-        const hasApproved = (res.data || []).some(i => (i.status || '').toLowerCase() === 'approved');
+        const normalize = (s: string | null | undefined): LecturerVerificationStatus => {
+          const v = (s || '').toLowerCase();
+          if (v === 'approved') return 'Approved';
+          if (v === 'rejected' || v === 'declined') return 'Rejected';
+          return 'Pending';
+        };
+        const normalized = (res.data || []).map(r => ({ ...r, status: normalize(r.status) }));
+        setItems(normalized);
+        const hasApproved = normalized.some(i => i.status === 'Approved');
         if (hasApproved) {
           try { await getMyContext(); } catch {}
         }
@@ -86,9 +91,9 @@ export function LecturerVerificationPanel() {
     }
   };
 
-  const hasApproved = items.some(i => (i.status || '').toLowerCase() === 'approved');
-  const hasPending = items.some(i => (i.status || '').toLowerCase() === 'pending');
-  const hasAnySubmission = items.length > 0;
+  const hasApproved = items.some(i => i.status === 'Approved');
+  const hasPending = items.some(i => i.status === 'Pending');
+  const hasAnySubmission = items.some(i => i.status !== 'Rejected');
 
   const onDragOver = (e: React.DragEvent) => { e.preventDefault(); setDragActive(true); };
   const onDragLeave = () => setDragActive(false);
@@ -107,11 +112,11 @@ export function LecturerVerificationPanel() {
       </div>
 
       <div className="flex items-center justify-between px-8 py-4 bg-[#1E1B2E] rounded-xl border border-[#2D2842]">
-        <Step status="completed" label="Novice" />
+        <Step status="completed" label="Player" />
         <div className="h-0.5 w-16 bg-[#d4a353]" />
         <Step status={hasAnySubmission ? 'completed' : 'active'} label="Submission" />
         <div className="h-0.5 w-16 bg-[#2D2842]" />
-        <Step status={hasPending ? 'active' : (hasApproved ? 'completed' : 'pending')} label="Council Review" />
+        <Step status={hasPending ? 'active' : (hasApproved ? 'completed' : 'pending')} label="Game Master Review" />
         <div className="h-0.5 w-16 bg-[#2D2842]" />
         <Step status={hasApproved ? 'completed' : 'pending'} label="Lecturer" />
       </div>
@@ -173,13 +178,17 @@ export function LecturerVerificationPanel() {
                 const shot = r.screenshotUrl || ((docs as any)?.screenshotUrl as string | undefined);
                 const submitted = r.submittedAt ? new Date(r.submittedAt).toLocaleString() : null;
                 const isApproved = r.status === 'Approved';
-                const isDeclined = r.status === 'Declined';
-                const borderLeft = isApproved ? 'border-l-emerald-500' : isDeclined ? 'border-l-red-500' : 'border-l-[#d4a353]';
-                const stampColor = isApproved ? 'text-emerald-400 border-emerald-400/30 bg-emerald-400/5' : isDeclined ? 'text-rose-400 border-rose-400/30 bg-rose-400/5' : 'text-yellow-500 border-yellow-500/30 bg-yellow-500/5';
-                const stampText = isApproved ? 'Approved' : isDeclined ? 'Rejected' : 'Pending Review';
+                const isRejected = r.status === 'Rejected';
+                const borderLeft = isApproved ? 'border-l-emerald-500' : isRejected ? 'border-l-red-500' : 'border-l-[#d4a353]';
+                const badgeClass = isApproved
+                  ? 'text-emerald-300 bg-emerald-900/30 border border-emerald-800/40'
+                  : isRejected
+                    ? 'text-rose-300 bg-rose-900/30 border border-rose-800/40'
+                    : 'text-amber-200 bg-amber-900/30 border border-amber-800/40';
+                const badgeText: LecturerVerificationStatus = isApproved ? 'Approved' : isRejected ? 'Rejected' : 'Pending';
                 return (
                   <div key={r.id} className={`relative overflow-hidden bg-[#1E1B2E] rounded-xl border border-[#2D2842] p-4 ${borderLeft} border-l-4`}>
-                    <div className={`absolute top-2 right-2 ${stampColor} text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-widest`}>{stampText}</div>
+                    <div className={`absolute top-2 right-2 ${badgeClass} text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-widest`}>{badgeText}</div>
                     <div className="flex items-start gap-3 mb-3">
                       <div className="w-10 h-10 rounded bg-[#13111C]" />
                       <div>

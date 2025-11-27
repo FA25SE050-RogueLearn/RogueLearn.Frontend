@@ -8,10 +8,12 @@
 import axiosClient from './axiosClient';
 import type { ApiResponse } from '../types/base/Api';
 import type { UserContextDto } from '@/types/user-context';
+import { invalidateMyProfileCache } from './profileApi';
 import type {
   UpdateMyProfileCommand,
   GetAllUserProfilesResponse,
   GetUserProfileByAuthIdResponse,
+  FullUserInfoResponse,
 } from '@/types/user-profile';
 import type {
   ProcessAcademicRecordResponse,
@@ -57,8 +59,63 @@ export const getAcademicStatus = async (): Promise<ApiResponse<GetAcademicStatus
  * Get current user's context (profile, roles, class, enrollment, skills)
  * Corresponds to GET /api/users/me
  */
-export const getMyContext = async (): Promise<ApiResponse<UserContextDto>> =>
-  axiosClient.get<UserContextDto>('/api/users/me').then(res => ({ isSuccess: true, data: res.data }));
+let __myContextCache: { value: UserContextDto; ts: number } | null = null;
+let __myContextPending: Promise<ApiResponse<UserContextDto>> | null = null;
+const __CONTEXT_TTL_MS = 120000;
+
+export const invalidateMyContextCache = (): void => {
+  __myContextCache = null;
+  __myContextPending = null;
+  if (typeof window !== 'undefined') {
+    try { sessionStorage.removeItem('cache:users:me'); } catch {}
+  }
+};
+
+export const getMyContext = async (options?: { forceRefresh?: boolean }): Promise<ApiResponse<UserContextDto>> => {
+  const now = Date.now();
+  const force = !!options?.forceRefresh;
+  if (!force && __myContextCache && now - __myContextCache.ts < __CONTEXT_TTL_MS) {
+    return { isSuccess: true, data: __myContextCache.value };
+  }
+  if (!force && typeof window !== 'undefined') {
+    try {
+      const raw = sessionStorage.getItem('cache:users:me');
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed && parsed.ts && now - parsed.ts < __CONTEXT_TTL_MS) {
+          __myContextCache = { value: parsed.value, ts: parsed.ts };
+          return { isSuccess: true, data: __myContextCache.value };
+        }
+      }
+    } catch {}
+  }
+  if (!force && __myContextPending) return __myContextPending!;
+  const pending: Promise<ApiResponse<UserContextDto>> = axiosClient
+    .get<UserContextDto>('/api/users/me')
+    .then(res => {
+      __myContextCache = { value: res.data, ts: now };
+      if (typeof window !== 'undefined') {
+        try { sessionStorage.setItem('cache:users:me', JSON.stringify(__myContextCache)); } catch {}
+      }
+      return { isSuccess: true as const, data: res.data };
+    })
+    .finally(() => { __myContextPending = null; });
+  __myContextPending = pending;
+  return pending;
+};
+
+export const getMyFullInfo = async (
+  pageSize: number = 20,
+  pageNumber: number = 1
+): Promise<ApiResponse<FullUserInfoResponse>> =>
+  axiosClient
+    .get<FullUserInfoResponse>('/api/users/me/full', {
+      params: {
+        'page[size]': pageSize,
+        'page[number]': pageNumber,
+      },
+    })
+    .then(res => ({ isSuccess: true, data: res.data }));
 
 /**
  * Update current user's profile
@@ -94,7 +151,7 @@ export const updateMyProfile = async (
     headers: {
       'Content-Type': 'multipart/form-data',
     },
-  }).then(() => {});
+  }).then(() => { invalidateMyProfileCache(); invalidateMyContextCache(); });
 };
 
 // ===== Admin Endpoints =====

@@ -1,55 +1,21 @@
 // roguelearn-web/src/app/dashboard/page.tsx
 import ProfileModalLauncher from "@/components/dashboard/ProfileModalLauncher";
-import { ActiveQuest } from "@/components/dashboard/ActiveQuest";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { createClient } from "@/utils/supabase/server";
 import { redirect } from "next/navigation";
 import { createServerApiClients, checkApiHealth } from "@/lib/api-server";
-import { mockQuests } from "@/lib/mockData";
+import type { FullUserInfoResponse, QuestAttemptItem } from "@/types/user-profile";
+import Link from "next/link";
+import { BookOpen, Trophy, Sword, Calendar, Users, Shield, AlertCircle, Cpu, Braces, Atom, Cog, GraduationCap, ScrollText, Lightbulb } from "lucide-react";
+import { TooltipProvider, Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
+import QuestProgressClient from "@/components/dashboard/QuestProgressClient";
 
 // Define interfaces for the data we expect from our backend APIs.
 // This provides type safety and clarity for our frontend code.
-interface UserProfile {
-  username: string;
-  level: number;
-  title: string;
-  experience_points: number;
-  // This is an assumption based on mock data; the backend may need to provide this.
-  xpMax?: number;
-  stats?: {
-    class?: string;
-    curriculum?: string;
-    intellect?: number;
-    wisdom?: number;
-  }
-}
-
-interface QuestSummary {
-  id: string;
-  title: string;
-  status: string;
-  sequenceOrder: number;
-}
-
-interface LearningPath {
-  id: string;
-  name: string;
-  description: string;
-  quests: QuestSummary[];
-  completionPercentage: number;
-}
-
-interface QuestDetails {
-  id: string;
-  title: string;
-  description: string;
-  status: string;
-  experiencePointsReward: number;
-  objectives: unknown[]; // Objectives structure not needed for this component yet
-}
+// Refactored to use only FullUserInfoResponse data
 
 // The homepage is the main dashboard, now fetching all data from the backend.
-export default async function DashboardPage() {
+export default async function DashboardPage({ searchParams }: { searchParams?: { [key: string]: string | string[] | undefined } }) {
   const supabase = await createClient();
 
   const { data: { user } } = await supabase.auth.getUser();
@@ -65,20 +31,19 @@ export default async function DashboardPage() {
 
   // RE-ADDED: JWT token logging for debugging as requested.
   if (session?.access_token) {
-    console.log('🔐 JWT Token (Dashboard Access):', session.access_token);
-    console.log('🔐 Token Type:', session.token_type);
-    console.log('🔐 Expires At:', session.expires_at);
-    console.log('🔐 User ID:', user.id);
+    console.log('JWT Token (Dashboard Access):', session.access_token);
+    console.log('Token Type:', session.token_type);
+    console.log('Expires At:', session.expires_at);
+    console.log('User ID:', user.id);
   } else {
-    console.log('❌ No JWT token found in session');
+    console.log('No JWT token found in session');
   }
 
   // Create authenticated API clients for server-side requests.
   // We now use a single `coreApiClient` for both user and quest data.
   const { coreApiClient } = await createServerApiClients();
 
-  let userProfile: UserProfile | null = null;
-  let activeQuest: QuestDetails | null = null;
+  let fullInfo: FullUserInfoResponse | null = null;
 
   // Quick health check before making API calls
   const apiHealthy = await checkApiHealth(process.env['NEXT_PUBLIC_API_URL']);
@@ -87,134 +52,103 @@ export default async function DashboardPage() {
     console.warn('API health check failed - skipping data fetching');
   } else {
     try {
-      // 1. Fetch user profile from the consolidated core service API.
-      console.log(`Fetching profile for user: ${user.id}`);
-      const profileResponse = await coreApiClient.get(`/api/profiles/${user.id}`);
-      userProfile = profileResponse.data;
+      const res = await coreApiClient.get<FullUserInfoResponse>(`/api/users/me/full`, {
+        params: { 'page[size]': 20, 'page[number]': 1 }
+      });
+      fullInfo = res.data;
     } catch (error) {
-      console.error("Failed to fetch user profile:", error);
-      // If this fails, userProfile will remain null and components will show a loading/error state.
+      console.error("Failed to fetch full user info:", error);
     }
   }
 
-  if (apiHealthy) {
-    try {
-      // 2. Fetch the user's active learning path from the consolidated core service API.
-      console.log(`Fetching learning path for user: ${user.id}`);
-      const learningPathResponse = await coreApiClient.get<LearningPath>('/api/learning-paths/me');
-      const learningPath = learningPathResponse.data;
+  // Determine active quest purely from quest attempts
+  const activeAttempt: QuestAttemptItem | undefined = fullInfo?.relations.questAttempts.find(a => {
+    const s = a.status.toLowerCase();
+    return s === 'in_progress' || s === 'inprogress';
+  }) || fullInfo?.relations.questAttempts.find(a => {
+    const s = a.status.toLowerCase();
+    return s === 'not_started' || s === 'notstarted';
+  });
 
-      // 3. From the learning path, find the user's current quest.
-      // MODIFICATION START: Added a null check to prevent crashing when a new user
-      // with no learning path visits the dashboard. If learningPath or its quests
-      // array is null/undefined, currentQuestSummary will safely be null.
-      const currentQuestSummary =
-        (learningPath && learningPath.quests)
-          ? learningPath.quests.find(q => q.status === 'InProgress') ||
-            learningPath.quests.find(q => q.status === 'NotStarted')
-          : null;
-      // MODIFICATION END
+  const xpChunk = fullInfo ? ((fullInfo.profile.experiencePoints ?? 0) % 1000) : 0;
+  const xpPercentage = fullInfo ? (xpChunk / 1000) * 100 : 0;
 
-      if (currentQuestSummary) {
-        // 4. If a current quest is identified, fetch its full details from the consolidated core service API.
-        console.log(`Fetching details for quest: ${currentQuestSummary.id}`);
-        const questDetailsResponse = await coreApiClient.get<QuestDetails>(`/api/quests/${currentQuestSummary.id}`);
-        activeQuest = questDetailsResponse.data;
-      }
-    } catch (error) {
-      console.error("Failed to fetch quest data:", error);
-      // It's acceptable for this to fail if the user has no active quests.
-      // The ActiveQuest component is designed to handle a null value.
-    }
-  }
+  const subjects = fullInfo?.relations.studentTermSubjects ?? [];
+  const pendingSubject = subjects.find(ss => {
+    const st = (ss.status || '').toLowerCase();
+    return st.includes('studying') || st.includes('not');
+  });
+  const noQuestTip = pendingSubject
+    ? `Tip: Your '${pendingSubject.subjectName}' is ${((pendingSubject.status||'').toLowerCase().includes('studying')) ? 'in progress' : 'not started'}. Check the guild hall for updates.`
+    : 'Tip: Start a new quest to gain XP today.';
 
-  // NOTE ON DATA ADAPTATION:
-  // The <ActiveQuest /> component was originally designed for mock data that had a nested `progress` object.
-  // The actual QuestDto from your backend API does not have this nested structure.
-  // To make the integration work without immediately refactoring the UI component, this `adaptedQuestForComponent`
-  // variable is created. It maps the live data from the `activeQuest` object into the structure
-  // that the component expects, using placeholder values for the progress details.
-  // LONG-TERM FIX: Align the backend DTO and the frontend component props.
-  const adaptedQuestForComponent = activeQuest ? {
-    id: activeQuest.id,
-    title: activeQuest.title,
-    description: activeQuest.description,
-    status: activeQuest.status,
-    progress: { // Placeholder progress data to satisfy the component's props
-      chaptersRead: 3,
-      chaptersTotal: 5,
-      timeSpentHours: 2.5,
-      masteryPercent: 50
-    },
-  } : null;
-
-  const reliquary = [
-    {
-      label: "Soul Shards",
-      value: "1,240",
-      detail: "+12% this week",
-      gradient: "from-[#d23187]/70 via-[#f061a6]/65 to-[#f5c16c]/60",
-    },
-    {
-      label: "Dungeon Clears",
-      value: "27",
-      detail: "Streak: 6",
-      gradient: "from-[#f5c16c]/60 via-[#d87553]/60 to-[#a84446]/55",
-    },
-    {
-      label: "Guild Favor",
-      value: "Legend",
-      detail: "Rank 3/7",
-      gradient: "from-[#f5c16c]/65 via-[#f2a163]/60 to-[#d67b54]/55",
-    },
-  ];
-
-  const xpPercentage = userProfile ? (userProfile.experience_points / (userProfile.xpMax || 1000)) * 100 : 0;
+  const achievementGroups = (() => {
+    const list = (fullInfo?.relations.userAchievements ?? []).slice();
+    const map: Record<string, { id?: string; name?: string | null; icon?: string | null; count: number; lastEarnedAt?: string }> = {};
+    list.forEach((a) => {
+      const key = (a.achievementId || a.achievementName || `${a.earnedAt}`);
+      const prev = map[key] || { id: a.achievementId, name: a.achievementName, icon: a.achievementIconUrl, count: 0, lastEarnedAt: a.earnedAt };
+      const newer = (!prev.lastEarnedAt || new Date(a.earnedAt).getTime() > new Date(prev.lastEarnedAt).getTime()) ? a.earnedAt : prev.lastEarnedAt;
+      map[key] = { id: a.achievementId, name: a.achievementName, icon: a.achievementIconUrl, count: prev.count + 1, lastEarnedAt: newer };
+    });
+    return Object.values(map).sort((x,y) => new Date(y.lastEarnedAt || 0).getTime() - new Date(x.lastEarnedAt || 0).getTime());
+  })();
 
   return (
     <DashboardLayout>
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,3fr)_minmax(0,6fr)_minmax(0,3fr)]">
+      <div className="grid gap-6 grid-cols-[27%_48%_25%] min-h-screen">
         <div className="relative overflow-hidden rounded-[30px] border border-[#f5c16c]/20 bg-linear-to-br from-[#2a140f]/92 via-[#160b08]/94 to-[#0a0503]/96 p-6 shadow-[0_22px_70px_rgba(38,12,6,0.55)]">
           <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(210,49,135,0.25),transparent_70%)]" />
           <div className="relative z-10 flex h-full flex-col gap-6">
-            <div className="flex items-center gap-4">
-              <div className="h-20 w-20 rounded-full border border-[#f5c16c]/50 bg-[url('https://images.unsplash.com/photo-1582719471209-8a1c875b9fff?auto=format&fit=crop&w=400&q=80')] bg-cover bg-center shadow-[0_10px_30px_rgba(210,49,135,0.35)]" />
-              <div className="flex-1">
-                <div className="flex items-center gap-3">
-                  <p className="text-xl font-semibold text-white">{userProfile?.username || "Scholar"}</p>
-                  <span className="rounded-full border border-[#f5c16c]/40 bg-[#f5c16c]/15 px-3 py-1 text-[11px] uppercase tracking-[0.45em] text-[#2b130f]">Lv.{userProfile?.level || 1}</span>
-                </div>
-                <div className="mt-3 w-full max-w-[380px]">
-                  <div className="flex items-center justify-between text-xs uppercase tracking-[0.35em] text-[#f5c16c]/70">
-                    <span className="text-white/70">Experience</span>
-                    <span className="text-[#f5c16c]">{userProfile?.experience_points || 0} / {userProfile?.xpMax || 1000} XP</span>
+              <div className="flex items-center gap-4">
+                <div className="h-20 w-20 rounded-full border border-[#f5c16c]/50 bg-cover bg-center shadow-[0_10px_30px_rgba(210,49,135,0.35)]" style={{ backgroundImage: `url('${fullInfo?.profile.profileImageUrl || 'https://images.unsplash.com/photo-1582719471209-8a1c875b9fff?auto=format&fit=crop&w=400&q=80'}')` }} />
+                <div className="flex-1">
+                  <div className="flex items-center gap-3">
+                  <p className="text-xl font-semibold text-white">{fullInfo?.profile.firstName && fullInfo?.profile.lastName ? `${fullInfo.profile.firstName} ${fullInfo.profile.lastName}` : (fullInfo?.profile.username || "Scholar")}</p>
                   </div>
-                  <div className="mt-2 h-3 rounded-full bg-[#2d140f]/70">
-                    <div className="h-full rounded-full bg-linear-to-r from-[#d23187] via-[#f061a6] to-[#f5c16c] shadow-[0_0_16px_rgba(245,193,108,0.55)]" style={{ width: `${Math.min(100, xpPercentage)}%` }} />
-                  </div>
-                </div>
-              </div>
+            </div>
             </div>
 
             <div className="grid gap-5 text-sm uppercase tracking-[0.3em] text-[#f5c16c]/60">
               <div className="flex items-center justify-between">
                 <span>Class</span>
-                <span className="text-white">{userProfile?.stats?.class || "Novice Delver"}</span>
+                <span className="inline-flex items-center gap-2 rounded-full border border-[#f5c16c]/30 bg-[#f5c16c]/10 px-3 py-1 text-white">
+                  <GraduationCap className="h-4 w-4 text-[#f5c16c]" />
+                  <span className="normal-case tracking-normal text-sm">{fullInfo?.profile.className || 'Unassigned'}</span>
+                </span>
               </div>
               <div className="flex items-center justify-between">
                 <span>Curriculum</span>
-                <span className="text-white">{userProfile?.stats?.curriculum || "Uncharted Path"}</span>
+                <span className="inline-flex items-center gap-2 rounded-full border border-[#f5c16c]/30 bg-[#f5c16c]/10 px-3 py-1 text-white">
+                  <ScrollText className="h-4 w-4 text-[#f5c16c]" />
+                  <span className="normal-case tracking-normal text-sm">{fullInfo?.profile.curriculumName || 'Unassigned'}</span>
+                </span>
               </div>
               <div className="grid grid-cols-2 gap-4 pt-4">
-                <div className="rounded-2xl border border-[#f5c16c]/30 bg-[#f5c16c]/10 p-4 text-[#2b130f]">
-                  <p className="text-[11px] tracking-[0.45em] text-[#2b130f]/80">Intellect</p>
-                  <p className="mt-3 text-3xl font-semibold">{userProfile?.stats?.intellect ?? 10}</p>
-                  <p className="text-[10px] uppercase tracking-[0.45em] text-[#2b130f]/70">Rune mastery</p>
+                <div className="rounded-2xl border border-[#f5c16c]/30 bg-[#f5c16c]/10 p-4 text-white">
+                  <p className="text-[11px] tracking-[0.45em] text-[#f5c16c]/85">Quests In Progress</p>
+                  <p className="mt-3 text-3xl font-semibold text-white">{fullInfo?.counts.questsInProgress ?? 0}</p>
+                  <p className="text-[10px] uppercase tracking-[0.45em] text-white/75">Active expeditions</p>
                 </div>
                 <div className="rounded-2xl border border-[#d23187]/40 bg-[#d23187]/15 p-4 text-white">
-                  <p className="text-[11px] tracking-[0.45em] text-[#f9d9eb]">Wisdom</p>
-                  <p className="mt-3 text-3xl font-semibold">{userProfile?.stats?.wisdom ?? 10}</p>
-                  <p className="text-[10px] uppercase tracking-[0.45em] text-[#f9d9eb]/80">Lore recall</p>
+                  <p className="text-[11px] tracking-[0.45em] text-[#f9d9eb]">Quests Completed</p>
+                  <p className="mt-3 text-3xl font-semibold">{fullInfo?.counts.questsCompleted ?? 0}</p>
+                  <p className="text-[10px] uppercase tracking-[0.45em] text-[#f9d9eb]/80">Victories logged</p>
+                </div>
+              </div>
+              
+              <div className="mt-4 space-y-3">
+                <div className="rounded-2xl border border-[#f5c16c]/30 bg-[#d23187]/12 p-4 text-white">
+                  <div className="flex items-center justify-between"><span>Guild</span><Link href="/community/guilds" className="text-[#f5c16c] text-xs">Visit</Link></div>
+                  <div className="mt-2 text-sm">
+                    {fullInfo?.relations.guildMembers?.[0] ? `${fullInfo.relations.guildMembers[0].guildName} • ${fullInfo.relations.guildMembers[0].role}` : 'None'}
+                  </div>
+                </div>
+                <div className="rounded-2xl border border-[#f5c16c]/30 bg-[#1f0d09]/85 p-4 text-white">
+                  <div className="flex items-center justify-between"><span>Party</span><Link href="/parties" className="text-[#f5c16c] text-xs">Visit</Link></div>
+                  <div className="mt-2 text-sm">
+                    {fullInfo?.relations.partyMembers?.[0] ? `${fullInfo.relations.partyMembers[0].partyName} • ${fullInfo.relations.partyMembers[0].role}` : 'None'}
+                  </div>
                 </div>
               </div>
             </div>
@@ -222,74 +156,126 @@ export default async function DashboardPage() {
         </div>
 
         <div className="flex flex-col gap-6">
-          <section className="grid grid-cols-3 gap-4">
-            {reliquary.map((item) => (
-              <div key={item.label} className="relative overflow-hidden rounded-[22px] border border-[#f5c16c]/18 bg-[#1f0d09]/85 p-5 text-white shadow-[0_15px_45px_rgba(36,12,6,0.55)] h-28">
-                <div className={`absolute inset-0 bg-gradient-to-br ${item.gradient}`} />
-                <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(18,6,4,0.45),_transparent_70%)]" />
-                <div className="relative z-10">
-                  <p className="text-[11px] uppercase tracking-[0.45em] text-[#2b130f]/75">{item.label}</p>
-                  <p className="mt-3 text-2xl font-semibold text-white">{item.value}</p>
-                  <p className="mt-1 text-[10px] uppercase tracking-[0.35em] text-[#2b130f]/70">{item.detail}</p>
+          <section className="grid grid-cols-4 gap-4">
+            {[
+              { label: 'Notes', value: fullInfo?.counts.notes ?? 0, icon: BookOpen },
+              { label: 'Quests Done', value: fullInfo?.counts.questsCompleted ?? 0, icon: Trophy },
+              { label: 'Active', value: fullInfo?.counts.questsInProgress ?? 0, icon: Sword },
+              { label: 'Meetings', value: fullInfo?.counts.meetings ?? 0, icon: Calendar },
+            ].map((item) => (
+              <div key={item.label} className="relative overflow-hidden rounded-[22px] border border-[#f5c16c]/25 bg-[#1f0d09]/90 p-4 text-white h-24">
+                <div className="relative z-10 flex items-center gap-3">
+                  {item.icon && <item.icon className="h-5 w-5 text-[#f5c16c]" />}
+                  <div>
+                    <p className="text-[10px] uppercase tracking-[0.45em] text-[#f5c16c]/80">{item.label}</p>
+                    <p className="mt-1 text-xl font-semibold text-white">{item.value}</p>
+                  </div>
                 </div>
               </div>
             ))}
           </section>
 
-          <ActiveQuest quest={adaptedQuestForComponent} />
-
-          <div className="rounded-[24px] border border-[#f5c16c]/18 bg-[#1a0b08]/80 p-6 text-sm uppercase tracking-[0.35em] text-[#f5c16c]/70">
-            <p className="text-[#f5c16c]/60">Codex Update</p>
-            <div className="mt-4 grid gap-4 md:grid-cols-3">
-              <div className="rounded-2xl border border-[#f5c16c]/22 bg-[#d23187]/15 p-4 text-center text-white">
-                <p className="text-xs text-[#f9d9eb]/70">New Artifact</p>
-                <p className="mt-3 text-lg font-semibold">Forgotten Compiler</p>
+          <div className="p-px rounded-[24px] bg-linear-to-r from-[#d23187]/30 via-[#f061a6]/30 to-[#f5c16c]/30">
+            <div className="relative overflow-hidden rounded-[24px] border border-[#f5c16c]/22 bg-[#23110d]/88 p-6 text-white">
+              <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(120%_80%_at_50%_20%,rgba(245,193,108,0.06),transparent_60%)]" />
+            {activeAttempt ? (
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-2xl font-semibold text-white">{activeAttempt.questTitle}</h2>
+                  <span className="rounded-full border border-[#f5c16c]/45 bg-[#f5c16c]/15 px-3 py-1 text-xs tracking-[0.35em] text-[#2b130f]">{Math.round(activeAttempt.completionPercentage)}%</span>
+                </div>
+                <div className="h-3 rounded-full bg-[#2d140f]/70">
+                  <div className="h-full rounded-full bg-linear-to-r from-[#d23187] via-[#f061a6] to-[#f5c16c]" style={{ width: `${Math.min(100, Math.round(activeAttempt.completionPercentage))}%` }} />
+                </div>
+                <div className="text-sm text-white/80">Step {activeAttempt.stepsCompleted} of {activeAttempt.stepsTotal}</div>
+                <div className="flex gap-3">
+                  <Link href="/quests" className="inline-flex items-center justify-center rounded-2xl bg-linear-to-r from-[#d23187] via-[#f061a6] to-[#f5c16c] px-4 py-2 text-sm font-semibold tracking-[0.35em] text-[#2b130f]">Resume Step {activeAttempt.currentStepId ?? ''}</Link>
+                </div>
               </div>
-              <div className="rounded-2xl border border-[#f5c16c]/22 bg-[#1f0d09]/85 p-4 text-center text-white">
-                <p className="text-xs text-[#f5c16c]/70">Raid Window</p>
-                <p className="mt-3 text-lg font-semibold">Opens in 02:41:36</p>
+            ) : (
+              <div className="space-y-4 text-center">
+                <p className="text-lg uppercase tracking-[0.35em] text-[#f5c16c]/70">No Active Quest</p>
+                <Link href="/quests" className="inline-flex items-center justify-center rounded-2xl bg-linear-to-r from-[#d23187] via-[#f061a6] to-[#f5c16c] px-5 py-3 text-sm font-semibold tracking-[0.35em] text-[#2b130f]">Find a Quest</Link>
+                <div className="mx-auto mt-2 flex items-center justify-center gap-2 text-xs text-white/70">
+                  <Lightbulb className="h-4 w-4 text-[#f5c16c]" />
+                  <span>{noQuestTip}</span>
+                </div>
               </div>
-              <div className="rounded-2xl border border-[#f5c16c]/22 bg-[#d67b54]/25 p-4 text-center">
-                <p className="text-xs text-[#2b130f]/70">Guild Directive</p>
-                <p className="mt-3 text-lg font-semibold text-[#2b130f]">Clear 3 Elite Dungeons</p>
-              </div>
+            )}
             </div>
           </div>
+
+          <QuestProgressClient subjects={subjects} />
         </div>
 
         <aside className="flex flex-col gap-6">
           <div className="rounded-[24px] border border-[#f5c16c]/20 bg-[#1a0b08]/80 p-4">
-            <div className="flex items-center justify-between">
-              <p className="text-[11px] uppercase tracking-[0.35em] text-[#f5c16c]/70">Lecturer Access</p>
-              <ProfileModalLauncher label="Verify" defaultTab="verification" />
-            </div>
+            {fullInfo?.relations.lecturerVerificationRequests?.length ? (
+              <div className="flex items-center justify-between">
+                <p className="text-[11px] uppercase tracking-[0.35em] text-[#f5c16c]/70">Application Status</p>
+                <span className="text-xs text-white/80">{fullInfo.relations.lecturerVerificationRequests[0].status}</span>
+              </div>
+            ) : (
+              <div className="flex items-center justify-between">
+                <p className="text-[11px] uppercase tracking-[0.35em] text-[#f5c16c]/70">Lecturer Access</p>
+                <ProfileModalLauncher label="Become a Lecturer" defaultTab="verification" />
+              </div>
+            )}
           </div>
 
-          <div className="relative overflow-hidden rounded-[24px] border border-[#f5c16c]/22 bg-[#28130d]/88 p-6 text-[#f5c16c] shadow-[0_20px_60px_rgba(38,12,6,0.6)]">
-            <div className="absolute left-6 top-6 bottom-6 w-px bg-[#f5c16c]/25" />
-            <div className="relative z-10 space-y-6">
-              <p className="text-lg uppercase tracking-[0.35em] text-[#f5c16c]">Forthcoming Omens</p>
-              <div className="space-y-6">
-                {mockQuests.upcomingEvents.map((event) => (
-                  <div key={event.id} className="relative pl-10">
-                    <span className="absolute left-5 top-2 h-2 w-2 rounded-full bg-[#f5c16c] shadow-[0_0_10px_rgba(245,193,108,0.7)]" />
-                    <div className="rounded-2xl border border-[#f5c16c]/30 bg-[#d23187]/12 p-4 text-white">
-                      <p className="text-[11px] uppercase tracking-[0.4em] text-[#f5c16c]/80">{event.type}</p>
-                      <h4 className="mt-2 text-base font-semibold text-white">{event.title}</h4>
-                      <p className="mt-1 text-sm text-[#f5c16c]/75">{event.dueDate}</p>
+          <div className="rounded-[24px] border border-[#f5c16c]/22 bg-[#1f0d09]/85 p-6">
+            <p className="text-[11px] uppercase tracking-[0.45em] text-[#f5c16c]/80">Skills</p>
+            <div className="mt-3 space-y-3">
+              {(fullInfo?.relations.userSkills ?? []).slice(0,8).map(s => {
+                const n = s.skillName.toLowerCase();
+                const IconComp = n.includes('cpu') || n.includes('memory') ? Cpu : n.includes('react') ? Atom : n.includes('js') || n.includes('javascript') ? Braces : Cog;
+                const pct = Math.min(100, (Math.min(s.level,10)/10)*100);
+                return (
+                  <div key={s.id} className="space-y-1">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2 text-xs text-white/90">
+                        <div className="h-6 w-6 rounded-md border border-[#f5c16c]/30 bg-[#2d140f]/60 flex items-center justify-center">
+                          <IconComp className="h-4 w-4 text-[#f5c16c]" />
+                        </div>
+                        <span>{s.skillName}</span>
+                      </div>
+                      <span className="text-xs text-white/70">Lv.{s.level}</span>
+                    </div>
+                    <div className="h-2 rounded-full bg-[#2d140f]/60">
+                      <div className="h-full rounded-full bg-linear-to-r from-[#f061a6] to-[#f5c16c] shadow-[0_0_12px_rgba(245,193,108,0.35)]" style={{ width: `${pct}%` }} />
                     </div>
                   </div>
-                ))}
-              </div>
+                );
+              })}
             </div>
           </div>
 
-          <div className="overflow-hidden rounded-[24px] border border-[#f5c16c]/20 bg-[#1c0c08]/85 p-6 text-xs uppercase tracking-[0.4em] text-[#f5c16c]/70">
-            <p className="text-[#f5c16c]/60">Current Buff</p>
-            <div className="mt-4 flex items-center justify-between rounded-2xl border border-[#f5c16c]/22 bg-[#d23187]/15 px-4 py-3 text-white">
-              <span>Arcane Focus</span>
-              <span className="text-[#f5c16c]">+10% XP</span>
-            </div>
+          <div className="overflow-hidden rounded-[24px] border border-[#f5c16c]/20 bg-[#1c0c08]/85 p-6">
+            <p className="text-xs uppercase tracking-[0.4em] text-[#f5c16c]/70">Achievements</p>
+            <TooltipProvider>
+              <div className="mt-4 flex flex-wrap items-center gap-4">
+                {achievementGroups.length ? achievementGroups.map((a) => (
+                  <Tooltip key={(a.id ?? a.name ?? '') + (a.lastEarnedAt ?? '')}>
+                    <TooltipTrigger asChild>
+                      <div className="relative h-20 w-20 rounded-full border-2 border-[#f5c16c]/40 bg-cover bg-center shadow-[0_10px_20px_rgba(245,193,108,0.2)]" style={{ backgroundImage: `url('${a.icon || 'https://images.unsplash.com/photo-1611162616305-c69b3fa82bb3?q=80&w=200&auto=format&fit=crop'}')` }}>
+                        <span className="absolute -bottom-1.5 -right-1.5 rounded-full bg-[#1a0b08] px-2.5 py-0.5 text-[11px] font-bold text-white border border-[#f5c16c]/40">×{a.count}</span>
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent className="border-[#f5c16c]/30 bg-[#1a0b08] text-white">
+                      <div className="flex items-center gap-3">
+                        <div className="h-16 w-16 rounded-full border border-[#f5c16c]/40 bg-cover bg-center" style={{ backgroundImage: `url('${a.icon || ''}')` }} />
+                        <div>
+                          <div className="text-sm font-semibold">{a.name ?? 'Achievement'}</div>
+                          <div className="text-xs text-white/70">Unlocked {a.lastEarnedAt ? new Date(a.lastEarnedAt).toLocaleString() : ''}</div>
+                        </div>
+                      </div>
+                    </TooltipContent>
+                  </Tooltip>
+                )) : (
+                  <div className="text-sm text-white/70">None</div>
+                )}
+              </div>
+            </TooltipProvider>
           </div>
         </aside>
       </div>

@@ -204,7 +204,20 @@ export function DungeonNav() {
     }
   }
 
-  const activeIndex = navItems.findIndex(item => pathname === item.url || pathname?.startsWith(item.url + "/"))
+  const isGameMaster = React.useMemo(() => {
+    const roles = userProfile?.roles || []
+    return roles.some(r => /game\s*master/i.test(r))
+  }, [userProfile])
+
+  const navItemsWithAdmin = React.useMemo(() => {
+    if (!isGameMaster) return navItems
+    return [
+      ...navItems,
+      { title: "Admin", url: "/admin", icon: Shield, color: "from-amber-500 to-amber-800" },
+    ]
+  }, [isGameMaster])
+
+  const activeIndex = navItemsWithAdmin.findIndex(item => pathname === item.url || pathname?.startsWith(item.url + "/"))
 
   const [profileModalOpen, setProfileModalOpen] = React.useState(false)
   const [profileModalTab, setProfileModalTab] = React.useState<"profile" | "settings" | "verification">("profile")
@@ -250,14 +263,7 @@ export function DungeonNav() {
               </div>
             </button>
 
-            {/* XP Bar */}
-            <div className="hidden lg:flex items-center gap-3">
-              <Flame className="size-4 text-orange-500 animate-pulse" />
-              <div className="w-48 h-2 rounded-full bg-[#1a0b08]/80 border border-[#f5c16c]/20 overflow-hidden">
-                <div className="h-full bg-linear-to-r from-[#d23187] via-[#f061a6] to-[#f5c16c] rounded-full shadow-[0_0_10px_rgba(245,193,108,0.6)]" style={{ width: '65%' }} />
-              </div>
-              <span className="text-xs text-[#f5c16c]/70 font-semibold">650/1000 XP</span>
-            </div>
+            
 
             {/* User Profile - RPG Style */}
             <DropdownMenu>
@@ -268,13 +274,10 @@ export function DungeonNav() {
                       {userProfile?.username?.slice(0, 2).toUpperCase() || "RS"}
                     </AvatarFallback>
                   </Avatar>
-                  <div className="absolute -bottom-1 -right-1 size-4 rounded-full bg-linear-to-br from-amber-400 to-orange-500 border border-[#1a0b08] flex items-center justify-center text-[8px] font-bold text-white">
-                    {userProfile?.level || 1}
-                  </div>
+                  
                 </div>
-                <div className="hidden md:block text-left">
+                  <div className="hidden md:block text-left">
                   <div className="text-xs font-bold text-[#f5c16c]">{userProfile?.username || "Scholar"}</div>
-                  <div className="text-[9px] text-[#f5c16c]/50 uppercase">Lv.{userProfile?.level || 1}</div>
                 </div>
                 <ChevronDown className="size-3 text-[#f5c16c]/60" />
               </DropdownMenuTrigger>
@@ -408,7 +411,7 @@ export function DungeonNav() {
 
               {/* Navigation Items - not clipped */}
               <div className="relative flex items-center justify-center gap-10 px-6 py-4">
-                {navItems.map((item, index) => {
+                {navItemsWithAdmin.map((item, index) => {
                   const Icon = item.icon
                   const isActive = index === activeIndex
 

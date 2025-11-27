@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useMemo, useState, useCallback, startTransition } from "react";
+import { useRouter } from "next/navigation";
 import guildsApi from "@/api/guildsApi";
 import profileApi from "@/api/profileApi";
 import type { GuildJoinRequestDto, GuildMemberDto, GuildRole } from "@/types/guilds";
@@ -23,28 +24,56 @@ export function GuildManagementSection({ guildId, onLeftGuild }: GuildManagement
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [myAuthUserId, setMyAuthUserId] = useState<string | null>(null);
+  const [myResolvedRole, setMyResolvedRole] = useState<GuildRole | null>(null);
+  const router = useRouter();
 
   const reload = useCallback(() => {
     if (!guildId) return;
-    startTransition(() => {
-      setLoading(true);
-    });
-    Promise.all([
-      guildsApi.getMembers(guildId),
-      guildsApi.getJoinRequests(guildId, true),
-      profileApi.getMyProfile(),
-    ])
-      .then(([mRes, jrRes, pRes]) => {
+    startTransition(() => { setLoading(true); });
+    setError(null);
+    (async () => {
+      try {
+        const pRes = await profileApi.getMyProfile();
+        const auth = pRes.data?.authUserId ?? null;
+        setMyAuthUserId(auth);
+        let role: GuildRole | null = null;
+        if (auth) {
+          try {
+            const rRes = await guildsApi.getMemberRoles(guildId, auth);
+            const roles = rRes.data ?? [];
+            role = roles.includes("GuildMaster")
+              ? "GuildMaster"
+              : roles.includes("Officer")
+              ? "Officer"
+              : roles.includes("Veteran")
+              ? "Veteran"
+              : roles.includes("Member")
+              ? "Member"
+              : roles.includes("Recruit")
+              ? "Recruit"
+              : null;
+          } catch {}
+        }
+        setMyResolvedRole(role);
+        const mRes = await guildsApi.getMembers(guildId);
         setMembers(mRes.data ?? []);
-        setJoinRequests(jrRes.data ?? []);
-        setMyAuthUserId(pRes.data?.authUserId ?? null);
-        setError(null);
-      })
-      .catch((err) => {
+        if (role === "GuildMaster" || role === "Officer") {
+          try {
+            const jrRes = await guildsApi.getJoinRequests(guildId, true);
+            setJoinRequests(jrRes.data ?? []);
+          } catch {
+            setJoinRequests([]);
+          }
+        } else {
+          setJoinRequests([]);
+        }
+      } catch (err) {
         console.error("Failed to load management data", err);
         setError("Failed to load management data.");
-      })
-      .finally(() => setLoading(false));
+      } finally {
+        setLoading(false);
+      }
+    })();
   }, [guildId]);
 
   useEffect(() => {
@@ -85,14 +114,9 @@ export function GuildManagementSection({ guildId, onLeftGuild }: GuildManagement
   };
 
   const assignRoleWithRole = async (authUserId: string, role: GuildRole) => {
-    if (!guildId || !myAuthUserId) return;
+    if (!guildId) return;
     try {
-      await guildsApi.assignRole(guildId, {
-        memberAuthUserId: authUserId,
-        roleToAssign: role,
-        actorAuthUserId: myAuthUserId,
-        isAdminOverride: false,
-      });
+      await guildsApi.assignRole(guildId, authUserId, role);
       reload();
     } catch (err) {
       console.error(err);
@@ -101,14 +125,9 @@ export function GuildManagementSection({ guildId, onLeftGuild }: GuildManagement
   };
 
   const revokeRole = async (authUserId: string, role: GuildRole) => {
-    if (!guildId || !myAuthUserId) return;
+    if (!guildId) return;
     try {
-      await guildsApi.revokeRole(guildId, {
-        memberAuthUserId: authUserId,
-        roleToRevoke: role,
-        actorAuthUserId: myAuthUserId,
-        isAdminOverride: false,
-      });
+      await guildsApi.revokeRole(guildId, authUserId, role);
       reload();
     } catch (err) {
       console.error(err);
@@ -147,30 +166,22 @@ export function GuildManagementSection({ guildId, onLeftGuild }: GuildManagement
     try {
       await guildsApi.leaveGuild(guildId);
       onLeftGuild?.();
+      router.push("/community");
     } catch (err) {
       console.error(err);
       alert("Failed to leave guild. You may need to transfer leadership first if you are the Guild Master.");
     }
   };
 
-  const myRole: GuildRole | null = useMemo(() => {
-    if (!myAuthUserId) return null;
-    const me = members.find((m) => m.authUserId === myAuthUserId);
-    return me?.role ?? null;
-  }, [members, myAuthUserId]);
+  const myRole: GuildRole | null = myResolvedRole;
 
-  if (!loading && myRole === null) {
-    return (
-      <AccessRestrictedCard
-        onGoToGuild={() => { /* no-op in section; parent controls navigation */ }}
-        onBrowseGuilds={() => { /* no-op in section; parent controls navigation */ }}
-      />
-    );
-  }
+  // All members can access this section; components below enforce role-specific actions.
+
+  const isPrivileged = myRole === "GuildMaster" || myRole === "Officer";
 
   return (
     <div className="flex flex-col gap-6">
-      {(myRole === "GuildMaster" || myRole === "Officer") && (
+      {isPrivileged && (
         <>
           <InviteMembersCard onInvite={sendInvite} />
           <CreateEventRequestCard guildId={guildId} onRequestCreated={reload} />
@@ -180,14 +191,16 @@ export function GuildManagementSection({ guildId, onLeftGuild }: GuildManagement
 
       <RegisteredEventsCard guildId={guildId} />
 
-      <JoinRequestsCard
-        loading={loading}
-        error={error}
-        joinRequests={joinRequests}
-        myRole={myRole}
-        onApprove={approveRequest}
-        onDecline={declineRequest}
-      />
+      {isPrivileged && (
+        <JoinRequestsCard
+          loading={loading}
+          error={error}
+          joinRequests={joinRequests}
+          myRole={myRole}
+          onApprove={approveRequest}
+          onDecline={declineRequest}
+        />
+      )}
 
       <MembersManagementCard
         loading={loading}
@@ -200,7 +213,7 @@ export function GuildManagementSection({ guildId, onLeftGuild }: GuildManagement
         onTransferLeadership={transferLeadership}
       />
 
-      <MembershipCard myRole={myRole} onLeave={leaveGuild} />
+      <MembershipCard myRole={myRole} onLeave={leaveGuild} showActions={myRole !== "GuildMaster"} />
     </div>
   );
 }
