@@ -5,6 +5,7 @@ import "./globals.css";
 import { cn } from "@/lib/utils";
 import Script from "next/script";
 import { Toaster } from "@/components/ui/sonner";
+import { ThemeProvider } from "next-themes";
 import { ReactNode } from "react";
 import { TransitionProvider } from "@/components/layout/TransitionProvider";
 
@@ -38,20 +39,16 @@ export default function RootLayout({
   children: ReactNode;
 }>) {
   return (
-    // The "dark" className here activates our new default theme.
-    <html lang="en" className="dark">
+    <html lang="en" suppressHydrationWarning>
       <body
         className={cn("antialiased", fontHeading.variable, fontBody.variable)}
         suppressHydrationWarning={true}
       >
-        {/* Google Identity Services for OAuth 2.0 (Meet API) */}
-        <Script
-          src="https://accounts.google.com/gsi/client"
-          strategy="afterInteractive"
-        />
-        <TransitionProvider>{children}</TransitionProvider>
-        {/* Global toast notifications */}
-        <Toaster richColors position="top-right" />
+        <Script src="https://accounts.google.com/gsi/client" strategy="afterInteractive" />
+        <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
+          <TransitionProvider>{children}</TransitionProvider>
+          <Toaster richColors position="top-right" />
+        </ThemeProvider>
       </body>
     </html>
   );

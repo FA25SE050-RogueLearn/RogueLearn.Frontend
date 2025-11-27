@@ -1,13 +1,11 @@
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import PartyDetailPageClient from "@/components/party/PartyDetailPageClient";
 
-// Next.js 15 typed App Router expects `params` to be a Promise in page components.
-// Update the signature accordingly and await the promise to extract `partyId`.
-export default async function PartyDetailPage({
-  params,
-}: {
-  params: Promise<{ partyId: string }>;
-}) {
+interface PageProps {
+  params: Promise<{ partyId: string }>
+}
+
+export default async function PartyDetailPage({ params }: PageProps) {
   const { partyId } = await params;
   return (
     <DashboardLayout>
