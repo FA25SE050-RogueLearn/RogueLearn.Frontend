@@ -82,13 +82,13 @@ const adminManagementApi = {
 
   // ... (CLASSES & SPECIALIZATION - No Change) ...
   getClassSpecialization: (classId: string): Promise<ApiResponse<SpecializationSubjectEntry[]>> =>
-    axiosClient.get<SpecializationSubjectEntry[]>(`/api/admin/classes/${classId}/specialization`).then(res => ({
+    axiosClient.get<SpecializationSubjectEntry[]>(`/api/admin/classes/${classId}/specialization-subjects`).then(res => ({
       isSuccess: true,
       data: res.data
     })),
 
   addClassSpecialization: (payload: AddSpecializationRequest): Promise<ApiResponse<void>> =>
-    axiosClient.post<void>(`/api/admin/classes/${payload.classId}/specialization`, payload).then(res => ({
+    axiosClient.post<void>(`/api/admin/classes/${payload.classId}/specialization-subjects`, payload).then(res => ({
       isSuccess: true,
       data: res.data
     })),
