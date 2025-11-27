@@ -32,8 +32,12 @@ const TIER_THEME = {
 export const ConstellationNode = ({ data }: { data: ApiSkillNode }) => {
   const theme = TIER_THEME[data.tier as keyof typeof TIER_THEME] || TIER_THEME[1];
   const TierIcon = theme.icon;
-  const isLocked = data.userLevel === 0 && data.userExperiencePoints === 0;
-  const isComplete = data.userLevel >= 5; // Assuming level 5 is mastery
+  const totalXp = data.userExperiencePoints || 0;
+  const baseLevel = data.userLevel || 0;
+  const derivedLevel = Math.min(5, baseLevel + Math.floor(totalXp / 1000));
+  const xpRemainder = totalXp % 1000;
+  const isLocked = baseLevel === 0 && totalXp === 0;
+  const isComplete = derivedLevel >= 5;
 
   return (
     // ⭐ MODIFIED: Added cursor-pointer to indicate clickability
@@ -63,7 +67,7 @@ export const ConstellationNode = ({ data }: { data: ApiSkillNode }) => {
           }} />
 
         {/* Progress ring for unlocked skills */}
-        {!isLocked && data.userLevel > 0 && (
+        {!isLocked && derivedLevel > 0 && (
           <svg className="absolute inset-0 w-full h-full -rotate-90">
             <circle
               cx="112" cy="64" r="58"
@@ -76,7 +80,7 @@ export const ConstellationNode = ({ data }: { data: ApiSkillNode }) => {
               fill="none"
               stroke={theme.accentColor}
               strokeWidth="3"
-              strokeDasharray={`${(data.userLevel / 5) * 364} 364`}
+              strokeDasharray={`${(derivedLevel / 5) * 364} 364`}
               className="transition-all duration-500"
             />
           </svg>
@@ -118,11 +122,11 @@ export const ConstellationNode = ({ data }: { data: ApiSkillNode }) => {
             <div className="flex items-center justify-between text-xs">
               <div className="flex items-center gap-2">
                 <span className="text-gray-400">Level</span>
-                <span className="font-bold text-accent">{data.userLevel}/5</span>
+                <span className="font-bold text-accent">{derivedLevel}/5</span>
               </div>
               <div className="flex items-center gap-1 text-amber-400">
                 <Sparkles className="w-3 h-3" />
-                <span className="font-semibold">{data.userExperiencePoints}</span>
+                <span className="font-semibold">{xpRemainder}</span>
               </div>
             </div>
           )}

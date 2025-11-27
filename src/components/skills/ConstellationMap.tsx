@@ -33,6 +33,7 @@ export function ConstellationMap() {
     const [rawData, setRawData] = useState<SkillTree | null>(null);
     const [filterMode, setFilterMode] = useState<FilterMode>('available');
     const [selectedDomain, setSelectedDomain] = useState<string | null>(null);
+    const [trackedIds, setTrackedIds] = useState<Set<string> | null>(null);
 
     // Add explicit type parameters here
     const [nodes, setNodes, onNodesChange] = useNodesState<Node<ApiSkillNode>>([]);
@@ -44,9 +45,16 @@ export function ConstellationMap() {
         const load = async () => {
             setIsLoading(true);
             try {
-                const res = await skillsApi.getSkillTree();
-                if (res.isSuccess && res.data) {
-                    setRawData(res.data);
+                const [treeRes, mySkillsRes] = await Promise.all([
+                    skillsApi.getSkillTree(),
+                    skillsApi.getMySkills()
+                ]);
+                if (treeRes.isSuccess && treeRes.data) {
+                    setRawData(treeRes.data);
+                }
+                if (mySkillsRes.isSuccess && mySkillsRes.data) {
+                    const ids = new Set((mySkillsRes.data.skills || []).map(s => s.skillId));
+                    setTrackedIds(ids);
                 }
             } finally {
                 setIsLoading(false);
@@ -63,7 +71,8 @@ export function ConstellationMap() {
             rawData.nodes,
             rawData.dependencies,
             filterMode,
-            selectedDomain
+            selectedDomain,
+            trackedIds
         );
 
         const positioned = layoutSkills(filteredNodes, visibleEdges);
@@ -95,7 +104,7 @@ export function ConstellationMap() {
 
         setNodes(flowNodes);
         setEdges(flowEdges);
-    }, [rawData, filterMode, selectedDomain, setNodes, setEdges]);
+    }, [rawData, filterMode, selectedDomain, trackedIds, setNodes, setEdges]);
 
     // ⭐ NEW: Handle node clicks
     const onNodeClick: NodeMouseHandler = (event, node) => {
@@ -112,16 +121,17 @@ export function ConstellationMap() {
     const stats = useMemo(() => {
         if (!rawData) return { total: 0, unlocked: 0, available: 0 };
         const unlocked = rawData.nodes.filter(
-            n => n.userLevel > 0 || n.userExperiencePoints > 0
+            n => (n.userLevel > 0 || n.userExperiencePoints > 0) || (trackedIds?.has(n.skillId))
         ).length;
         const { filteredNodes } = filterSkillTree(
             rawData.nodes,
             rawData.dependencies,
             'available',
-            null
+            null,
+            trackedIds
         );
         return { total: rawData.nodes.length, unlocked, available: filteredNodes.length };
-    }, [rawData]);
+    }, [rawData, trackedIds]);
 
     if (isLoading) {
         return (

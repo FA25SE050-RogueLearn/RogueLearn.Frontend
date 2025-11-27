@@ -1,3 +1,4 @@
+// roguelearn-web/src/components/quests/ModuleLearningView.tsx
 "use client";
 
 import { QuizActivityContent as QuizActivityContentComponent } from "./activities/QuizActivityContent";
@@ -488,6 +489,8 @@ export function ModuleLearningView({
             case 'Reading':
                 return (
                     <ReadingActivityContent
+                        // ⭐ KEY ADDED: Force re-mount when activity ID changes
+                        key={activity.activityId}
                         payload={activity.payload as ReadingActivityPayload}
                         sessionStarted={readingSessionStarted}
                         onOpenMaterial={async () => {
@@ -503,10 +506,17 @@ export function ModuleLearningView({
                     />
                 );
             case 'KnowledgeCheck':
-                return <KnowledgeCheckActivityContent payload={activity.payload as KnowledgeCheckActivityPayload} />;
+                return <KnowledgeCheckActivityContent
+                    // ⭐ KEY ADDED: Force re-mount when activity ID changes.
+                    // This resets the internal state (selectedAnswers, submitted) for the new question.
+                    key={activity.activityId}
+                    payload={activity.payload as KnowledgeCheckActivityPayload}
+                />;
             case 'Quiz':
                 return (
                     <QuizActivityContentComponent
+                        // ⭐ KEY ADDED: Force re-mount when activity ID changes
+                        key={activity.activityId}
                         payload={activity.payload as QuizActivityPayload}
                         questId={questId}
                         stepId={weeklyStep.id}
@@ -526,6 +536,8 @@ export function ModuleLearningView({
                 );
             case 'Coding':
                 return <CodingActivityContent
+                    // ⭐ KEY ADDED: Force re-mount when activity ID changes
+                    key={activity.activityId}
                     payload={activity.payload as CodingActivityPayload}
                     onStartChallenge={setActiveCodingChallenge}
                 />;
