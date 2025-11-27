@@ -59,6 +59,13 @@ const guildsApi = {
       data: res.data,
     })),
 
+  /** GET /api/guilds/invitations/pending - Get my pending guild invitations */
+  getMyPendingInvitations: (): Promise<ApiResponse<GuildInvitationDto[]>> =>
+    axiosClient.get<GuildInvitationDto[]>(`/api/guilds/invitations/me`).then(res => ({
+      isSuccess: true,
+      data: res.data,
+    })),
+
   /** GET /api/guilds/{guildId}/dashboard */
   getDashboard: (guildId: string): Promise<ApiResponse<GuildDashboardDto>> =>
     axiosClient.get<GuildDashboardDto>(`/api/guilds/${guildId}/dashboard`).then(res => ({

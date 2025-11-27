@@ -598,8 +598,7 @@ export default function GuildMeetingsSection({ guildId }: Props) {
         )}
       </div>
 
-      {/* Create Meeting Card - Guild Master Only */}
-      {myRole === "GuildMaster" && (
+      {(myRole === "GuildMaster" || myRole === "Officer") && (
         <div className={MEETING_CARD_CLASS}>
           {/* Texture overlay */}
           <div className="pointer-events-none absolute inset-0" style={CARD_TEXTURE} />
@@ -664,7 +663,7 @@ export default function GuildMeetingsSection({ guildId }: Props) {
                 <Play className="h-4 w-4" />
                 {creating ? "Creating..." : "Create Meeting"}
               </button>
-              {needsAuth && (
+              {needsAuth && (myRole === "GuildMaster" || myRole === "Officer") && (
                 <button
                   onClick={handleAuthorize}
                   className="rounded bg-linear-to-r from-[#f5c16c] to-[#d4a855] px-3 py-2 text-xs font-medium text-black"
@@ -684,7 +683,7 @@ export default function GuildMeetingsSection({ guildId }: Props) {
           <h5 className="text-xs font-semibold">Meetings</h5>
           <div className="flex items-center gap-2">
             {loadingMeetings && <span className="text-xs text-white/60">Loading...</span>}
-            {needsAuth && (
+            {needsAuth && (myRole === "GuildMaster" || myRole === "Officer") && (
               <button
                 onClick={handleAuthorize}
                 className="rounded bg-linear-to-r from-[#f5c16c] to-[#d4a855] px-3 py-1.5 text-xs font-medium text-black"
@@ -746,7 +745,7 @@ export default function GuildMeetingsSection({ guildId }: Props) {
                             Join Meet ↗
                           </a>
                         )}
-                        {(myRole === "GuildMaster" || authUserId === m.organizerId) && (
+                        {(myRole === "GuildMaster" || myRole === "Officer" || authUserId === m.organizerId) && (
                           <>
                           {m.status === MeetingStatus.Active && (
                             <button
