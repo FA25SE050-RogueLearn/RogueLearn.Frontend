@@ -11,13 +11,47 @@ import CodeArenaView from './views/CodeArenaView';
 import { toast } from 'sonner';
 
 type ViewState = 'events' | 'rooms' | 'arena';
+type EventViewMode = 'dashboard' | 'filtered';
+type StatusFilter = 'all' | 'live' | 'scheduled' | 'completed' | 'cancelled' | 'preparing';
+
+// Map frontend status keys to backend status values
+const statusToApiParam = (status: StatusFilter): string | undefined => {
+  switch (status) {
+    case 'live':
+      return 'active';
+    case 'scheduled':
+      return 'pending';
+    case 'completed':
+      return 'completed';
+    case 'cancelled':
+      return 'cancelled';
+    case 'all':
+    case 'preparing':
+      return undefined; // No status filter for 'all', 'preparing' is client-side
+    default:
+      return undefined;
+  }
+};
 
 export default function CodeBattlePage() {
   // Navigation state
   const [currentView, setCurrentView] = useState<ViewState>('events');
 
+  // Event view mode state
+  const [eventViewMode, setEventViewMode] = useState<EventViewMode>('dashboard');
+  const [currentStatusFilter, setCurrentStatusFilter] = useState<StatusFilter>('all');
+
   // Data state
-  const [events, setEvents] = useState<Event[]>([]);
+  const [events, setEvents] = useState<Event[]>([]); // Used in filtered mode
+  const [activeEvents, setActiveEvents] = useState<Event[]>([]); // Dashboard mode: active events
+  const [scheduledEvents, setScheduledEvents] = useState<Event[]>([]); // Dashboard mode: scheduled events
+  const [completedEvents, setCompletedEvents] = useState<Event[]>([]); // Dashboard mode: completed events
+
+  // Total counts for dashboard sections
+  const [activeTotalCount, setActiveTotalCount] = useState(0);
+  const [scheduledTotalCount, setScheduledTotalCount] = useState(0);
+  const [completedTotalCount, setCompletedTotalCount] = useState(0);
+
   const [rooms, setRooms] = useState<Room[]>([]);
   const [problems, setProblems] = useState<Problem[]>([]);
 
@@ -76,18 +110,42 @@ export default function CodeBattlePage() {
     setNotifications(prev => [...prev, { message, type, time }]);
   };
 
-  // Fetch events on mount and when page changes
+  // Fetch events on mount and when page or status filter changes
   useEffect(() => {
     const fetchEvents = async () => {
       setLoadingEvents(true);
       try {
-        const response = await eventServiceApi.getAllEvents(eventsPage, eventsPageSize, 'code_battle');
-        if (response.success && response.data && Array.isArray(response.data)) {
-          setEvents(response.data);
+        if (eventViewMode === 'dashboard') {
+          // Dashboard mode: Fetch 3 separate lists for each status
+          const [activeResponse, scheduledResponse, completedResponse] = await Promise.all([
+            eventServiceApi.getAllEvents(1, 4, 'code_battle', 'active'), // First 4 active events
+            eventServiceApi.getAllEvents(1, 4, 'code_battle', 'pending'), // First 4 scheduled events
+            eventServiceApi.getAllEvents(1, 4, 'code_battle', 'completed'), // First 4 completed events
+          ]);
 
-          // Update pagination metadata
-          if (response.pagination) {
-            setEventsTotalPages(response.pagination.total_pages);
+          if (activeResponse.success && activeResponse.data) {
+            setActiveEvents(activeResponse.data);
+            setActiveTotalCount(activeResponse.pagination?.total_count || 0);
+          }
+          if (scheduledResponse.success && scheduledResponse.data) {
+            setScheduledEvents(scheduledResponse.data);
+            setScheduledTotalCount(scheduledResponse.pagination?.total_count || 0);
+          }
+          if (completedResponse.success && completedResponse.data) {
+            setCompletedEvents(completedResponse.data);
+            setCompletedTotalCount(completedResponse.pagination?.total_count || 0);
+          }
+        } else {
+          // Filtered mode: Fetch events with specific status filter
+          const apiStatus = statusToApiParam(currentStatusFilter);
+          const response = await eventServiceApi.getAllEvents(eventsPage, eventsPageSize, 'code_battle', apiStatus);
+          if (response.success && response.data && Array.isArray(response.data)) {
+            setEvents(response.data);
+
+            // Update pagination metadata
+            if (response.pagination) {
+              setEventsTotalPages(response.pagination.total_pages);
+            }
           }
         }
       } catch (error) {
@@ -99,7 +157,7 @@ export default function CodeBattlePage() {
     };
 
     fetchEvents();
-  }, [eventsPage, eventsPageSize]);
+  }, [eventsPage, eventsPageSize, currentStatusFilter, eventViewMode]);
 
   // Reset rooms page when event changes
   useEffect(() => {
@@ -195,10 +253,21 @@ export default function CodeBattlePage() {
     }
   }, [language, selectedProblemId, loadProblemDetails, currentView]);
 
-  const joinRoom = async (eventId: string, roomId: string) => {
+  // Handle problem selection from dropdown
+  const handleProblemChange = useCallback((problemId: string) => {
+    setSelectedProblemId(problemId);
+    const problem = problems.find(p => p.id === problemId);
+    if (problem) {
+      setSelectedProblemTitle(problem.title);
+      setSelectedProblemStatement(problem.problem_statement);
+      loadProblemDetails(problemId, language);
+    }
+  }, [problems, language, loadProblemDetails]);
+
+  const joinRoom = async (eventId: string, roomId: string): Promise<boolean> => {
     if (!playerId) {
       addNotification('Unable to join room: Player not authenticated', 'error');
-      return;
+      return false;
     }
 
     if (eventSourceRef.current) {
@@ -211,19 +280,34 @@ export default function CodeBattlePage() {
 
       if (!session?.access_token) {
         addNotification('Unable to join room: No auth token', 'error');
-        return;
+        return false;
       }
 
       const eventSource = eventServiceApi.createRoomSSE(eventId, roomId, playerId, session.access_token);
       eventSourceRef.current = eventSource;
 
+      // Track if we successfully connected
+      let connectionSuccessful = false;
+      let connectionError = false;
+
       eventSource.onopen = () => {
+        connectionSuccessful = true;
         addNotification(`Connected to room`, 'success');
       };
 
       eventSource.onerror = (error) => {
         console.error('EventSource failed:', error);
-        addNotification('Connection error - retrying...', 'error');
+        connectionError = true;
+
+        // Check if it's a "cannot rejoin" error by trying to parse the error
+        // EventSource doesn't provide detailed error info, but we can detect connection failures
+        if (!connectionSuccessful) {
+          addNotification('Cannot join room. You may have left this room previously.', 'error');
+          eventSource.close();
+          eventSourceRef.current = null;
+        } else {
+          addNotification('Connection error - retrying...', 'error');
+        }
       };
 
       eventSource.addEventListener('CORRECT_SOLUTION_SUBMITTED', (e) => {
@@ -331,9 +415,19 @@ export default function CodeBattlePage() {
           console.error('Error parsing initial_time data:', error);
         }
       });
+
+      // Wait a bit to see if connection succeeds or fails immediately
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      if (connectionError && !connectionSuccessful) {
+        return false;
+      }
+
+      return true;
     } catch (error) {
       console.error('Failed to create SSE connection:', error);
       addNotification('Failed to connect to room', 'error');
+      return false;
     }
   };
 
@@ -526,14 +620,28 @@ export default function CodeBattlePage() {
     }
   };
 
-  const handleSelectRoom = (roomId: string) => {
+  const handleSelectRoom = async (roomId: string) => {
     setSelectedRoomId(roomId);
     setSelectedProblemId(null);
     setSelectedProblemTitle('');
     setSelectedProblemStatement('');
     setLeaderboardData([]); // Clear leaderboard when changing rooms
     if (selectedEventId) {
-      joinRoom(selectedEventId, roomId);
+      const canJoin = await joinRoom(selectedEventId, roomId);
+      if (!canJoin) {
+        // If cannot join any room, kick them out of the entire event
+        setCurrentView('events');
+        setSelectedEventId(null);
+        setSelectedRoomId(null);
+        setSelectedProblemId(null);
+        setSelectedProblemTitle('');
+        setSelectedProblemStatement('');
+        setSubmissionResult('');
+        setLeaderboardData([]);
+        toast.error('Cannot join event', {
+          description: 'You have previously left this event and cannot rejoin. Please choose a different event.'
+        });
+      }
     }
   };
 
@@ -551,7 +659,29 @@ export default function CodeBattlePage() {
     }
   };
 
-  const handleBackToEvents = () => {
+  const handleBackToEvents = async () => {
+    // Close SSE connection when leaving the room
+    if (eventSourceRef.current) {
+      eventSourceRef.current.close();
+      eventSourceRef.current = null;
+    }
+
+    // Call leave room API if we have the IDs
+    if (selectedEventId && selectedRoomId) {
+      try {
+        const response = await eventServiceApi.leaveRoom(selectedEventId, selectedRoomId);
+        if (response.success) {
+          addNotification('Left room successfully', 'info');
+        } else {
+          console.error('Failed to leave room:', response.error);
+          // Don't block navigation on API error - SSE disconnect is what matters
+        }
+      } catch (error) {
+        console.error('Error leaving room:', error);
+      }
+    }
+
+    // Navigate back to events
     setCurrentView('events');
     setSelectedEventId(null);
     setSelectedRoomId(null);
@@ -559,15 +689,31 @@ export default function CodeBattlePage() {
     setSelectedProblemTitle('');
     setSelectedProblemStatement('');
     setSubmissionResult('');
+    setLeaderboardData([]);
   };
 
   const handleBackToRooms = () => {
+    // Just navigate back to room selection view, don't leave the room
     setCurrentView('rooms');
     setSelectedProblemId(null);
     setSelectedProblemTitle('');
     setSelectedProblemStatement('');
     setCode('');
     setSubmissionResult('');
+  };
+
+  const handleViewModeChange = (mode: EventViewMode, status?: StatusFilter) => {
+    setEventViewMode(mode);
+
+    if (mode === 'filtered' && status) {
+      // When switching to filtered mode with a specific status
+      setCurrentStatusFilter(status);
+      setEventsPage(1); // Reset to first page
+    } else if (mode === 'dashboard') {
+      // When returning to dashboard, reset to show all events
+      setCurrentStatusFilter('all');
+      setEventsPage(1);
+    }
   };
 
   useEffect(() => {
@@ -586,7 +732,7 @@ export default function CodeBattlePage() {
       <div className="container mx-auto px-4 py-8">
         {currentView === 'events' && (
           <EventsSelectionView
-            events={events}
+            events={eventViewMode === 'dashboard' ? [...activeEvents, ...scheduledEvents, ...completedEvents] : events}
             loading={loadingEvents}
             onSelectEvent={handleSelectEvent}
             eventSecondsLeft={eventSecondsLeft}
@@ -594,6 +740,12 @@ export default function CodeBattlePage() {
             currentPage={eventsPage}
             totalPages={eventsTotalPages}
             onPageChange={setEventsPage}
+            viewMode={eventViewMode}
+            onViewModeChange={handleViewModeChange}
+            currentStatusFilter={currentStatusFilter}
+            activeTotalCount={activeTotalCount}
+            scheduledTotalCount={scheduledTotalCount}
+            completedTotalCount={completedTotalCount}
           />
         )}
 
@@ -640,6 +792,9 @@ export default function CodeBattlePage() {
             leaderboardData={leaderboardData}
             eventSecondsLeft={eventSecondsLeft}
             eventEndDate={eventEndDate}
+            problems={problems}
+            selectedProblemId={selectedProblemId}
+            onProblemChange={handleProblemChange}
           />
         )}
       </div>

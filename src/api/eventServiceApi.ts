@@ -154,18 +154,44 @@ const eventServiceApi = {
     }
   },
 
+  /**
+   * Get all submissions for a specific problem (authenticated)
+   * @param problemId - The problem ID to fetch submissions for
+   */
+  async getProblemSubmissions(problemId: string): Promise<ApiResponse<Submission[]>> {
+    try {
+      const response = await axiosCodeBattleClient.get(`/problems/${problemId}/submissions`);
+      if (response.data.success && response.data.data) {
+        return { success: true, data: response.data.data };
+      }
+      return { success: false, error: { message: 'Invalid response format' } };
+    } catch (error: any) {
+      return {
+        success: false,
+        error: {
+          message: error.normalized?.message || 'Failed to fetch problem submissions',
+          details: error.normalized?.details,
+        },
+      };
+    }
+  },
+
   // ============ Events ============
   /**
    * Get all events (public) with pagination support
    * @param page - Page number (1-indexed)
    * @param pageSize - Number of items per page
    * @param type - Optional event type filter (e.g., 'code_battle')
+   * @param status - Optional status filter (e.g., 'active', 'pending', 'completed')
    */
-  async getAllEvents(page: number = 1, pageSize: number = 6, type?: string): Promise<ApiResponse<Event[]>> {
+  async getAllEvents(page: number = 1, pageSize: number = 6, type?: string, status?: string): Promise<ApiResponse<Event[]>> {
     try {
       const params: any = { page_index: page, page_size: pageSize };
       if (type) {
         params.type = type;
+      }
+      if (status) {
+        params.status = status;
       }
       const response = await axiosCodeBattleClient.get('/events', { params });
       console.log('📦 Events API response:', response.data);
@@ -588,6 +614,26 @@ const eventServiceApi = {
         success: false,
         error: {
           message: error.normalized?.message || 'Failed to fetch tags',
+          details: error.normalized?.details,
+        },
+      };
+    }
+  },
+
+  /**
+   * Leave a room intentionally (authenticated)
+   */
+  async leaveRoom(eventId: string, roomId: string): Promise<ApiResponse<any>> {
+    try {
+      const response = await axiosCodeBattleClient.delete(
+        `/events/${eventId}/rooms/${roomId}/leave`
+      );
+      return { success: true, data: response.data };
+    } catch (error: any) {
+      return {
+        success: false,
+        error: {
+          message: error.normalized?.message || 'Failed to leave room',
           details: error.normalized?.details,
         },
       };

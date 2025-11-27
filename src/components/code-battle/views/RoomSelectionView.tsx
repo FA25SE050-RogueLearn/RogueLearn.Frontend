@@ -1,10 +1,18 @@
 "use client";
 
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import type { CSSProperties, ReactNode } from 'react';
-import { ArrowLeft, ArrowRight, Users, Code, Trophy, Swords, Map, Sparkles } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Users, Code, Trophy, Swords, Map, Sparkles, AlertTriangle } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import type { Room, Problem, Event } from '@/types/event-service';
 import CountdownTimer from '@/components/CountdownTimer';
 
@@ -42,14 +50,14 @@ const buildRoomTag = (room: Room) => {
 };
 
 const getDifficultyColor = (difficulty: number) => {
-  if (difficulty <= 3) return 'text-emerald-400 bg-emerald-400/10 border-emerald-400/30';
-  if (difficulty <= 6) return 'text-yellow-400 bg-yellow-400/10 border-yellow-400/30';
+  if (difficulty === 1) return 'text-emerald-400 bg-emerald-400/10 border-emerald-400/30';
+  if (difficulty === 2) return 'text-yellow-400 bg-yellow-400/10 border-yellow-400/30';
   return 'text-rose-400 bg-rose-400/10 border-rose-400/30';
 };
 
 const getDifficultyLabel = (difficulty: number) => {
-  if (difficulty <= 3) return 'Easy';
-  if (difficulty <= 6) return 'Medium';
+  if (difficulty === 1) return 'Easy';
+  if (difficulty === 2) return 'Medium';
   return 'Hard';
 };
 
@@ -94,16 +102,31 @@ export default function RoomSelectionView({
   totalPages = 1,
   onPageChange,
 }: RoomSelectionViewProps) {
+  const [showLeaveDialog, setShowLeaveDialog] = useState(false);
   const selectedRoom = rooms.find(r => r.ID === selectedRoomId);
   const selectedProblem = problems.find(p => p.id === selectedProblemId);
+
+  const handleBackClick = () => {
+    // Only show warning if user is in a room
+    if (selectedRoomId) {
+      setShowLeaveDialog(true);
+    } else {
+      onBack();
+    }
+  };
+
+  const handleConfirmLeave = () => {
+    setShowLeaveDialog(false);
+    onBack();
+  };
 
   type DifficultyBuckets = { easy: number; medium: number; hard: number };
 
   const difficultySpread = useMemo(() => {
     const initialBuckets: DifficultyBuckets = { easy: 0, medium: 0, hard: 0 };
     return problems.reduce<DifficultyBuckets>((acc, curr) => {
-      if (curr.difficulty <= 3) acc.easy += 1;
-      else if (curr.difficulty <= 6) acc.medium += 1;
+      if (curr.difficulty === 1) acc.easy += 1;
+      else if (curr.difficulty === 2) acc.medium += 1;
       else acc.hard += 1;
       return acc;
     }, { ...initialBuckets });
@@ -134,7 +157,7 @@ export default function RoomSelectionView({
         <CardContent className="relative z-10 flex flex-col gap-8 p-8 lg:flex-row lg:items-end lg:justify-between">
           <div className="max-w-3xl text-white">
             <div className="mb-4 flex items-center gap-3 text-sm text-foreground/60">
-              <button type="button" onClick={onBack} className="inline-flex items-center text-xs uppercase tracking-[0.35em] text-[#f5c16c]">
+              <button type="button" onClick={handleBackClick} className="inline-flex items-center text-xs uppercase tracking-[0.35em] text-[#f5c16c] hover:text-[#f9d9eb] transition-colors">
                 <ArrowLeft className="mr-2 h-3 w-3" />
                 Events
               </button>
@@ -500,6 +523,45 @@ export default function RoomSelectionView({
           </Button>
         </div>
       )}
+
+      {/* Leave Room Confirmation Dialog */}
+      <Dialog open={showLeaveDialog} onOpenChange={setShowLeaveDialog}>
+        <DialogContent className="border-[#d23187]/30 bg-[#120806]/95 backdrop-blur-xl">
+          <DialogHeader>
+            <div className="mb-4 flex justify-center">
+              <div className="rounded-full bg-amber-500/10 p-3">
+                <AlertTriangle className="h-8 w-8 text-amber-400" />
+              </div>
+            </div>
+            <DialogTitle className="text-center text-xl text-white">
+              Leave Battle Arena?
+            </DialogTitle>
+            <DialogDescription className="text-center text-base text-foreground/70">
+              <span className="block mt-2">
+                If you leave this room, you <span className="font-semibold text-red-400">cannot rejoin</span> once you exit.
+              </span>
+              <span className="block mt-2">
+                Your progress will be saved, but you won&apos;t be able to continue in this arena.
+              </span>
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="mt-6 flex gap-3 sm:gap-3">
+            <Button
+              variant="outline"
+              onClick={() => setShowLeaveDialog(false)}
+              className="flex-1 border-[#f5c16c]/40 bg-white/5 text-[#f5c16c] hover:bg-[#f5c16c]/20"
+            >
+              Stay in Room
+            </Button>
+            <Button
+              onClick={handleConfirmLeave}
+              className="flex-1 bg-gradient-to-r from-red-600 to-red-500 text-white hover:from-red-700 hover:to-red-600"
+            >
+              Leave Room
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

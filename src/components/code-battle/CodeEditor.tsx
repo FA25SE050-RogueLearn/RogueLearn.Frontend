@@ -19,7 +19,7 @@ interface CodeEditorProps {
   spaceConstraintMb: number | null;
 }
 
-export default function CodeEditor({ code, setCode, language, setLanguage, onSubmit, submissionResult, isSubmitting, spaceConstraintMb }: CodeEditorProps) {
+export default function CodeEditor({ code, setCode, language, onSubmit, submissionResult, isSubmitting, spaceConstraintMb }: CodeEditorProps) {
   // Get language extension
   const getLanguageExtension = () => {
     switch (language) {
@@ -41,16 +41,8 @@ export default function CodeEditor({ code, setCode, language, setLanguage, onSub
   }, [code]);
 
   return (
-    <div className="space-y-4">
+    <div className="flex h-full flex-col space-y-4 p-4">
       <div className="flex flex-wrap items-center gap-4">
-        <select
-          value={language}
-          onChange={(e) => setLanguage(e.target.value)}
-          className="rounded-full border border-[#f5c16c]/25 bg-[#140707]/80 px-4 py-2 text-sm uppercase tracking-[0.35em] text-foreground/80"
-        >
-          <option value="python">Python</option>
-          <option value="go">Go</option>
-        </select>
         <Button
           onClick={onSubmit}
           disabled={isSubmitting}
@@ -79,10 +71,10 @@ export default function CodeEditor({ code, setCode, language, setLanguage, onSub
         </div>
       </div>
 
-      <div className="overflow-hidden rounded-2xl border border-[#f5c16c]/22 bg-black/40 shadow-[inset_0_0_35px_rgba(210,49,135,0.28)]">
+      <div className="flex-1 overflow-hidden rounded-2xl border border-[#f5c16c]/22 bg-black/40 shadow-[inset_0_0_35px_rgba(210,49,135,0.28)]">
         <CodeMirror
           value={code}
-          height="400px"
+          height="700px"
           theme="dark"
           extensions={[
             getLanguageExtension(),

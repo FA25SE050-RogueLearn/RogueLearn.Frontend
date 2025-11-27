@@ -25,6 +25,7 @@ import guildsApi from "@/api/guildsApi";
 import type { Event, RegisteredMember } from "@/types/event-service";
 import { createClient } from "@/utils/supabase/client";
 import type { CSSProperties } from "react";
+import CountdownTimer from "@/components/CountdownTimer";
 
 interface EventDetailsContentProps {
   eventId: string;
@@ -95,6 +96,52 @@ export default function EventDetailsContent({ eventId }: EventDetailsContentProp
     }
   }, [eventId, userGuildId]);
 
+  // Check for registration deadline and redirect if passed
+  useEffect(() => {
+    if (!event || !event.assignment_date || event.status !== 'pending') return;
+
+    const checkDeadline = () => {
+      const now = new Date();
+      const deadline = new Date(event.assignment_date!);
+
+      if (now >= deadline) {
+        toast.error('Registration deadline has passed', {
+          description: 'Redirecting to events page...'
+        });
+        setTimeout(() => {
+          router.push('/code-battle');
+        }, 2000);
+      }
+    };
+
+    // Check immediately
+    checkDeadline();
+
+    // Check every 10 seconds
+    const interval = setInterval(checkDeadline, 10000);
+
+    return () => clearInterval(interval);
+  }, [event, router]);
+
+  // Auto-redirect to arena if event is active and user is registered
+  useEffect(() => {
+    if (!event || !isRegistered || !eventId) return;
+
+    const now = new Date();
+    const startDate = new Date(event.started_date);
+    const endDate = new Date(event.end_date);
+
+    // Check if event is currently active (between start and end date)
+    const isEventActive = now >= startDate && now <= endDate;
+
+    // Redirect to code battle room selection if event is active and user is registered
+    if (isEventActive && isRegistered) {
+      console.log('🚀 Event is active and user is registered, redirecting to code battle room selection...');
+      // Use replace to prevent back button from bringing user back to event details
+      router.replace(`/code-battle?eventId=${eventId}`);
+    }
+  }, [event, isRegistered, eventId, router]);
+
   const fetchUserData = async () => {
     try {
       // Get authenticated user from Supabase Auth
@@ -147,19 +194,37 @@ export default function EventDetailsContent({ eventId }: EventDetailsContentProp
     if (!userGuildId) return;
 
     try {
+      // Check if this guild is the requester (automatically registered when event is created)
+      // Handle both snake_case and PascalCase field names
+      const requesterGuildId = event?.requester_guild_id || (event as any)?.RequesterGuildID || (event as any)?.requester_guild_id;
+      const isRequesterGuild = requesterGuildId === userGuildId;
+
+      console.log('🔍 Fetching registered members:', {
+        eventId,
+        userGuildId,
+        requesterGuildId,
+        isRequesterGuild,
+        eventObject: event
+      });
+
       // Step 1: Get registered member IDs from event service
       const eventResponse = await eventServiceApi.getRegisteredGuildMembers(eventId);
       if (!eventResponse.success || !eventResponse.data) {
-        setIsRegistered(false);
+        // If this is the requester guild, they're registered even without members yet
+        console.log('⚠️ No registered members found, setting isRegistered to:', isRequesterGuild);
+        setIsRegistered(isRequesterGuild);
         return;
       }
 
       const registeredUserIds = eventResponse.data.map(m => m.user_id);
+      console.log('📋 Found registered user IDs:', registeredUserIds);
 
       // Step 2: Get full member details from user service (guilds API)
       const guildResponse = await guildsApi.getMembers(userGuildId);
       if (!guildResponse.isSuccess || !guildResponse.data) {
-        setIsRegistered(false);
+        // If this is the requester guild, they're registered even without members yet
+        console.log('⚠️ Failed to fetch guild members, setting isRegistered to:', isRequesterGuild);
+        setIsRegistered(isRequesterGuild);
         return;
       }
 
@@ -177,7 +242,13 @@ export default function EventDetailsContent({ eventId }: EventDetailsContentProp
       });
 
       setRegisteredMembers(enrichedMembers);
-      setIsRegistered(enrichedMembers.length > 0);
+      // Guild is registered if they have members OR if they're the requester guild
+      const finalIsRegistered = enrichedMembers.length > 0 || isRequesterGuild;
+      console.log('✅ Setting isRegistered to:', finalIsRegistered, {
+        enrichedMembersCount: enrichedMembers.length,
+        isRequesterGuild
+      });
+      setIsRegistered(finalIsRegistered);
     } catch (err) {
       console.error('Error fetching registered members:', err);
     }
@@ -218,8 +289,11 @@ export default function EventDetailsContent({ eventId }: EventDetailsContentProp
     if (newSelected.has(userId)) {
       newSelected.delete(userId);
     } else {
-      if (newSelected.size >= (event?.max_players_per_guild || 0)) {
-        toast.error(`You can only select ${event?.max_players_per_guild} members`);
+      // Check if adding this member would exceed the total limit
+      const totalMembers = registeredMembers.length + newSelected.size;
+      if (totalMembers >= (event?.max_players_per_guild || 0)) {
+        const remainingSlots = (event?.max_players_per_guild || 0) - registeredMembers.length;
+        toast.error(`Only ${remainingSlots} slot${remainingSlots !== 1 ? 's' : ''} remaining`);
         return;
       }
       newSelected.add(userId);
@@ -243,10 +317,23 @@ export default function EventDetailsContent({ eventId }: EventDetailsContentProp
     setRegistering(true);
     try {
       // Check if this guild is the one that requested the event
-      const isRequesterGuild = event.requester_guild_id === userGuildId;
+      // Handle both snake_case and PascalCase field names
+      const requesterGuildId = event.requester_guild_id || (event as any).RequesterGuildID || (event as any).requester_guild_id;
+      const isRequesterGuild = requesterGuildId === userGuildId;
+
+      console.log('🔍 Registration check:', {
+        isRegistered,
+        isRequesterGuild,
+        userGuildId,
+        requesterGuildId,
+        eventObject: event,
+        willSkipGuildRegistration: isRegistered || isRequesterGuild
+      });
 
       // Only register guild if not already registered and not the requester guild
+      // Requester guilds are automatically registered when the event is approved
       if (!isRegistered && !isRequesterGuild) {
+        console.log('📝 Calling registerGuildToEvent API...');
         // Step 1: Register guild to event (for guilds that didn't request the event)
         const registerResponse = await eventServiceApi.registerGuildToEvent(eventId);
 
@@ -257,14 +344,18 @@ export default function EventDetailsContent({ eventId }: EventDetailsContentProp
           setRegistering(false);
           return;
         }
+        console.log('✅ Guild registered successfully');
+      } else {
+        console.log('⏭️ Skipping guild registration (already registered or requester guild)');
       }
 
       // Step 2: Add members to the registered guild
       // (Requester guilds are already registered when they created the event request)
+
       const membersResponse = await eventServiceApi.addGuildMembersToEvent(
         eventId,
         {
-          members: Array.from(selectedMembers).map(user_id => ({ user_id }))
+            members: Array.from(selectedMembers).map(user_id => ({ user_id }))
         }
       );
 
@@ -282,9 +373,15 @@ export default function EventDetailsContent({ eventId }: EventDetailsContentProp
         setSelectedMembers(new Set());
         await fetchRegisteredMembers();
       } else {
-        toast.error('Failed to add guild members', {
-          description: membersResponse.error?.message
-        });
+        // Don't show toast for member limit error (UI already prevents this)
+        const errorMessage = membersResponse.error?.message || '';
+        if (!errorMessage.includes('member registered reached limit')) {
+          toast.error('Failed to add guild members', {
+            description: errorMessage
+          });
+        }
+        // Still refresh the member list to sync with backend state
+        await fetchRegisteredMembers();
       }
     } catch (err) {
       console.error('Error registering guild:', err);
@@ -543,9 +640,26 @@ export default function EventDetailsContent({ eventId }: EventDetailsContentProp
                     </p>
                   </div>
                 </div>
-                <p className="text-3xl font-black text-[#f5c16c]">
-                  {getTimeUntil(event.assignment_date!)}
-                </p>
+                <div className="flex items-center">
+                  <CountdownTimer
+                    endDate={event.assignment_date!}
+                    fontSize={32}
+                    gap={3}
+                    borderRadius={8}
+                    horizontalPadding={8}
+                    textColor="#f5c16c"
+                    fontWeight="bold"
+                    gradientHeight={12}
+                    gradientFrom="rgba(18, 8, 6, 0.8)"
+                    gradientTo="transparent"
+                    showLabels={false}
+                    counterStyle={{
+                      background: 'linear-gradient(135deg, rgba(210, 49, 135, 0.2), rgba(245, 193, 108, 0.1))',
+                      border: '1px solid rgba(245, 193, 108, 0.3)',
+                      boxShadow: '0 0 20px rgba(245, 193, 108, 0.2)',
+                    }}
+                  />
+                </div>
               </div>
             </div>
           )}
@@ -601,15 +715,24 @@ export default function EventDetailsContent({ eventId }: EventDetailsContentProp
 
                 <div className="rounded-2xl border border-white/10 bg-[#0f0504]/80 p-5">
                   <div className="mb-4 flex items-center justify-between">
-                    <p className="text-sm font-bold uppercase tracking-wider text-[#f5c16c]">
-                      Registered Warriors ({registeredMembers.length})
-                    </p>
+                    <div className="flex items-center gap-2">
+                      <p className="text-sm font-bold uppercase tracking-wider text-[#f5c16c]">
+                        Registered Warriors ({registeredMembers.length}/{event.max_players_per_guild})
+                      </p>
+                      {registeredMembers.length >= (event.max_players_per_guild || 0) && (
+                        <span className="inline-flex items-center gap-1 rounded-full border border-emerald-600/40 bg-emerald-600/20 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-emerald-400">
+                          <CheckCircle className="h-3 w-3" />
+                          Full
+                        </span>
+                      )}
+                    </div>
                     {event.status === 'pending' && (!event.assignment_date || new Date() < new Date(event.assignment_date)) && (
                       <Button
                         onClick={handleShowMemberSelection}
                         size="sm"
                         variant="outline"
-                        className="border-[#f5c16c]/40 bg-white/5 text-[#f5c16c] hover:bg-[#f5c16c]/20"
+                        disabled={registeredMembers.length >= (event.max_players_per_guild || 0)}
+                        className="border-[#f5c16c]/40 bg-white/5 text-[#f5c16c] hover:bg-[#f5c16c]/20 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-white/5"
                       >
                         <Users className="mr-2 h-3 w-3" />
                         Add More
@@ -654,7 +777,7 @@ export default function EventDetailsContent({ eventId }: EventDetailsContentProp
                         Add More Warriors
                       </p>
                       <span className="text-xs font-bold text-white">
-                        {selectedMembers.size} / {event.max_players_per_guild}
+                        {registeredMembers.length + selectedMembers.size} / {event.max_players_per_guild}
                       </span>
                     </div>
 
@@ -779,7 +902,7 @@ export default function EventDetailsContent({ eventId }: EventDetailsContentProp
                               onCheckedChange={() => handleMemberToggle(member.user_id)}
                               disabled={
                                 !selectedMembers.has(member.user_id) &&
-                                selectedMembers.size >= (event.max_players_per_guild || 0)
+                                (registeredMembers.length + selectedMembers.size) >= (event.max_players_per_guild || 0)
                               }
                               className="border-[#f5c16c] data-[state=checked]:bg-[#d23187] data-[state=checked]:border-[#d23187]"
                             />
