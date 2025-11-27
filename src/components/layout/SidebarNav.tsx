@@ -11,12 +11,12 @@ import {
   Network,
   Archive,
   Compass,
-  Skull,
   LogOut,
   Settings,
   User,
   GraduationCap,
 } from "lucide-react";
+import Image from "next/image";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -91,7 +91,13 @@ export function SidebarNav({ userProfile }: SidebarNavProps) {
         onClick={() => handleNavigation("/dashboard")}
         className="flex w-full justify-center p-4 transition-transform hover:scale-110"
       >
-        <Skull className="h-8 w-8 text-[#f5c16c]" />
+        <Image 
+          src="/RougeLearn-Clear.png" 
+          alt="RogueLearn" 
+          width={40} 
+          height={40} 
+          className="h-10 w-10 object-contain"
+        />
       </button>
 
       {/* Navigation Items */}

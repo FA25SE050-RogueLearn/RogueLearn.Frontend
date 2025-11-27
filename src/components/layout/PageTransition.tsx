@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import { useRouter, usePathname } from "next/navigation"
-import { Skull } from "lucide-react"
+import Image from "next/image"
 
 const TransitionContext = React.createContext<{
   navigateTo: (url: string) => void
@@ -140,7 +140,7 @@ export function PageTransitionProvider({ children }: { children: React.ReactNode
             }}
           />
 
-          {/* Center skull icon */}
+          {/* Center logo */}
           <div 
             className={`relative transition-all duration-400 ${
               phase === 'exit' 
@@ -150,8 +150,14 @@ export function PageTransitionProvider({ children }: { children: React.ReactNode
                   : 'scale-0 opacity-0'
             }`}
           >
-            <div className="w-16 h-16 rounded-full bg-gradient-to-br from-[#d23187] via-[#f061a6] to-[#f5c16c] flex items-center justify-center shadow-[0_0_30px_rgba(210,49,135,0.6)]">
-              <Skull className="w-8 h-8 text-white drop-shadow-[0_0_8px_rgba(255,255,255,0.8)]" />
+            <div className="w-20 h-20 rounded-full bg-gradient-to-br from-[#d23187]/20 via-[#f061a6]/20 to-[#f5c16c]/20 flex items-center justify-center shadow-[0_0_30px_rgba(210,49,135,0.6)] backdrop-blur-sm">
+              <Image 
+                src="/RougeLearn-Clear.png" 
+                alt="RogueLearn" 
+                width={56} 
+                height={56} 
+                className="w-14 h-14 object-contain drop-shadow-[0_0_8px_rgba(255,255,255,0.8)]"
+              />
             </div>
             
             {/* Pulse ring */}
