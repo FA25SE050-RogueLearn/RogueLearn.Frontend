@@ -109,13 +109,35 @@ const KnowledgeCheckActivityContent = ({ payload }: { payload: KnowledgeCheckAct
     const [selectedAnswers, setSelectedAnswers] = useState<Record<number, string>>({});
     const [submitted, setSubmitted] = useState(false);
 
-    const questions: KnowledgeCheckQuestion[] = payload.questions ||
+    const deriveDefault = (text: string) => {
+        const t = (text || '').toLowerCase();
+        if (t.startsWith('define')) {
+            return { options: ['Definition', 'Property', 'Example', 'Application'], correct: 'Definition' };
+        }
+        if (t.includes('property')) {
+            return { options: ['Definition', 'Property', 'Example', 'Application'], correct: 'Property' };
+        }
+        if (t.includes('example')) {
+            return { options: ['Definition', 'Property', 'Example', 'Application'], correct: 'Example' };
+        }
+        return { options: ['Option A', 'Option B', 'Option C', 'Option D'], correct: 'Option A' };
+    };
+
+    const baseQuestions: KnowledgeCheckQuestion[] = payload.questions ||
         (payload.question ? [{
             question: payload.question,
             options: payload.options || [],
             correctAnswer: payload.correctAnswer || '',
             explanation: payload.explanation || ''
         }] : []);
+
+    const questions: KnowledgeCheckQuestion[] = baseQuestions.map(q => {
+        const hasOptions = Array.isArray(q.options) && q.options.length > 0;
+        const d = deriveDefault(q.question);
+        const opts = hasOptions ? q.options : d.options;
+        const correct = q.correctAnswer && q.correctAnswer.length > 0 ? q.correctAnswer : d.correct;
+        return { ...q, options: opts, correctAnswer: correct, explanation: q.explanation || '' };
+    });
 
     const handleSelect = (qIndex: number, option: string) => {
         if (submitted) return;

@@ -33,7 +33,10 @@ export default function WeekStepAutoRefresh({ questId, stepNumber }: Props) {
   };
 
   useEffect(() => {
-    check();
+    const id = setTimeout(() => {
+      check();
+    }, 0);
+    return () => clearTimeout(id);
   }, []);
 
   return (
@@ -53,4 +56,3 @@ export default function WeekStepAutoRefresh({ questId, stepNumber }: Props) {
     </div>
   );
 }
-
