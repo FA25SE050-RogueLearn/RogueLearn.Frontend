@@ -2,18 +2,21 @@
 
 import * as React from "react"
 import { useRouter, usePathname } from "next/navigation"
-import gsap from "gsap"
-import { Shield, Sword, Skull } from "lucide-react"
+import { Skull } from "lucide-react"
 
-// Create context for navigation control
 const TransitionContext = React.createContext<{
   navigateTo: (url: string) => void
 } | null>(null)
 
 export function usePageTransition() {
   const context = React.useContext(TransitionContext)
+  const router = useRouter()
+  
+  // Return fallback if context not available (graceful degradation)
   if (!context) {
-    throw new Error('usePageTransition must be used within PageTransitionProvider')
+    return {
+      navigateTo: (url: string) => router.push(url)
+    }
   }
   return context
 }
@@ -23,279 +26,197 @@ export function PageTransitionProvider({ children }: { children: React.ReactNode
   const pathname = usePathname()
   const [isTransitioning, setIsTransitioning] = React.useState(false)
   const [targetUrl, setTargetUrl] = React.useState<string | null>(null)
-  const [isNavigating, setIsNavigating] = React.useState(false)
-
-  const leftCurtainRef = React.useRef<HTMLDivElement>(null)
-  const rightCurtainRef = React.useRef<HTMLDivElement>(null)
-  const shieldRef = React.useRef<HTMLDivElement>(null)
-  const swordRef = React.useRef<HTMLDivElement>(null)
-  const logoRef = React.useRef<HTMLDivElement>(null)
-  const slashRef = React.useRef<HTMLDivElement>(null)
-  const containerRef = React.useRef<HTMLDivElement>(null)
+  const [phase, setPhase] = React.useState<'idle' | 'exit' | 'enter'>('idle')
 
   const navigateTo = React.useCallback((url: string) => {
-    console.log('PageTransition - Navigate to:', url)
+    if (url === pathname) return
     setTargetUrl(url)
     setIsTransitioning(true)
-  }, [])
+    setPhase('exit')
+  }, [pathname])
 
-  // Start closing animation when navigation is triggered
   React.useEffect(() => {
-    if (!isTransitioning || !targetUrl || isNavigating) return
-
-    console.log('PageTransition - Starting closing animation for:', targetUrl)
-
-    // Wait for refs to be ready
-    const startAnimation = () => {
-      if (!leftCurtainRef.current || !rightCurtainRef.current ||
-          !shieldRef.current || !swordRef.current ||
-          !logoRef.current || !slashRef.current) {
-        console.error('PageTransition - Refs not ready')
-        return
-      }
-
-      const ctx = gsap.context(() => {
-        const tl = gsap.timeline({
-          onComplete: () => {
-            console.log('PageTransition - Closing complete, navigating now!')
-            // Navigate at the peak of the animation (when curtains are closed)
-            setIsNavigating(true)
-            router.push(targetUrl)
-          }
-        })
-
-        // Phase 1: Curtains close
-        tl.to([leftCurtainRef.current, rightCurtainRef.current], {
-          x: 0,
-          duration: 0.6,
-          ease: "power3.inOut",
-        })
-
-        // Phase 2: Shield and Sword appear
-        tl.fromTo(shieldRef.current,
-          { x: -200, rotation: -45, scale: 0, opacity: 0 },
-          { x: -30, rotation: 0, scale: 1, opacity: 1, duration: 0.4, ease: "back.out(2)" },
-          "+=0.1"
-        )
-        tl.fromTo(swordRef.current,
-          { x: 200, rotation: 45, scale: 0, opacity: 0 },
-          { x: 30, rotation: 0, scale: 1, opacity: 1, duration: 0.4, ease: "back.out(2)" },
-          "-=0.4"
-        )
-
-        // Logo appears
-        tl.fromTo(logoRef.current,
-          { scale: 0, rotation: -180, opacity: 0 },
-          { scale: 1, rotation: 0, opacity: 1, duration: 0.4, ease: "back.out(2)" },
-          "-=0.3"
-        )
-
-        // Clash effect
-        tl.to([shieldRef.current, swordRef.current], {
-          x: "+=5",
-          duration: 0.05,
-          yoyo: true,
-          repeat: 3,
-        })
-        tl.to(logoRef.current, {
-          scale: 1.2,
-          duration: 0.1,
-        }, "-=0.15")
-        tl.to(logoRef.current, {
-          scale: 1,
-          duration: 0.2,
-          ease: "elastic.out(2, 0.3)"
-        })
-
-      }, containerRef)
-
-      return () => ctx.revert()
-    }
-
-    requestAnimationFrame(startAnimation)
-  }, [isTransitioning, targetUrl, isNavigating, router])
-
-  // Start reveal animation when pathname changes (page has loaded)
-  React.useEffect(() => {
-    if (!isNavigating || !targetUrl) return
-
-    // Check if we've arrived at the target URL
-    if (pathname === targetUrl) {
-      console.log('PageTransition - Page loaded, starting reveal animation')
-
-      const startReveal = () => {
-        if (!leftCurtainRef.current || !rightCurtainRef.current ||
-            !shieldRef.current || !swordRef.current ||
-            !logoRef.current || !slashRef.current) {
-          return
-        }
-
-        const ctx = gsap.context(() => {
-          const revealTl = gsap.timeline({
-            onComplete: () => {
-              console.log('PageTransition - Animation complete!')
-              setIsTransitioning(false)
-              setTargetUrl(null)
-              setIsNavigating(false)
-            }
-          })
-
-          // Sword slashes
-          revealTl.to(swordRef.current, {
-            x: -100,
-            y: 100,
-            rotation: -135,
-            scale: 1.5,
-            duration: 0.3,
-            ease: "power2.in",
-          })
-
-          // Slash effect
-          revealTl.to(slashRef.current, {
-            opacity: 1,
-            duration: 0.1,
-          }, "-=0.2")
-          revealTl.to(slashRef.current, {
-            scaleX: 3,
-            scaleY: 1.5,
-            duration: 0.2,
-          }, "-=0.1")
-
-          // Shield shatters
-          revealTl.to(shieldRef.current, {
-            scale: 0,
-            rotation: 180,
-            opacity: 0,
-            duration: 0.3,
-          }, "-=0.1")
-
-          // Curtains slide open (same as they slid in)
-          revealTl.to(leftCurtainRef.current, {
-            x: "-100%",
-            duration: 0.6,
-            ease: "power3.inOut"
-          }, "-=0.3")
-          revealTl.to(rightCurtainRef.current, {
-            x: "100%",
-            duration: 0.6,
-            ease: "power3.inOut"
-          }, "-=0.6")
-
-          // Everything fades
-          revealTl.to([logoRef.current, swordRef.current, slashRef.current], {
-            opacity: 0,
-            scale: 1.5,
-            duration: 0.3,
-          }, "-=0.4")
-
-        }, containerRef)
-
-        return () => ctx.revert()
-      }
-
-      // Small delay to ensure page is fully rendered
-      const timer = setTimeout(startReveal, 100)
+    if (phase === 'exit' && targetUrl) {
+      const timer = setTimeout(() => {
+        router.push(targetUrl)
+      }, 400)
       return () => clearTimeout(timer)
     }
-  }, [isNavigating, targetUrl, pathname])
+  }, [phase, targetUrl, router])
+
+  React.useEffect(() => {
+    if (isTransitioning && targetUrl && pathname === targetUrl) {
+      setPhase('enter')
+      const timer = setTimeout(() => {
+        setIsTransitioning(false)
+        setTargetUrl(null)
+        setPhase('idle')
+      }, 400)
+      return () => clearTimeout(timer)
+    }
+  }, [pathname, targetUrl, isTransitioning])
 
   return (
     <TransitionContext.Provider value={{ navigateTo }}>
       {children}
-      {isTransitioning && (
-        <div
-          ref={containerRef}
-          className="fixed inset-0 z-9999 pointer-events-none"
-          style={{ isolation: 'isolate' }}
-        >
-          {/* Left Curtain */}
-          <div
-            ref={leftCurtainRef}
-            className="absolute top-0 left-0 bottom-0 w-1/2 bg-linear-to-r from-[#0c0308] via-[#1a0b10] to-[#14080f]"
-            style={{
-              transform: 'translateX(-100%)',
-              boxShadow: 'inset -40px 0 80px rgba(210, 49, 135, 0.3)'
-            }}
-          >
-            <div className="absolute inset-0 opacity-20" style={{
-              backgroundImage: 'repeating-linear-gradient(90deg, transparent, transparent 2px, rgba(245, 193, 108, 0.1) 2px, rgba(245, 193, 108, 0.1) 4px)'
-            }} />
-            <div className="absolute top-0 right-0 bottom-0 w-8 bg-linear-to-l from-[#f5c16c]/30 to-transparent" />
-          </div>
+      
+      {/* RPG Portal Transition */}
+      <div
+        className={`fixed inset-0 z-[9999] pointer-events-none transition-all duration-400 ${
+          phase === 'idle' ? 'opacity-0 invisible' : 'opacity-100 visible'
+        }`}
+      >
+        {/* Dark vignette background */}
+        <div 
+          className={`absolute inset-0 bg-[#0c0308] transition-opacity duration-300 ${
+            phase === 'exit' ? 'opacity-95' : phase === 'enter' ? 'opacity-0' : 'opacity-0'
+          }`}
+        />
 
-          {/* Right Curtain */}
-          <div
-            ref={rightCurtainRef}
-            className="absolute top-0 right-0 bottom-0 w-1/2 bg-linear-to-l from-[#0c0308] via-[#1a0b10] to-[#14080f]"
-            style={{
-              transform: 'translateX(100%)',
-              boxShadow: 'inset 40px 0 80px rgba(210, 49, 135, 0.3)'
-            }}
-          >
-            <div className="absolute inset-0 opacity-20" style={{
-              backgroundImage: 'repeating-linear-gradient(90deg, transparent, transparent 2px, rgba(245, 193, 108, 0.1) 2px, rgba(245, 193, 108, 0.1) 4px)'
-            }} />
-            <div className="absolute top-0 left-0 bottom-0 w-8 bg-linear-to-r from-[#f5c16c]/30 to-transparent" />
-          </div>
-
-          {/* Center elements */}
-          <div className="absolute inset-0 flex items-center justify-center">
-            {/* Shield */}
-            <div ref={shieldRef} className="absolute" style={{ opacity: 0 }}>
-              <div className="relative">
-                <Shield className="size-32 text-[#f5c16c]" strokeWidth={2} fill="rgba(210, 49, 135, 0.2)" />
-                <div className="absolute inset-0 bg-[#f5c16c] blur-2xl opacity-40 scale-75" />
-              </div>
-            </div>
-
-            {/* Logo */}
-            <div ref={logoRef} className="absolute" style={{ opacity: 0 }}>
-              <div className="relative flex items-center justify-center">
-                <div className="size-20 rounded-full bg-linear-to-br from-[#d23187] via-[#f061a6] to-[#f5c16c] flex items-center justify-center shadow-[0_0_60px_rgba(210,49,135,0.8)]">
-                  <Skull className="size-10 text-white drop-shadow-[0_0_8px_rgba(255,255,255,0.8)]" />
-                </div>
-                <div className="absolute inset-0 rounded-full border-4 border-[#f5c16c] animate-ping" style={{ animationDuration: '1s' }} />
-              </div>
-            </div>
-
-            {/* Sword */}
-            <div ref={swordRef} className="absolute" style={{ opacity: 0 }}>
-              <div className="relative">
-                <Sword className="size-32 text-white drop-shadow-[0_0_20px_rgba(255,255,255,0.8)]" strokeWidth={2} />
-                <div className="absolute inset-0 bg-linear-to-br from-white via-[#f5c16c] to-transparent blur-xl opacity-60" />
-              </div>
-            </div>
-
-            {/* Slash Effect */}
-            <div ref={slashRef} className="absolute" style={{ opacity: 0 }}>
-              <svg width="400" height="400" viewBox="0 0 400 400" className="absolute -translate-x-1/2 -translate-y-1/2">
-                <defs>
-                  <linearGradient id="slashGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" stopColor="rgba(255, 255, 255, 0)" />
-                    <stop offset="50%" stopColor="rgba(255, 255, 255, 1)" />
-                    <stop offset="100%" stopColor="rgba(245, 193, 108, 0)" />
-                  </linearGradient>
-                </defs>
-                <path d="M 50 50 L 350 350" stroke="url(#slashGradient)" strokeWidth="8" strokeLinecap="round" fill="none" />
-                <path d="M 50 50 L 350 350" stroke="white" strokeWidth="3" strokeLinecap="round" fill="none" />
-              </svg>
-            </div>
-          </div>
-
-          {/* Flash overlay */}
-          <div className="absolute inset-0 bg-white opacity-0 mix-blend-screen" style={{
-            animation: 'clash-flash 0.3s ease-out 1.2s'
-          }} />
-
-          <style jsx>{`
-            @keyframes clash-flash {
-              0% { opacity: 0; }
-              50% { opacity: 0.4; }
-              100% { opacity: 0; }
-            }
-          `}</style>
+        {/* Magical particles */}
+        <div className="absolute inset-0 overflow-hidden">
+          {phase !== 'idle' && [...Array(12)].map((_, i) => (
+            <div
+              key={i}
+              className="absolute w-1 h-1 rounded-full bg-[#f5c16c] animate-float-particle"
+              style={{
+                left: `${10 + (i * 7)}%`,
+                top: `${20 + (i % 4) * 20}%`,
+                animationDelay: `${i * 0.05}s`,
+                opacity: 0.6,
+              }}
+            />
+          ))}
         </div>
-      )}
+
+        {/* Center portal effect */}
+        <div className="absolute inset-0 flex items-center justify-center">
+          {/* Outer rune circle */}
+          <div 
+            className={`absolute w-40 h-40 rounded-full border-2 border-[#f5c16c]/30 transition-all duration-500 ${
+              phase === 'exit' 
+                ? 'scale-100 opacity-100 rotate-180' 
+                : phase === 'enter' 
+                  ? 'scale-150 opacity-0 rotate-360' 
+                  : 'scale-0 opacity-0'
+            }`}
+            style={{ 
+              boxShadow: '0 0 40px rgba(245, 193, 108, 0.2), inset 0 0 40px rgba(210, 49, 135, 0.1)',
+            }}
+          >
+            {/* Rune decorations */}
+            {[0, 60, 120, 180, 240, 300].map((deg) => (
+              <div
+                key={deg}
+                className="absolute w-2 h-2 bg-[#f5c16c] rounded-full"
+                style={{
+                  top: '50%',
+                  left: '50%',
+                  transform: `rotate(${deg}deg) translateY(-70px) translate(-50%, -50%)`,
+                }}
+              />
+            ))}
+          </div>
+
+          {/* Inner rune circle */}
+          <div 
+            className={`absolute w-24 h-24 rounded-full border border-dashed border-[#d23187]/50 transition-all duration-400 ${
+              phase === 'exit' 
+                ? 'scale-100 opacity-100 -rotate-90' 
+                : phase === 'enter' 
+                  ? 'scale-125 opacity-0 -rotate-180' 
+                  : 'scale-0 opacity-0'
+            }`}
+          />
+
+          {/* Portal glow */}
+          <div 
+            className={`absolute w-32 h-32 rounded-full transition-all duration-400 ${
+              phase === 'exit' ? 'scale-100 opacity-100' : 'scale-0 opacity-0'
+            }`}
+            style={{
+              background: 'radial-gradient(circle, rgba(210, 49, 135, 0.4) 0%, rgba(245, 193, 108, 0.2) 50%, transparent 70%)',
+              filter: 'blur(10px)',
+            }}
+          />
+
+          {/* Center skull icon */}
+          <div 
+            className={`relative transition-all duration-400 ${
+              phase === 'exit' 
+                ? 'scale-100 opacity-100' 
+                : phase === 'enter' 
+                  ? 'scale-110 opacity-0' 
+                  : 'scale-0 opacity-0'
+            }`}
+          >
+            <div className="w-16 h-16 rounded-full bg-gradient-to-br from-[#d23187] via-[#f061a6] to-[#f5c16c] flex items-center justify-center shadow-[0_0_30px_rgba(210,49,135,0.6)]">
+              <Skull className="w-8 h-8 text-white drop-shadow-[0_0_8px_rgba(255,255,255,0.8)]" />
+            </div>
+            
+            {/* Pulse ring */}
+            <div 
+              className={`absolute inset-0 rounded-full border-2 border-[#f5c16c] ${
+                phase === 'exit' ? 'animate-ping-slow' : ''
+              }`}
+              style={{ animationDuration: '1s' }}
+            />
+          </div>
+        </div>
+
+        {/* Top and bottom accent lines */}
+        <div 
+          className={`absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-[#f5c16c] to-transparent transition-all duration-300 ${
+            phase === 'exit' ? 'opacity-60 scale-x-100' : 'opacity-0 scale-x-0'
+          }`}
+        />
+        <div 
+          className={`absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-[#d23187] to-transparent transition-all duration-300 ${
+            phase === 'exit' ? 'opacity-60 scale-x-100' : 'opacity-0 scale-x-0'
+          }`}
+        />
+
+        {/* Corner runes */}
+        {phase !== 'idle' && (
+          <>
+            <div className="absolute top-8 left-8 text-[#f5c16c]/30 text-2xl animate-pulse">◆</div>
+            <div className="absolute top-8 right-8 text-[#f5c16c]/30 text-2xl animate-pulse" style={{ animationDelay: '0.1s' }}>◆</div>
+            <div className="absolute bottom-8 left-8 text-[#d23187]/30 text-2xl animate-pulse" style={{ animationDelay: '0.2s' }}>◆</div>
+            <div className="absolute bottom-8 right-8 text-[#d23187]/30 text-2xl animate-pulse" style={{ animationDelay: '0.3s' }}>◆</div>
+          </>
+        )}
+
+        <style jsx>{`
+          @keyframes float-particle {
+            0%, 100% {
+              transform: translateY(0) scale(1);
+              opacity: 0;
+            }
+            10% {
+              opacity: 0.8;
+            }
+            50% {
+              transform: translateY(-100px) scale(1.5);
+              opacity: 0.6;
+            }
+            90% {
+              opacity: 0.2;
+            }
+          }
+          .animate-float-particle {
+            animation: float-particle 0.8s ease-out forwards;
+          }
+          .animate-ping-slow {
+            animation: ping 1s cubic-bezier(0, 0, 0.2, 1) infinite;
+          }
+          @keyframes ping {
+            75%, 100% {
+              transform: scale(1.5);
+              opacity: 0;
+            }
+          }
+        `}</style>
+      </div>
     </TransitionContext.Provider>
   )
 }

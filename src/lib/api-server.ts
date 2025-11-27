@@ -2,6 +2,7 @@ import axios from 'axios';
 import { createClient } from '@/utils/supabase/server';
 import { cookies } from 'next/headers';
 import https from 'https';
+import { cache } from 'react';
 
 function sanitizeBaseURL(baseURL: string | undefined): string | undefined {
   if (!baseURL) return baseURL;
@@ -59,7 +60,7 @@ export async function createServerApiClients() {
         const instance = axios.create({
             baseURL: cleanBaseURL,
             httpsAgent,
-            timeout: 5000, // 5 second timeout instead of waiting for full Cloudflare timeout
+            timeout: 15000, // 15 second timeout to handle cold starts
         });
 
         if (token) {
@@ -76,3 +77,14 @@ export async function createServerApiClients() {
         codeBattleApiClient: createClientInstance(process.env['NEXT_PUBLIC_CODE_BATTLE_API_URL']),
     };
 }
+
+/**
+ * Cached fetch for user full info - dedupes requests within same render
+ */
+export const getCachedUserFullInfo = cache(async () => {
+    const { coreApiClient } = await createServerApiClients();
+    const res = await coreApiClient.get('/api/users/me/full', {
+        params: { 'page[size]': 20, 'page[number]': 1 }
+    });
+    return res.data;
+});

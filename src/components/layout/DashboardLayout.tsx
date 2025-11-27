@@ -3,6 +3,16 @@ import { DashboardFrame } from "@/components/layout/DashboardFrame";
 import { createClient } from "@/utils/supabase/server";
 import { redirect } from "next/navigation";
 import { ReactNode } from "react";
+import { getCachedUserFullInfo } from "@/lib/api-server";
+
+interface FullUserInfoResponse {
+  profile: {
+    username: string;
+    firstName: string;
+    lastName: string;
+    profileImageUrl: string | null;
+  };
+}
 
 export async function DashboardLayout({ children }: { children: ReactNode }) {
   const supabase = await createClient();
@@ -10,6 +20,15 @@ export async function DashboardLayout({ children }: { children: ReactNode }) {
 
   if (error || !data?.user) {
     redirect('/login');
+  }
+
+  // Fetch user profile for sidebar (uses cached version to avoid duplicate API calls)
+  let userProfile = null;
+  try {
+    const fullInfo = await getCachedUserFullInfo();
+    userProfile = fullInfo?.profile;
+  } catch (err) {
+    console.error('Failed to fetch user profile:', err);
   }
 
   return (
@@ -33,7 +52,7 @@ export async function DashboardLayout({ children }: { children: ReactNode }) {
       </div>
 
       <div className="relative z-10">
-        <DashboardFrame>{children}</DashboardFrame>
+        <DashboardFrame userProfile={userProfile || undefined}>{children}</DashboardFrame>
       </div>
     </div>
   );
