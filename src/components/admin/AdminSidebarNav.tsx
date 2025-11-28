@@ -26,6 +26,7 @@ const navItems = [
   { href: "/admin/classes", label: "Classes", icon: GraduationCap },
   { href: "/admin/skills", label: "Skill Tree", icon: Network },
   { href: "/admin/mappings", label: "Subject skills Map", icon: BookCopy },
+  { href: "/admin/user-roles", label: "User Roles", icon: Shield },
   { href: "/admin/settings", label: "Settings", icon: Settings },
 ];
 

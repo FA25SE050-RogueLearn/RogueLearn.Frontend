@@ -6,6 +6,7 @@ import {
   LayoutGrid,
   ScrollText,
   Sword,
+  Shield,
   Users,
   MoreHorizontal,
   Network,
@@ -56,6 +57,7 @@ const secondaryNavItems = [
   { title: "Arsenal", url: "/arsenal", icon: Archive },
   { title: "Party", url: "/parties", icon: Users },
   { title: "Adventure", url: "/game", icon: Compass },
+  { title: "Admin", url: "/admin", icon: Shield },
 ];
 
 export function SidebarNav({ userProfile }: SidebarNavProps) {
