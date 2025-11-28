@@ -13,9 +13,9 @@ import {
 const rolesApi = {
   /** GET /api/admin/roles */
   getAll: (): Promise<ApiResponse<GetAllRolesResponse>> =>
-    axiosClient.get<RoleDto[]>(`/api/admin/roles`).then(res => ({
+    axiosClient.get<GetAllRolesResponse>(`/api/admin/roles`).then(res => ({
       isSuccess: true,
-      data: { roles: res.data },
+      data: res.data,
     })),
 
   /** POST /api/admin/roles */

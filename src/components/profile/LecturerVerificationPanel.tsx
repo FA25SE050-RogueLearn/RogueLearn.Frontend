@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Loader2, AlertCircle, UploadCloud, FileText, CheckCircle, Clock, RefreshCw } from "lucide-react";
 import { createClient } from "@/utils/supabase/client";
 import lecturerVerificationApi from "@/api/lecturerVerificationApi";
@@ -19,6 +19,7 @@ export function LecturerVerificationPanel() {
   const [error, setError] = useState<string | null>(null);
   const [items, setItems] = useState<MyLecturerVerificationRequestDto[]>([]);
   const [dragActive, setDragActive] = useState(false);
+  const [hasLecturerRole, setHasLecturerRole] = useState(false);
 
   useEffect(() => {
     const load = async () => {
@@ -27,6 +28,18 @@ export function LecturerVerificationPanel() {
       setEmail(user?.email ?? "");
     };
     load();
+  }, []);
+
+  useEffect(() => {
+    const checkRoles = async () => {
+      try {
+        const ctx = await getMyContext().catch(() => ({ data: { roles: [] } } as any));
+        const ctxRoles: string[] = Array.isArray(ctx?.data?.roles) ? ctx.data.roles : [];
+        const hasLecturer = ctxRoles.some(r => (String(r || '').toLowerCase().replace(/\s+/g, '')) === 'verifiedlecturer');
+        setHasLecturerRole(hasLecturer);
+      } catch {}
+    };
+    checkRoles();
   }, []);
 
   const fetchList = async () => {
@@ -43,10 +56,12 @@ export function LecturerVerificationPanel() {
         };
         const normalized = (res.data || []).map(r => ({ ...r, status: normalize(r.status) }));
         setItems(normalized);
-        const hasApproved = normalized.some(i => i.status === 'Approved');
-        if (hasApproved) {
-          try { await getMyContext(); } catch {}
-        }
+        try {
+          const ctx = await getMyContext().catch(() => ({ data: { roles: [] } } as any));
+          const ctxRoles: string[] = Array.isArray(ctx?.data?.roles) ? ctx.data.roles : [];
+          const hasLecturer = ctxRoles.some(r => (String(r || '').toLowerCase().replace(/\s+/g, '')) === 'verifiedlecturer');
+          setHasLecturerRole(hasLecturer);
+        } catch {}
       }
     } catch (e: any) {
       setError(e?.normalized?.message || 'Failed to load requests');
@@ -95,6 +110,24 @@ export function LecturerVerificationPanel() {
   const hasPending = items.some(i => i.status === 'Pending');
   const hasAnySubmission = items.some(i => i.status !== 'Rejected');
 
+  const submissionStatus: 'completed' | 'active' | 'pending' = (!hasLecturerRole && hasApproved)
+    ? 'active'
+    : (hasAnySubmission ? 'completed' : 'active');
+  const reviewStatus: 'completed' | 'active' | 'pending' = hasLecturerRole
+    ? 'completed'
+    : (hasPending ? 'active' : 'pending');
+  const lecturerStatus: 'completed' | 'active' | 'pending' = hasLecturerRole ? 'completed' : 'pending';
+
+  const latestRequest = useMemo(() => {
+    const sorted = [...items].sort((a, b) => {
+      const ta = new Date(a.submittedAt).getTime();
+      const tb = new Date(b.submittedAt).getTime();
+      return tb - ta;
+    });
+    return sorted[0] || null;
+  }, [items]);
+  const showRevokedInfo = !!latestRequest && latestRequest.status === 'Approved' && !hasLecturerRole;
+
   const onDragOver = (e: React.DragEvent) => { e.preventDefault(); setDragActive(true); };
   const onDragLeave = () => setDragActive(false);
   const onDrop = (e: React.DragEvent) => {
@@ -111,14 +144,20 @@ export function LecturerVerificationPanel() {
         <div className="text-white/70">Submit your credentials to unlock Lecturer privileges.</div>
       </div>
 
+      {showRevokedInfo && (
+        <div className="rounded-lg border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-300">
+          Your latest verification was approved, but you do not currently hold the Verified Lecturer role. You may have been revoked. Please submit a new verification request.
+        </div>
+      )}
+
       <div className="flex items-center justify-between px-8 py-4 bg-[#1E1B2E] rounded-xl border border-[#2D2842]">
         <Step status="completed" label="Player" />
         <div className="h-0.5 w-16 bg-[#d4a353]" />
-        <Step status={hasAnySubmission ? 'completed' : 'active'} label="Submission" />
+        <Step status={submissionStatus} label="Submission" />
         <div className="h-0.5 w-16 bg-[#2D2842]" />
-        <Step status={hasPending ? 'active' : (hasApproved ? 'completed' : 'pending')} label="Game Master Review" />
+        <Step status={reviewStatus} label="Game Master Review" />
         <div className="h-0.5 w-16 bg-[#2D2842]" />
-        <Step status={hasApproved ? 'completed' : 'pending'} label="Lecturer" />
+        <Step status={lecturerStatus} label="Lecturer" />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">

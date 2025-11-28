@@ -12,24 +12,24 @@ export interface UserRoleDto {
 
 /** Query payload to list roles for a given user. */
 export interface GetUserRolesQueryRequest {
-  userId: string;
+  authUserId: string;
 }
 /** Response containing all roles assigned to the user. */
 export interface GetUserRolesResponse {
-  userId: string;
+  authUserId: string;
   roles: UserRoleDto[];
 }
 
 /** Command payload to assign a role to a user. */
 export interface AssignRoleToUserCommandRequest {
-  userId: string;
+  authUserId: string;
   roleId: string;
 }
 export type AssignRoleToUserResponse = void;
 
 /** Command payload to remove a role from a user. */
 export interface RemoveRoleFromUserCommandRequest {
-  userId: string;
+  authUserId: string;
   roleId: string;
 }
 export type RemoveRoleFromUserResponse = void;

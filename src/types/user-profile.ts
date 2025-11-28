@@ -48,6 +48,13 @@ export interface FullUserInfoResponse {
   counts: CountsSection;
 }
 
+export interface FullUserInfoSocialResponse {
+  profile: ProfileSection;
+  auth: AuthSection;
+  relations: SocialRelationsSection;
+  counts: CountsSection;
+}
+
 export interface ProfileSection {
   authUserId: string;
   username: string;
@@ -89,6 +96,16 @@ export interface RelationsSection {
   questAttempts: QuestAttemptItem[];
 }
 
+export interface SocialRelationsSection {
+  userRoles: UserRoleItem[];
+  studentEnrollments: StudentEnrollmentItem[];
+  userSkills: UserSkillItem[];
+  userAchievements: UserAchievementItem[];
+  partyMembers: PartyMemberItem[];
+  guildMembers: GuildMemberItem[];
+  questAttempts: QuestAttemptItem[];
+}
+
 export interface CountsSection {
   notes: number;
   achievements: number;
@@ -96,6 +113,28 @@ export interface CountsSection {
   notificationsUnread: number;
   questsCompleted: number;
   questsInProgress: number;
+}
+
+export interface UserProfileSearchResult {
+  authUserId: string;
+  username: string;
+  email?: string | null;
+  profileImageUrl?: string | null;
+  level: number;
+  className?: string | null;
+  guildName?: string | null;
+}
+
+export interface SearchProfilesResponse {
+  results: UserProfileSearchResult[];
+}
+
+export interface SuggestedAlliesResponse {
+  users: UserProfileSearchResult[];
+}
+
+export interface TopRankedResponse {
+  users: UserProfileSearchResult[];
 }
 
 export interface UserRoleItem { roleId: string; assignedAt: string; roleName?: string | null }
