@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { LecturerVerificationPanel } from "@/components/profile/LecturerVerificationPanel";
+import { SocialScryingContent } from "@/components/profile/SocialScryingModal";
 import { LogOut, Sparkles, X, UploadCloud } from "lucide-react";
 import profileApi from "@/api/profileApi";
 import { updateMyProfile } from "@/api/usersApi";
@@ -17,7 +18,7 @@ import type { PartyInvitationDto } from "@/types/parties";
 interface UserProfileModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  defaultTab?: "profile" | "settings" | "verification" | "notifications" | "guildRequests" | "invitations";
+  defaultTab?: "profile" | "settings" | "verification" | "notifications" | "guildRequests" | "invitations" | "social";
 }
 
 export default function UserProfileModal({ open, onOpenChange, defaultTab = "profile" }: UserProfileModalProps) {
@@ -125,6 +126,7 @@ export default function UserProfileModal({ open, onOpenChange, defaultTab = "pro
               <NavButton label="Character Profile" active={activeTab === "profile"} onClick={() => setActiveTab("profile")} />
               <NavButton label="Settings" active={activeTab === "settings"} onClick={() => setActiveTab("settings")} />
               <NavButton label="Notifications" active={activeTab === "notifications"} onClick={() => setActiveTab("notifications")} />
+              <NavButton label="Social Panel" active={activeTab === "social"} onClick={() => setActiveTab("social")} />
               <div className="h-px bg-[#2D2842] my-4" />
               <NavButton label="Lecturer Verification" active={activeTab === "verification"} isSpecial onClick={() => setActiveTab("verification")} />
               <NavButton label="Guild Join Requests" active={activeTab === "guildRequests"} onClick={() => setActiveTab("guildRequests")} />
@@ -222,6 +224,15 @@ export default function UserProfileModal({ open, onOpenChange, defaultTab = "pro
             )}
 
             {activeTab === "verification" && <LecturerVerificationPanel />}
+
+            {activeTab === "social" && (
+              <div className="space-y-6">
+                <div className="text-2xl font-bold text-white">Social Panel</div>
+                <div className="rounded-xl border border-[#2D2842] bg-[#1E1B2E] p-0">
+                  <SocialScryingContent />
+                </div>
+              </div>
+            )}
 
             {activeTab === "guildRequests" && (
               <div className="space-y-6">
