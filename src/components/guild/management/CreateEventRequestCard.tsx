@@ -57,9 +57,15 @@ export function CreateEventRequestCard({ guildId, onRequestCreated }: CreateEven
   ]);
   const [notes, setNotes] = useState("");
 
-  // Calculate minimum dates for validation
-  const minStartDate = new Date(Date.now() + 2 * 60 * 1000); // Current time + 2 minutes
-  const minEndDate = startDate ? new Date(startDate.getTime() + 1 * 60 * 1000) : undefined; // Start date + 1 minute
+  // Calculate minimum dates for calendar (start of today)
+  const minStartDateForCalendar = new Date();
+  minStartDateForCalendar.setHours(0, 0, 0, 0); // Start of today
+
+  const minEndDateForCalendar = startDate ? (() => {
+    const minEnd = new Date(startDate);
+    minEnd.setHours(0, 0, 0, 0);
+    return minEnd;
+  })() : undefined;
 
   // Fetch available tags when expanded
   useEffect(() => {
@@ -376,7 +382,7 @@ export function CreateEventRequestCard({ guildId, onRequestCreated }: CreateEven
               <DateTimePicker
                 date={startDate}
                 setDate={setStartDate}
-                minDate={minStartDate}
+                minDate={minStartDateForCalendar}
                 placeholder="Select start date and time"
               />
               <p className="text-xs text-[#f5c16c]/50">Must be at least 2 minutes from now</p>
@@ -390,7 +396,7 @@ export function CreateEventRequestCard({ guildId, onRequestCreated }: CreateEven
               <DateTimePicker
                 date={endDate}
                 setDate={setEndDate}
-                minDate={minEndDate}
+                minDate={minEndDateForCalendar}
                 placeholder="Select end date and time"
               />
               <p className="text-xs text-[#f5c16c]/50">Must be at least 1 minute after start date</p>

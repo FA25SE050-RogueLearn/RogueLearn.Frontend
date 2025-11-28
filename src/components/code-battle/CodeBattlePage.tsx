@@ -388,7 +388,7 @@ export default function CodeBattlePage() {
       });
 
       eventSource.addEventListener('EVENT_ENDED', () => {
-        addNotification('Event has ended - Redirecting to results...', 'info');
+        addNotification('Event has ended - Returning to events...', 'info');
 
         // Close SSE connection
         if (eventSourceRef.current) {
@@ -396,11 +396,16 @@ export default function CodeBattlePage() {
           eventSourceRef.current = null;
         }
 
-        // Redirect to results page after a brief delay
+        // Return to events selection after a brief delay
         setTimeout(() => {
-          if (eventId) {
-            window.location.href = `/code-battle/${eventId}/results`;
-          }
+          setCurrentView('events');
+          setSelectedEventId(null);
+          setSelectedRoomId(null);
+          setSelectedProblemId(null);
+          setSelectedProblemTitle('');
+          setSelectedProblemStatement('');
+          setSubmissionResult('');
+          setLeaderboardData([]);
         }, 2000);
       });
 

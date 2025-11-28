@@ -260,3 +260,42 @@ export interface ApiResponse<T> {
     status?: number;
   };
 }
+
+// Create Problem Types
+export interface ProblemTestCase {
+  input: string;
+  expected_output: string;
+  is_hidden: boolean;
+}
+
+export interface ProblemLanguageDetail {
+  language_id: string;
+  solution_stub: string;
+  driver_code: string;
+  time_constraint_ms: number;
+  space_constraint_mb: number;
+  test_cases: ProblemTestCase[];
+  solution_code: string;
+}
+
+export interface CreateProblemRequest {
+  title: string;
+  problem_statement: string;
+  difficulty: number;
+  tag_ids: string[];
+  language_details: ProblemLanguageDetail[];
+}
+
+export interface ValidationResult {
+  success: boolean;
+  message: string;
+  passed_tests: number;
+  total_tests: number;
+  execution_log: string;
+}
+
+export interface CreateProblemResponse {
+  problem_id: string;
+  title: string;
+  validation_results: Record<string, ValidationResult>;
+}

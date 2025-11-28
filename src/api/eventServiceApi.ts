@@ -721,6 +721,37 @@ const eventServiceApi = {
       };
     }
   },
+
+  // ============ Admin - Problems ============
+  /**
+   * Create a new problem (admin only)
+   */
+  async createProblem(payload: import('@/types/event-service').CreateProblemRequest): Promise<ApiResponse<import('@/types/event-service').CreateProblemResponse>> {
+    try {
+      console.log('📤 Creating problem with payload:', JSON.stringify(payload, null, 2));
+      const response = await axiosCodeBattleClient.post('/problems', payload);
+      console.log('✅ Problem creation response:', response.data);
+
+      if (response.data.success && response.data.data) {
+        return { success: true, data: response.data.data };
+      }
+      return { success: false, error: { message: 'Invalid response format' } };
+    } catch (error: any) {
+      console.error('❌ Problem creation error:', {
+        message: error.normalized?.message,
+        details: error.normalized?.details,
+        status: error.normalized?.status,
+        raw: error.response?.data
+      });
+      return {
+        success: false,
+        error: {
+          message: error.normalized?.message || error.response?.data?.message || error.response?.data?.error_message || 'Failed to create problem',
+          details: error.normalized?.details || error.response?.data?.data,
+        },
+      };
+    }
+  },
 };
 
 export default eventServiceApi;
