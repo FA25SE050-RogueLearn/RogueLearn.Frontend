@@ -1,7 +1,7 @@
 // roguelearn-web/src/api/profileApi.ts
 import axiosClient from './axiosClient';
 import { ApiResponse } from '../types/base/Api';
-import { UserProfileDto } from '../types/user-profile';
+import { UserProfileDto, GetAllUserProfilesResponse, GetUserProfileByAuthIdResponse, FullUserInfoSocialResponse, SearchProfilesResponse, SuggestedAlliesResponse, TopRankedResponse, UserProfileSearchResult } from '../types/user-profile';
 
 let __myProfileCache: { value: UserProfileDto | null; ts: number } | null = null;
 let __myProfilePending: Promise<ApiResponse<UserProfileDto | null>> | null = null;
@@ -51,6 +51,83 @@ const profileApi = {
       .finally(() => { __myProfilePending = null; });
     __myProfilePending = pending;
     return pending;
+  },
+  getAllUserProfilesAuthorized: (): Promise<ApiResponse<GetAllUserProfilesResponse>> =>
+    axiosClient.get<GetAllUserProfilesResponse>('/api/profiles').then(res => ({ isSuccess: true, data: res.data })),
+  getAllUserProfilesAdmin: (): Promise<ApiResponse<GetAllUserProfilesResponse>> =>
+    axiosClient.get<GetAllUserProfilesResponse>('/api/admin/profiles').then(res => ({ isSuccess: true, data: res.data })),
+  getByAuthId: (authId: string): Promise<ApiResponse<GetUserProfileByAuthIdResponse>> =>
+    axiosClient.get<UserProfileDto>(`/api/profiles/${authId}`).then(res => ({ isSuccess: true, data: res.data ?? null })),
+  getSocialByAuthId: (authId: string, page?: { size?: number; number?: number }): Promise<ApiResponse<FullUserInfoSocialResponse>> => {
+    const qs = new URLSearchParams();
+    if (page?.size) qs.set('page[size]', String(page.size));
+    if (page?.number) qs.set('page[number]', String(page.number));
+    const url = qs.toString() ? `/api/profiles/${authId}/social?${qs.toString()}` : `/api/profiles/${authId}/social`;
+    return axiosClient.get<FullUserInfoSocialResponse>(url).then(res => ({ isSuccess: true, data: res.data }));
+  },
+  search: async (q: string, limit = 20): Promise<ApiResponse<SearchProfilesResponse>> => {
+    const qParam = q?.trim();
+    try {
+      const res = await axiosClient.get<SearchProfilesResponse>('/api/profiles/search', { params: { q: qParam, limit } });
+      return { isSuccess: true, data: res.data };
+    } catch {
+      const list = await profileApi.getAllUserProfilesAuthorized();
+      const base = list.data?.userProfiles ?? [];
+      const filtered = base.filter(u => {
+        const name = [u.firstName, u.lastName].filter(Boolean).join(' ') || u.username || '';
+        const email = u.email || '';
+        const s = qParam.toLowerCase();
+        if (!s) return true;
+        return name.toLowerCase().includes(s) || email.toLowerCase().includes(s) || u.authUserId.toLowerCase().includes(s);
+      });
+      const mapped: UserProfileSearchResult[] = filtered.slice(0, limit).map(u => ({
+        authUserId: u.authUserId,
+        username: u.username,
+        email: u.email,
+        profileImageUrl: u.profileImageUrl ?? null,
+        level: u.level,
+        className: null,
+        guildName: null,
+      }));
+      return { isSuccess: true, data: { results: mapped } };
+    }
+  },
+  suggestedAllies: async (limit = 10): Promise<ApiResponse<SuggestedAlliesResponse>> => {
+    const me = await profileApi.getMyProfile();
+    const list = await profileApi.getAllUserProfilesAuthorized();
+    const mine = me.data ?? null;
+    const base = list.data?.userProfiles ?? [];
+    const filtered = base.filter(u => {
+      if (!mine) return true;
+      if (mine.classId && u.classId === mine.classId) return true;
+      if (mine.routeId && u.routeId === mine.routeId) return true;
+      return false;
+    });
+    const mapped: UserProfileSearchResult[] = filtered.slice(0, limit).map(u => ({
+      authUserId: u.authUserId,
+      username: u.username,
+      email: u.email,
+      profileImageUrl: u.profileImageUrl ?? null,
+      level: u.level,
+      className: null,
+      guildName: null,
+    }));
+    return { isSuccess: true, data: { users: mapped } };
+  },
+  topRanked: async (limit = 3): Promise<ApiResponse<TopRankedResponse>> => {
+    const list = await profileApi.getAllUserProfilesAuthorized();
+    const base = list.data?.userProfiles ?? [];
+    const sorted = [...base].sort((a, b) => b.level - a.level || b.experiencePoints - a.experiencePoints).slice(0, limit);
+    const mapped: UserProfileSearchResult[] = sorted.map(u => ({
+      authUserId: u.authUserId,
+      username: u.username,
+      email: u.email,
+      profileImageUrl: u.profileImageUrl ?? null,
+      level: u.level,
+      className: null,
+      guildName: null,
+    }));
+    return { isSuccess: true, data: { users: mapped } };
   },
 };
 
