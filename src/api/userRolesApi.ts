@@ -11,20 +11,20 @@ import {
 } from '@/types/user-roles';
 
 const userRolesApi = {
-  /** GET /api/admin/users/{userId}/roles */
-  getByUserId: (userId: string): Promise<ApiResponse<GetUserRolesResponse>> =>
-    axiosClient.get<UserRoleDto[]>(`/api/admin/users/${userId}/roles`).then(res => ({
+  /** GET /api/admin/users/{authUserId}/roles (auth-based) */
+  getByAuthUserId: (authUserId: string): Promise<ApiResponse<GetUserRolesResponse>> =>
+    axiosClient.get<UserRoleDto[]>(`/api/admin/users/${authUserId}/roles`).then(res => ({
       isSuccess: true,
-      data: { userId, roles: res.data },
+      data: { authUserId, roles: res.data },
     })),
 
   /** POST /api/admin/users/assign-role */
   assign: (payload: AssignRoleToUserCommandRequest): Promise<AssignRoleToUserResponse> =>
-    axiosClient.post<void>(`/api/admin/users/assign-role`, payload).then(() => {}),
+    axiosClient.post<void>(`/api/admin/users/assign`, payload).then(() => {}),
 
   /** POST /api/admin/users/remove-role */
   remove: (payload: RemoveRoleFromUserCommandRequest): Promise<RemoveRoleFromUserResponse> =>
-    axiosClient.post<void>(`/api/admin/users/remove-role`, payload).then(() => {}),
+    axiosClient.post<void>(`/api/admin/users/remove`, payload).then(() => {}),
 };
 
 export default userRolesApi;
