@@ -145,6 +145,10 @@ export interface LeaderboardEntry {
 export interface Tag {
   id: string;
   name: string;
+  difficulty_count?: {
+    difficulty: number;
+    problem_count: number;
+  }[];
 }
 
 // SSE Event Types

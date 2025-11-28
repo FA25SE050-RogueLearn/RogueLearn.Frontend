@@ -15,9 +15,10 @@ interface DateTimePickerProps {
   date?: Date
   setDate: (date: Date | undefined) => void
   placeholder?: string
+  minDate?: Date
 }
 
-export function DateTimePicker({ date, setDate, placeholder = "Pick a date and time" }: DateTimePickerProps) {
+export function DateTimePicker({ date, setDate, placeholder = "Pick a date and time", minDate }: DateTimePickerProps) {
   const [open, setOpen] = React.useState(false)
   const [timeValue, setTimeValue] = React.useState<string>(() => {
     // Default to current time in GMT+7
@@ -80,6 +81,7 @@ export function DateTimePicker({ date, setDate, placeholder = "Pick a date and t
             mode="single"
             selected={date}
             onSelect={handleDateSelect}
+            disabled={(date) => minDate ? date < minDate : false}
             initialFocus
             classNames={{
               months: "flex flex-col sm:flex-row space-y-4 sm:space-x-4 sm:space-y-0",

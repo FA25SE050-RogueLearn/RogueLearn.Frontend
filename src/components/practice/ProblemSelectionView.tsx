@@ -183,9 +183,6 @@ export default function ProblemSelectionView({
                       {difficulty.label}
                     </span>
                   </div>
-                  <p className="mt-2 text-xs text-foreground/60 line-clamp-2">
-                    {problem.problem_statement || 'Solve this algorithmic challenge and improve your coding skills.'}
-                  </p>
                 </CardHeader>
 
                 <CardContent className="relative z-10 space-y-4 p-5">

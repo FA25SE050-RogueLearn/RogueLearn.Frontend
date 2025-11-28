@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState, startTransition, type CSSProperties } from 'react';
-import { ArrowLeft, Trophy, Timer, ChevronDown } from 'lucide-react';
+import { ArrowLeft, Trophy, Timer, ChevronDown, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -13,6 +13,7 @@ import CodeEditor from '../CodeEditor';
 import type { Event, Room } from '@/types/event-service';
 import { mockLeaderboards, type LeaderboardEntry } from '@/lib/mockCodeBattleData';
 import CountdownTimer from '@/components/CountdownTimer';
+import { toast } from 'sonner';
 
 interface Notification {
   message: string;
@@ -89,6 +90,25 @@ export default function CodeArenaView({
   onProblemChange,
 }: CodeArenaViewProps) {
   const [leaderboardEntries, setLeaderboardEntries] = useState<LeaderboardEntry[]>([]);
+  const [eventEnded, setEventEnded] = useState(false);
+
+  // Handle event timer completion
+  const handleEventTimeout = useCallback(() => {
+    if (eventEnded) return;
+
+    setEventEnded(true);
+
+    // Show notification
+    toast.error('Event has ended!', {
+      description: 'The code battle event has concluded. You will be redirected to the event selection.',
+      duration: 5000,
+    });
+
+    // Kick user out after 3 seconds
+    setTimeout(() => {
+      onBack();
+    }, 3000);
+  }, [eventEnded, onBack]);
 
   const updateLeaderboard = useCallback((incoming: LeaderboardEntry[]) => {
     startTransition(() => {
@@ -151,6 +171,28 @@ export default function CodeArenaView({
     <div className="relative flex min-h-screen flex-col overflow-hidden bg-[#0a0a0a]">
       <div aria-hidden="true" className="pointer-events-none absolute inset-0" style={BACKDROP_GRADIENT} />
       <div aria-hidden="true" className="pointer-events-none absolute inset-0" style={BACKDROP_TEXTURE} />
+
+      {/* Event Ended Overlay */}
+      {eventEnded && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 backdrop-blur-md">
+          <div className="mx-4 max-w-md rounded-[24px] border-2 border-[#f5c16c]/50 bg-gradient-to-br from-[#1a0b08] via-[#2a1510] to-[#1a0b08] p-8 text-center shadow-[0_0_60px_rgba(210,49,135,0.5)]">
+            <div className="mb-6 flex justify-center">
+              <div className="rounded-full bg-[#f5c16c]/10 p-4">
+                <Clock className="h-16 w-16 text-[#f5c16c]" />
+              </div>
+            </div>
+            <h2 className="mb-3 text-2xl font-bold text-white">Event Has Ended!</h2>
+            <p className="mb-6 text-sm text-[#f5c16c]/70">
+              The code battle event has concluded. Redirecting you to the event selection...
+            </p>
+            <div className="flex justify-center">
+              <div className="h-1 w-32 overflow-hidden rounded-full bg-[#f5c16c]/20">
+                <div className="h-full w-full animate-pulse bg-gradient-to-r from-[#f5c16c] to-[#d23187]" />
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Top Navigation Bar */}
       <div className="sticky top-0 z-50 border-b border-[#f5c16c]/20 bg-[#0b0504]/95 backdrop-blur-xl">
@@ -260,6 +302,7 @@ export default function CodeArenaView({
                     gradientFrom="rgba(0, 0, 0, 0.3)"
                     gradientTo="transparent"
                     showLabels={false}
+                    onComplete={handleEventTimeout}
                     counterStyle={{
                       backgroundColor: 'rgba(0, 0, 0, 0.3)',
                       border: '1px solid rgba(245, 193, 108, 0.3)',

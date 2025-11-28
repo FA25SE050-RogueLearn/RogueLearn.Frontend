@@ -28,45 +28,19 @@ export default function PracticePage() {
     setLoading(true);
     try {
       console.log('Fetching problems, page:', page);
-      const response = await eventServiceApi.getAllProblems();
+      const response = await eventServiceApi.getAllProblems(page, 12); // 12 items per page
       console.log('Problems response:', response);
-      console.log('Response data type:', typeof response.data, 'Is array?', Array.isArray(response.data));
-      console.log('Response data:', response.data);
 
       if (response.success && response.data) {
-        let problemsArray: Problem[] = [];
-        const dataObj = response.data as any;
-
-        // Check if it's a paginated response with items
-        if ('items' in dataObj && Array.isArray(dataObj.items)) {
-          problemsArray = dataObj.items;
-
-          // Use server-side pagination info if available
-          if ('total_pages' in dataObj && typeof dataObj.total_pages === 'number') {
-            setTotalPages(dataObj.total_pages);
-          } else if ('total_count' in dataObj && 'page_size' in dataObj) {
-            const total = Math.ceil(dataObj.total_count / dataObj.page_size);
-            setTotalPages(total || 1);
-          }
-        } else if (Array.isArray(response.data)) {
-          // Direct array response
-          problemsArray = response.data;
-          const itemsPerPage = 9;
-          const total = Math.ceil(problemsArray.length / itemsPerPage);
-          setTotalPages(total || 1);
-        } else if ('problems' in dataObj && Array.isArray(dataObj.problems)) {
-          // Alternative structure with problems property
-          problemsArray = dataObj.problems;
-          const itemsPerPage = 9;
-          const total = Math.ceil(problemsArray.length / itemsPerPage);
-          setTotalPages(total || 1);
-        } else if (Object.keys(dataObj).length === 0) {
-          console.log('Empty object returned, no problems available');
-          problemsArray = [];
-        }
-
+        const problemsArray = Array.isArray(response.data) ? response.data : [];
         console.log('Problems fetched:', problemsArray.length, problemsArray);
         setProblems(problemsArray);
+
+        // Use pagination info from response
+        if (response.pagination) {
+          console.log('📊 Pagination info:', response.pagination);
+          setTotalPages(response.pagination.total_pages || 1);
+        }
       } else {
         console.error('Failed to fetch problems:', response.error);
         toast.error('Failed to load problems', {

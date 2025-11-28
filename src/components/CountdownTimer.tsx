@@ -22,6 +22,7 @@ interface CountdownTimerProps {
   bottomGradientStyle?: React.CSSProperties;
   showLabels?: boolean;
   labelStyle?: React.CSSProperties;
+  onComplete?: () => void;
 }
 
 const calculateTimeRemaining = (endDate: string): number => {
@@ -50,17 +51,26 @@ export default function CountdownTimer({
   bottomGradientStyle,
   showLabels = true,
   labelStyle,
+  onComplete,
 }: CountdownTimerProps) {
   const [secondsLeft, setSecondsLeft] = useState<number>(() => calculateTimeRemaining(endDate));
+  const [hasCompleted, setHasCompleted] = useState(false);
 
   useEffect(() => {
     // Update every second
     const timer = setInterval(() => {
-      setSecondsLeft(calculateTimeRemaining(endDate));
+      const remaining = calculateTimeRemaining(endDate);
+      setSecondsLeft(remaining);
+
+      // Call onComplete callback when timer reaches 0
+      if (remaining <= 0 && !hasCompleted && onComplete) {
+        setHasCompleted(true);
+        onComplete();
+      }
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [endDate]);
+  }, [endDate, hasCompleted, onComplete]);
 
   if (secondsLeft <= 0) return null;
 

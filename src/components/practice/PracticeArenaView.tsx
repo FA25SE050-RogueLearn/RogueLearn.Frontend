@@ -315,26 +315,61 @@ export default function PracticeArenaView({ problem, onBack }: PracticeArenaView
                       Problem Description
                     </span>
                   </div>
-                  <div className="space-y-2 text-sm leading-relaxed text-foreground/80">
+                  <div className="space-y-3 text-sm leading-relaxed text-foreground/80">
                     {problemStatement.split('```').map((part, index) => {
                       if (index % 2 === 1) {
                         const lines = part.split('\n');
-                        // Skip the first line (language identifier) and join the rest
-                        const code = lines.slice(1).join('\n');
+                        const lang = lines[0].trim();
+                        const code = lines.slice(1).join('\n').trim();
                         return (
-                          <pre
-                            key={index}
-                            className="overflow-x-auto rounded-lg border border-[#f5c16c]/20 bg-black/60 p-3 text-xs font-mono text-white"
-                          >
-                            <code>{code}</code>
-                          </pre>
+                          <div key={index} className="space-y-1">
+                            {lang && (
+                              <div className="flex items-center gap-2 px-3 py-1 bg-[#f5c16c]/5 rounded-t-lg">
+                                <span className="text-[10px] font-medium text-[#f5c16c]/70 uppercase tracking-wide">{lang}</span>
+                              </div>
+                            )}
+                            <pre className="overflow-x-auto rounded-lg border border-[#f5c16c]/20 bg-black/60 p-3 text-xs font-mono text-white">
+                              <code>{code}</code>
+                            </pre>
+                          </div>
                         );
                       }
                       if (part.trim()) {
+                        const lines = part.trim().split('\n');
                         return (
-                          <p key={index} className="text-foreground/70 whitespace-pre-wrap">
-                            {part.trim()}
-                          </p>
+                          <div key={index} className="space-y-2">
+                            {lines.map((line, lineIndex) => {
+                              if (line.startsWith('### ')) {
+                                return (
+                                  <h4 key={lineIndex} className="text-base font-semibold text-[#f5c16c] mt-3">
+                                    {line.substring(4)}
+                                  </h4>
+                                );
+                              }
+                              if (line.startsWith('## ')) {
+                                return (
+                                  <h3 key={lineIndex} className="text-lg font-bold text-[#f5c16c] mt-4">
+                                    {line.substring(3)}
+                                  </h3>
+                                );
+                              }
+                              const processedLine = line.split('`').map((segment, i) =>
+                                i % 2 === 1 ? (
+                                  <code key={i} className="px-1.5 py-0.5 bg-[#f5c16c]/10 rounded text-[#f5c16c] font-mono text-xs">
+                                    {segment}
+                                  </code>
+                                ) : segment
+                              );
+
+                              return line ? (
+                                <p key={lineIndex} className="text-foreground/70">
+                                  {processedLine}
+                                </p>
+                              ) : (
+                                <div key={lineIndex} className="h-2" />
+                              );
+                            })}
+                          </div>
                         );
                       }
                       return null;

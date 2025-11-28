@@ -22,16 +22,47 @@ import type {
 const eventServiceApi = {
   // ============ Problems ============
   /**
-   * Get all problems (public)
+   * Get all problems (public) with pagination support
+   * @param page - Page number (1-indexed)
+   * @param pageSize - Number of items per page (default: 12)
    */
-  async getAllProblems(): Promise<ApiResponse<Problem[]>> {
+  async getAllProblems(page: number = 1, pageSize: number = 12): Promise<ApiResponse<Problem[]>> {
     try {
-      const response = await axiosCodeBattleClient.get('/problems');
+      const response = await axiosCodeBattleClient.get('/problems', {
+        params: { page_index: page, page_size: pageSize }
+      });
+      console.log('📦 Problems API response:', response.data);
+
       if (response.data.success && response.data.data) {
-        return { success: true, data: response.data.data };
+        // Handle paginated response format: data.items contains the actual array
+        const problemsData = response.data.data.items || response.data.data;
+        console.log('✅ Extracted problems:', problemsData);
+
+        if (response.data.data.total_count !== undefined) {
+          console.log('📊 Problems pagination info:', {
+            total_count: response.data.data.total_count,
+            total_pages: response.data.data.total_pages,
+            page_index: response.data.data.page_index,
+            page_size: response.data.data.page_size
+          });
+
+          return {
+            success: true,
+            data: Array.isArray(problemsData) ? problemsData : [],
+            pagination: {
+              total_count: response.data.data.total_count,
+              total_pages: response.data.data.total_pages,
+              page_index: response.data.data.page_index,
+              page_size: response.data.data.page_size
+            }
+          };
+        }
+
+        return { success: true, data: Array.isArray(problemsData) ? problemsData : [] };
       }
       return { success: false, error: { message: 'Invalid response format' } };
     } catch (error: any) {
+      console.error('❌ Error fetching problems:', error);
       return {
         success: false,
         error: {
