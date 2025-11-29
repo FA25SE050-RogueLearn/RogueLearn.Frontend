@@ -12,6 +12,7 @@ import guildsApi from "@/api/guildsApi";
 import profileApi from "@/api/profileApi";
 import { getMyContext } from "@/api/usersApi";
 import type { CreateGuildResponse } from "@/types/guilds";
+import { toast } from "sonner";
 
 const SECTION_CARD_CLASS = 'relative overflow-hidden rounded-3xl border border-[#f5c16c]/25 bg-[#120806]/80';
 const CARD_TEXTURE: CSSProperties = {
@@ -71,7 +72,7 @@ export default function CreateGuildPage() {
       router.push(`/community/guilds/${data.guildId}`);
     } catch (err) {
       console.error(err);
-      alert("Failed to create guild.");
+      toast.error("Failed to create guild.");
     } finally {
       setSubmitting(false);
     }

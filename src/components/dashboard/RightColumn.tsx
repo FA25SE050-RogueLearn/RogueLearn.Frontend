@@ -128,7 +128,7 @@ export function RightColumn({ achievements, userSkills }: RightColumnProps) {
               {/* Name */}
               <div className="text-center">
                 <h3 className="text-2xl font-bold text-white">{selectedAchievement.name}</h3>
-                <p className="mt-2 text-sm text-[#f5c16c]/70">{selectedAchievement.description}</p>
+                <p className="mt-2 text-sm text-[#f5c16c]/70">{selectedAchievement.context}</p>
               </div>
 
               {/* Stats */}
@@ -176,9 +176,9 @@ export function RightColumn({ achievements, userSkills }: RightColumnProps) {
 
         {achievements.length > 0 ? (
           <div className="space-y-3">
-            {achievements.slice(0, 5).map((achievement) => (
+            {achievements.slice(0, 5).map((achievement, idx) => (
               <button
-                key={achievement.achievementId}
+                key={`${achievement.achievementId}-${idx}`}
                 onClick={() => setSelectedAchievement(achievement)}
                 className="group w-full rounded-lg border border-[#f5c16c]/20 bg-[#1a0b08]/80 p-3 text-left transition-all hover:border-[#f5c16c]/40 hover:bg-[#1a0b08] hover:shadow-[0_0_15px_rgba(210,49,135,0.15)]"
               >
@@ -243,9 +243,9 @@ export function RightColumn({ achievements, userSkills }: RightColumnProps) {
 
         {userSkills.length > 0 ? (
           <div className="space-y-3">
-            {userSkills.slice(0, 8).map((skill) => (
+            {userSkills.slice(0, 8).map((skill, idx) => (
               <div
-                key={skill.skillName}
+                key={`${skill.skillName}-${idx}`}
                 className="rounded-lg border border-[#f5c16c]/20 bg-[#1a0b08]/80 p-3 transition-all hover:border-[#f5c16c]/40"
               >
                 <div className="mb-2 flex items-center justify-between">

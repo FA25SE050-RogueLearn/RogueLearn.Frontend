@@ -73,6 +73,29 @@ export default function MeetingManagement({ partyId, variant = "full", showList 
   const [loadingMeetings, setLoadingMeetings] = useState(false);
   const [partyMembers, setPartyMembers] = useState<PartyMemberDto[]>([]);
   const { role, loading: roleLoading } = usePartyRole(partyId);
+  const [page, setPage] = useState(1);
+  const pageSize = 5;
+
+  const sortedMeetings = useMemo(() => {
+    return [...partyMeetings].sort((a, b) => {
+      const sa = (a.spaceName ?? "").toLowerCase();
+      const sb = (b.spaceName ?? "").toLowerCase();
+      if (sa && sb) return sa.localeCompare(sb);
+      if (sa) return -1;
+      if (sb) return 1;
+      return (a.title ?? "").toLowerCase().localeCompare((b.title ?? "").toLowerCase());
+    });
+  }, [partyMeetings]);
+
+  const totalPages = useMemo(() => Math.max(1, Math.ceil(sortedMeetings.length / pageSize)), [sortedMeetings.length]);
+  const pagedMeetings = useMemo(() => {
+    const start = (page - 1) * pageSize;
+    return sortedMeetings.slice(start, start + pageSize);
+  }, [sortedMeetings, page]);
+
+  useEffect(() => {
+    if (page > totalPages) setPage(1);
+  }, [page, totalPages]);
 
   function isUnauthorized(err: any): boolean {
     const msg = typeof err?.message === "string" ? err.message : "";
@@ -642,18 +665,7 @@ export default function MeetingManagement({ partyId, variant = "full", showList 
               if (v) loadDetailsIfNeeded(v);
             }}
           >
-            {[...partyMeetings]
-              .sort((a, b) => {
-                const sa = (a.spaceName ?? "").toLowerCase();
-                const sb = (b.spaceName ?? "").toLowerCase();
-                if (sa && sb) return sa.localeCompare(sb);
-                if (sa) return -1;
-                if (sb) return 1;
-                return (a.title ?? "")
-                  .toLowerCase()
-                  .localeCompare((b.title ?? "").toLowerCase());
-              })
-              .map((m) => {
+            {pagedMeetings.map((m) => {
                 const id = m.meetingId ?? `${m.title}-${m.scheduledStartTime}`;
                 const details = m.meetingId ? detailsById[m.meetingId] : null;
                 const isLoading = m.meetingId
@@ -805,6 +817,29 @@ export default function MeetingManagement({ partyId, variant = "full", showList 
                 );
               })}
           </Accordion>
+        )}
+        {partyMeetings.length > 0 && (
+          <div className="mt-3 flex items-center justify-between">
+            <div className="text-xs text-white/60">
+              Page {page} of {totalPages}
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={() => { setExpandedId(""); setPage((p) => Math.max(1, p - 1)); }}
+                disabled={page === 1}
+                className="rounded bg-white/10 px-3 py-1.5 text-xs text-white disabled:opacity-50"
+              >
+                Prev
+              </button>
+              <button
+                onClick={() => { setExpandedId(""); setPage((p) => Math.min(totalPages, p + 1)); }}
+                disabled={page >= totalPages}
+                className="rounded bg-white/10 px-3 py-1.5 text-xs text-white disabled:opacity-50"
+              >
+                Next
+              </button>
+            </div>
+          </div>
         )}
       </div>
       )}

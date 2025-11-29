@@ -26,28 +26,28 @@ export default function PartyInfoModal({ open, onClose, partyId }: Props) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm">
       <div className="absolute inset-0 bg-black/80" onClick={onClose} />
-      <div className="relative w-full max-w-3xl overflow-hidden rounded-[28px] border border-[#f5c16c]/30 bg-linear-to-b from-[#1a0a08] to-[#0a0506] p-6 shadow-2xl">
+      <div className="relative w-[60vw] max-w-[60vw] max-h-[85vh] overflow-hidden rounded-[28px] border border-[#f5c16c]/30 bg-linear-to-b from-[#1a0a08] to-[#0a0506] p-8 shadow-2xl">
         <div className="pointer-events-none absolute inset-0 opacity-25" style={{ backgroundImage: "url('https://www.transparenttextures.com/patterns/asfalt-dark.png')", backgroundSize: "100px", backgroundBlendMode: "overlay" }} />
         <div className="relative">
-          <div className="mb-4 flex items-center justify-between">
+          <div className="mb-6 flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="rounded-full bg-[#f5c16c]/10 p-2">
                 <HelpCircle className="h-5 w-5 text-[#f5c16c]" />
               </div>
               <div>
-                <div className="text-xl font-semibold text-[#f5c16c]">Party Management Overview</div>
+                <div className="text-4xl font-extrabold text-[#f5c16c]">Party Management Overview</div>
                 {partyId && (
-                  <div className="mt-0.5 text-xs text-white/70">Your role: <RoleBadge role={role} /></div>
+                  <div className="mt-1 text-base text-white">Your role: <RoleBadge role={role} /></div>
                 )}
               </div>
             </div>
-            <button onClick={onClose} className="rounded-lg border border-[#f5c16c]/20 bg-black/40 px-3 py-1.5 text-sm font-medium text-white/70 transition-colors hover:border-[#f5c16c]/40 hover:bg-black/60 hover:text-white">Close</button>
+            <button onClick={onClose} className="rounded-lg border border-[#f5c16c]/30 bg-[#1a0b08]/60 px-4 py-2 text-sm font-semibold text-white transition-colors hover:border-[#f5c16c]/50 hover:bg-[#1a0b08]">Close</button>
           </div>
 
-          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-            <section className="rounded-lg border border-white/10 bg-white/5 p-4">
-              <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-white"><Users className="h-4 w-4" /> Core Features</div>
-              <ul className="space-y-2 text-xs text-white/80">
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-2 overflow-y-auto pr-2" style={{ maxHeight: 'calc(85vh - 140px)' }}>
+            <section className="rounded-lg border border-white/10 bg-white/5 p-6">
+              <div className="mb-3 flex items-center gap-2 text-xl font-semibold text-white"><Users className="h-6 w-6" /> Core Features</div>
+              <ul className="space-y-2 text-base text-white/90">
                 <li className="flex items-start gap-2"><Settings className="mt-0.5 h-4 w-4 text-white/60" /><span>Configure party settings: name, description, privacy, max members.</span></li>
                 <li className="flex items-start gap-2"><UserPlus className="mt-0.5 h-4 w-4 text-white/60" /><span>Invite members and view pending invitations.</span></li>
                 <li className="flex items-start gap-2"><ShieldCheck className="mt-0.5 h-4 w-4 text-white/60" /><span>Manage membership: transfer leadership, promote/demote Co-Leader, remove members.</span></li>
@@ -57,11 +57,11 @@ export default function PartyInfoModal({ open, onClose, partyId }: Props) {
               </ul>
             </section>
 
-            <section className="rounded-lg border border-white/10 bg-white/5 p-4">
-              <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-white"><ShieldCheck className="h-4 w-4" /> Role Access</div>
-              <div className="space-y-3 text-xs text-white/80">
+            <section className="rounded-lg border border-white/10 bg-white/5 p-6">
+              <div className="mb-3 flex items-center gap-2 text-xl font-semibold text-white"><ShieldCheck className="h-6 w-6" /> Role Access</div>
+              <div className="space-y-3 text-base text-white/90">
                 <div>
-                  <div className="mb-1 font-medium text-white">Leader</div>
+                  <div className="mb-1 text-lg font-semibold text-[#f5c16c]">Leader</div>
                   <ul className="space-y-1">
                     <li>Configure settings</li>
                     <li>Invite members</li>
@@ -74,7 +74,7 @@ export default function PartyInfoModal({ open, onClose, partyId }: Props) {
                   </ul>
                 </div>
                 <div>
-                  <div className="mb-1 font-medium text-white">CoLeader</div>
+                  <div className="mb-1 text-lg font-semibold text-[#f5c16c]">CoLeader</div>
                   <ul className="space-y-1">
                     <li>Configure settings</li>
                     <li>Invite members</li>
@@ -85,7 +85,7 @@ export default function PartyInfoModal({ open, onClose, partyId }: Props) {
                   </ul>
                 </div>
                 <div>
-                  <div className="mb-1 font-medium text-white">Member</div>
+                  <div className="mb-1 text-lg font-semibold text-[#f5c16c]">Member</div>
                   <ul className="space-y-1">
                     <li>View party info and members</li>
                     <li>Join meetings via link</li>
@@ -95,11 +95,19 @@ export default function PartyInfoModal({ open, onClose, partyId }: Props) {
                 </div>
               </div>
             </section>
+
+            <section className="rounded-lg border border-white/10 bg-white/5 p-6">
+              <div className="mb-3 flex items-center gap-2 text-xl font-semibold text-white"><Users className="h-6 w-6" /> Joining Process</div>
+              <ul className="space-y-2 text-base text-white/90">
+                <li>For public party: click <span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">Join</span> to join the party.</li>
+                <li>For private party: you must be <span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">invited</span> by the <span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">Leader</span>.</li>
+              </ul>
+            </section>
           </div>
 
-          <section className="mt-4 rounded-lg border border-white/10 bg-white/5 p-4">
-            <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-white"><CalendarDays className="h-4 w-4" /> Meetings Notes</div>
-            <ul className="space-y-1 text-xs text-white/80">
+          <section className="mt-6 rounded-lg border border-white/10 bg-white/5 p-6">
+            <div className="mb-3 flex items-center gap-2 text-xl font-semibold text-white"><CalendarDays className="h-6 w-6" /> Meetings Notes</div>
+            <ul className="space-y-1 text-base text-white/90">
               <li>Transcript sync available about 10 minutes after ending a meeting.</li>
               <li>If authorization is required, use the Authorize button to grant Google Meet scopes.</li>
               <li>All members can see the meeting join link when active.</li>

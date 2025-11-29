@@ -28,6 +28,8 @@ export default function AdminUserRolesPage() {
   const [selectedUserRoles, setSelectedUserRoles] = useState<{ roleId: string; roleName: string; assignedAt: string }[]>([]);
   const [contextLoading, setContextLoading] = useState(false);
   const [isRevokeOpen, setIsRevokeOpen] = useState(false);
+  const [page, setPage] = useState(1);
+  const pageSize = 10;
   
   
 
@@ -80,6 +82,13 @@ export default function AdminUserRolesPage() {
       (p.lastName ?? "").toLowerCase().includes(q)
     );
   }, [profiles, search, activeRole, roleTabs]);
+
+  const totalPages = useMemo(() => Math.max(1, Math.ceil(filteredUsers.length / pageSize)), [filteredUsers.length]);
+  const pagedUsers = useMemo(() => {
+    const start = (page - 1) * pageSize;
+    return filteredUsers.slice(start, start + pageSize);
+  }, [filteredUsers, page]);
+  useEffect(() => { setPage(1); }, [search, activeRole, filteredUsers.length]);
 
   const roleCounts = useMemo(() => {
     const counts: Record<string, number> = {};
@@ -227,7 +236,7 @@ export default function AdminUserRolesPage() {
             {error && (
               <div className="flex items-center gap-2 text-rose-400 px-6 py-4">{error}</div>
             )}
-            {!loading && !error && filteredUsers.map(user => (
+            {!loading && !error && pagedUsers.map(user => (
               <div key={user.id} className="group grid grid-cols-12 items-center px-6 py-4 bg-[#1E1B2E] border border-[#2D2842] rounded-xl hover:border-[#f5c16c]/30 transition-all">
                 <div className="col-span-4 flex items-center gap-4">
                   <Avatar className="h-10 w-10 border border-[#f5c16c]/20">
@@ -282,6 +291,27 @@ export default function AdminUserRolesPage() {
                 </div>
               </div>
             ))}
+            {!loading && !error && filteredUsers.length > 0 && (
+              <div className="px-6 py-3 flex items-center justify-between">
+                <div className="text-xs text-white/60">Page {page} of {totalPages}</div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setPage(p => Math.max(1, p - 1))}
+                    disabled={page === 1}
+                    className="rounded bg-[#2D2842] px-3 py-1.5 text-xs text-white disabled:opacity-50"
+                  >
+                    Prev
+                  </button>
+                  <button
+                    onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                    disabled={page >= totalPages}
+                    className="rounded bg-[#2D2842] px-3 py-1.5 text-xs text-white disabled:opacity-50"
+                  >
+                    Next
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 

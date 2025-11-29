@@ -27,92 +27,98 @@ export default function GuildInfoModal({ open, onClose, guildId }: Props) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm">
       <div className="absolute inset-0 bg-black/80" onClick={onClose} />
-      <div className="relative w-full max-w-3xl overflow-hidden rounded-[28px] border border-[#f5c16c]/30 bg-linear-to-b from-[#1a0a08] to-[#0a0506] p-6 shadow-2xl">
+      <div className="relative w-[60vw] max-w-[60vw] max-h-[85vh] overflow-hidden rounded-[28px] border border-[#f5c16c]/30 bg-linear-to-b from-[#1a0a08] to-[#0a0506] p-8 shadow-2xl">
         <div className="pointer-events-none absolute inset-0 opacity-25" style={{ backgroundImage: "url('https://www.transparenttextures.com/patterns/asfalt-dark.png')", backgroundSize: "100px", backgroundBlendMode: "overlay" }} />
         <div className="relative">
-          <div className="mb-4 flex items-center justify-between">
+          <div className="mb-6 flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="rounded-full bg-[#f5c16c]/10 p-2">
                 <HelpCircle className="h-5 w-5 text-[#f5c16c]" />
               </div>
               <div>
-                <div className="text-xl font-semibold text-[#f5c16c]">Guild Management Overview</div>
+                <div className="text-4xl font-extrabold text-[#f5c16c]">Guild Management Overview</div>
                 {guildId && (
-                  <div className="mt-0.5 text-xs text-white/70">Your role: <RoleBadge role={myRole} /></div>
+                  <div className="mt-1 text-base text-white">Your role: <RoleBadge role={myRole} /></div>
                 )}
               </div>
             </div>
-            <button onClick={onClose} className="rounded-lg border border-[#f5c16c]/20 bg-black/40 px-3 py-1.5 text-sm font-medium text-white/70 transition-colors hover:border-[#f5c16c]/40 hover:bg-black/60 hover:text-white">Close</button>
+            <button onClick={onClose} className="rounded-lg border border-[#f5c16c]/30 bg-[#1a0b08]/60 px-4 py-2 text-sm font-semibold text-white transition-colors hover:border-[#f5c16c]/50 hover:bg-[#1a0b08]">Close</button>
           </div>
 
-          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-            <section className="rounded-lg border border-white/10 bg-white/5 p-4">
-              <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-white"><Users className="h-4 w-4" /> Core Features</div>
-              <ul className="space-y-2 text-xs text-white/80">
-                <li className="flex items-start gap-2"><Settings className="mt-0.5 h-4 w-4 text-white/60" /><span>Configure guild settings: name, description, privacy, max members.</span></li>
-                <li className="flex items-start gap-2"><UserPlus className="mt-0.5 h-4 w-4 text-white/60" /><span>Invite members and approve/decline join requests.</span></li>
-                <li className="flex items-start gap-2"><ShieldCheck className="mt-0.5 h-4 w-4 text-white/60" /><span>Manage membership: transfer leadership, assign/revoke roles, remove members.</span></li>
-                <li className="flex items-start gap-2"><CalendarDays className="mt-0.5 h-4 w-4 text-white/60" /><span>Meetings: create, end, and sync transcripts from Google Meet.</span></li>
-                <li className="flex items-start gap-2"><FileText className="mt-0.5 h-4 w-4 text-white/60" /><span>Guild posts: share announcements and discussions.</span></li>
-                <li className="flex items-start gap-2"><LogOut className="mt-0.5 h-4 w-4 text-white/60" /><span>Leave guild; Guild Masters must transfer leadership first or the next highest member will be the leader.</span></li>
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-2 overflow-y-auto pr-2" style={{ maxHeight: 'calc(85vh - 140px)' }}>
+            <section className="rounded-lg border border-white/10 bg-white/5 p-6">
+              <div className="mb-3 flex items-center gap-2 text-xl font-semibold text-white"><Users className="h-6 w-6" /> Core Features</div>
+              <ul className="space-y-2 text-base text-white/90">
+                <li className="flex items-start gap-2"><Settings className="mt-0.5 h-4 w-4 text-white/60" /><span>Configure guild <span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">settings</span>: name, description, privacy, max members.</span></li>
+                <li className="flex items-start gap-2"><UserPlus className="mt-0.5 h-4 w-4 text-white/60" /><span>Invite members and approve/decline <span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">join requests</span>.</span></li>
+                <li className="flex items-start gap-2"><ShieldCheck className="mt-0.5 h-4 w-4 text-white/60" /><span>Manage membership: <span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">transfer leadership</span>, assign/revoke <span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">roles</span>, remove members.</span></li>
+                <li className="flex items-start gap-2"><CalendarDays className="mt-0.5 h-4 w-4 text-white/60" /><span><span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">Meetings</span>: create, end, and sync <span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">transcripts</span> from <span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">Google Meet</span>.</span></li>
+                <li className="flex items-start gap-2"><FileText className="mt-0.5 h-4 w-4 text-white/60" /><span>Guild <span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">posts</span>: share announcements and discussions.</span></li>
+                <li className="flex items-start gap-2"><LogOut className="mt-0.5 h-4 w-4 text-white/60" /><span><span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">Leave guild</span>; <span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">Guild Masters</span> must transfer leadership first or the next highest member will be the leader.</span></li>
               </ul>
             </section>
-
-            <section className="rounded-lg border border-white/10 bg-white/5 p-4">
-              <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-white"><ShieldCheck className="h-4 w-4" /> Role Access</div>
-              <div className="space-y-3 text-xs text-white/80">
+            <section className="rounded-lg border border-white/10 bg-white/5 p-6 lg:row-span-2">
+              <div className="mb-3 flex items-center gap-2 text-xl font-semibold text-white"><ShieldCheck className="h-6 w-6" /> Role Access</div>
+              <div className="space-y-3 text-base text-white/90">
                 <div>
-                  <div className="mb-1 font-medium text-white">GuildMaster</div>
+                  <div className="mb-1 text-lg font-semibold text-[#f5c16c]">GuildMaster</div>
                   <ul className="space-y-1">
-                    <li>Configure settings</li>
-                    <li>Invite members</li>
-                    <li>Approve/decline join requests</li>
-                    <li>Assign/revoke roles</li>
-                    <li>Remove members</li>
-                    <li>Transfer leadership</li>
-                    <li>Create/end meetings; sync transcripts</li>
-                    <li>Authorize Google Meet access</li>
+                    <li>Configure <span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">settings</span></li>
+                    <li>Invite <span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">members</span></li>
+                    <li>Approve/decline <span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">join requests</span></li>
+                    <li>Assign/revoke <span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">roles</span></li>
+                    <li>Remove <span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">members</span></li>
+                    <li>Transfer <span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">leadership</span></li>
+                    <li>Create/end <span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">meetings</span>; sync <span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">transcripts</span></li>
+                    <li>Authorize <span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">Google Meet</span> access</li>
                   </ul>
                 </div>
                 <div>
-                  <div className="mb-1 font-medium text-white">Officer</div>
+                  <div className="mb-1 text-lg font-semibold text-[#f5c16c]">Officer</div>
                   <ul className="space-y-1">
-                    <li>Invite members</li>
-                    <li>Remove non-officer members</li>
-                    <li>Create/end meetings; sync transcripts</li>
-                    <li>Authorize Google Meet access</li>
+                    <li>Invite <span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">members</span></li>
+                    <li>Remove non-officer <span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">members</span></li>
+                    <li>Create/end <span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">meetings</span>; sync <span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">transcripts</span></li>
+                    <li>Authorize <span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">Google Meet</span> access</li>
                   </ul>
                 </div>
                 <div>
-                  <div className="mb-1 font-medium text-white">Veteran</div>
+                  <div className="mb-1 text-lg font-semibold text-[#f5c16c]">Veteran</div>
                   <ul className="space-y-1">
-                    <li>Participate in posts and meetings</li>
-                    <li>View meeting details and transcripts</li>
+                    <li>Participate in <span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">posts</span> and <span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">meetings</span></li>
+                    <li>View meeting details and <span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">transcripts</span></li>
                   </ul>
                 </div>
                 <div>
-                  <div className="mb-1 font-medium text-white">Member</div>
+                  <div className="mb-1 text-lg font-semibold text-[#f5c16c]">Member</div>
                   <ul className="space-y-1">
-                    <li>View posts and meetings</li>
-                    <li>Join meetings via link</li>
+                    <li>View <span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">posts</span> and <span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">meetings</span></li>
+                    <li><span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">Join</span> meetings via link</li>
                   </ul>
                 </div>
                 <div>
-                  <div className="mb-1 font-medium text-white">Recruit</div>
+                  <div className="mb-1 text-lg font-semibold text-[#f5c16c]">Recruit</div>
                   <ul className="space-y-1">
-                    <li>Limited access; can view public posts</li>
+                    <li>Limited access; can view public <span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">posts</span></li>
                   </ul>
                 </div>
               </div>
             </section>
+            <section className="rounded-lg border border-white/10 bg-white/5 p-6">
+              <div className="mb-3 flex items-center gap-2 text-xl font-semibold text-white"><Users className="h-6 w-6" /> Joining Process</div>
+              <ul className="space-y-2 text-base text-white/90">
+                <li>For public guild: click on <span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">Join</span> to join the guild.</li>
+                <li>For invite only guild: click on <span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">Request to Join</span> and wait for the <span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">Guild Master</span> to approve.</li>
+              </ul>
+            </section>
           </div>
 
-          <section className="mt-4 rounded-lg border border-white/10 bg-white/5 p-4">
-            <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-white"><CalendarDays className="h-4 w-4" /> Meetings Notes</div>
-            <ul className="space-y-1 text-xs text-white/80">
-              <li>Transcript sync available about 10 minutes after ending a meeting.</li>
-              <li>If authorization is required, use the Authorize button to grant Google Meet scopes.</li>
-              <li>All members can see the meeting join link when active.</li>
+          <section className="mt-6 rounded-lg border border-white/10 bg-white/5 p-6">
+            <div className="mb-3 flex items-center gap-2 text-xl font-semibold text:white"><CalendarDays className="h-6 w-6" /> Meetings Notes</div>
+            <ul className="space-y-1 text-base text:white/90">
+              <li><span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">Transcript sync</span> available about 10 minutes after ending a meeting.</li>
+              <li>If authorization is required, use the <span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">Authorize</span> button to grant <span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">Google Meet</span> scopes.</li>
+              <li>All members can see the meeting <span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">join link</span> when active.</li>
             </ul>
           </section>
         </div>

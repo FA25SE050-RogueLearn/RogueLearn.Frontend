@@ -188,6 +188,16 @@ export default function NotesTab() {
     return base;
   }, [notes, search, filterTagId, sort, activeGroup]);
 
+  const [page, setPage] = useState(1);
+  const pageSize = 9;
+  const total = filteredNotes.length;
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
+  useEffect(() => { if (page > totalPages) setPage(totalPages); }, [totalPages]);
+  const pagedNotes = useMemo(() => {
+    const start = (page - 1) * pageSize;
+    return filteredNotes.slice(start, start + pageSize);
+  }, [filteredNotes, page]);
+
   const tagIndex = useMemo(() => {
     const map = new Map<string, Tag>();
     for (const t of myTags) map.set(t.id, t);
@@ -390,12 +400,20 @@ export default function NotesTab() {
   const onFileSelected = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !authUserId) return;
+    const allowedExt = ["pdf", "doc", "docx", "ppt", "pptx"];
+    const ext = (file.name.split(".").pop() || "").toLowerCase();
+    if (!allowedExt.includes(ext)) {
+      toast.error("Unsupported file type");
+      e.target.value = "";
+      return;
+    }
     setUploading(true);
     try {
       const res = await notesApi.createWithAiTagsFromUpload({ authUserId, fileContent: file, fileName: file.name, contentType: file.type, applySuggestions: true, maxTags: 8 });
       if (res.isSuccess) {
         toast.success("Created note from upload");
         await fetchNotes();
+        await fetchTags();
       }
     } finally {
       setUploading(false);
@@ -517,7 +535,7 @@ export default function NotesTab() {
     } catch {}
   };
 
-  const total = filteredNotes.length;
+  
 
   const handleDropFiles = async (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
@@ -526,13 +544,20 @@ export default function NotesTab() {
     if (files.length === 0) return;
     setUploading(true);
     try {
+      const allowedExt = ["pdf", "doc", "docx", "ppt", "pptx"];
       for (const file of files) {
+        const ext = (file.name.split(".").pop() || "").toLowerCase();
+        if (!allowedExt.includes(ext)) {
+          toast.error(`Unsupported file type: ${file.name}`);
+          continue;
+        }
         const res = await notesApi.createWithAiTagsFromUpload({ authUserId, fileContent: file, fileName: file.name, contentType: file.type, applySuggestions: true, maxTags: 8 });
         if (res.isSuccess) {
           toast.success(`Created note from ${file.name}`);
         }
       }
       await fetchNotes();
+      await fetchTags();
     } finally {
       setUploading(false);
     }
@@ -644,18 +669,18 @@ export default function NotesTab() {
                   <div>
                     <div className="text-sm font-medium text-white">Create notes from files</div>
                     <div className="mt-1 text-xs text-foreground/70">Drag and drop documents to automatically create notes and apply AI-suggested tags.</div>
-                    <div className="mt-1 text-xs text-foreground/60">Supported formats: .txt, .md, .pdf, .doc, .docx, .ppt, .pptx</div>
+                    <div className="mt-1 text-xs text-foreground/60">Supported formats: .pdf, .doc, .docx, .ppt, .pptx</div>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
-                  <input id={fileInputId} type="file" multiple accept=".txt,.md,.pdf,.doc,.docx,.pptx,.ppt" className="hidden" onChange={onFileSelected} />
+                  <input id={fileInputId} type="file" multiple accept=".pdf,.doc,.docx,.ppt,.pptx" className="hidden" onChange={onFileSelected} />
                   <Button variant="secondary" onClick={onClickUpload} disabled={uploading}>{uploading ? "Processing..." : "Choose files"}</Button>
                 </div>
               </div>
             </div>
             {viewMode === "grid" ? (
               <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-                {filteredNotes.map((note) => (
+                {pagedNotes.map((note) => (
                   <Card
                     key={note.id}
                     className="flex flex-col overflow-hidden rounded-[20px] border border-white/12 bg-linear-to-br from-[#361c15]/86 via-[#1f0d12]/92 to-[#0c0508]/97"
@@ -733,7 +758,7 @@ export default function NotesTab() {
                   <div className="text-right">Last Edited</div>
                 </div>
                 <div>
-                  {filteredNotes.map((note) => (
+                  {pagedNotes.map((note) => (
                     <div
                       key={note.id}
                       className="group grid grid-cols-[minmax(200px,1fr)_240px_140px_140px] items-center border-b border-white/5 px-4 text-sm hover:bg-white/5"
@@ -794,6 +819,13 @@ export default function NotesTab() {
                 </div>
               </div>
             )}
+            <div className="mt-4 flex items-center justify-between">
+              <div className="text-sm text-foreground/60">Page {page} of {totalPages}</div>
+              <div className="flex items-center gap-2">
+                <Button variant="secondary" size="sm" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1}>Prev</Button>
+                <Button variant="secondary" size="sm" onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page === totalPages}>Next</Button>
+              </div>
+            </div>
           </div>
         )}
       </div>

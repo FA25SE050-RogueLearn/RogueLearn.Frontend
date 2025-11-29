@@ -1,4 +1,5 @@
 "use client";
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { UserCheck, UserX, Users } from "lucide-react";
@@ -23,6 +24,11 @@ const CARD_TEXTURE = {
 const CARD_CLASS = "relative overflow-hidden rounded-[28px] border border-[#f5c16c]/30 bg-gradient-to-br from-[#2d1810] via-[#1a0a08] to-black shadow-xl";
 
 export function JoinRequestsCard({ loading, error, joinRequests, myRole, onApprove, onDecline }: JoinRequestsCardProps) {
+  const [page, setPage] = useState<number>(1);
+  const pageSize = 10;
+  const pageCount = Math.max(1, Math.ceil((joinRequests.length || 0) / pageSize));
+  const safePage = Math.min(Math.max(1, page), pageCount);
+  const pagedRequests = joinRequests.slice((safePage - 1) * pageSize, (safePage - 1) * pageSize + pageSize);
   return (
     <Card className={CARD_CLASS}>
       {/* Texture overlay */}
@@ -49,13 +55,14 @@ export function JoinRequestsCard({ loading, error, joinRequests, myRole, onAppro
             <p className="text-sm text-white/60">No pending requests.</p>
           </div>
         ) : (
-          joinRequests.map((jr) => (
+          pagedRequests.map((jr) => (
             <div 
               key={jr.id} 
-              className="flex items-center justify-between rounded-lg border border-[#f5c16c]/20 bg-gradient-to-br from-black/40 to-[#1a0a08]/40 p-4 transition-all hover:border-[#f5c16c]/40"
+              className="flex items-center justify-between rounded-lg border border-[#f5c16c]/20 bg-linear-to-br from-black/40 to-[#1a0a08]/40 p-4 transition-all hover:border-[#f5c16c]/40"
             >
               <div>
-                <p className="font-medium text-white">Request by {jr.requesterId}</p>
+                <p className="font-medium text-white">Request by {jr.requesterName || jr.requesterId}</p>
+                <p className="text-xs text-white/50">Requested: {new Date(jr.createdAt).toLocaleString()}</p>
                 <p className="text-xs text-white/50">
                   Status: <span className="text-amber-400">{jr.status}</span>
                 </p>
@@ -83,6 +90,18 @@ export function JoinRequestsCard({ loading, error, joinRequests, myRole, onAppro
               )}
             </div>
           ))
+        )}
+        {(!loading && !error && joinRequests.length > 0) && (
+          <div className="mt-2 flex items-center justify-between">
+            <div className="text-xs text-white/70">
+              <span>Showing {(safePage - 1) * pageSize + 1}–{Math.min(joinRequests.length, safePage * pageSize)} of {joinRequests.length}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="sm" onClick={() => setPage(p => Math.max(1, p - 1))} disabled={safePage === 1} className={`border-[#f5c16c]/30 ${safePage===1?'text-[#f5c16c]/50':'text-[#f5c16c]'}`}>Prev</Button>
+              <span className="text-xs text-white/70">Page {safePage} of {pageCount}</span>
+              <Button variant="outline" size="sm" onClick={() => setPage(p => Math.min(pageCount, p + 1))} disabled={safePage === pageCount} className={`border-[#f5c16c]/30 ${safePage===pageCount?'text-[#f5c16c]/50':'text-[#f5c16c]'}`}>Next</Button>
+            </div>
+          </div>
         )}
       </CardContent>
     </Card>
