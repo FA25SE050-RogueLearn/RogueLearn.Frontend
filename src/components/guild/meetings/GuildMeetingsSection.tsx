@@ -1,6 +1,6 @@
 "use client";
 import React, { useEffect, useMemo, useState } from "react";
-import { Swords, Video, Calendar, Clock, Users, ExternalLink, Play, Square, AlertCircle } from "lucide-react";
+import { Swords, Video, Calendar, Clock, Users, ExternalLink, Play, Square, AlertCircle, FileText } from "lucide-react";
 import { useGoogleMeet, MeetScopes } from "@/hooks/useGoogleMeet";
 import googleMeetApi from "@/api/googleMeetApi";
 import meetingsApi from "@/api/meetingsApi";
@@ -746,16 +746,40 @@ export default function GuildMeetingsSection({ guildId }: Props) {
                         </div>
                       </div>
                       <div className="ml-4 flex items-center gap-2">
-                        {m.meetingLink && m.status === MeetingStatus.Active && (
-                          <a
-                            href={m.meetingLink}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="rounded border border-white/20 bg-transparent px-3 py-1.5 text-xs font-medium text-white hover:bg-white/10"
-                          >
-                            Join Meet ↗
-                          </a>
-                        )}
+                        {m.meetingLink && m.status === MeetingStatus.Active && (() => {
+                          const now = Date.now();
+                          const start = new Date(m.scheduledStartTime).getTime();
+                          const end = new Date(m.scheduledEndTime).getTime();
+                          const within = now >= start && now <= end;
+                          const restrictRole = myRole === "Recruit" || myRole === "Member" || myRole === "Veteran";
+                          const disableJoin = restrictRole && !within;
+                          const cls = disableJoin
+                            ? "rounded border border-white/20 bg-transparent px-3 py-1.5 text-xs font-medium text-white opacity-50 cursor-not-allowed"
+                            : "rounded border border-white/20 bg-transparent px-3 py-1.5 text-xs font-medium text-white hover:bg-white/10";
+                          return (
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <a
+                                    href={m.meetingLink}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    aria-disabled={disableJoin}
+                                    className={cls}
+                                    onClick={(e) => { if (disableJoin) e.preventDefault(); }}
+                                  >
+                                    Join Meet ↗
+                                  </a>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  {disableJoin
+                                    ? `Available between ${formatBangkok(m.scheduledStartTime, { includeSeconds: false })} and ${formatBangkok(m.scheduledEndTime, { includeSeconds: false })}`
+                                    : "Join Google Meet"}
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          );
+                        })()}
                         {(myRole === "GuildMaster" || myRole === "Officer" || authUserId === m.organizerId) && (
                           <>
                           {m.status === MeetingStatus.Active && (
@@ -771,13 +795,14 @@ export default function GuildMeetingsSection({ guildId }: Props) {
                             <Tooltip>
                               <TooltipTrigger asChild>
                                 <span>
-                                  <button
-                                    onClick={(e) => { e.preventDefault(); handleSyncMeetingFor(m); }}
-                                    disabled={!(m.status === MeetingStatus.EndedProcessing && m.actualEndTime && (Date.now() - new Date(m.actualEndTime).getTime() >= 10 * 60 * 1000))}
-                                    className="rounded border border-white/20 bg-transparent px-3 py-1.5 text-xs font-medium text-white disabled:opacity-50 hover:bg-white/10"
-                                  >
-                                    Transcript
-                                  </button>
+                              <button
+                                onClick={(e) => { e.preventDefault(); handleSyncMeetingFor(m); }}
+                                disabled={!(m.status === MeetingStatus.EndedProcessing && m.actualEndTime && (Date.now() - new Date(m.actualEndTime).getTime() >= 10 * 60 * 1000))}
+                                className="group inline-flex items-center gap-2 rounded-lg border border-[#f5c16c]/40 bg-linear-to-r from-[#f5c16c] to-[#d4a855] px-4 py-2.5 text-sm font-bold text-black shadow-[0_0_15px_rgba(245,193,108,0.25)] hover:from-[#d4a855] hover:to-[#f5c16c] disabled:opacity-50 disabled:cursor-not-allowed"
+                              >
+                                <FileText className="h-4 w-4" />
+                                Transcript
+                              </button>
                                 </span>
                               </TooltipTrigger>
                               <TooltipContent>

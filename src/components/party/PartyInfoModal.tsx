@@ -48,49 +48,49 @@ export default function PartyInfoModal({ open, onClose, partyId }: Props) {
             <section className="rounded-lg border border-white/10 bg-white/5 p-6">
               <div className="mb-3 flex items-center gap-2 text-xl font-semibold text-white"><Users className="h-6 w-6" /> Core Features</div>
               <ul className="space-y-2 text-base text-white/90">
-                <li className="flex items-start gap-2"><Settings className="mt-0.5 h-4 w-4 text-white/60" /><span>Configure party settings: name, description, privacy, max members.</span></li>
-                <li className="flex items-start gap-2"><UserPlus className="mt-0.5 h-4 w-4 text-white/60" /><span>Invite members and view pending invitations.</span></li>
-                <li className="flex items-start gap-2"><ShieldCheck className="mt-0.5 h-4 w-4 text-white/60" /><span>Manage membership: transfer leadership, promote/demote Co-Leader, remove members.</span></li>
-                <li className="flex items-start gap-2"><CalendarDays className="mt-0.5 h-4 w-4 text-white/60" /><span>Study sprints and meetings: create, end, and sync transcripts from Google Meet.</span></li>
-                <li className="flex items-start gap-2"><FileText className="mt-0.5 h-4 w-4 text-white/60" /><span>Party stash: share resources, tag and search; leaders and co-leaders can add, edit, delete.</span></li>
-                <li className="flex items-start gap-2"><LogOut className="mt-0.5 h-4 w-4 text-white/60" /><span>Leave party; leaders must transfer leadership first or the next highest role member will be the next leader.</span></li>
+                <li className="flex items-start gap-2"><Settings className="mt-0.5 h-4 w-4 text-white/60" /><span>Configure party <span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">settings</span>: name, description, privacy, max members.</span></li>
+                <li className="flex items-start gap-2"><UserPlus className="mt-0.5 h-4 w-4 text-white/60" /><span><span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">Invite</span> <span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">members</span> and view pending <span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">invitations</span>.</span></li>
+                <li className="flex items-start gap-2"><ShieldCheck className="mt-0.5 h-4 w-4 text-white/60" /><span>Manage membership: <span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">transfer leadership</span>, <span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">promote/demote Co-Leader</span>, <span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">remove members</span>.</span></li>
+                <li className="flex items-start gap-2"><CalendarDays className="mt-0.5 h-4 w-4 text-white/60" /><span>Study <span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">sprints</span> and <span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">meetings</span>: create, end, and sync <span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">transcripts</span> from <span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">Google Meet</span>.</span></li>
+                <li className="flex items-start gap-2"><FileText className="mt-0.5 h-4 w-4 text-white/60" /><span>Party <span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">stash</span>: share <span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">resources</span>, <span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">tag</span> and <span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">search</span>; leaders and co-leaders can <span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">add</span>, <span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">edit</span>, <span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">delete</span>.</span></li>
+                <li className="flex items-start gap-2"><LogOut className="mt-0.5 h-4 w-4 text-white/60" /><span><span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">Leave party</span>; <span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">Leaders</span> must transfer leadership first or the next highest role member will be the <span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">Leader</span>.</span></li>
               </ul>
             </section>
 
-            <section className="rounded-lg border border-white/10 bg-white/5 p-6">
+            <section className="rounded-lg border border-white/10 bg-white/5 p-6 lg:row-span-2">
               <div className="mb-3 flex items-center gap-2 text-xl font-semibold text-white"><ShieldCheck className="h-6 w-6" /> Role Access</div>
               <div className="space-y-3 text-base text-white/90">
                 <div>
                   <div className="mb-1 text-lg font-semibold text-[#f5c16c]">Leader</div>
                   <ul className="space-y-1">
-                    <li>Configure settings</li>
-                    <li>Invite members</li>
-                    <li>Transfer leadership</li>
-                    <li>Promote/demote Co-Leader</li>
-                    <li>Remove members (except Leader)</li>
-                    <li>Create/end meetings; sync transcripts</li>
-                    <li>Authorize Google Meet access</li>
-                    <li>Add/edit/delete stash resources</li>
+                    <li>Configure <span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">settings</span></li>
+                    <li><span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">Invite</span> <span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">members</span></li>
+                    <li><span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">Transfer leadership</span></li>
+                    <li><span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">Promote/demote Co-Leader</span></li>
+                    <li>Remove <span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">members</span> (except <span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">Leader</span>)</li>
+                    <li>Create/end <span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">meetings</span>; sync <span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">transcripts</span></li>
+                    <li>Authorize <span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">Google Meet</span> access</li>
+                    <li><span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">Add</span>/<span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">edit</span>/<span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">delete</span> stash <span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">resources</span></li>
                   </ul>
                 </div>
                 <div>
                   <div className="mb-1 text-lg font-semibold text-[#f5c16c]">CoLeader</div>
                   <ul className="space-y-1">
-                    <li>Configure settings</li>
-                    <li>Invite members</li>
-                    <li>Create/end meetings; sync transcripts</li>
-                    <li>Authorize Google Meet access</li>
-                    <li>Add/edit/delete stash resources</li>
-                    <li>Cannot transfer leadership or modify Leader</li>
+                    <li>Configure <span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">settings</span></li>
+                    <li><span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">Invite</span> <span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">members</span></li>
+                    <li>Create/end <span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">meetings</span>; sync <span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">transcripts</span></li>
+                    <li>Authorize <span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">Google Meet</span> access</li>
+                    <li><span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">Add</span>/<span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">edit</span>/<span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">delete</span> stash <span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">resources</span></li>
+                    <li>Cannot <span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">transfer leadership</span> or modify <span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">Leader</span></li>
                   </ul>
                 </div>
                 <div>
                   <div className="mb-1 text-lg font-semibold text-[#f5c16c]">Member</div>
                   <ul className="space-y-1">
-                    <li>View party info and members</li>
-                    <li>Join meetings via link</li>
-                    <li>View meeting details and transcripts</li>
-                    <li>Browse and search stash resources</li>
+                    <li>View party <span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">info</span> and <span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">members</span></li>
+                    <li><span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">Join</span> meetings via link</li>
+                    <li>View meeting details and <span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">transcripts</span></li>
+                    <li><span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">Browse</span> and <span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">search</span> stash <span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">resources</span></li>
                   </ul>
                 </div>
               </div>
@@ -108,9 +108,9 @@ export default function PartyInfoModal({ open, onClose, partyId }: Props) {
           <section className="mt-6 rounded-lg border border-white/10 bg-white/5 p-6">
             <div className="mb-3 flex items-center gap-2 text-xl font-semibold text-white"><CalendarDays className="h-6 w-6" /> Meetings Notes</div>
             <ul className="space-y-1 text-base text-white/90">
-              <li>Transcript sync available about 10 minutes after ending a meeting.</li>
-              <li>If authorization is required, use the Authorize button to grant Google Meet scopes.</li>
-              <li>All members can see the meeting join link when active.</li>
+              <li><span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">Transcript sync</span> available about 10 minutes after ending a meeting.</li>
+              <li>If authorization is required, use the <span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">Authorize</span> button to grant <span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">Google Meet</span> scopes.</li>
+              <li>All members can see the meeting <span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">join link</span> when active.</li>
             </ul>
           </section>
         </div>

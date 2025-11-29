@@ -184,11 +184,11 @@ export default function UserProfileModal({ open, onOpenChange, defaultTab = "pro
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-[95vw] max-w-[1500px] max-h-[92vh] border-[#f5c16c]/20 bg-linear-to-br from-[#0f0708] to-[#1a0b08] p-0 overflow-hidden">
+      <DialogContent className="min-w-[50vw] max-w-[1200px] max-h-[85vh] border-[#f5c16c]/20 bg-linear-to-br from-[#0f0708] to-[#1a0b08] p-0 overflow-hidden">
         <DialogTitle className="sr-only">User Profile</DialogTitle>
         <div className="pointer-events-none absolute inset-0 bg-[radial-linear(circle_at_top_left,rgba(210,49,135,0.08),transparent_50%)]" />
         <div className="pointer-events-none absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] opacity-[0.03]" />
-        <div className="relative flex h-[88vh]">
+        <div className="relative flex h-[80vh]">
           {/* Sidebar */}
           <div className="w-72 bg-linear-to-b from-[#1a0b08] to-[#0f0708] border-r border-[#f5c16c]/10 flex flex-col p-6">
             <div className="text-xl font-bold text-white mb-8 flex items-center gap-3">
