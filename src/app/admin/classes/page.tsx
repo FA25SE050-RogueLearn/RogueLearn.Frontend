@@ -160,25 +160,32 @@ export default function ClassesManagementPage() {
                             {specLoading ? <Loader2 className="animate-spin mx-auto" /> : specSubjects.length === 0 ? (
                                 <p className="text-center text-gray-600 italic py-8">No subjects assigned to this class yet.</p>
                             ) : (
-                                // Group by semester for better view
-                                Array.from(new Set(specSubjects.map(s => s.semester))).sort().map(sem => (
-                                    <div key={sem} className="mb-4">
-                                        <h4 className="text-xs font-bold text-amber-700 uppercase tracking-widest mb-2">Semester {sem}</h4>
-                                        <div className="space-y-1">
-                                            {specSubjects.filter(s => s.semester === sem).map(sub => (
-                                                <div key={sub.id} className="flex justify-between items-center bg-black/20 p-2 rounded border border-white/5">
-                                                    <div className="flex items-center gap-3">
-                                                        <span className="text-amber-500 font-mono text-xs">{sub.subjectCode}</span>
+                                <div className="space-y-2">
+                                    <div className="grid grid-cols-[1fr_100px_48px] items-center px-2 text-[11px] uppercase tracking-widest text-white/60">
+                                        <div>Subject</div>
+                                        <div className="text-right">Semester</div>
+                                        <div className="text-right">Action</div>
+                                    </div>
+                                    {specSubjects
+                                        .slice()
+                                        .sort((a, b) => ((a.semester ?? 0) - (b.semester ?? 0)) || ((a.subjectCode ?? (a as any).placeholderSubjectCode ?? '').localeCompare(b.subjectCode ?? (b as any).placeholderSubjectCode ?? '')))
+                                        .map(sub => (
+                                            <div key={sub.id} className="grid grid-cols-[1fr_100px_48px] items-center bg-black/20 p-2 rounded border border-white/5">
+                                                <div className="flex items-center gap-3">
+                                                    <span className="text-amber-500 font-mono text-xs">{sub.subjectCode ?? (sub as any).placeholderSubjectCode ?? 'N/A'}</span>
+                                                    {sub.subjectName && (
                                                         <span className="text-sm text-white/90">{sub.subjectName}</span>
-                                                    </div>
+                                                    )}
+                                                </div>
+                                                <div className="text-xs text-white/80 text-right">{sub.semester}</div>
+                                                <div className="flex justify-end">
                                                     <Button size="icon" variant="ghost" className="h-6 w-6 text-red-400 hover:bg-red-950/20" onClick={() => handleRemoveSpec(sub.subjectId)}>
                                                         <Trash2 className="w-3 h-3" />
                                                     </Button>
                                                 </div>
-                                            ))}
-                                        </div>
-                                    </div>
-                                ))
+                                            </div>
+                                        ))}
+                                </div>
                             )}
                         </div>
                     </DialogContent>

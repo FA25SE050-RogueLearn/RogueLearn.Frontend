@@ -19,10 +19,29 @@ export interface GuildDto {
   name: string;
   description: string;
   isPublic: boolean;
+  isLecturerGuild?: boolean;
   maxMembers: number;
   createdBy: string;
   createdAt: string; // ISO timestamp
   memberCount: number;
+}
+
+/** Full guild details for global leaderboard and admin views. */
+export interface GuildFullDto {
+  id: string;
+  name: string;
+  description: string;
+  guildType: string;
+  maxMembers: number;
+  currentMemberCount: number;
+  meritPoints: number;
+  isPublic: boolean;
+  isLecturerGuild?: boolean;
+  requiresApproval: boolean;
+  bannerImageUrl?: string | null;
+  createdBy: string;
+  createdAt: string; // ISO timestamp
+  updatedAt: string; // ISO timestamp
 }
 
 /** Member record in a guild including role and status. */
@@ -34,6 +53,8 @@ export interface GuildMemberDto {
   joinedAt: string; // ISO timestamp
   leftAt?: string | null; // ISO timestamp
   status: MemberStatus;
+  contributionPoints: number;
+  rankWithinGuild?: number | null;
   // Enriched user profile fields (optional, may not be present on some endpoints)
   username?: string | null;
   email?: string | null;
@@ -114,6 +135,9 @@ export interface ListAllPublicGuildsQueryRequest {
   pageSize?: number;
 }
 export type ListAllPublicGuildsQueryResponse = GuildDto[];
+
+/** Response payload to fetch all guilds with full details. */
+export type GetAllGuildsFullQueryResponse = GuildFullDto[];
 
 /** Query payload to fetch members of a guild. */
 export interface GetGuildMembersQueryRequest { guildId: string }

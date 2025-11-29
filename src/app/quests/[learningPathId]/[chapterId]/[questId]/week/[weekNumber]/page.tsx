@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { createServerApiClients } from "@/lib/api-server";
 import { QuestDetails, LearningPath } from "@/types/quest";
+import WeekStepAutoRefresh from "@/components/quests/WeekStepAutoRefresh";
 
 interface PageProps {
     params: Promise<{
@@ -99,15 +100,21 @@ export default async function WeekLearningPage({ params }: PageProps) {
             <DashboardLayout>
                 <div className="flex flex-col items-center justify-center min-h-[400px] gap-4">
                     <Trophy className="w-16 h-16 text-muted-foreground" />
-                    <p className="text-xl text-muted-foreground">
-                        Week {weekNum} not found.
-                    </p>
-                    <Button asChild variant="outline">
-                        <Link href={`/quests/${learningPathId}/${chapterId}/${questId}`}>
-                            <ArrowLeft className="w-4 h-4 mr-2" />
-                            Back to Quest
-                        </Link>
-                    </Button>
+                    <p className="text-xl text-muted-foreground">Week {weekNum} not found.</p>
+                    <WeekStepAutoRefresh questId={questId} stepNumber={weekNum} />
+                    <div className="flex gap-2">
+                        <Button asChild variant="outline">
+                            <Link href={`/quests/${learningPathId}/${chapterId}/${questId}`}>
+                                <ArrowLeft className="w-4 h-4 mr-2" />
+                                Back to Quest
+                            </Link>
+                        </Button>
+                        <Button asChild variant="ghost">
+                            <Link href={`/quests/${learningPathId}/${chapterId}`}>
+                                Back to Chapter
+                            </Link>
+                        </Button>
+                    </div>
                 </div>
             </DashboardLayout>
         );
@@ -135,6 +142,21 @@ export default async function WeekLearningPage({ params }: PageProps) {
     // SUCCESS: Week found, render learning view
     return (
         <DashboardLayout>
+            <div className="flex items-center justify-between mb-4">
+                <div className="flex gap-2">
+                    <Button asChild variant="outline">
+                        <Link href={`/quests/${learningPathId}/${chapterId}/${questId}`}>
+                            <ArrowLeft className="w-4 h-4 mr-2" />
+                            Back to Quest
+                        </Link>
+                    </Button>
+                    <Button asChild variant="ghost">
+                        <Link href={`/quests/${learningPathId}/${chapterId}`}>
+                            Back to Chapter
+                        </Link>
+                    </Button>
+                </div>
+            </div>
             <ModuleLearningView
                 weeklyStep={weeklyStep}
                 questId={questId}

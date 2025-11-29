@@ -19,6 +19,9 @@ import {
   Sparkles,
   Flame,
   Swords,
+  Shield,
+  Zap,
+  Moon,
 } from "lucide-react"
 import { createClient } from "@/utils/supabase/client"
 import profileApi from "@/api/profileApi"
@@ -31,6 +34,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import UserProfileModal from "@/components/profile/UserProfileModal"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { CharacterCreationWizard } from "@/components/features/character-creation/CharacterCreationWizard"
 import { usePageTransition } from "@/components/layout/PageTransition"
@@ -64,27 +68,31 @@ export function DungeonNav() {
   const hasCheckedOnboarding = React.useRef(false)
 
   React.useEffect(() => {
-    const supabase = createClient()
-    const fetchProfile = async () => {
-      const response = await profileApi.getMyProfile()
-      if (response.isSuccess) setUserProfile(response.data)
-    }
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (session) {
-        fetchProfile()
-        try {
-          const pt = (session as any)?.provider_token as string | undefined
-          if (pt) sessionStorage.setItem('googleProviderToken', pt)
-        } catch {}
-        try {
-          const prt = (session as any)?.provider_refresh_token as string | undefined
-          if (prt) localStorage.setItem('googleProviderRefreshToken', prt)
-        } catch {}
-      } else {
-        setUserProfile(null)
+    let unsub: { unsubscribe: () => void } | null = null
+    ;(async () => {
+      const supabase = await createClient()
+      const fetchProfile = async () => {
+        const response = await profileApi.getMyProfile()
+        if (response.isSuccess) setUserProfile(response.data)
       }
-    })
-    return () => subscription?.unsubscribe()
+      const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+        if (session) {
+          fetchProfile()
+          try {
+            const pt = (session as any)?.provider_token as string | undefined
+            if (pt) sessionStorage.setItem('googleProviderToken', pt)
+          } catch {}
+          try {
+            const prt = (session as any)?.provider_refresh_token as string | undefined
+            if (prt) localStorage.setItem('googleProviderRefreshToken', prt)
+          } catch {}
+        } else {
+          setUserProfile(null)
+        }
+      })
+      unsub = subscription
+    })()
+    return () => unsub?.unsubscribe()
   }, [])
 
   // ✅ UPDATED: Check if wizard should be shown, respecting session dismissal
@@ -198,7 +206,24 @@ export function DungeonNav() {
     }
   }
 
-  const activeIndex = navItems.findIndex(item => pathname === item.url || pathname?.startsWith(item.url + "/"))
+  const isGameMaster = React.useMemo(() => {
+    const roles = userProfile?.roles || []
+    return roles.some(r => /game\s*master/i.test(r))
+  }, [userProfile])
+
+  const navItemsWithAdmin = React.useMemo(() => {
+    if (!isGameMaster) return navItems
+    return [
+      ...navItems,
+      { title: "Admin", url: "/admin", icon: Shield, color: "from-amber-500 to-amber-800" },
+    ]
+  }, [isGameMaster])
+
+  const activeIndex = navItemsWithAdmin.findIndex(item => pathname === item.url || pathname?.startsWith(item.url + "/"))
+
+  const [profileModalOpen, setProfileModalOpen] = React.useState(false)
+  const [profileModalTab, setProfileModalTab] = React.useState<"profile" | "settings" | "verification">("profile")
+  const [status, setStatus] = React.useState<"ONLINE" | "AWAY" | "CLOAKED">("ONLINE")
 
   return (
     <>
@@ -240,14 +265,7 @@ export function DungeonNav() {
               </div>
             </button>
 
-            {/* XP Bar */}
-            <div className="hidden lg:flex items-center gap-3">
-              <Flame className="size-4 text-orange-500 animate-pulse" />
-              <div className="w-48 h-2 rounded-full bg-[#1a0b08]/80 border border-[#f5c16c]/20 overflow-hidden">
-                <div className="h-full bg-linear-to-r from-[#d23187] via-[#f061a6] to-[#f5c16c] rounded-full shadow-[0_0_10px_rgba(245,193,108,0.6)]" style={{ width: '65%' }} />
-              </div>
-              <span className="text-xs text-[#f5c16c]/70 font-semibold">650/1000 XP</span>
-            </div>
+            
 
             {/* User Profile - RPG Style */}
             <DropdownMenu>
@@ -258,26 +276,73 @@ export function DungeonNav() {
                       {userProfile?.username?.slice(0, 2).toUpperCase() || "RS"}
                     </AvatarFallback>
                   </Avatar>
-                  <div className="absolute -bottom-1 -right-1 size-4 rounded-full bg-linear-to-br from-amber-400 to-orange-500 border border-[#1a0b08] flex items-center justify-center text-[8px] font-bold text-white">
-                    {userProfile?.level || 1}
-                  </div>
+                  
                 </div>
-                <div className="hidden md:block text-left">
+                  <div className="hidden md:block text-left">
                   <div className="text-xs font-bold text-[#f5c16c]">{userProfile?.username || "Scholar"}</div>
-                  <div className="text-[9px] text-[#f5c16c]/50 uppercase">Lv.{userProfile?.level || 1}</div>
                 </div>
                 <ChevronDown className="size-3 text-[#f5c16c]/60" />
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56 border-2 border-[#f5c16c]/30 bg-[#0c0308]/98 backdrop-blur-xl shadow-[0_0_40px_rgba(210,49,135,0.4)]">
-                <div className="px-3 py-2 border-b border-[#f5c16c]/20">
-                  <p className="text-sm font-bold text-[#f5c16c]">{userProfile?.username || "Rogue Scholar"}</p>
-                  <p className="text-xs text-[#f5c16c]/60">Level {userProfile?.level || 1} • {userProfile?.roles || "Novice"}</p>
+              <DropdownMenuContent align="end" className="w-80 border-2 border-[#f5c16c]/30 bg-[#0c0308]/98 backdrop-blur-xl shadow-[0_0_40px_rgba(210,49,135,0.4)]">
+                <div className="p-4 border-b border-[#f5c16c]/20">
+                  <div className="flex items-center gap-3">
+                    <div className="relative">
+                      <Avatar className="size-10 border-2 border-[#f5c16c]/40">
+                        <AvatarFallback className="bg-linear-to-br from-[#d23187] to-[#f5c16c] text-white text-sm font-bold">
+                          {userProfile?.username?.slice(0, 2).toUpperCase() || "RS"}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="absolute -bottom-1 -right-1 size-4 rounded-full bg-[#161422] p-0.5">
+                        <div className={`w-3 h-3 rounded-full border border-[#161422] ${status === "ONLINE" ? "bg-emerald-500" : status === "AWAY" ? "bg-amber-400" : "bg-gray-500"}`} />
+                      </div>
+                    </div>
+                    <div className="flex-1">
+                      <div className="font-bold text-white text-sm">{userProfile?.username || "Scholar"}</div>
+                      <div className="flex items-center gap-2 text-[10px] text-[#f5c16c]">
+                        <Shield className="size-3" />
+                        <span className="uppercase tracking-widest">{(userProfile?.roles?.[0] || "Novice")}</span>
+                      </div>
+                  </div>
                 </div>
-                <DropdownMenuItem onClick={handleLogout} className="text-[#f5c16c]/70 hover:text-[#f5c16c] hover:bg-[#f5c16c]/10 cursor-pointer mt-1">
-                  <LogOut className="mr-2 size-4" />Exit Sanctum
-                </DropdownMenuItem>
+                </div>
+
+                
+
+                <div className="p-2 space-y-1">
+                  <DropdownMenuItem onClick={() => { setProfileModalTab("profile"); setProfileModalOpen(true); }} className="flex items-center gap-3 px-3 py-2 rounded-lg bg-transparent hover:bg-[#1E1B2E] text-white cursor-pointer">
+                    <div className="p-1.5 rounded-md bg-[#2D2842] text-white/80"><Users className="size-4" /></div>
+                    <div className="flex-1">
+                      <div className="text-sm font-medium">Character Codex</div>
+                      <div className="text-[10px] text-white/50 uppercase tracking-wide">Profile</div>
+                    </div>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => { setProfileModalTab("settings"); setProfileModalOpen(true); }} className="flex items-center gap-3 px-3 py-2 rounded-lg bg-transparent hover:bg-[#1E1B2E] text-white cursor-pointer">
+                    <div className="p-1.5 rounded-md bg-[#2D2842] text-white/80"><Zap className="size-4" /></div>
+                    <div className="flex-1">
+                      <div className="text-sm font-medium">Sanctum Config</div>
+                      <div className="text-[10px] text-white/50 uppercase tracking-wide">Settings</div>
+                    </div>
+                  </DropdownMenuItem>
+
+                  <div className="h-px bg-[#2D2842] my-2 mx-2" />
+
+                  <DropdownMenuItem onClick={() => { setProfileModalTab("verification"); setProfileModalOpen(true); }} className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-[#f5c16c]/10 text-[#f5c16c] cursor-pointer">
+                    <div className="p-1.5 rounded-md bg-[#f5c16c]/20 text-[#f5c16c]"><Shield className="size-4" /></div>
+                    <div className="flex-1">
+                      <div className="text-sm font-medium">Lecturer Verification</div>
+                    </div>
+                  </DropdownMenuItem>
+                </div>
+
+                <div className="p-2 border-t border-[#2D2842] bg-[#1E1B2E]">
+                  <button onClick={handleLogout} className="w-full flex items-center justify-center gap-2 text-rose-400 hover:bg-rose-500/10 hover:text-rose-300 py-2 rounded-lg transition-colors text-sm font-medium">
+                    <LogOut className="size-4" />
+                    <span>Exit Sanctum</span>
+                  </button>
+                </div>
               </DropdownMenuContent>
             </DropdownMenu>
+            <UserProfileModal open={profileModalOpen} onOpenChange={setProfileModalOpen} defaultTab={profileModalTab} />
           </div>
         </div>
       </header>
@@ -348,7 +413,7 @@ export function DungeonNav() {
 
               {/* Navigation Items - not clipped */}
               <div className="relative flex items-center justify-center gap-10 px-6 py-4">
-                {navItems.map((item, index) => {
+                {navItemsWithAdmin.map((item, index) => {
                   const Icon = item.icon
                   const isActive = index === activeIndex
 

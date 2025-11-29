@@ -22,16 +22,47 @@ import type {
 const eventServiceApi = {
   // ============ Problems ============
   /**
-   * Get all problems (public)
+   * Get all problems (public) with pagination support
+   * @param page - Page number (1-indexed)
+   * @param pageSize - Number of items per page (default: 12)
    */
-  async getAllProblems(): Promise<ApiResponse<Problem[]>> {
+  async getAllProblems(page: number = 1, pageSize: number = 12): Promise<ApiResponse<Problem[]>> {
     try {
-      const response = await axiosCodeBattleClient.get('/problems');
+      const response = await axiosCodeBattleClient.get('/problems', {
+        params: { page_index: page, page_size: pageSize }
+      });
+      console.log('📦 Problems API response:', response.data);
+
       if (response.data.success && response.data.data) {
-        return { success: true, data: response.data.data };
+        // Handle paginated response format: data.items contains the actual array
+        const problemsData = response.data.data.items || response.data.data;
+        console.log('✅ Extracted problems:', problemsData);
+
+        if (response.data.data.total_count !== undefined) {
+          console.log('📊 Problems pagination info:', {
+            total_count: response.data.data.total_count,
+            total_pages: response.data.data.total_pages,
+            page_index: response.data.data.page_index,
+            page_size: response.data.data.page_size
+          });
+
+          return {
+            success: true,
+            data: Array.isArray(problemsData) ? problemsData : [],
+            pagination: {
+              total_count: response.data.data.total_count,
+              total_pages: response.data.data.total_pages,
+              page_index: response.data.data.page_index,
+              page_size: response.data.data.page_size
+            }
+          };
+        }
+
+        return { success: true, data: Array.isArray(problemsData) ? problemsData : [] };
       }
       return { success: false, error: { message: 'Invalid response format' } };
     } catch (error: any) {
+      console.error('❌ Error fetching problems:', error);
       return {
         success: false,
         error: {
@@ -154,18 +185,44 @@ const eventServiceApi = {
     }
   },
 
+  /**
+   * Get all submissions for a specific problem (authenticated)
+   * @param problemId - The problem ID to fetch submissions for
+   */
+  async getProblemSubmissions(problemId: string): Promise<ApiResponse<Submission[]>> {
+    try {
+      const response = await axiosCodeBattleClient.get(`/problems/${problemId}/submissions`);
+      if (response.data.success && response.data.data) {
+        return { success: true, data: response.data.data };
+      }
+      return { success: false, error: { message: 'Invalid response format' } };
+    } catch (error: any) {
+      return {
+        success: false,
+        error: {
+          message: error.normalized?.message || 'Failed to fetch problem submissions',
+          details: error.normalized?.details,
+        },
+      };
+    }
+  },
+
   // ============ Events ============
   /**
    * Get all events (public) with pagination support
    * @param page - Page number (1-indexed)
    * @param pageSize - Number of items per page
    * @param type - Optional event type filter (e.g., 'code_battle')
+   * @param status - Optional status filter (e.g., 'active', 'pending', 'completed')
    */
-  async getAllEvents(page: number = 1, pageSize: number = 6, type?: string): Promise<ApiResponse<Event[]>> {
+  async getAllEvents(page: number = 1, pageSize: number = 6, type?: string, status?: string): Promise<ApiResponse<Event[]>> {
     try {
       const params: any = { page_index: page, page_size: pageSize };
       if (type) {
         params.type = type;
+      }
+      if (status) {
+        params.status = status;
       }
       const response = await axiosCodeBattleClient.get('/events', { params });
       console.log('📦 Events API response:', response.data);
@@ -594,6 +651,26 @@ const eventServiceApi = {
     }
   },
 
+  /**
+   * Leave a room intentionally (authenticated)
+   */
+  async leaveRoom(eventId: string, roomId: string): Promise<ApiResponse<any>> {
+    try {
+      const response = await axiosCodeBattleClient.delete(
+        `/events/${eventId}/rooms/${roomId}/leave`
+      );
+      return { success: true, data: response.data };
+    } catch (error: any) {
+      return {
+        success: false,
+        error: {
+          message: error.normalized?.message || 'Failed to leave room',
+          details: error.normalized?.details,
+        },
+      };
+    }
+  },
+
   // ============ SSE Connections ============
   /**
    * Create SSE connection for room updates (returns EventSource)
@@ -641,6 +718,37 @@ const eventServiceApi = {
           message: error.response?.data?.message || 'Health check failed',
           status: error.response?.status
         }
+      };
+    }
+  },
+
+  // ============ Admin - Problems ============
+  /**
+   * Create a new problem (admin only)
+   */
+  async createProblem(payload: import('@/types/event-service').CreateProblemRequest): Promise<ApiResponse<import('@/types/event-service').CreateProblemResponse>> {
+    try {
+      console.log('📤 Creating problem with payload:', JSON.stringify(payload, null, 2));
+      const response = await axiosCodeBattleClient.post('/problems', payload);
+      console.log('✅ Problem creation response:', response.data);
+
+      if (response.data.success && response.data.data) {
+        return { success: true, data: response.data.data };
+      }
+      return { success: false, error: { message: 'Invalid response format' } };
+    } catch (error: any) {
+      console.error('❌ Problem creation error:', {
+        message: error.normalized?.message,
+        details: error.normalized?.details,
+        status: error.normalized?.status,
+        raw: error.response?.data
+      });
+      return {
+        success: false,
+        error: {
+          message: error.normalized?.message || error.response?.data?.message || error.response?.data?.error_message || 'Failed to create problem',
+          details: error.normalized?.details || error.response?.data?.data,
+        },
       };
     }
   },

@@ -15,6 +15,7 @@ import PartyInfoModal from "./PartyInfoModal";
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import type { PartyMemberDto, PartyInvitationDto, PartyRole } from "@/types/parties";
 import * as usersApi from "@/api/usersApi";
+import PartyMembersList from "./PartyMembersList";
 
 export default function PartyDetailPageClient({ partyId }: { partyId: string }) {
   const [authUserId, setAuthUserId] = useState<string | null>(null);
@@ -32,6 +33,7 @@ export default function PartyDetailPageClient({ partyId }: { partyId: string }) 
   const [settingsIsPublic, setSettingsIsPublic] = useState<boolean>(true);
   const [settingsMaxMembers, setSettingsMaxMembers] = useState<number>(6);
   const [isSavingSettings, setIsSavingSettings] = useState(false);
+  const [settingsError, setSettingsError] = useState<string | null>(null);
   const [refreshAt, setRefreshAt] = useState<number>(0);
   const router = useRouter();
   const { role, refresh: refreshRole } = usePartyRole(partyId);
@@ -132,6 +134,9 @@ export default function PartyDetailPageClient({ partyId }: { partyId: string }) 
 
   const handleSaveSettings = async () => {
     if (!party) return;
+    if (settingsMaxMembers <= members.length) { setSettingsError(`Max members must be greater than current (${members.length})`); return; }
+    if (settingsMaxMembers < 2) { setSettingsError('Max members must be at least 2'); return; }
+    if (settingsMaxMembers > 8) { setSettingsError('Max members must be at most 8'); return; }
     setIsSavingSettings(true);
     setError(null);
     try {
@@ -262,72 +267,7 @@ export default function PartyDetailPageClient({ partyId }: { partyId: string }) 
                 )}
               </div>
 
-              <div>
-                <div className="mb-2 text-sm font-semibold">Members</div>
-                <ul className="space-y-2">
-                  {members.map((m) => (
-                    <li key={m.id} className="group flex items-center justify-between rounded bg-white/5 p-2">
-                      <div className="flex items-center gap-2">
-                        <div className="h-8 w-8 overflow-hidden rounded-full ring-2 ring-[#f5c16c]/40">
-                          {m.profileImageUrl ? (
-                            <img src={m.profileImageUrl} alt={m.username ?? m.email ?? "Member"} className="h-full w-full object-cover" />
-                          ) : (
-                            <div className="flex h-full w-full items-center justify-center bg-[#f5c16c]/10 text-xs text-[#f5c16c]">
-                              {(m.username ?? m.email ?? "?").slice(0, 1).toUpperCase()}
-                            </div>
-                          )}
-                        </div>
-                        <div>
-                          <div className="flex items-center gap-1 text-xs text-white">
-                            {m.role === "Leader" && <Crown className="h-3.5 w-3.5 text-[#f5c16c]" />}
-                            <span>{m.username ?? m.email ?? "Member"}</span>
-                            {m.role === "CoLeader" && <span className="ml-1 rounded bg-amber-500/20 px-1 text-[10px] text-amber-300">Co-Leader</span>}
-                          </div>
-                        </div>
-                      </div>
-                      {role && role !== "Member" && (
-                        <DropdownMenu>
-                          <DropdownMenuTrigger className="rounded p-1 text-white/70 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-white/10">
-                            <MoreVertical className="h-4 w-4" />
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end" className="min-w-[200px]">
-                            {role === "Leader" && m.role !== "Leader" && (
-                              <DropdownMenuItem onClick={async () => { await partiesApi.transferLeadership(party.id, { partyId: party.id, toUserId: m.authUserId }); triggerRefresh(); }}>Transfer leadership</DropdownMenuItem>
-                            )}
-                            {role === "Leader" && m.role === "Member" && (
-                              <DropdownMenuItem onClick={async () => {
-                                try {
-                                  await partiesApi.assignRole(party.id, m.authUserId, "CoLeader" as PartyRole);
-                                  triggerRefresh();
-                                } catch (e: any) {
-                                  setError(e?.message ?? "Failed to assign role");
-                                }
-                              }}>Promote to Co-Leader</DropdownMenuItem>
-                            )}
-                            {role === "Leader" && m.role === "CoLeader" && (
-                              <DropdownMenuItem onClick={async () => {
-                                try {
-                                  await partiesApi.revokeRole(party.id, m.authUserId, "CoLeader" as PartyRole);
-                                  await partiesApi.assignRole(party.id, m.authUserId, "Member" as PartyRole);
-                                  triggerRefresh();
-                                } catch (e: any) {
-                                  setError(e?.message ?? "Failed to update role");
-                                }
-                              }}>Demote to Member</DropdownMenuItem>
-                            )}
-                            {m.role !== "Leader" && (
-                              <DropdownMenuItem onClick={async () => { await partiesApi.removeMember(party.id, m.id, {}); triggerRefresh(); }}>Remove from party</DropdownMenuItem>
-                            )}
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      )}
-                    </li>
-                  ))}
-                  {members.length === 0 && (
-                    <li className="text-xs text-white/50">No members yet.</li>
-                  )}
-                </ul>
-              </div>
+              <PartyMembersList partyId={party.id} members={members} maxMembers={party.maxMembers} onRefresh={async () => { triggerRefresh(); }} />
 
               {invites.length > 0 && (
                 <div className="rounded-lg border border-[#f5c16c]/20 bg-black/40 p-4">
@@ -463,12 +403,22 @@ export default function PartyDetailPageClient({ partyId }: { partyId: string }) 
                   <label className="block text-sm font-medium text-[#f5c16c]/80">Max Members</label>
                   <input
                     type="number"
-                    min={2}
-                    max={50}
+                    min={Math.max(2, members.length + 1)}
+                    max={8}
                     value={settingsMaxMembers}
-                    onChange={(e) => setSettingsMaxMembers(Number(e.target.value))}
+                    onChange={(e) => {
+                      const v = Number(e.target.value) || 0;
+                      setSettingsMaxMembers(v);
+                      if (v <= members.length) setSettingsError(`Max members must be greater than current (${members.length})`);
+                      else if (v < 2) setSettingsError('Max members must be at least 2');
+                      else if (v > 8) setSettingsError('Max members must be at most 8');
+                      else setSettingsError(null);
+                    }}
                     className="mt-1.5 w-full rounded-lg border border-[#f5c16c]/20 bg-black/40 p-3 text-white placeholder-white/40 focus:border-[#f5c16c] focus:outline-none focus:ring-2 focus:ring-[#f5c16c]/30"
                   />
+                  {settingsError && (
+                    <div className="mt-1 text-xs text-rose-400">{settingsError}</div>
+                  )}
                 </div>
               </div>
               <div className="mt-6 flex justify-end gap-3">
@@ -480,7 +430,7 @@ export default function PartyDetailPageClient({ partyId }: { partyId: string }) 
                 </button>
                 <button
                   onClick={handleSaveSettings}
-                  disabled={isSavingSettings}
+                  disabled={isSavingSettings || !!settingsError}
                   className="rounded-lg bg-linear-to-r from-[#f5c16c] to-[#d4a855] px-5 py-2.5 text-sm font-medium text-black transition-all hover:from-[#d4a855] hover:to-[#f5c16c] disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {isSavingSettings ? "Saving..." : "Save"}

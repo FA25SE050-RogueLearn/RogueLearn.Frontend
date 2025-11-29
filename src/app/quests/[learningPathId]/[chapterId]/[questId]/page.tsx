@@ -56,24 +56,12 @@ export default async function QuestOverviewPage({ params }: PageProps) {
       };
     }
 
-    console.log('✅ Fetched quest details, learning path, and progress');
-    console.log('questDetails', questDetails);
-    console.log('learningPath', learningPath);
-    console.log('questProgress', questProgress);
   } catch (error) {
     console.error(`Failed to fetch quest ${questId}:`, error);
   }
 
   const chapter = learningPath?.chapters.find(ch => ch.id === chapterId);
-  const debugInfo = {
-    params: { learningPathId, chapterId, questId },
-    apiHealthy,
-    envApiUrl,
-    hasSessionToken,
-    questDetails: questDetails ? { id: questDetails.id, title: questDetails.title, stepsCount: questDetails.steps?.length } : null,
-    learningPath: learningPath ? { id: learningPath.id, name: learningPath.name, chaptersCount: learningPath.chapters?.length, chapterIds: learningPath.chapters?.map(ch => ch.id) } : null,
-    chapterMatched: !!chapter,
-  };
+  const debugInfo = undefined;
 
   // Error handling
   if (!questDetails || !learningPath || !chapter) {
@@ -88,23 +76,6 @@ export default async function QuestOverviewPage({ params }: PageProps) {
               Back to Chapter
             </Link>
           </Button>
-          <form
-            action={async () => {
-              'use server';
-              revalidatePath(`/quests/${learningPathId}/${chapterId}/${questId}`);
-            }}
-          >
-            <button
-              type="submit"
-              className="mt-2 rounded-md border border-[#f5c16c]/30 px-3 py-1 text-sm text-[#f5c16c] hover:bg-[#f5c16c]/10"
-            >
-              Refresh Server Data
-            </button>
-          </form>
-          <div className="mt-4 w-full max-w-3xl rounded-md border border-[#f5c16c]/20 bg-black/30 p-3 text-xs text-white/80">
-            <div className="mb-2 font-semibold text-[#f5c16c]">Debug</div>
-            <pre className="whitespace-pre-wrap break-all">{JSON.stringify(debugInfo, null, 2)}</pre>
-          </div>
         </div>
       </DashboardLayout>
     );
@@ -121,23 +92,7 @@ export default async function QuestOverviewPage({ params }: PageProps) {
 
   return (
     <DashboardLayout>
-      <form
-        action={async () => {
-          'use server';
-          revalidatePath(`/quests/${learningPathId}/${chapterId}/${questId}`);
-        }}
-      >
-        <button
-          type="submit"
-          className="mb-4 rounded-md border border-[#f5c16c]/30 px-3 py-1 text-sm text-[#f5c16c] hover:bg-[#f5c16c]/10"
-        >
-          Refresh Server Data
-        </button>
-      </form>
-      <div className="mb-4 w-full max-w-3xl rounded-md border border-[#f5c16c]/20 bg-black/30 p-3 text-xs text-white/80">
-        <div className="mb-2 font-semibold text-[#f5c16c]">Debug</div>
-        <pre className="whitespace-pre-wrap break-all">{JSON.stringify(debugInfo, null, 2)}</pre>
-      </div>
+
       <QuestDetailView
         questDetails={questDetails}
         questProgress={questProgress}

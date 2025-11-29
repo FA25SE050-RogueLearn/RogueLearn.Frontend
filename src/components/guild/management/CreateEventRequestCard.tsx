@@ -57,6 +57,16 @@ export function CreateEventRequestCard({ guildId, onRequestCreated }: CreateEven
   ]);
   const [notes, setNotes] = useState("");
 
+  // Calculate minimum dates for calendar (start of today)
+  const minStartDateForCalendar = new Date();
+  minStartDateForCalendar.setHours(0, 0, 0, 0); // Start of today
+
+  const minEndDateForCalendar = startDate ? (() => {
+    const minEnd = new Date(startDate);
+    minEnd.setHours(0, 0, 0, 0);
+    return minEnd;
+  })() : undefined;
+
   // Fetch available tags when expanded
   useEffect(() => {
     if (!isExpanded) return;
@@ -93,6 +103,15 @@ export function CreateEventRequestCard({ guildId, onRequestCreated }: CreateEven
   }, [isExpanded]);
 
   const handleAddTopic = () => {
+    // Check if all topics are already selected
+    const selectedCount = topics.filter(t => t.trim()).length;
+    if (selectedCount >= availableTags.length) {
+      toast.error("All topics selected", {
+        description: "You have already selected all available topics."
+      });
+      return;
+    }
+
     setTopics([...topics, ""]);
   };
 
@@ -101,14 +120,47 @@ export function CreateEventRequestCard({ guildId, onRequestCreated }: CreateEven
   };
 
   const handleTopicChange = (index: number, value: string) => {
+    // Check if topic is already selected
+    if (topics.includes(value) && topics[index] !== value) {
+      toast.error("Topic already selected", {
+        description: "You cannot select the same topic twice. Please choose a different topic."
+      });
+      return;
+    }
+
     const newTopics = [...topics];
     newTopics[index] = value;
     setTopics(newTopics);
   };
 
+  // Calculate maximum problems available for a specific difficulty across selected topics
+  const getMaxProblemsForDifficulty = (difficulty: number): number => {
+    if (topics.length === 0 || availableTags.length === 0) return 0;
+
+    // Get selected tag objects
+    const selectedTags = topics
+      .filter(topicId => topicId.trim())
+      .map(topicId => availableTags.find(tag => tag.id === topicId))
+      .filter((tag): tag is Tag => tag !== undefined);
+
+    if (selectedTags.length === 0) return 0;
+
+    // Sum up problem counts for this difficulty across all selected topics
+    return selectedTags.reduce((total, tag) => {
+      const diffCount = tag.difficulty_count?.find(dc => dc.difficulty === difficulty);
+      return total + (diffCount?.problem_count || 0);
+    }, 0);
+  };
+
   const handleDistributionChange = (difficulty: number, number_of_problems: number) => {
+    // Calculate max available problems for this difficulty across selected topics
+    const maxAvailable = getMaxProblemsForDifficulty(difficulty);
+
+    // Clamp to max available
+    const clampedValue = Math.min(number_of_problems, maxAvailable);
+
     setDistributions(distributions.map(dist =>
-      dist.difficulty === difficulty ? { ...dist, number_of_problems } : dist
+      dist.difficulty === difficulty ? { ...dist, number_of_problems: clampedValue } : dist
     ));
   };
 
@@ -132,6 +184,21 @@ export function CreateEventRequestCard({ guildId, onRequestCreated }: CreateEven
       toast.error("Start and end dates are required");
       return;
     }
+
+    // Check minimum time constraints
+    const now = new Date();
+    const minStartTime = new Date(now.getTime() + 2 * 60 * 1000);
+    if (startDate < minStartTime) {
+      toast.error("Start date must be at least 2 minutes from now");
+      return;
+    }
+
+    const minEndTime = new Date(startDate.getTime() + 1 * 60 * 1000);
+    if (endDate < minEndTime) {
+      toast.error("End date must be at least 1 minute after start date");
+      return;
+    }
+
     if (startDate >= endDate) {
       toast.error("End date must be after start date");
       return;
@@ -147,6 +214,20 @@ export function CreateEventRequestCard({ guildId, onRequestCreated }: CreateEven
     if (topics.some(t => !t.trim())) {
       toast.error("All topics must be selected");
       return;
+    }
+
+    // Validate problem distribution against available problems
+    for (const dist of distributions) {
+      if (dist.number_of_problems > 0) {
+        const maxAvailable = getMaxProblemsForDifficulty(dist.difficulty);
+        if (dist.number_of_problems > maxAvailable) {
+          const diffLabel = dist.difficulty === 1 ? 'Easy' : dist.difficulty === 2 ? 'Medium' : 'Hard';
+          toast.error(`Not enough problems available`, {
+            description: `${diffLabel} difficulty: You requested ${dist.number_of_problems} problems but only ${maxAvailable} are available for the selected topics.`
+          });
+          return;
+        }
+      }
     }
 
     // Format dates with timezone offset
@@ -301,8 +382,10 @@ export function CreateEventRequestCard({ guildId, onRequestCreated }: CreateEven
               <DateTimePicker
                 date={startDate}
                 setDate={setStartDate}
+                minDate={minStartDateForCalendar}
                 placeholder="Select start date and time"
               />
+              <p className="text-xs text-[#f5c16c]/50">Must be at least 2 minutes from now</p>
             </div>
 
             <div className="space-y-2">
@@ -313,8 +396,10 @@ export function CreateEventRequestCard({ guildId, onRequestCreated }: CreateEven
               <DateTimePicker
                 date={endDate}
                 setDate={setEndDate}
+                minDate={minEndDateForCalendar}
                 placeholder="Select end date and time"
               />
+              <p className="text-xs text-[#f5c16c]/50">Must be at least 1 minute after start date</p>
             </div>
           </div>
         </div>
@@ -386,15 +471,30 @@ export function CreateEventRequestCard({ guildId, onRequestCreated }: CreateEven
                         <SelectValue placeholder="Select a topic" />
                       </SelectTrigger>
                       <SelectContent className="border-[#f5c16c]/30 bg-[#1a0a08]">
-                        {Array.isArray(availableTags) && availableTags.map((tag) => (
-                          <SelectItem 
-                            key={tag.id} 
-                            value={tag.id}
-                            className="text-white hover:bg-[#f5c16c]/10 focus:bg-[#f5c16c]/10"
-                          >
-                            {tag.name}
-                          </SelectItem>
-                        ))}
+                        {Array.isArray(availableTags) && availableTags.map((tag) => {
+                          const hasDifficultyCounts = tag.difficulty_count && tag.difficulty_count.length > 0;
+                          const isAlreadySelected = topics.includes(tag.id) && topics[index] !== tag.id;
+
+                          // Don't show already selected topics in other dropdowns
+                          if (isAlreadySelected) return null;
+
+                          return (
+                            <SelectItem
+                              key={tag.id}
+                              value={tag.id}
+                              className="text-white hover:bg-[#f5c16c]/10 focus:bg-[#f5c16c]/10"
+                            >
+                              <div className="flex items-center justify-between gap-2 w-full">
+                                <span>{tag.name}</span>
+                                {hasDifficultyCounts && (
+                                  <span className="text-[10px] text-[#f5c16c]/60">
+                                    ({tag.difficulty_count!.map(dc => `${dc.difficulty === 1 ? 'E' : dc.difficulty === 2 ? 'M' : 'H'}:${dc.problem_count}`).join(' ')})
+                                  </span>
+                                )}
+                              </div>
+                            </SelectItem>
+                          );
+                        })}
                       </SelectContent>
                     </Select>
                     {topics.length > 1 && (
@@ -416,11 +516,35 @@ export function CreateEventRequestCard({ guildId, onRequestCreated }: CreateEven
               </div>
             </div>
 
+            {/* Available Problems Summary */}
+            {topics.some(t => t.trim()) && (
+              <div className="rounded-lg border border-emerald-500/30 bg-emerald-950/20 p-3">
+                <h4 className="text-xs font-semibold text-emerald-400 mb-2">Available Problems for Selected Topics</h4>
+                <div className="flex gap-4 text-xs">
+                  <div className="flex items-center gap-1">
+                    <span className="text-emerald-300">Easy:</span>
+                    <span className="font-bold text-white">{getMaxProblemsForDifficulty(1)}</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <span className="text-amber-300">Medium:</span>
+                    <span className="font-bold text-white">{getMaxProblemsForDifficulty(2)}</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <span className="text-rose-300">Hard:</span>
+                    <span className="font-bold text-white">{getMaxProblemsForDifficulty(3)}</span>
+                  </div>
+                </div>
+              </div>
+            )}
+
             <div className="space-y-2">
               <Label className="text-[#f5c16c]/80">Difficulty Distribution *</Label>
               <div className="grid gap-3">
                 {distributions.map((dist) => {
                   const difficultyLabel = dist.difficulty === 1 ? 'Easy' : dist.difficulty === 2 ? 'Medium' : 'Hard';
+                  const maxAvailable = getMaxProblemsForDifficulty(dist.difficulty);
+                  const hasExceeded = dist.number_of_problems > maxAvailable;
+
                   return (
                     <div key={dist.difficulty} className="grid grid-cols-3 gap-3 rounded-lg border border-[#f5c16c]/20 bg-black/20 p-3">
                       <div className="space-y-1">
@@ -430,14 +554,29 @@ export function CreateEventRequestCard({ guildId, onRequestCreated }: CreateEven
                         </div>
                       </div>
                       <div className="space-y-1">
-                        <Label className="text-xs text-[#f5c16c]/70">Problems</Label>
+                        <Label className="text-xs text-[#f5c16c]/70">
+                          Problems
+                          {topics.length > 0 && (
+                            <span className={`ml-1 ${hasExceeded ? 'text-rose-400' : 'text-emerald-400'}`}>
+                              (max: {maxAvailable})
+                            </span>
+                          )}
+                        </Label>
                         <Input
                           type="number"
                           min="0"
+                          max={maxAvailable}
                           value={dist.number_of_problems}
                           onChange={(e) => handleDistributionChange(dist.difficulty, parseInt(e.target.value) || 0)}
-                          className="border-[#f5c16c]/20 bg-black/40 text-white focus:border-[#f5c16c]/50 focus:ring-[#f5c16c]/30"
+                          className={`border-[#f5c16c]/20 bg-black/40 text-white focus:border-[#f5c16c]/50 focus:ring-[#f5c16c]/30 ${
+                            hasExceeded ? 'border-rose-500/50 focus:border-rose-500' : ''
+                          }`}
                         />
+                        {hasExceeded && (
+                          <p className="text-[10px] text-rose-400">
+                            Only {maxAvailable} available
+                          </p>
+                        )}
                       </div>
                       <div className="space-y-1">
                         <Label className="text-xs text-[#f5c16c]/70">Score Each</Label>

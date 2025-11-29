@@ -72,15 +72,22 @@ export default function EventResultsContent({ eventId }: EventResultsContentProp
     }
   };
 
-  const getRankDisplay = (rank: number) => {
+  const getRankDisplay = (rank: number, totalEntries: number) => {
+    // If there's only 1 entry, show Champion instead of rank
+    if (totalEntries === 1 && rank === 1) {
+      return <Trophy className="h-6 w-6 text-yellow-500" />;
+    }
+
     if (rank === 1) return <Trophy className="h-6 w-6 text-yellow-500" />;
     if (rank === 2) return <Medal className="h-6 w-6 text-gray-400" />;
     if (rank === 3) return <Medal className="h-6 w-6 text-amber-700" />;
     return <span className="text-[#f5c16c] font-bold">#{rank}</span>;
   };
 
-  const renderLeaderboardEntry = (entry: LeaderboardEntry, type: 'user' | 'guild') => {
+  const renderLeaderboardEntry = (entry: LeaderboardEntry, type: 'user' | 'guild', totalEntries: number) => {
+    // Show champion styling for rank 1, and champion badge only if there's only 1 entry
     const isChampion = entry.rank === 1;
+    const showChampionBadge = entry.rank === 1 && totalEntries === 1;
     const isTopThree = entry.rank <= 3;
 
     // Handle both old and new API response formats
@@ -103,7 +110,7 @@ export default function EventResultsContent({ eventId }: EventResultsContentProp
         }`}
       >
         {/* Champion badge */}
-        {isChampion && (
+        {showChampionBadge && (
           <div className="absolute -top-2 left-4">
             <div className="flex items-center gap-1 rounded-full bg-gradient-to-r from-yellow-500 to-amber-500 px-2 py-0.5">
               <Star className="h-2.5 w-2.5 text-yellow-950 fill-yellow-950" />
@@ -115,7 +122,7 @@ export default function EventResultsContent({ eventId }: EventResultsContentProp
         <div className="flex items-center gap-4 p-4">
           {/* Rank */}
           <div className="flex h-10 w-10 shrink-0 items-center justify-center">
-            {getRankDisplay(entry.rank)}
+            {getRankDisplay(entry.rank, totalEntries)}
           </div>
 
           {/* Name & Stats */}
@@ -258,14 +265,14 @@ export default function EventResultsContent({ eventId }: EventResultsContentProp
                 {/* Champion (Rank 1) */}
                 {userLeaderboard.rankings[0] && (
                   <div className="mb-6">
-                    {renderLeaderboardEntry(userLeaderboard.rankings[0], 'user')}
+                    {renderLeaderboardEntry(userLeaderboard.rankings[0], 'user', userLeaderboard.rankings.length)}
                   </div>
                 )}
 
                 {/* Rest of rankings */}
                 <div className="space-y-2 max-h-[600px] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-[#d23187]/30 scrollbar-track-transparent">
                   {userLeaderboard.rankings.slice(1).map((entry) =>
-                    renderLeaderboardEntry(entry, 'user')
+                    renderLeaderboardEntry(entry, 'user', userLeaderboard.rankings.length)
                   )}
                 </div>
               </div>
@@ -316,14 +323,14 @@ export default function EventResultsContent({ eventId }: EventResultsContentProp
                 {/* Champion (Rank 1) */}
                 {guildLeaderboard.rankings[0] && (
                   <div className="mb-6">
-                    {renderLeaderboardEntry(guildLeaderboard.rankings[0], 'guild')}
+                    {renderLeaderboardEntry(guildLeaderboard.rankings[0], 'guild', guildLeaderboard.rankings.length)}
                   </div>
                 )}
 
                 {/* Rest of rankings */}
                 <div className="space-y-2 max-h-[600px] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-[#f5c16c]/30 scrollbar-track-transparent">
                   {guildLeaderboard.rankings.slice(1).map((entry) =>
-                    renderLeaderboardEntry(entry, 'guild')
+                    renderLeaderboardEntry(entry, 'guild', guildLeaderboard.rankings.length)
                   )}
                 </div>
               </div>

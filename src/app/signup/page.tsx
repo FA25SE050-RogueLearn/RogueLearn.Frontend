@@ -26,7 +26,7 @@ export default function SignupPage() {
     event.preventDefault();
     setError(null);
     setMessage(null);
-    const supabase = createClient();
+    const supabase = await createClient();
 
     const { error } = await supabase.auth.signUp({
       email,
@@ -54,7 +54,7 @@ export default function SignupPage() {
   const handleGoogleSignUp = async () => {
     try {
       setError(null);
-      const supabase = createClient();
+      const supabase = await createClient();
       const origin = window.location.origin;
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',

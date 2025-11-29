@@ -30,7 +30,7 @@ export function SidebarNav({ isCollapsed = false, onNavigate }: SidebarNavProps)
 
   // Handles the user logout process.
   const handleLogout = async () => {
-    const supabase = createClient();
+    const supabase = await createClient();
     await supabase.auth.signOut();
     router.push('/login'); // Redirect to login page after sign out.
     router.refresh(); // Refresh the page to clear any cached user data.

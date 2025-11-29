@@ -34,7 +34,16 @@ declare global {
 }
 
 export function useGoogleMeet() {
-  const clientId = process.env['NEXT_PUBLIC_GOOGLE_CLIENT_ID'];
+  let clientId: string | undefined
+  async function ensureClientId(): Promise<string> {
+    if (clientId) return clientId
+    try {
+      const res = await fetch('/api/public-config', { cache: 'no-store' })
+      const data = await res.json()
+      clientId = (data?.googleClientId ?? '') || undefined
+    } catch {}
+    return clientId ?? ''
+  }
 
   async function getAccessToken(scopes: MeetScopes[] | string): Promise<string> {
     try {
@@ -55,7 +64,8 @@ export function useGoogleMeet() {
 
   async function requestToken(scopes: MeetScopes[] | string): Promise<string> {
     const scopeString = Array.isArray(scopes) ? scopes.join(" ") : scopes;
-    return new Promise((resolve, reject) => {
+    return new Promise(async (resolve, reject) => {
+      clientId = await ensureClientId()
       if (!clientId) {
         reject(
           new Error(

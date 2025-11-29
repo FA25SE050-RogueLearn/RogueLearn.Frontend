@@ -52,7 +52,7 @@ export function MembersManagementCard({
   onTransferLeadership,
 }: MembersManagementCardProps) {
   const [memberSearch, setMemberSearch] = useState<string>("");
-  const [roleToAssign, setRoleToAssign] = useState<GuildRole>("Member");
+  const [roleToAssignByMemberId, setRoleToAssignByMemberId] = useState<Record<string, GuildRole>>({});
 
   return (
     <Card className={CARD_CLASS}>
@@ -111,7 +111,7 @@ export function MembersManagementCard({
               return (
                 <div 
                   key={m.memberId} 
-                  className="flex items-center justify-between rounded-lg border border-[#f5c16c]/20 bg-gradient-to-br from-black/40 to-[#1a0a08]/40 p-4 transition-all hover:border-[#f5c16c]/40"
+                  className="flex items-center justify-between rounded-lg border border-[#f5c16c]/20 bg-linear-to-br from-black/40 to-[#1a0a08]/40 p-4 transition-all hover:border-[#f5c16c]/40"
                 >
                   <div className="flex items-center gap-3">
                     <Avatar className="h-10 w-10 border-2 border-[#f5c16c]/30">
@@ -139,7 +139,12 @@ export function MembersManagementCard({
                   </div>
                   {myRole === "GuildMaster" && m.role !== "GuildMaster" && (
                     <div className="flex items-center gap-2">
-                      <Select value={roleToAssign} onValueChange={(v) => setRoleToAssign(v as GuildRole)}>
+                      <Select
+                        value={roleToAssignByMemberId[m.memberId] ?? m.role}
+                        onValueChange={(v) =>
+                          setRoleToAssignByMemberId((prev) => ({ ...prev, [m.memberId]: v as GuildRole }))
+                        }
+                      >
                         <SelectTrigger className="w-[140px] border-[#f5c16c]/30 bg-black/40 text-white focus:border-[#f5c16c]/50 focus:ring-[#f5c16c]/30">
                           <SelectValue placeholder="Role" />
                         </SelectTrigger>
@@ -157,7 +162,7 @@ export function MembersManagementCard({
                       </Select>
                       <Button 
                         size="sm" 
-                        onClick={() => onAssignRole(m.authUserId, roleToAssign)}
+                        onClick={() => onAssignRole(m.authUserId, roleToAssignByMemberId[m.memberId] ?? m.role)}
                         className="bg-[#f5c16c] text-black hover:bg-[#d4a855]"
                       >
                         <UserCog className="mr-1.5 h-3.5 w-3.5" />
@@ -196,19 +201,24 @@ export function MembersManagementCard({
                   )}
                   {myRole === "Officer" && m.role !== "GuildMaster" && m.role !== "Officer" && (
                     <div className="flex items-center gap-2">
-                      <Select value={roleToAssign} onValueChange={(v) => setRoleToAssign(v as GuildRole)}>
+                      <Select
+                        value={roleToAssignByMemberId[m.memberId] ?? (["Veteran", "Member", "Recruit"].includes(m.role) ? m.role : "Recruit")}
+                        onValueChange={(v) =>
+                          setRoleToAssignByMemberId((prev) => ({ ...prev, [m.memberId]: v as GuildRole }))
+                        }
+                      >
                         <SelectTrigger className="w-[160px]">
                           <SelectValue placeholder="Role" />
                         </SelectTrigger>
                         <SelectContent>
-                          {["Veteran", "Recruit"].map((r) => (
+                          {["Veteran", "Member", "Recruit"].map((r) => (
                             <SelectItem key={r} value={r as GuildRole}>
                               {r}
                             </SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
-                      <Button size="sm" onClick={() => onAssignRole(m.authUserId, roleToAssign)}>Assign</Button>
+                      <Button size="sm" onClick={() => onAssignRole(m.authUserId, roleToAssignByMemberId[m.memberId] ?? ( ["Veteran", "Member", "Recruit"].includes(m.role) ? m.role : "Recruit"))}>Assign</Button>
                       <Button size="sm" variant="destructive" onClick={() => onRemoveMember(m.memberId)}>Remove</Button>
                     </div>
                   )}

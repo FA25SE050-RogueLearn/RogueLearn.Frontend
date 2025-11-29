@@ -21,7 +21,7 @@ export default function LoginClient() {
   const handleSignIn = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setError(null);
-    const supabase = createClient();
+    const supabase = await createClient();
 
     const { error } = await supabase.auth.signInWithPassword({
       email,
@@ -39,7 +39,7 @@ export default function LoginClient() {
   const handleGoogleSignIn = async () => {
     try {
       setError(null);
-      const supabase = createClient();
+      const supabase = await createClient();
       const origin = window.location.origin;
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',

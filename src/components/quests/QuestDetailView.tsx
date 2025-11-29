@@ -15,6 +15,7 @@ import {
   List
 } from 'lucide-react';
 import Link from 'next/link';
+import questApi from '@/api/questApi';
 import { cn } from '@/lib/utils';
 import WeeklyProgressCard from './WeeklyProgressCard';
 import {
@@ -23,7 +24,6 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 
 interface QuestDetailViewProps {
@@ -80,18 +80,6 @@ export default function QuestDetailView({
   chapterName,
 }: QuestDetailViewProps) {
   const router = useRouter();
-  useEffect(() => {
-    console.log('QuestDetailView props', {
-      questId: questDetails?.id,
-      questTitle: questDetails?.title,
-      stepsCount: questDetails?.steps?.length,
-      questProgress,
-      learningPathId,
-      learningPathName,
-      chapterId,
-      chapterName,
-    });
-  }, [questDetails, questProgress, learningPathId, learningPathName, chapterId, chapterName]);
   // Build a map of stepId → stepNumber for reference
   const stepIdToNumberMap = new Map<string, number>();
   questDetails.steps.forEach(step => {
@@ -117,16 +105,7 @@ export default function QuestDetailView({
 
   return (
     <div className="flex flex-col gap-8 pb-24">
-      <div className="flex justify-end">
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => router.refresh()}
-          className="border-[#f5c16c]/30 text-[#f5c16c] hover:bg-[#f5c16c]/10"
-        >
-          Refresh Data
-        </Button>
-      </div>
+      <div className="flex justify-end" />
       {/* Header Section */}
       <div className="relative overflow-hidden rounded-[28px] border border-[#f5c16c]/20 bg-gradient-to-br from-[#2d1810] via-[#1a0a08] to-[#0a0506] p-8 shadow-[0_25px_70px_rgba(0,0,0,0.55)]">
         <div
@@ -139,12 +118,22 @@ export default function QuestDetailView({
         />
         <div className="absolute inset-0 opacity-30 bg-[radial-gradient(circle_at_top,_rgba(245,193,108,0.25),_transparent_70%)]" />
         <div className="relative z-10 space-y-6">
-          <div className="flex items-center gap-2 text-xs uppercase tracking-[0.35em] text-white/50">
-            <span className="text-[#f5c16c]">Quest</span>
-            <span className="text-white/30">/</span>
-            <span className="text-white/70">{learningPathName}</span>
-            <span className="text-white/30">/</span>
-            <span className="text-white/70">{chapterName}</span>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 text-xs uppercase tracking-[0.35em] text-white/50">
+              <span className="text-[#f5c16c]">Quest</span>
+              <span className="text-white/30">/</span>
+              <span className="text-white/70">{learningPathName}</span>
+              <span className="text-white/30">/</span>
+              <span className="text-white/70">{chapterName}</span>
+            </div>
+            <div className="flex gap-2">
+              <Button asChild variant="outline">
+                <Link href={`/quests/${learningPathId}/${chapterId}`}>Back to Chapter</Link>
+              </Button>
+              <Button asChild variant="ghost">
+                <Link href={`/quests/${learningPathId}`}>Back to Questline</Link>
+              </Button>
+            </div>
           </div>
 
           <div>
@@ -236,9 +225,19 @@ export default function QuestDetailView({
                     </div>
 
                     <Button
-                      asChild={!locked}
                       disabled={locked}
                       size="sm"
+                      onClick={async () => {
+                        if (locked) return;
+                        const path = `/quests/${learningPathId}/${chapterId}/${questDetails.id}/week/${step.stepNumber}`;
+                        for (let i = 0; i < 20; i++) {
+                          const res = await questApi.getQuestDetails(questDetails.id);
+                          const exists = res.isSuccess && !!res.data?.steps?.find(s => s.stepNumber === step.stepNumber);
+                          if (exists) break;
+                          await new Promise(r => setTimeout(r, 800));
+                        }
+                        router.push(path);
+                      }}
                       className={cn(
                         'whitespace-nowrap shrink-0 h-16 px-6 rounded-lg font-semibold transition-all duration-300',
                         locked
@@ -254,13 +253,10 @@ export default function QuestDetailView({
                           Locked
                         </span>
                       ) : (
-                        <Link
-                          href={`/quests/${learningPathId}/${chapterId}/${questDetails.id}/week/${step.stepNumber}`}
-                          className="flex items-center gap-2"
-                        >
+                        <span className="flex items-center gap-2">
                           <Play className="w-4 h-4" />
                           {stepStatus === 'Completed' ? 'Review' : 'Continue'}
-                        </Link>
+                        </span>
                       )}
                     </Button>
                   </div>

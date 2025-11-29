@@ -13,17 +13,20 @@ import {
   Network,
   GraduationCap,
   BookCopy,
-  ScrollText // Icon for Programs
+  ScrollText,
+  ChevronLeft
 } from "lucide-react";
 
 const navItems = [
   { href: "/admin", label: "Command Center", icon: LayoutDashboard },
   { href: "/admin/events", label: "Event Requests", icon: Calendar },
   { href: "/admin/content", label: "Content Vault", icon: Library },
+  { href: "/admin/lecturer-requests", label: "Lecturer Requests", icon: Scroll },
   { href: "/admin/programs", label: "Programs", icon: ScrollText }, // New: Manage Programs & Subjects
   { href: "/admin/classes", label: "Classes", icon: GraduationCap },
   { href: "/admin/skills", label: "Skill Tree", icon: Network },
   { href: "/admin/mappings", label: "Subject skills Map", icon: BookCopy },
+  { href: "/admin/user-roles", label: "User Roles", icon: Shield },
   { href: "/admin/settings", label: "Settings", icon: Settings },
 ];
 
@@ -66,6 +69,16 @@ export function AdminSidebarNav() {
             </Link>
           );
         })}
+      </div>
+
+      <div className="mt-6 border-t border-amber-900/30 pt-6">
+        <Link
+          href="/dashboard"
+          className="flex items-center gap-2 rounded-md border border-amber-700/50 bg-amber-900/20 px-3 py-2 text-amber-300 hover:bg-amber-800/30 hover:text-amber-200"
+        >
+          <ChevronLeft className="h-4 w-4" />
+          Back to Dashboard
+        </Link>
       </div>
     </nav>
   );

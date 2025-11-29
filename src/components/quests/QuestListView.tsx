@@ -1,13 +1,9 @@
+// roguelearn-web/src/components/quests/QuestListView.tsx
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import gsap from 'gsap';
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Switch } from '@/components/ui/switch';
-import { Label } from '@/components/ui/label';
 import {
   BookOpen,
   CheckCircle,
@@ -15,8 +11,6 @@ import {
   Sparkles,
   Flame,
   Target,
-  Loader2,
-  Play
 } from 'lucide-react';
 import { QuestSummary } from '@/types/quest';
 import questApi from '@/api/questApi';
@@ -34,7 +28,6 @@ interface QuestListViewProps {
     totalXP: number;
   };
 }
-const LEARNING_MODE_STORAGE_KEY = 'roguelearn_learning_mode';
 
 export default function QuestListView({
   activeQuests,
@@ -42,16 +35,13 @@ export default function QuestListView({
   notStartedQuests,
   userStats
 }: QuestListViewProps) {
-  const router = useRouter();
   const { navigateTo } = usePageTransition();
   const { startGeneration } = useQuestGeneration();
 
-  // ⭐ REMOVED: pollingIntervalRef - no longer polling here
   const headerRef = useRef<HTMLDivElement | null>(null);
   const activeQuestsRef = useRef<HTMLDivElement | null>(null);
   const completedQuestsRef = useRef<HTMLDivElement | null>(null);
   const availableQuestsRef = useRef<HTMLDivElement | null>(null);
-  const lockedQuestsRef = useRef<HTMLDivElement | null>(null);
   const [generatingQuestId, setGeneratingQuestId] = useState<string | null>(null);
 
   // Modal state
@@ -60,64 +50,8 @@ export default function QuestListView({
   const [generatingQuestTitle, setGeneratingQuestTitle] = useState('');
   const [targetQuestUrl, setTargetQuestUrl] = useState<string>('');
 
-  const [learningMode, setLearningMode] = useState<'structured' | 'free'>('structured');
-
-  const { availableQuests, lockedQuests } = useMemo(() => {
-    if (learningMode === 'free') {
-      return {
-        availableQuests: notStartedQuests,
-        lockedQuests: [],
-      };
-    }
-
-    const available: QuestSummary[] = [];
-    const locked: QuestSummary[] = [];
-    const completedIds = new Set(completedQuests.map(q => q.id));
-    const allSortedQuests = [...completedQuests, ...notStartedQuests].sort((a, b) => a.sequenceOrder - b.sequenceOrder);
-
-    notStartedQuests.forEach(quest => {
-      const questIndex = allSortedQuests.findIndex(q => q.id === quest.id);
-      if (questIndex === 0) {
-        available.push(quest);
-        return;
-      }
-      const previousQuest = allSortedQuests[questIndex - 1];
-      if (previousQuest && completedIds.has(previousQuest.id)) {
-        available.push(quest);
-      } else {
-        locked.push(quest);
-      }
-    });
-
-    return { availableQuests: available, lockedQuests: locked };
-  }, [learningMode, notStartedQuests, completedQuests]);
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-
-    try {
-      const savedMode = localStorage.getItem(LEARNING_MODE_STORAGE_KEY) as 'structured' | 'free' | null;
-      if (savedMode && (savedMode === 'structured' || savedMode === 'free')) {
-        console.log('📚 Loaded learning mode from storage:', savedMode);
-        // eslint-disable-next-line react-hooks/set-state-in-effect
-        setLearningMode(savedMode);
-      }
-    } catch (error) {
-      console.error('Failed to load learning mode from localStorage:', error);
-    }
-  }, []);
-
-  const handleLearningModeChange = (checked: boolean) => {
-    const newMode = checked ? 'free' : 'structured';
-    setLearningMode(newMode);
-
-    try {
-      localStorage.setItem(LEARNING_MODE_STORAGE_KEY, newMode);
-      console.log('💾 Saved learning mode to storage:', newMode);
-    } catch (error) {
-      console.error('Failed to save learning mode to localStorage:', error);
-    }
-  };
+  // In free mode, all not started quests are available.
+  const availableQuests = notStartedQuests;
 
   useEffect(() => {
     const ctx = gsap.context(() => {
@@ -139,18 +73,29 @@ export default function QuestListView({
       animateCards(activeQuestsRef);
       animateCards(completedQuestsRef);
       animateCards(availableQuestsRef);
-      animateCards(lockedQuestsRef);
     });
     return () => ctx.revert();
-  }, [availableQuests, lockedQuests]);
+  }, [availableQuests]);
 
-  // ⭐ NEW: Handle quest completion from modal
-  const handleQuestComplete = () => {
-    console.log('✅ Quest generation completed! Navigating to:', targetQuestUrl);
+  // Handle quest completion from modal
+  const waitForQuestSteps = async (questId: string) => {
+    for (let i = 0; i < 20; i++) {
+      const res = await questApi.getQuestDetails(questId);
+      if (res.isSuccess && res.data?.steps && res.data.steps.length > 0) return true;
+      await new Promise(r => setTimeout(r, 800));
+    }
+    return false;
+  };
+
+  const handleQuestComplete = async () => {
+    const questId = generatingQuestId;
     setShowGenerationModal(false);
     setGeneratingJobId(null);
     setGeneratingQuestTitle('');
     setGeneratingQuestId(null);
+    if (questId) {
+      await waitForQuestSteps(questId);
+    }
     navigateTo(targetQuestUrl);
   };
 
@@ -190,11 +135,10 @@ export default function QuestListView({
 
       console.log(`📡 Background job started with ID: ${jobId}`);
 
-      // ⭐ UPDATED: Show modal and let IT handle all polling
+      // Show modal and let IT handle all polling
       setGeneratingJobId(jobId);
       setShowGenerationModal(true);
 
-      // ⭐ REMOVED: All polling logic - modal will handle it
     } catch (error: any) {
       console.error('❌ Error starting quest:', error);
       alert('An error occurred while starting the quest. Please try again.');
@@ -202,8 +146,6 @@ export default function QuestListView({
       setShowGenerationModal(false);
     }
   };
-
-  // ⭐ REMOVED: Cleanup useEffect - no longer needed since we're not polling here
 
   const QuestCard = ({ quest, isLocked = false }: { quest: QuestSummary; isLocked?: boolean }) => (
     <button
@@ -322,20 +264,6 @@ export default function QuestListView({
                 Records of every delve into the arcane labyrinth
               </p>
             </div>
-            <div className="flex items-center space-x-3 rounded-full border border-[#f5c16c]/20 bg-black/40 p-2">
-              <Label htmlFor="learning-mode" className="pl-2 text-xs font-semibold text-white/70">
-                Structured Path
-              </Label>
-              <Switch
-                id="learning-mode"
-                checked={learningMode === 'free'}
-                onCheckedChange={handleLearningModeChange}
-                className="data-[state=checked]:bg-gradient-to-r data-[state=checked]:from-[#f5c16c] data-[state=checked]:to-[#d4a855]"
-              />
-              <Label htmlFor="learning-mode" className="pr-2 text-xs font-semibold text-white/70">
-                Free Path
-              </Label>
-            </div>
           </div>
           <div className="grid gap-4 text-xs uppercase tracking-[0.3em] text-white/60 sm:grid-cols-3">
             <div className="relative overflow-hidden rounded-2xl border border-[#f5c16c]/20 bg-black/40 p-5">
@@ -450,26 +378,6 @@ export default function QuestListView({
         </div>
       )}
 
-      {lockedQuests.length > 0 && (
-        <div ref={lockedQuestsRef}>
-          <div className="mb-6 flex items-center justify-between rounded-2xl border border-white/20 bg-gradient-to-r from-white/10 via-transparent to-transparent px-6 py-4">
-            <h2 className="flex items-center gap-3 text-2xl font-semibold text-white">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/10 text-white/60 shadow-[0_0_20px_rgba(255,255,255,0.15)]">
-                <Lock className="h-5 w-5" />
-              </div>
-              Locked Quests
-            </h2>
-            <span className="text-xs uppercase tracking-[0.35em] text-white/60">
-              {lockedQuests.length} awaiting unlock
-            </span>
-          </div>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {lockedQuests.map((quest) => <QuestCard key={quest.id} quest={quest} isLocked={true} />)}
-          </div>
-        </div>
-      )}
-
-      {/* ⭐ UPDATED: Modal with completion handler */}
       <QuestGenerationModal
         isOpen={showGenerationModal}
         jobId={generatingJobId}
