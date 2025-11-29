@@ -307,7 +307,7 @@ const questApi = {
   ): Promise<ApiResponse<AdminStepFeedbackItem[]>> =>
     axiosClient
       .get<AdminStepFeedbackItem[]>(`/api/admin/quests/feedback`, { params })
-      .then(res => ({ isSuccess: true, data: res.data }))
+      .then(res => ({ isSuccess: true as const, data: res.data }))
       .catch(error => ({ isSuccess: false, data: null, message: error.response?.data?.message || error.message })),
   adminUpdateFeedback: (
     id: string,
@@ -315,7 +315,7 @@ const questApi = {
   ): Promise<ApiResponse<void>> =>
     axiosClient
       .patch(`/api/admin/quests/feedback/${id}`, payload)
-      .then(() => ({ isSuccess: true, data: undefined }))
+      .then(() => ({ isSuccess: true as const, data: undefined }))
       .catch(error => ({ isSuccess: false, data: null, message: error.response?.data?.message || error.message })),
   submitStepFeedback: async (
     questId: string,
