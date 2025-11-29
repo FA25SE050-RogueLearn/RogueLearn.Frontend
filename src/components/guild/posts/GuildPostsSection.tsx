@@ -15,6 +15,7 @@ import guildsApi from "@/api/guildsApi";
 import profileApi from "@/api/profileApi";
 import type { GuildPostDto } from "@/types/guild-posts";
 import type { GuildRole, GuildMemberDto } from "@/types/guilds";
+import { toast } from "sonner";
 
 interface GuildPostsSectionProps {
   guildId: string;
@@ -123,7 +124,7 @@ export function GuildPostsSection({ guildId }: GuildPostsSectionProps) {
       setCreateOpen(false);
     } catch (err) {
       console.error(err);
-      alert("Failed to create post.");
+      toast.error("Failed to create post.");
     } finally {
       setSubmitting(false);
     }
@@ -187,7 +188,7 @@ export function GuildPostsSection({ guildId }: GuildPostsSectionProps) {
       reload();
     } catch (err) {
       console.error(err);
-      alert("Failed to edit post.");
+      toast.error("Failed to edit post.");
     }
   };
 
@@ -198,7 +199,7 @@ export function GuildPostsSection({ guildId }: GuildPostsSectionProps) {
       reload();
     } catch (err) {
       console.error(err);
-      alert("Failed to delete post.");
+      toast.error("Failed to delete post.");
     }
   };
 
@@ -358,7 +359,7 @@ export function GuildPostsSection({ guildId }: GuildPostsSectionProps) {
     const doCopy = async () => {
       try {
         await navigator.clipboard.writeText(url);
-        alert("Link copied");
+        toast.success("Link copied");
       } catch {}
     };
     try {

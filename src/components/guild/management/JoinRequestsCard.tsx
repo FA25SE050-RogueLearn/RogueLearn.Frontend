@@ -52,10 +52,11 @@ export function JoinRequestsCard({ loading, error, joinRequests, myRole, onAppro
           joinRequests.map((jr) => (
             <div 
               key={jr.id} 
-              className="flex items-center justify-between rounded-lg border border-[#f5c16c]/20 bg-gradient-to-br from-black/40 to-[#1a0a08]/40 p-4 transition-all hover:border-[#f5c16c]/40"
+              className="flex items-center justify-between rounded-lg border border-[#f5c16c]/20 bg-linear-to-br from-black/40 to-[#1a0a08]/40 p-4 transition-all hover:border-[#f5c16c]/40"
             >
               <div>
-                <p className="font-medium text-white">Request by {jr.requesterId}</p>
+                <p className="font-medium text-white">Request by {jr.requesterName || jr.requesterId}</p>
+                <p className="text-xs text-white/50">Requested: {new Date(jr.createdAt).toLocaleString()}</p>
                 <p className="text-xs text-white/50">
                   Status: <span className="text-amber-400">{jr.status}</span>
                 </p>

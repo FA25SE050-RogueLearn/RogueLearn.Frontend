@@ -143,10 +143,10 @@ export default function PartyListClient({ onSelectParty }: PartyListClientProps)
         ) : (
           <ul className="space-y-2">
             {myInvites.map(inv => (
-              <li key={inv.id} className="flex items-center justify-between rounded-lg border border-[#f5c16c]/10 bg-gradient-to-br from-[#2d1810]/40 to-black/60 p-3">
+              <li key={inv.id} className="flex items-center justify-between rounded-lg border border-[#f5c16c]/10 bg-linear-to-br from-[#2d1810]/40 to-black/60 p-3">
                 <div>
-                  <div className="text-sm text-white">Invitation to party {partyNameMap[inv.partyId] ?? inv.partyId}</div>
-                  <div className="text-[11px] text-white/50">Sent at {new Date(inv.createdAt).toLocaleString()} • Expires {new Date(inv.expiresAt).toLocaleDateString()}</div>
+                  <div className="text-sm text-white">Invitation to party {inv.partyName || partyNameMap[inv.partyId] || inv.partyId}</div>
+                  <div className="text-[11px] text-white/50">Invited {new Date(inv.invitedAt).toLocaleString()} • Expires {new Date(inv.expiresAt).toLocaleDateString()}</div>
                 </div>
                 <div className="flex gap-2">
                   <button

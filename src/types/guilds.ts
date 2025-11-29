@@ -19,7 +19,7 @@ export interface GuildDto {
   name: string;
   description: string;
   isPublic: boolean;
-  isLecturerGuild?: boolean;
+  isLecturerGuild: boolean;
   maxMembers: number;
   createdBy: string;
   createdAt: string; // ISO timestamp
@@ -36,7 +36,7 @@ export interface GuildFullDto {
   currentMemberCount: number;
   meritPoints: number;
   isPublic: boolean;
-  isLecturerGuild?: boolean;
+  isLecturerGuild: boolean;
   requiresApproval: boolean;
   bannerImageUrl?: string | null;
   createdBy: string;
@@ -83,6 +83,7 @@ export interface GuildInvitationDto {
   status: InvitationStatus;
   createdAt: string; // ISO timestamp
   respondedAt?: string | null; // ISO timestamp
+  guildName: string;
 }
 
 /** Join request record for a user applying to a guild. */
@@ -95,6 +96,7 @@ export interface GuildJoinRequestDto {
   createdAt: string; // ISO timestamp
   respondedAt?: string | null; // ISO timestamp
   expiresAt?: string | null; // ISO timestamp
+  requesterName: string;
 }
 
 /** Aggregated dashboard stats for a guild. */

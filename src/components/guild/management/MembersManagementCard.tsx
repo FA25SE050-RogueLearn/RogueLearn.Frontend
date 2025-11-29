@@ -11,7 +11,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { Shield, Search, UserCog, UserMinus, Crown } from "lucide-react";
+import { Shield, Search, UserMinus, Crown } from "lucide-react";
 import type { GuildMemberDto, GuildRole } from "@/types/guilds";
 
 const ROLE_OPTIONS: GuildRole[] = [
@@ -141,9 +141,10 @@ export function MembersManagementCard({
                     <div className="flex items-center gap-2">
                       <Select
                         value={roleToAssignByMemberId[m.memberId] ?? m.role}
-                        onValueChange={(v) =>
-                          setRoleToAssignByMemberId((prev) => ({ ...prev, [m.memberId]: v as GuildRole }))
-                        }
+                        onValueChange={(v) => {
+                          setRoleToAssignByMemberId((prev) => ({ ...prev, [m.memberId]: v as GuildRole }));
+                          onAssignRole(m.authUserId, v as GuildRole);
+                        }}
                       >
                         <SelectTrigger className="w-[140px] border-[#f5c16c]/30 bg-black/40 text-white focus:border-[#f5c16c]/50 focus:ring-[#f5c16c]/30">
                           <SelectValue placeholder="Role" />
@@ -160,14 +161,6 @@ export function MembersManagementCard({
                           ))}
                         </SelectContent>
                       </Select>
-                      <Button 
-                        size="sm" 
-                        onClick={() => onAssignRole(m.authUserId, roleToAssignByMemberId[m.memberId] ?? m.role)}
-                        className="bg-[#f5c16c] text-black hover:bg-[#d4a855]"
-                      >
-                        <UserCog className="mr-1.5 h-3.5 w-3.5" />
-                        Assign
-                      </Button>
                       <Button 
                         size="sm" 
                         variant="outline" 
@@ -203,9 +196,10 @@ export function MembersManagementCard({
                     <div className="flex items-center gap-2">
                       <Select
                         value={roleToAssignByMemberId[m.memberId] ?? (["Veteran", "Member", "Recruit"].includes(m.role) ? m.role : "Recruit")}
-                        onValueChange={(v) =>
-                          setRoleToAssignByMemberId((prev) => ({ ...prev, [m.memberId]: v as GuildRole }))
-                        }
+                        onValueChange={(v) => {
+                          setRoleToAssignByMemberId((prev) => ({ ...prev, [m.memberId]: v as GuildRole }));
+                          onAssignRole(m.authUserId, v as GuildRole);
+                        }}
                       >
                         <SelectTrigger className="w-[160px]">
                           <SelectValue placeholder="Role" />
@@ -218,7 +212,7 @@ export function MembersManagementCard({
                           ))}
                         </SelectContent>
                       </Select>
-                      <Button size="sm" onClick={() => onAssignRole(m.authUserId, roleToAssignByMemberId[m.memberId] ?? ( ["Veteran", "Member", "Recruit"].includes(m.role) ? m.role : "Recruit"))}>Assign</Button>
+                      
                       <Button size="sm" variant="destructive" onClick={() => onRemoveMember(m.memberId)}>Remove</Button>
                     </div>
                   )}

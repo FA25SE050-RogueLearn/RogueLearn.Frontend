@@ -1,13 +1,11 @@
-"use client";
-import { useParams } from "next/navigation";
 import PartyDetailPageClient from "@/components/party/PartyDetailPageClient";
+import { DashboardLayout } from "@/components/layout/DashboardLayout";
 
-export default function PartyDetailPage() {
-  const params = useParams();
-  const partyId = (params?.partyId as string) ?? "";
+export default async function PartyDetailPage({ params }: { params: Promise<{ partyId: string }> }) {
+  const { partyId } = await params;
   return (
-    <div className="min-h-screen bg-linear-to-b from-[#0a0506] via-[#120806] to-[#0a0506] p-6">
+    <DashboardLayout>
       <PartyDetailPageClient partyId={partyId} />
-    </div>
+    </DashboardLayout>
   );
 }

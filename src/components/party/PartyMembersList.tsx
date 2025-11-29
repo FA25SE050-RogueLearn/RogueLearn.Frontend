@@ -7,6 +7,8 @@ import { PartyMemberDto, PartyRole } from "@/types/parties";
 import partiesApi from "@/api/partiesApi";
 import { getMyContext } from "@/api/usersApi";
 import { toast } from "sonner";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 
 interface PartyMembersListProps {
   partyId: string;
@@ -18,6 +20,9 @@ interface PartyMembersListProps {
 export default function PartyMembersList({ partyId, members, maxMembers, onRefresh }: PartyMembersListProps) {
   const [authUserId, setAuthUserId] = useState<string | null>(null);
   const [busyMemberId, setBusyMemberId] = useState<string | null>(null);
+  const [removeOpen, setRemoveOpen] = useState(false);
+  const [transferOpen, setTransferOpen] = useState(false);
+  const [selectedMember, setSelectedMember] = useState<PartyMemberDto | null>(null);
 
   useEffect(() => {
     let mounted = true;
@@ -71,34 +76,14 @@ export default function PartyMembersList({ partyId, members, maxMembers, onRefre
   const handleRemoveMember = async (member: PartyMemberDto) => {
     if (!isLeader) return;
     if (member.role === "Leader") return;
-    const confirmed = window.confirm(`Remove ${member.username ?? member.email ?? "this member"} from the party?`);
-    if (!confirmed) return;
-    setBusyMemberId(member.id);
-    try {
-      await partiesApi.removeMember(partyId, member.id, {});
-      toast.success("Member removed");
-      await onRefresh?.();
-    } catch (e: any) {
-      toast.error(e?.message ?? "Failed to remove member");
-    } finally {
-      setBusyMemberId(null);
-    }
+    setSelectedMember(member);
+    setRemoveOpen(true);
   };
 
   const handleTransferLeadership = async (member: PartyMemberDto) => {
     if (!isLeader) return;
-    const confirmed = window.confirm(`Transfer party leadership to ${member.username ?? member.email ?? "this member"}?`);
-    if (!confirmed) return;
-    setBusyMemberId(member.id);
-    try {
-      await partiesApi.transferLeadership(partyId, { partyId, toUserId: member.authUserId });
-      toast.success("Leadership transferred");
-      await onRefresh?.();
-    } catch (e: any) {
-      toast.error(e?.message ?? "Failed to transfer leadership");
-    } finally {
-      setBusyMemberId(null);
-    }
+    setSelectedMember(member);
+    setTransferOpen(true);
   };
 
   const getDisplayName = (m: PartyMemberDto) => {
@@ -106,6 +91,7 @@ export default function PartyMembersList({ partyId, members, maxMembers, onRefre
     return m.username ?? (fullName || m.email || "Member");
   };
   return (
+    <>
     <section className="rounded-lg border border-white/10 bg-white/5 p-0 overflow-hidden">
       <div className="px-4 py-3 border-b border-[#2D2842] bg-[#1E1B2E] flex items-center justify-between">
         <h4 className="text-xs font-bold uppercase tracking-wider text-white">Party Members</h4>
@@ -185,5 +171,44 @@ export default function PartyMembersList({ partyId, members, maxMembers, onRefre
         )}
       </div>
     </section>
+
+    {/* Confirm Remove Member */}
+    <Dialog open={removeOpen} onOpenChange={setRemoveOpen}>
+      <DialogContent className="bg-[#13111C] border-[#2D2842] text-gray-200">
+        <DialogHeader>
+          <DialogTitle className="text-white">Remove Member</DialogTitle>
+        </DialogHeader>
+        <p className="text-sm text-white/70">Remove {selectedMember?.username ?? selectedMember?.email ?? "this member"} from the party?</p>
+        <div className="flex justify-end gap-2 pt-2">
+          <Button variant="outline" onClick={() => setRemoveOpen(false)} className="border-[#2D2842] text-gray-300">Cancel</Button>
+          <Button onClick={async () => {
+            const m = selectedMember; setRemoveOpen(false); if (!m) return; setBusyMemberId(m.id);
+            try { await partiesApi.removeMember(partyId, m.id, {}); toast.success("Member removed"); await onRefresh?.(); } 
+            catch (e: any) { toast.error(e?.message ?? "Failed to remove member"); } 
+            finally { setBusyMemberId(null); }
+          }} className="bg-red-600 hover:bg-red-700">Remove</Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+
+    {/* Confirm Transfer Leadership */}
+    <Dialog open={transferOpen} onOpenChange={setTransferOpen}>
+      <DialogContent className="bg-[#13111C] border-[#2D2842] text-gray-200">
+        <DialogHeader>
+          <DialogTitle className="text-white">Transfer Leadership</DialogTitle>
+        </DialogHeader>
+        <p className="text-sm text-white/70">Transfer leadership to {selectedMember?.username ?? selectedMember?.email ?? "this member"}?</p>
+        <div className="flex justify-end gap-2 pt-2">
+          <Button variant="outline" onClick={() => setTransferOpen(false)} className="border-[#2D2842] text-gray-300">Cancel</Button>
+          <Button onClick={async () => {
+            const m = selectedMember; setTransferOpen(false); if (!m) return; setBusyMemberId(m.id);
+            try { await partiesApi.transferLeadership(partyId, { partyId, toUserId: m.authUserId }); toast.success("Leadership transferred"); await onRefresh?.(); } 
+            catch (e: any) { toast.error(e?.message ?? "Failed to transfer leadership"); } 
+            finally { setBusyMemberId(null); }
+          }} className="bg-amber-500 hover:bg-amber-600 text-black">Transfer</Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+    </>
   );
 }

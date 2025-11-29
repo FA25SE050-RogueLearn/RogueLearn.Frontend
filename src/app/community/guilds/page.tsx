@@ -10,6 +10,7 @@ import { Shield, Users, Search, Plus, Crown, Swords, HelpCircle, Scroll } from "
 import guildsApi from "@/api/guildsApi";
 import GuildInfoModal from "@/components/guild/GuildInfoModal";
 import type { GuildDto, GuildFullDto } from "@/types/guilds";
+import { toast } from "sonner";
 
 const HERO_CARD_CLASS = 'relative overflow-hidden rounded-[32px] border border-[#f5c16c]/25 bg-linear-to-br from-[#1c0906]/95 via-[#120605]/98 to-[#040101]';
 const GUILD_CARD_CLASS = 'relative overflow-hidden rounded-[28px] border border-[#f5c16c]/25 bg-linear-to-br from-[#1a0e0d]/92 via-[#130807]/97 to-[#080303] transition-all duration-300 hover:-translate-y-1 hover:border-[#d23187]/50 hover:shadow-[0_15px_40px_rgba(210,49,135,0.25)]';
@@ -128,8 +129,8 @@ export default function GuildDirectoryPage() {
 
   return (
     <div className="relative flex min-h-screen flex-col overflow-hidden">
-      <div aria-hidden="true" className="pointer-events-none absolute inset-0" style={BACKDROP_GRADIENT} />
-      <div aria-hidden="true" className="pointer-events-none absolute inset-0" style={BACKDROP_TEXTURE} />
+      {/* <div aria-hidden="true" className="pointer-events-none absolute inset-0" style={BACKDROP_GRADIENT} /> */}
+      {/* <div aria-hidden="true" className="pointer-events-none absolute inset-0" style={BACKDROP_TEXTURE} /> */}
       
       <div className="relative z-10 flex flex-col gap-8 pb-24">
           
@@ -400,12 +401,12 @@ export default function GuildDirectoryPage() {
                                       const res = await guildsApi.getMyGuild();
                                       setMyGuild(res.data ?? myGuild);
                                       if (res.data?.id === guild.id) {
-                                        alert('Joined successfully.');
+                                        toast.success('Joined successfully.');
                                       } else {
-                                        alert('Request to join submitted.');
+                                        toast.info('Request to join submitted.');
                                       }
                                     } catch {
-                                      alert('Failed to apply to join.');
+                                      toast.error('Failed to apply to join.');
                                     } finally {
                                       setJoiningGuildId(null);
                                     }
@@ -422,9 +423,9 @@ export default function GuildDirectoryPage() {
                                     setJoiningGuildId(guild.id);
                                     try {
                                       await guildsApi.applyToJoin(guild.id, { message: null });
-                                      alert('Request to join submitted.');
+                                      toast.info('Request to join submitted.');
                                     } catch {
-                                      alert('Failed to submit request.');
+                                      toast.error('Failed to submit request.');
                                     } finally {
                                       setJoiningGuildId(null);
                                     }

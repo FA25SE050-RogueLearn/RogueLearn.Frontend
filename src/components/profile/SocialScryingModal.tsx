@@ -96,7 +96,7 @@ export function SocialScryingContent() {
     <div className="relative">
       <AnimatePresence initial={false} mode="wait">
         {!selected && (
-          <motion.div key="search" initial={{ opacity: 0, x: 40 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -40 }} transition={{ duration: 0.3 }} className="grid grid-cols-1 gap-6 p-6 bg-black/40 backdrop-blur-md">
+          <motion.div key="search" initial={{ opacity: 0, x: 40 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -40 }} transition={{ duration: 0.3 }} className="flex h-full min-h-[60vh] flex-col gap-6 p-6 bg-black/40 backdrop-blur-md">
             <div className="flex items-center justify-between">
               <div className="text-xl font-bold text-[#f5c16c]">Scout Players</div>
             </div>
@@ -107,10 +107,10 @@ export function SocialScryingContent() {
                 </div>
                 
                 {(!query || results.length === 0) && (
-                  <div className="space-y-6">
+                  <div className="flex flex-1 min-h-0 flex-col gap-6">
                     <div>
                       <div className="mb-2 text-sm font-semibold text-[#f5c16c]/80">Suggested Allies (Same Class)</div>
-                      <div className="max-h-80 overflow-y-auto pr-1">
+                      <div className="max-h-64 overflow-y-auto pr-1">
                         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
                         {(sameClassUsers.length ? sameClassUsers : []).map(u => (
                           <Card key={u.authUserId} className="group border border-[#2D2842] bg-black/40 backdrop-blur-md p-3 transition-all hover:border-[#f5c16c]/40 hover:-translate-y-1">
@@ -124,7 +124,7 @@ export function SocialScryingContent() {
                                 </div>
                                 <div>
                                   <div className="text-white font-semibold">{u.username}</div>
-                                  <div className="text-xs text-[#00ffff]/80">{u.className ?? "Player"}</div>
+                                  <div className="text-xs text-[#00ffff]/80">{u.email ?? "Player"}</div>
                                 </div>
                               </div>
                               <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -138,7 +138,7 @@ export function SocialScryingContent() {
                     </div>
                     <div>
                       <div className="mb-2 text-sm font-semibold text-[#f5c16c]/80">All Players</div>
-                      <div className="max-h-80 overflow-y-auto pr-1">
+                      <div className="flex-1 min-h-0 overflow-y-auto pr-1">
                         <div className="grid grid-cols-1 gap-3">
                         {allUsers.map(u => (
                           <Card key={u.authUserId} className="border border-[#2D2842] bg-black/40 backdrop-blur-md p-3">
@@ -168,7 +168,7 @@ export function SocialScryingContent() {
                   </div>
                 )}
                 {query && results.length > 0 && (
-                  <div className="max-h-80 overflow-y-auto pr-1">
+                  <div className="flex-1 min-h-0 overflow-y-auto pr-1">
                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
                       {results.map(u => (
                       <Card key={u.authUserId} className="group border border-[#2D2842] bg-black/40 backdrop-blur-md p-3 transition-all hover:border-[#f5c16c]/40 hover:-translate-y-1">
@@ -308,7 +308,7 @@ interface SocialScryingModalProps {
 export default function SocialScryingModal({ open, onOpenChange }: SocialScryingModalProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl border-[#f5c16c]/30 bg-[#0b0a13]/95 p-0">
+      <DialogContent className="max-w-4xl max-h-[85vh] border-[#f5c16c]/30 bg-[#0b0a13]/95 p-0">
         <SocialScryingContent />
       </DialogContent>
     </Dialog>

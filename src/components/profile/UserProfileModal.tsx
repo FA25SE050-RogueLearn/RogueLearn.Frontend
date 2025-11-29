@@ -33,6 +33,7 @@ export default function UserProfileModal({ open, onOpenChange, defaultTab = "pro
   const [joinRequests, setJoinRequests] = useState<GuildJoinRequestDto[]>([]);
   const [loadingJoinRequests, setLoadingJoinRequests] = useState(false);
   const [joinRequestsError, setJoinRequestsError] = useState<string | null>(null);
+  const [joinGuildNames, setJoinGuildNames] = useState<Record<string, string>>({});
   const [partyInvites, setPartyInvites] = useState<PartyInvitationDto[]>([]);
   const [loadingPartyInvites, setLoadingPartyInvites] = useState(false);
   const [partyInvitesError, setPartyInvitesError] = useState<string | null>(null);
@@ -78,6 +79,22 @@ export default function UserProfileModal({ open, onOpenChange, defaultTab = "pro
 
   useEffect(() => {
     let mounted = true;
+    const resolveGuildNames = async () => {
+      const missingIds = Array.from(new Set((joinRequests || []).map(r => r.guildId).filter(id => !joinGuildNames[id])));
+      if (missingIds.length === 0) return;
+      try {
+        const results = await Promise.all(missingIds.map(id => guildsApi.getById(id)));
+        const map: Record<string, string> = { ...joinGuildNames };
+        missingIds.forEach((id, i) => { const g = results[i].data; if (g?.name) map[id] = g.name; });
+        if (mounted) setJoinGuildNames(map);
+      } catch {}
+    };
+    if (open && activeTab === "guildRequests") resolveGuildNames();
+    return () => { mounted = false; };
+  }, [open, activeTab, joinRequests, joinGuildNames]);
+
+  useEffect(() => {
+    let mounted = true;
     const fetchPartyInvites = async () => {
       setLoadingPartyInvites(true);
       setPartyInvitesError(null);
@@ -118,14 +135,14 @@ export default function UserProfileModal({ open, onOpenChange, defaultTab = "pro
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-[95vw] max-w-[1500px] max-h-[92vh] border-[#f5c16c]/20 bg-gradient-to-br from-[#0f0708] to-[#1a0b08] p-0 overflow-hidden">
-        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(210,49,135,0.08),transparent_50%)]" />
+      <DialogContent className="w-[95vw] max-w-[1500px] max-h-[92vh] border-[#f5c16c]/20 bg-linear-to-br from-[#0f0708] to-[#1a0b08] p-0 overflow-hidden">
+        <div className="pointer-events-none absolute inset-0 bg-[radial-linear(circle_at_top_left,rgba(210,49,135,0.08),transparent_50%)]" />
         <div className="pointer-events-none absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] opacity-[0.03]" />
         <div className="relative flex h-[88vh]">
           {/* Sidebar */}
-          <div className="w-72 bg-gradient-to-b from-[#1a0b08] to-[#0f0708] border-r border-[#f5c16c]/10 flex flex-col p-6">
+          <div className="w-72 bg-linear-to-b from-[#1a0b08] to-[#0f0708] border-r border-[#f5c16c]/10 flex flex-col p-6">
             <div className="text-xl font-bold text-white mb-8 flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-[#f5c16c]/30 bg-gradient-to-br from-[#d23187]/20 to-[#f5c16c]/20">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-[#f5c16c]/30 bg-linear-to-br from-[#d23187]/20 to-[#f5c16c]/20">
                 <Sparkles className="h-5 w-5 text-[#f5c16c]" />
               </div>
               <span className="tracking-wide">Sanctum</span>
@@ -135,7 +152,7 @@ export default function UserProfileModal({ open, onOpenChange, defaultTab = "pro
               <NavButton icon={Settings} label="Settings" active={activeTab === "settings"} onClick={() => setActiveTab("settings")} />
               <NavButton icon={Bell} label="Notifications" active={activeTab === "notifications"} onClick={() => setActiveTab("notifications")} />
               <NavButton icon={Users} label="Social Panel" active={activeTab === "social"} onClick={() => setActiveTab("social")} />
-              <div className="h-px bg-gradient-to-r from-transparent via-[#f5c16c]/20 to-transparent my-5" />
+              <div className="h-px bg-linear-to-r from-transparent via-[#f5c16c]/20 to-transparent my-5" />
               <NavButton icon={GraduationCap} label="Lecturer Verification" active={activeTab === "verification"} isSpecial onClick={() => setActiveTab("verification")} />
               <NavButton icon={Shield} label="Guild Requests" active={activeTab === "guildRequests"} onClick={() => setActiveTab("guildRequests")} />
               <NavButton icon={Mail} label="Invitations" active={activeTab === "invitations"} onClick={() => setActiveTab("invitations")} />
@@ -149,22 +166,22 @@ export default function UserProfileModal({ open, onOpenChange, defaultTab = "pro
           </div>
 
           {/* Main Content */}
-          <div className="flex-1 bg-gradient-to-br from-[#0f0708] to-[#1a0b08] p-8 overflow-y-auto relative">
+          <div className="flex-1 bg-linear-to-br from-[#0f0708] to-[#1a0b08] p-8 overflow-y-auto relative">
 
             {activeTab === "profile" && (
               <div className="space-y-6">
                 <h2 className="text-2xl font-bold text-white">Character Profile</h2>
                 
                 {/* Profile Card */}
-                <div className="relative overflow-hidden rounded-[20px] border border-[#f5c16c]/20 bg-gradient-to-r from-[#2a140f]/95 via-[#1a0b08]/95 to-[#2a140f]/95 p-6">
-                  <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(210,49,135,0.15),transparent_50%)]" />
+                <div className="relative overflow-hidden rounded-[20px] border border-[#f5c16c]/20 bg-linear-to-r from-[#2a140f]/95 via-[#1a0b08]/95 to-[#2a140f]/95 p-6">
+                  <div className="pointer-events-none absolute inset-0 bg-[radial-linear(circle_at_top_left,rgba(210,49,135,0.15),transparent_50%)]" />
                   <div className="relative z-10">
                     <div className="flex items-center gap-5 mb-6">
                       <div className="relative w-20 h-20 rounded-full overflow-hidden border-2 border-[#f5c16c]/50 shadow-[0_0_20px_rgba(210,49,135,0.3)]">
                         {profile?.profileImageUrl ? (
                           <Image src={profile.profileImageUrl} alt="Profile Image" fill className="object-cover" />
                         ) : (
-                          <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-[#d23187]/30 to-[#f5c16c]/20 text-[#f5c16c] text-2xl font-bold">
+                          <div className="w-full h-full flex items-center justify-center bg-linear-to-br from-[#d23187]/30 to-[#f5c16c]/20 text-[#f5c16c] text-2xl font-bold">
                             {(profile?.firstName?.[0] || profile?.username?.[0] || "").toUpperCase()}
                           </div>
                         )}
@@ -201,7 +218,7 @@ export default function UserProfileModal({ open, onOpenChange, defaultTab = "pro
               <div className="space-y-6">
                 <h2 className="text-2xl font-bold text-white">Settings</h2>
                 
-                <div className="relative overflow-hidden rounded-[20px] border border-[#f5c16c]/20 bg-gradient-to-br from-[#1f0d09]/95 to-[#2a1510]/95 p-6">
+                <div className="relative overflow-hidden rounded-[20px] border border-[#f5c16c]/20 bg-linear-to-br from-[#1f0d09]/95 to-[#2a1510]/95 p-6">
                   <div className="pointer-events-none absolute -right-10 -top-10 h-32 w-32 rounded-full bg-[#d23187]/10 blur-3xl" />
                   <div className="relative z-10 space-y-5">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -226,7 +243,7 @@ export default function UserProfileModal({ open, onOpenChange, defaultTab = "pro
                         onDrop={(e) => { e.preventDefault(); setDragActive(false); const f = e.dataTransfer.files?.[0]; if (f) setProfileImageFile(f); }}
                         className={`border-2 border-dashed ${dragActive ? 'border-[#f5c16c]/50 bg-[#f5c16c]/5' : 'border-[#f5c16c]/20'} bg-[#0b0504]/40 rounded-xl p-6 flex flex-col items-center justify-center text-center cursor-pointer transition-all hover:border-[#f5c16c]/30`}
                       >
-                        <div className="p-3 rounded-full bg-gradient-to-br from-[#d23187]/20 to-[#f5c16c]/20 border border-[#f5c16c]/30 mb-3">
+                        <div className="p-3 rounded-full bg-linear-to-br from-[#d23187]/20 to-[#f5c16c]/20 border border-[#f5c16c]/30 mb-3">
                           <UploadCloud className="h-5 w-5 text-[#f5c16c]" />
                         </div>
                         <div className="text-sm text-white font-medium">{profileImageFile ? profileImageFile.name : 'Drop Profile Image Here'}</div>
@@ -238,7 +255,7 @@ export default function UserProfileModal({ open, onOpenChange, defaultTab = "pro
                       <button 
                         onClick={async () => { setSaving(true); try { await updateMyProfile({ firstName, lastName, bio }, profileImageFile || undefined); const res = await profileApi.getMyProfile(); if (res.isSuccess) setProfile(res.data || null); } finally { setSaving(false); } }} 
                         disabled={saving} 
-                        className="bg-gradient-to-r from-[#d23187] via-[#f061a6] to-[#f5c16c] hover:opacity-90 text-[#1a0b08] font-bold px-6 py-3 rounded-xl flex items-center justify-center gap-2 transition shadow-[0_0_20px_rgba(210,49,135,0.3)] disabled:opacity-50"
+                        className="bg-linear-to-r from-[#d23187] via-[#f061a6] to-[#f5c16c] hover:opacity-90 text-[#1a0b08] font-bold px-6 py-3 rounded-xl flex items-center justify-center gap-2 transition shadow-[0_0_20px_rgba(210,49,135,0.3)] disabled:opacity-50"
                       >
                         {saving ? <><Loader2 className="size-4 animate-spin" /> Saving...</> : "Save Changes"}
                       </button>
@@ -251,7 +268,7 @@ export default function UserProfileModal({ open, onOpenChange, defaultTab = "pro
             {activeTab === "notifications" && (
               <div className="space-y-6">
                 <h2 className="text-2xl font-bold text-white">Notifications</h2>
-                <div className="relative overflow-hidden rounded-[20px] border border-[#f5c16c]/20 bg-gradient-to-br from-[#1f0d09]/95 to-[#2a1510]/95 p-8 text-center">
+                <div className="relative overflow-hidden rounded-[20px] border border-[#f5c16c]/20 bg-linear-to-br from-[#1f0d09]/95 to-[#2a1510]/95 p-8 text-center">
                   <div className="text-4xl opacity-30 mb-3">🔔</div>
                   <p className="text-sm text-[#f5c16c]/70">Notification settings coming soon</p>
                 </div>
@@ -263,7 +280,7 @@ export default function UserProfileModal({ open, onOpenChange, defaultTab = "pro
             {activeTab === "social" && (
               <div className="space-y-6">
                 <h2 className="text-2xl font-bold text-white">Social Panel</h2>
-                <div className="rounded-[20px] border border-[#f5c16c]/20 bg-gradient-to-br from-[#1f0d09]/95 to-[#2a1510]/95 p-0 overflow-hidden">
+                <div className="rounded-[20px] border border-[#f5c16c]/20 bg-linear-to-br from-[#1f0d09]/95 to-[#2a1510]/95 p-0 overflow-hidden">
                   <SocialScryingContent />
                 </div>
               </div>
@@ -272,7 +289,7 @@ export default function UserProfileModal({ open, onOpenChange, defaultTab = "pro
             {activeTab === "guildRequests" && (
               <div className="space-y-6">
                 <h2 className="text-2xl font-bold text-white">Guild Join Requests</h2>
-                <div className="rounded-[20px] border border-[#f5c16c]/20 bg-gradient-to-br from-[#1f0d09]/95 to-[#2a1510]/95 p-6">
+                <div className="rounded-[20px] border border-[#f5c16c]/20 bg-linear-to-br from-[#1f0d09]/95 to-[#2a1510]/95 p-6">
                   {loadingJoinRequests && (
                     <div className="flex items-center justify-center gap-2 py-8 text-[#f5c16c]">
                       <Loader2 className="h-5 w-5 animate-spin" />
@@ -299,7 +316,7 @@ export default function UserProfileModal({ open, onOpenChange, defaultTab = "pro
                               <Shield className="h-5 w-5 text-[#f5c16c]" />
                             </div>
                             <div>
-                              <div className="text-white font-semibold text-sm">Guild: {r.guildId}</div>
+                                <div className="text-white font-semibold text-sm">Guild: {joinGuildNames[r.guildId] ?? r.guildId}</div>
                               <div className="text-xs text-[#f5c16c]/50">Requested: {new Date(r.createdAt).toLocaleString()}</div>
                             </div>
                           </div>
@@ -317,7 +334,7 @@ export default function UserProfileModal({ open, onOpenChange, defaultTab = "pro
             {activeTab === "invitations" && (
               <div className="space-y-6">
                 <h2 className="text-2xl font-bold text-white">Invitations</h2>
-                <div className="rounded-[20px] border border-[#f5c16c]/20 bg-gradient-to-br from-[#1f0d09]/95 to-[#2a1510]/95 p-6 space-y-6">
+                <div className="rounded-[20px] border border-[#f5c16c]/20 bg-linear-to-br from-[#1f0d09]/95 to-[#2a1510]/95 p-6 space-y-6">
                   {/* Guild Invites */}
                   <div>
                     <div className="flex items-center gap-2 mb-4">
@@ -345,7 +362,7 @@ export default function UserProfileModal({ open, onOpenChange, defaultTab = "pro
                                 <Shield className="h-5 w-5 text-[#f5c16c]" />
                               </div>
                               <div>
-                                <div className="text-white font-semibold text-sm">Guild: {inv.guildId}</div>
+                                <div className="text-white font-semibold text-sm">Guild: {inv.guildName || inv.guildId}</div>
                                 <div className="text-xs text-[#f5c16c]/50">Invited: {new Date(inv.createdAt).toLocaleString()}</div>
                               </div>
                             </div>
@@ -385,7 +402,7 @@ export default function UserProfileModal({ open, onOpenChange, defaultTab = "pro
                     )}
                   </div>
 
-                  <div className="h-px bg-gradient-to-r from-transparent via-[#f5c16c]/20 to-transparent" />
+                  <div className="h-px bg-linear-to-r from-transparent via-[#f5c16c]/20 to-transparent" />
 
                   {/* Party Invites */}
                   <div>
@@ -414,8 +431,8 @@ export default function UserProfileModal({ open, onOpenChange, defaultTab = "pro
                                 <Users className="h-5 w-5 text-[#d23187]" />
                               </div>
                               <div>
-                                <div className="text-white font-semibold text-sm">Party: {p.partyId}</div>
-                                <div className="text-xs text-[#f5c16c]/50">Invited: {new Date(p.createdAt).toLocaleString()}</div>
+                                <div className="text-white font-semibold text-sm">Party: {p.partyName || p.partyId}</div>
+                                <div className="text-xs text-[#f5c16c]/50">Invited: {new Date(p.invitedAt).toLocaleString()}</div>
                               </div>
                             </div>
                             <div className="flex items-center gap-2">
@@ -471,7 +488,7 @@ function NavButton({ icon: Icon, label, active, isSpecial, onClick }: { icon: Re
       onClick={onClick}
       className={`w-full text-left px-4 py-3 rounded-xl transition-all text-sm font-medium flex items-center gap-3 ${
         active 
-          ? "bg-gradient-to-r from-[#d23187] via-[#f061a6] to-[#f5c16c] text-[#1a0b08] shadow-[0_0_15px_rgba(210,49,135,0.3)] font-bold" 
+          ? "bg-linear-to-r from-[#d23187] via-[#f061a6] to-[#f5c16c] text-[#1a0b08] shadow-[0_0_15px_rgba(210,49,135,0.3)] font-bold" 
           : "text-[#f5c16c]/60 hover:bg-[#f5c16c]/5 hover:text-[#f5c16c]"
       } ${isSpecial && !active ? "text-[#d23187]" : ""}`}
     >
@@ -484,7 +501,7 @@ function NavButton({ icon: Icon, label, active, isSpecial, onClick }: { icon: Re
 
 function InviteItem({ invite, type }: { invite: GuildJoinRequestDto | PartyInvitationDto; type: 'guild' | 'party' }) {
   const title = type === 'guild' ? `Guild: ${(invite as GuildJoinRequestDto).guildId}` : `Party: ${(invite as PartyInvitationDto).partyId}`;
-  const createdAt = type === 'guild' ? (invite as GuildJoinRequestDto).createdAt : (invite as PartyInvitationDto).createdAt;
+  const createdAt = type === 'guild' ? (invite as GuildJoinRequestDto).createdAt : (invite as PartyInvitationDto).invitedAt;
   const status = type === 'guild' ? (invite as GuildJoinRequestDto).status : (invite as PartyInvitationDto).status as any;
   const iconColor = type === 'guild' ? 'text-[#f5c16c]' : 'text-[#d23187]';
   const IconComponent = type === 'guild' ? Shield : Users;

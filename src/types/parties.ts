@@ -52,8 +52,10 @@ export interface PartyInvitationDto {
   inviteeId: string;
   status: InvitationStatus;
   message?: string | null;
+  invitedAt: string; // ISO timestamp
+  respondedAt?: string | null; // ISO timestamp
   expiresAt: string; // ISO timestamp
-  createdAt: string; // ISO timestamp
+  partyName: string;
 }
 
 /** Shared note/resource stored in the party stash. */
