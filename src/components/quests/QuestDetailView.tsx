@@ -25,6 +25,8 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { useRouter } from 'next/navigation';
+import { useState } from 'react';
+import FeedbackModal from './FeedbackModal';
 
 interface QuestDetailViewProps {
   questDetails: QuestDetails;
@@ -80,6 +82,8 @@ export default function QuestDetailView({
   chapterName,
 }: QuestDetailViewProps) {
   const router = useRouter();
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
+  const [feedbackStep, setFeedbackStep] = useState<{ id: string; stepNumber: number } | null>(null);
   // Build a map of stepId → stepNumber for reference
   const stepIdToNumberMap = new Map<string, number>();
   questDetails.steps.forEach(step => {
@@ -259,6 +263,15 @@ export default function QuestDetailView({
                         </span>
                       )}
                     </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={locked}
+                      onClick={() => { setFeedbackStep({ id: step.id, stepNumber: step.stepNumber }); setFeedbackOpen(true); }}
+                      className={cn('whitespace-nowrap shrink-0 h-16 px-6 rounded-lg font-semibold transition-all duration-300', locked ? 'cursor-not-allowed opacity-50 bg-white/5 border border-white/10 text-white/40' : 'bg-white/5 border border-white/15 text-white/80 hover:bg-white/10')}
+                    >
+                      Report Issue
+                    </Button>
                   </div>
 
                   {/* Expandable Activities List */}
@@ -325,6 +338,15 @@ export default function QuestDetailView({
           })}
         </div>
       </div>
+      {feedbackStep && (
+        <FeedbackModal
+          open={feedbackOpen}
+          onOpenChange={(o) => setFeedbackOpen(o)}
+          questId={questDetails.id}
+          stepId={feedbackStep.id}
+          stepLabel={`Week ${feedbackStep.stepNumber}`}
+        />
+      )}
     </div>
   );
 }

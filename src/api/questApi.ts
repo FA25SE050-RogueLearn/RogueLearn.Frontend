@@ -288,6 +288,19 @@ const questApi = {
         data: null,
         message: error.response?.data?.message || error.message
       })),
+  submitStepFeedback: async (
+    questId: string,
+    stepId: string,
+    payload: { rating: number; category: 'ContentError' | 'TechnicalIssue' | 'TooDifficult' | 'TooEasy' | 'Other'; comment?: string }
+  ): Promise<ApiResponse<void>> => {
+    try {
+      await axiosClient.post(`/api/quests/${questId}/steps/${stepId}/feedback`, payload);
+      return { isSuccess: true, data: undefined };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to submit feedback';
+      return { isSuccess: false, data: null, message };
+    }
+  },
       submitQuizAnswer: async (
   questId: string,
   stepId: string,
