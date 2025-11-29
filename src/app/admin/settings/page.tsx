@@ -16,19 +16,7 @@ export default function AdminSettingsPage() {
             </p>
           </div>
         </div>
-
-        <Card className="relative overflow-hidden border-amber-900/30 bg-gradient-to-br from-[#1f1812] to-[#1a1410]">
-          <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/dark-embroidery.png')] opacity-5 pointer-events-none" />
-          <CardHeader className="relative border-b border-amber-900/20">
-            <CardTitle className="text-amber-100">Master Settings</CardTitle>
-          </CardHeader>
-          <CardContent className="relative flex flex-col items-center justify-center py-16">
-            <div className="flex h-16 w-16 items-center justify-center rounded-lg bg-gradient-to-br from-amber-600 to-amber-800 shadow-lg shadow-amber-900/50">
-              <Settings2 className="h-8 w-8 text-amber-50" />
-            </div>
-            <p className="mt-4 text-sm text-amber-600">Arcane configuration panel materializing soon...</p>
-          </CardContent>
-        </Card>
+        {/* Removed placeholder card */}
       </div>
     </AdminLayout>
   );

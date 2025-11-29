@@ -9,19 +9,25 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { ChevronLeft, Loader2, AlertCircle } from "lucide-react";
 import adminContentApi from "@/api/adminContentApi";
 import { Subject } from "@/types/subjects";
+import { Input } from "@/components/ui/input";
 
 export default function SubjectsPage() {
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const [totalPages, setTotalPages] = useState(1);
+  const [search, setSearch] = useState("");
 
   const fetchSubjects = async () => {
     setIsLoading(true);
     setError(null);
     try {
-      const response = await adminContentApi.getSubjects();
+      const response = await adminContentApi.getSubjectsPaged({ page, pageSize, search: search || undefined });
       if (response.isSuccess && response.data) {
-        setSubjects(response.data);
+        setSubjects(response.data.items);
+        setTotalPages(response.data.totalPages);
       } else {
         throw new Error("Failed to fetch subjects from the server.");
       }
@@ -34,7 +40,7 @@ export default function SubjectsPage() {
 
   useEffect(() => {
     fetchSubjects();
-  }, []);
+  }, [page, pageSize]);
 
   return (
     <AdminLayout>
@@ -55,7 +61,17 @@ export default function SubjectsPage() {
           <CardHeader className="relative border-b border-amber-900/20">
             <CardTitle className="text-amber-100">Master Subject List</CardTitle>
           </CardHeader>
-          <CardContent className="relative pt-6">
+          <CardContent className="relative pt-6 space-y-4">
+            <div className="flex items-center gap-3">
+              <Input
+                placeholder="Search by Code or Name"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter') { setPage(1); fetchSubjects(); } }}
+                className="flex-1 bg-black/20 border-amber-900/30 text-sm"
+              />
+              <Button variant="outline" onClick={() => { setPage(1); fetchSubjects(); }} className="border-amber-700/50 text-amber-300">Search</Button>
+            </div>
             {isLoading && (
               <div className="flex items-center justify-center p-8">
                 <Loader2 className="h-8 w-8 animate-spin text-amber-500" />
@@ -102,6 +118,29 @@ export default function SubjectsPage() {
                   ))}
                 </TableBody>
               </Table>
+            )}
+            {!isLoading && !error && totalPages > 1 && (
+              <div className="flex items-center justify-center gap-4 pt-4">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setPage(Math.max(1, page - 1))}
+                  disabled={page === 1}
+                  className="border-amber-700/50 bg-amber-900/20 text-amber-300 hover:bg-amber-800/30 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <ChevronLeft className="h-4 w-4 mr-1" /> Previous
+                </Button>
+                <span className="text-sm text-amber-300">Page {page} of {totalPages}</span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setPage(Math.min(totalPages, page + 1))}
+                  disabled={page === totalPages}
+                  className="border-amber-700/50 bg-amber-900/20 text-amber-300 hover:bg-amber-800/30 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Next <ChevronLeft className="h-4 w-4 ml-1 rotate-180" />
+                </Button>
+              </div>
             )}
           </CardContent>
         </Card>

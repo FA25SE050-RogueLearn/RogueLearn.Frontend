@@ -14,7 +14,8 @@ import {
   GraduationCap,
   BookCopy,
   ScrollText,
-  ChevronLeft
+  ChevronLeft,
+  MessageSquare
 } from "lucide-react";
 
 const navItems = [
@@ -27,6 +28,7 @@ const navItems = [
   { href: "/admin/skills", label: "Skill Tree", icon: Network },
   { href: "/admin/mappings", label: "Subject skills Map", icon: BookCopy },
   { href: "/admin/user-roles", label: "User Roles", icon: Shield },
+  { href: "/admin/feedback", label: "Feedback", icon: MessageSquare },
   { href: "/admin/settings", label: "Settings", icon: Settings },
 ];
 

@@ -2,7 +2,7 @@
 import axiosClient from './axiosClient';
 import { ApiResponse } from '../types/base/Api';
 import { CurriculumProgramDto } from '@/types/curriculum-programs';
-import { Subject, SyllabusContent } from '@/types/subjects';
+import { Subject, SyllabusContent, PaginatedSubjectsResponse } from '@/types/subjects';
 // REMOVED: Obsolete imports
 // import { CurriculumVersionDto } from '@/types/curriculum-versions';
 // import { Subject } from '@/types/subjects';
@@ -18,6 +18,18 @@ getSubjects: (): Promise<ApiResponse<Subject[]>> =>
   axiosClient.get<Subject[]>('/api/admin/subjects').then(res => ({
     isSuccess: true,
     data: res.data,
+  })),
+
+getSubjectsPaged: (
+  params: { page?: number; pageSize?: number; search?: string }
+): Promise<ApiResponse<PaginatedSubjectsResponse>> =>
+  axiosClient.get<PaginatedSubjectsResponse>('/api/admin/subjects', { params }).then(res => ({
+    isSuccess: true as const,
+    data: res.data,
+  })).catch(error => ({
+    isSuccess: false as const,
+    data: null,
+    message: error.response?.data?.message || error.message,
   })),
 
 getSubjectContent: (subjectId: string): Promise<ApiResponse<SyllabusContent>> =>
