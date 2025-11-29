@@ -128,7 +128,7 @@ export function RightColumn({ achievements, userSkills }: RightColumnProps) {
               {/* Name */}
               <div className="text-center">
                 <h3 className="text-2xl font-bold text-white">{selectedAchievement.name}</h3>
-                <p className="mt-2 text-sm text-[#f5c16c]/70">{selectedAchievement.description}</p>
+                <p className="mt-2 text-sm text-[#f5c16c]/70">{selectedAchievement.context}</p>
               </div>
 
               {/* Stats */}

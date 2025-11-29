@@ -147,6 +147,15 @@ export default function GuildDetailPage() {
   const rest = useMemo(() => sortedMembers.slice(3), [sortedMembers]);
   const myEntry = useMemo(() => sortedMembers.find((m) => m.authUserId === myAuthUserId) || null, [sortedMembers, myAuthUserId]);
   const rankOf = (m: GuildMemberDto, idx: number) => (typeof m.rankWithinGuild === "number" && m.rankWithinGuild > 0 ? m.rankWithinGuild : idx + 1);
+  const [rankPage, setRankPage] = useState<number>(1);
+  const rankPageSize = 10;
+  const rankPageCount = useMemo(() => Math.max(1, Math.ceil((sortedMembers.length || 0) / rankPageSize)), [sortedMembers.length]);
+  const safeRankPage = useMemo(() => Math.min(Math.max(1, rankPage), rankPageCount), [rankPage, rankPageCount]);
+  const rankPagedMembers = useMemo(() => {
+    const start = (safeRankPage - 1) * rankPageSize;
+    const end = start + rankPageSize;
+    return sortedMembers.slice(start, end);
+  }, [sortedMembers, safeRankPage]);
 
   const handleApply = async () => {
     if (!guildId) return;
@@ -167,7 +176,7 @@ export default function GuildDetailPage() {
 
   return (
     <div className="relative flex min-h-screen flex-col overflow-hidden">
-      <div aria-hidden="true" className="pointer-events-none absolute inset-0" style={BACKDROP_GRADIENT} />
+      {/* <div aria-hidden="true" className="pointer-events-none absolute inset-0" style={BACKDROP_GRADIENT} /> */}
       <div aria-hidden="true" className="pointer-events-none absolute inset-0" style={BACKDROP_TEXTURE} />
       
       <div className="relative z-20">
@@ -544,9 +553,9 @@ export default function GuildDetailPage() {
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-[#f5c16c]/15">
-                          {sortedMembers.map((m, i) => (
+                          {rankPagedMembers.map((m, i) => (
                             <tr key={m.memberId} className="hover:bg-black/40 transition">
-                              <td className="p-4 font-bold text-foreground/60">#{rankOf(m, i)}</td>
+                              <td className="p-4 font-bold text-foreground/60">#{rankOf(m, (safeRankPage - 1) * rankPageSize + i)}</td>
                               <td className="p-4 flex items-center gap-3 text-white">
                                 <div className="w-8 h-8 rounded-full overflow-hidden bg-black">
                                   <Avatar className="w-full h-full">
@@ -585,6 +594,16 @@ export default function GuildDetailPage() {
                         </div>
                       )}
                     </CardContent>
+                    <div className="px-4 pb-4 flex items-center justify-between">
+                      <div className="text-xs text-white/70">
+                        <span>Showing {(safeRankPage - 1) * rankPageSize + 1}–{Math.min(sortedMembers.length, safeRankPage * rankPageSize)} of {sortedMembers.length}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <button onClick={() => setRankPage(p => Math.max(1, p - 1))} disabled={safeRankPage === 1} className={`rounded border border-[#f5c16c]/30 px-3 py-1.5 text-xs ${safeRankPage===1?'text-[#f5c16c]/50':'text-[#f5c16c]'}`}>Prev</button>
+                        <span className="text-xs text-white/70">Page {safeRankPage} of {rankPageCount}</span>
+                        <button onClick={() => setRankPage(p => Math.min(rankPageCount, p + 1))} disabled={safeRankPage === rankPageCount} className={`rounded border border-[#f5c16c]/30 px-3 py-1.5 text-xs ${safeRankPage===rankPageCount?'text-[#f5c16c]/50':'text-[#f5c16c]'}`}>Next</button>
+                      </div>
+                    </div>
                   </Card>
                 </TabsContent>
 

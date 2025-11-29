@@ -118,10 +118,8 @@ export default function PartyMembersList({ partyId, members, maxMembers, onRefre
                 <div>
                   <div className="flex items-center gap-2">
                     <span className={`font-bold text-sm ${m.role === "Leader" ? "text-[#d4a353]" : "text-white"}`}>{name}</span>
-                    {m.role === "Leader" ? (
+                    {m.role === "Leader" && (
                       <Crown className="size-3.5 text-[#d4a353]" />
-                    ) : (
-                      <span className="text-[10px] text-gray-500 border border-gray-700 px-1.5 rounded bg-[#13111C]">LVL {m.level}</span>
                     )}
                   </div>
                   <div className="flex items-center gap-1.5 text-xs text-gray-500 mt-0.5">

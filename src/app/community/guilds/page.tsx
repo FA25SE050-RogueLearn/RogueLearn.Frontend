@@ -46,6 +46,8 @@ export default function GuildDirectoryPage() {
   const [prevRanks, setPrevRanks] = useState<Record<string, number>>({});
   const [showAllLadders, setShowAllLadders] = useState<boolean>(false);
   const [joiningGuildId, setJoiningGuildId] = useState<string | null>(null);
+  const [page, setPage] = useState<number>(1);
+  const pageSize = 6;
 
   useEffect(() => {
     let cancelled = false;
@@ -127,6 +129,14 @@ export default function GuildDirectoryPage() {
     };
   }, [guilds]);
 
+  const pageCount = useMemo(() => Math.max(1, Math.ceil((guilds.length || 0) / pageSize)), [guilds.length]);
+  const safePage = useMemo(() => Math.min(Math.max(1, page), pageCount), [page, pageCount]);
+  const pagedGuilds = useMemo(() => {
+    const start = (safePage - 1) * pageSize;
+    const end = start + pageSize;
+    return guilds.slice(start, end);
+  }, [guilds, safePage]);
+
   return (
     <div className="relative flex min-h-screen flex-col overflow-hidden">
       {/* <div aria-hidden="true" className="pointer-events-none absolute inset-0" style={BACKDROP_GRADIENT} /> */}
@@ -178,7 +188,7 @@ export default function GuildDirectoryPage() {
                     <Input
                       placeholder="Search guilds..."
                       value={search}
-                      onChange={(e) => setSearch(e.target.value)}
+                      onChange={(e) => { setSearch(e.target.value); setPage(1); }}
                       className="pl-10 border-[#f5c16c]/25 bg-[#140707]/80 text-white placeholder:text-foreground/40"
                     />
                   </div>
@@ -350,7 +360,7 @@ export default function GuildDirectoryPage() {
 
                 {!loading && !error && guilds.length > 0 && (
                   <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
-                    {guilds.map((guild) => (
+                    {pagedGuilds.map((guild) => (
                       <Card key={guild.id} className={GUILD_CARD_CLASS}>
                         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(245,193,108,0.1),transparent_65%)] opacity-0 transition-opacity group-hover:opacity-100" />
                         <div aria-hidden="true" className="absolute inset-0" style={CARD_TEXTURE} />
@@ -441,6 +451,18 @@ export default function GuildDirectoryPage() {
                         </CardContent>
                       </Card>
                     ))}
+                  </div>
+                )}
+                {!loading && !error && guilds.length > 0 && (
+                  <div className="mt-2 flex items-center justify-between">
+                    <div className="text-xs text-white/70">
+                      <span>Showing {(safePage - 1) * pageSize + 1}–{Math.min(guilds.length, safePage * pageSize)} of {guilds.length}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Button variant="outline" size="sm" onClick={() => setPage(p => Math.max(1, p - 1))} disabled={safePage === 1} className={`border-[#f5c16c]/30 ${safePage===1?'text-[#f5c16c]/50':'text-[#f5c16c]'}`}>Prev</Button>
+                      <span className="text-xs text-white/70">Page {safePage} of {pageCount}</span>
+                      <Button variant="outline" size="sm" onClick={() => setPage(p => Math.min(pageCount, p + 1))} disabled={safePage === pageCount} className={`border-[#f5c16c]/30 ${safePage===pageCount?'text-[#f5c16c]/50':'text-[#f5c16c]'}`}>Next</Button>
+                    </div>
                   </div>
                 )}
               </div>

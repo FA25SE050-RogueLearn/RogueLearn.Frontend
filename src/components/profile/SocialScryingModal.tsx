@@ -8,6 +8,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
+import { Skeleton } from "@/components/ui/skeleton";
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -24,6 +25,8 @@ export function SocialScryingContent() {
   const [selected, setSelected] = useState<UserProfileSearchResult | null>(null);
   const [social, setSocial] = useState<FullUserInfoSocialResponse | null>(null);
   const [tab, setTab] = useState("overview");
+  const [page, setPage] = useState(1);
+  const pageSize = 7;
 
   useEffect(() => {
     let mounted = true;
@@ -71,6 +74,20 @@ export function SocialScryingContent() {
     setResults(filtered);
   }, [query, allUsers]);
 
+  const allPageCount = useMemo(() => Math.max(1, Math.ceil((allUsers.length || 0) / pageSize)), [allUsers.length]);
+  const allPaged = useMemo(() => {
+    const start = (page - 1) * pageSize;
+    const end = start + pageSize;
+    return allUsers.slice(start, end);
+  }, [allUsers, page]);
+
+  const resultsPageCount = useMemo(() => Math.max(1, Math.ceil((results.length || 0) / pageSize)), [results.length]);
+  const resultsPaged = useMemo(() => {
+    const start = (page - 1) * pageSize;
+    const end = start + pageSize;
+    return results.slice(start, end);
+  }, [results, page]);
+
   const viewProfile = async (u: UserProfileSearchResult) => {
     setSelected(u);
     setSocial(null);
@@ -102,7 +119,7 @@ export function SocialScryingContent() {
             </div>
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[#f5c16c]/60" size={22} />
-                  <Input value={query} onChange={e => setQuery(e.target.value)} placeholder="Search by Username or Email" className="h-14 bg-[#0b0a13]/80 pl-10 pr-12 border-0 ring-1 ring-white/10 focus:ring-[#f5c16c] text-white rounded-xl" />
+                  <Input value={query} onChange={e => { setQuery(e.target.value); setPage(1); }} placeholder="Search by Username or Email" className="h-14 bg-[#0b0a13]/80 pl-10 pr-12 border-0 ring-1 ring-white/10 focus:ring-[#f5c16c] text-white rounded-xl" />
                   <Button variant="ghost" className="absolute right-1.5 top-1/2 -translate-y-1/2 text-white/70" size="icon"><Filter className="h-5 w-5" /></Button>
                 </div>
                 
@@ -139,29 +156,61 @@ export function SocialScryingContent() {
                     <div>
                       <div className="mb-2 text-sm font-semibold text-[#f5c16c]/80">All Players</div>
                       <div className="flex-1 min-h-0 overflow-y-auto pr-1">
-                        <div className="grid grid-cols-1 gap-3">
-                        {allUsers.map(u => (
-                          <Card key={u.authUserId} className="border border-[#2D2842] bg-black/40 backdrop-blur-md p-3">
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-3">
-                                <div className="relative">
-                                  <Avatar className="h-10 w-10 border-2 border-[#2D2842]">
-                                    <AvatarImage src={u.profileImageUrl ?? undefined} />
-                                    <AvatarFallback className="bg-[#1E1B2E] text-[#f5c16c]">{u.username?.charAt(0) ?? "?"}</AvatarFallback>
-                                  </Avatar>
-                                  
+                        {loading ? (
+                          <div className="grid grid-cols-1 gap-3">
+                            {Array.from({ length: pageSize }).map((_, i) => (
+                              <Card key={i} className="border border-[#2D2842] bg-black/40 backdrop-blur-md p-3">
+                                <div className="flex items-center justify-between">
+                                  <div className="flex items-center gap-3">
+                                    <Skeleton className="h-10 w-10 rounded-full" />
+                                    <div className="space-y-2">
+                                      <Skeleton className="h-4 w-40" />
+                                      <Skeleton className="h-3 w-24" />
+                                    </div>
+                                  </div>
+                                  <Skeleton className="h-8 w-28" />
                                 </div>
-                                <div>
-                                  <div className="text-white font-semibold">{u.username}</div>
-                                  <div className="text-xs text-white/50">{u.email ?? ""}</div>
+                              </Card>
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="grid grid-cols-1 gap-3">
+                            {allPaged.map(u => (
+                              <Card key={u.authUserId} className="border border-[#2D2842] bg-black/40 backdrop-blur-md p-3">
+                                <div className="flex items-center justify-between">
+                                  <div className="flex items-center gap-3">
+                                    <div className="relative">
+                                      <Avatar className="h-10 w-10 border-2 border-[#2D2842]">
+                                        <AvatarImage src={u.profileImageUrl ?? undefined} />
+                                        <AvatarFallback className="bg-[#1E1B2E] text-[#f5c16c]">{u.username?.charAt(0) ?? "?"}</AvatarFallback>
+                                      </Avatar>
+                                    </div>
+                                    <div>
+                                      <div className="text-white font-semibold">{u.username}</div>
+                                      <div className="text-xs text-white/50">{u.email ?? ""}</div>
+                                    </div>
+                                  </div>
+                                  <div className="flex gap-2">
+                                    <Button variant="outline" className="border-[#2D2842] text-[#f5c16c]" size="sm" onClick={() => viewProfile(u)}><Eye className="h-4 w-4 mr-2" />View Profile</Button>
+                                  </div>
                                 </div>
-                              </div>
-                              <div className="flex gap-2">
-                                <Button variant="outline" className="border-[#2D2842] text-[#f5c16c]" size="sm" onClick={() => viewProfile(u)}><Eye className="h-4 w-4 mr-2" />View Profile</Button>
-                              </div>
-                            </div>
-                          </Card>
-                        ))}
+                              </Card>
+                            ))}
+                          </div>
+                        )}
+                        <div className="mt-3 flex items-center justify-between">
+                          <div className="text-xs text-white/70">
+                            {allUsers.length === 0 ? (
+                              <span>No results</span>
+                            ) : (
+                              <span>Showing {(page - 1) * pageSize + 1}–{Math.min(allUsers.length, page * pageSize)} of {allUsers.length}</span>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Button variant="outline" size="sm" onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1} className={`border-[#2D2842] ${page===1?'text-[#f5c16c]/50':'text-[#f5c16c]'}`}>Prev</Button>
+                            <span className="text-xs text-white/70">Page {page} of {allPageCount}</span>
+                            <Button variant="outline" size="sm" onClick={() => setPage(p => Math.min(allPageCount, p + 1))} disabled={page === allPageCount} className={`border-[#2D2842] ${page===allPageCount?'text-[#f5c16c]/50':'text-[#f5c16c]'}`}>Next</Button>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -170,7 +219,7 @@ export function SocialScryingContent() {
                 {query && results.length > 0 && (
                   <div className="flex-1 min-h-0 overflow-y-auto pr-1">
                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-                      {results.map(u => (
+                      {resultsPaged.map(u => (
                       <Card key={u.authUserId} className="group border border-[#2D2842] bg-black/40 backdrop-blur-md p-3 transition-all hover:border-[#f5c16c]/40 hover:-translate-y-1">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-3">
@@ -192,6 +241,20 @@ export function SocialScryingContent() {
                         </div>
                       </Card>
                       ))}
+                    </div>
+                    <div className="mt-3 flex items-center justify-between">
+                      <div className="text-xs text-white/70">
+                        {results.length === 0 ? (
+                          <span>No results</span>
+                        ) : (
+                          <span>Showing {(page - 1) * pageSize + 1}–{Math.min(results.length, page * pageSize)} of {results.length}</span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Button variant="outline" size="sm" onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1} className={`border-[#2D2842] ${page===1?'text-[#f5c16c]/50':'text-[#f5c16c]'}`}>Prev</Button>
+                        <span className="text-xs text-white/70">Page {page} of {resultsPageCount}</span>
+                        <Button variant="outline" size="sm" onClick={() => setPage(p => Math.min(resultsPageCount, p + 1))} disabled={page === resultsPageCount} className={`border-[#2D2842] ${page===resultsPageCount?'text-[#f5c16c]/50':'text-[#f5c16c]'}`}>Next</Button>
+                      </div>
                     </div>
                   </div>
                 )}

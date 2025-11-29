@@ -42,6 +42,8 @@ export default function PartyStash({ partyId }: { partyId: string }) {
   const [contentText, setContentText] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
+  const pageSize = 6;
 
   const { role, loading: roleLoading } = usePartyRole(partyId);
 
@@ -163,6 +165,12 @@ export default function PartyStash({ partyId }: { partyId: string }) {
     });
   }, [items, search]);
 
+  const totalPages = useMemo(() => Math.max(1, Math.ceil(filtered.length / pageSize)), [filtered.length]);
+  const paged = useMemo(() => filtered.slice((page - 1) * pageSize, page * pageSize), [filtered, page]);
+  useEffect(() => {
+    if (page > totalPages) setPage(1);
+  }, [page, totalPages]);
+
   return roleLoading ? (
     <div className="flex items-center justify-center py-8">
       <div className="h-5 w-5 animate-spin rounded-full border-2 border-white/30 border-t-[#f5c16c]" />
@@ -202,7 +210,7 @@ export default function PartyStash({ partyId }: { partyId: string }) {
       )}
       {error && <div className="text-xs text-red-400">{error}</div>}
       <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-        {filtered.map((item) => (
+        {paged.map((item) => (
           <div
             key={item.id}
             className="group rounded border border-white/10 bg-white/5 p-3"
@@ -308,6 +316,28 @@ export default function PartyStash({ partyId }: { partyId: string }) {
           <div className="text-xs text-white/50">No resources yet.</div>
         )}
       </div>
+
+      {filtered.length > 0 && (
+        <div className="flex items-center justify-between">
+          <div className="text-xs text-white/60">Page {page} of {totalPages}</div>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              disabled={page === 1}
+              className="rounded bg-white/10 px-3 py-1.5 text-xs text-white disabled:opacity-50"
+            >
+              Prev
+            </button>
+            <button
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              disabled={page >= totalPages}
+              className="rounded bg-white/10 px-3 py-1.5 text-xs text-white disabled:opacity-50"
+            >
+              Next
+            </button>
+          </div>
+        </div>
+      )}
 
       {showAdd && (
         <div className="rounded-lg border border-white/10 bg-white/5 p-4">

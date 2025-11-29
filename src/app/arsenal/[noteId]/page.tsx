@@ -7,6 +7,7 @@ import tagsApi from "@/api/tagsApi";
 import { NoteDto } from "@/types/notes";
 import { Tag } from "@/types/tags";
 import { DashboardFrame } from "@/components/layout/DashboardFrame";
+import { getMyContext } from "@/api/usersApi";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
@@ -77,6 +78,7 @@ export default function NoteEditorPage() {
   const noteId = Array.isArray(noteIdParam) ? noteIdParam[0] : noteIdParam;
 
   const [authUserId, setAuthUserId] = useState<string | null>(null);
+  const [userProfile, setUserProfile] = useState<{ username: string; firstName: string; lastName: string; profileImageUrl: string | null } | null>(null);
   const [note, setNote] = useState<NoteDto | null>(null);
   const [title, setTitle] = useState("");
   const [isPublic, setIsPublic] = useState(false);
@@ -105,6 +107,7 @@ export default function NoteEditorPage() {
   >([]);
   const [aiLoading, setAiLoading] = useState(false);
   const [selectedAiKeys, setSelectedAiKeys] = useState<string[]>([]);
+  const [maxAiTags, setMaxAiTags] = useState<number>(8);
   const saveTimerRef = useRef<number | null>(null);
   const [queuedCount, setQueuedCount] = useState(0);
 
@@ -121,6 +124,22 @@ export default function NoteEditorPage() {
     supabase.auth
       .getUser()
       .then(({ data }) => setAuthUserId(data.user?.id ?? null));
+    getMyContext()
+      .then((res) => {
+        if (!res.isSuccess || !res.data) return;
+        const ctx = res.data as any;
+        const display = (ctx.displayName || ctx.username || "").trim();
+        const parts = display.split(/\s+/);
+        const first = parts[0] || ctx.username || "";
+        const last = parts.slice(1).join(" ") || "";
+        setUserProfile({
+          username: ctx.username,
+          firstName: first,
+          lastName: last,
+          profileImageUrl: ctx.profileImageUrl ?? null,
+        });
+      })
+      .catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -458,7 +477,7 @@ export default function NoteEditorPage() {
       const res = await notesApi.suggestTags({
         authUserId,
         noteId,
-        maxTags: 8,
+        maxTags: maxAiTags,
       });
       if (res.isSuccess) setAiSuggestions(res.data.suggestions);
       setSelectedAiKeys([]);
@@ -535,7 +554,7 @@ export default function NoteEditorPage() {
 
   if (status === "loading") {
     return (
-      <DashboardFrame>
+      <DashboardFrame userProfile={userProfile || undefined}>
         <div className="flex h-[60vh] items-center justify-center">
           <Loader2 className="mr-2 h-5 w-5 animate-spin" /> Loading note...
         </div>
@@ -544,7 +563,7 @@ export default function NoteEditorPage() {
   }
 
   return (
-    <DashboardFrame>
+    <DashboardFrame userProfile={userProfile || undefined}>
       <div className="grid grid-cols-1 lg:grid-cols-[320px_1fr_320px] gap-6 pb-24">
         <aside className="relative overflow-hidden rounded-[28px] border border-[#f5c16c]/20 bg-linear-to-br from-[#2d1810]/60 via-[#1a0a08]/80 to-black/90 p-6">
           <div
@@ -950,6 +969,18 @@ export default function NoteEditorPage() {
           <h3 className="mb-2 text-sm font-semibold text-white">
             AI Tag Suggestions
           </h3>
+          <div className="mb-2 flex items-center gap-2">
+            <Label className="text-xs">Max</Label>
+            <select
+              className="h-8 rounded-md border border-[#f5c16c]/20 bg-black/40 px-2 text-sm text-white focus:border-[#f5c16c] focus:outline-none focus:ring-1 focus:ring-[#f5c16c]/30"
+              value={maxAiTags}
+              onChange={(e) => setMaxAiTags(Number(e.target.value))}
+            >
+              {[4,6,8,10,12].map((n) => (
+                <option key={n} value={n}>{n}</option>
+              ))}
+            </select>
+          </div>
           <Button
             variant="secondary"
             size="sm"
@@ -1031,6 +1062,8 @@ function LeftNotesSidebar() {
   const [items, setItems] = useState<NoteDto[]>([]);
   const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
+  const pageSize = 10;
   useEffect(() => {
     let mounted = true;
     const load = async () => {
@@ -1054,13 +1087,15 @@ function LeftNotesSidebar() {
     const h = setTimeout(() => setSearch(searchInput), 300);
     return () => clearTimeout(h);
   }, [searchInput]);
-  const filtered = items
-    .filter((n) => {
-      if (!search) return true;
-      const q = search.toLowerCase();
-      return n.title.toLowerCase().includes(q);
-    })
-    .slice(0, 20);
+  useEffect(() => { setPage(1); }, [search]);
+  const filteredAll = items.filter((n) => {
+    if (!search) return true;
+    const q = search.toLowerCase();
+    return n.title.toLowerCase().includes(q);
+  });
+  const total = filteredAll.length;
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
+  const filtered = filteredAll.slice((page - 1) * pageSize, (page - 1) * pageSize + pageSize);
   return (
     <div className="space-y-3">
       <Input
@@ -1086,6 +1121,13 @@ function LeftNotesSidebar() {
         {filtered.length === 0 && (
           <div className="text-xs text-foreground/60">No notes</div>
         )}
+        <div className="mt-2 flex items-center justify-between">
+          <div className="text-[11px] text-foreground/60">Page {page} of {totalPages}</div>
+          <div className="flex items-center gap-2">
+            <Button variant="secondary" size="sm" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1}>Prev</Button>
+            <Button variant="secondary" size="sm" onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page === totalPages}>Next</Button>
+          </div>
+        </div>
       </div>
     </div>
   );

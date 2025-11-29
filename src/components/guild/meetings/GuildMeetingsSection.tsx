@@ -66,6 +66,8 @@ export default function GuildMeetingsSection({ guildId }: Props) {
   const [detailsLoading, setDetailsLoading] = useState<Record<string, boolean>>({});
   const [loadingMeetings, setLoadingMeetings] = useState(false);
   const [members, setMembers] = useState<GuildMemberDto[]>([]);
+  const [page, setPage] = useState<number>(1);
+  const pageSize = 5;
 
   function isUnauthorized(err: any): boolean {
     const msg = typeof err?.message === "string" ? err.message : "";
@@ -127,6 +129,24 @@ export default function GuildMeetingsSection({ guildId }: Props) {
     const me = members.find((m) => m.authUserId === authUserId);
     return me?.role ?? null;
   }, [members, authUserId]);
+
+  const sortedMeetings = useMemo(() => {
+    return [...guildMeetings].sort((a, b) => {
+      const sa = (a.spaceName ?? '').toLowerCase();
+      const sb = (b.spaceName ?? '').toLowerCase();
+      if (sa && sb) return sa.localeCompare(sb);
+      if (sa) return -1;
+      if (sb) return 1;
+      return (a.title ?? '').toLowerCase().localeCompare((b.title ?? '').toLowerCase());
+    });
+  }, [guildMeetings]);
+  const pageCount = useMemo(() => Math.max(1, Math.ceil((sortedMeetings.length || 0) / pageSize)), [sortedMeetings.length]);
+  const safePage = useMemo(() => Math.min(Math.max(1, page), pageCount), [page, pageCount]);
+  const pagedMeetings = useMemo(() => {
+    const start = (safePage - 1) * pageSize;
+    const end = start + pageSize;
+    return sortedMeetings.slice(start, end);
+  }, [sortedMeetings, safePage]);
 
   const requiredCreateScopes: MeetScopes[] = [
     "https://www.googleapis.com/auth/meetings.space.created",
@@ -701,16 +721,7 @@ export default function GuildMeetingsSection({ guildId }: Props) {
             setExpandedId(v);
             if (v) loadDetailsIfNeeded(v);
           }}>
-            {[...guildMeetings]
-              .sort((a, b) => {
-                const sa = (a.spaceName ?? '').toLowerCase();
-                const sb = (b.spaceName ?? '').toLowerCase();
-                if (sa && sb) return sa.localeCompare(sb);
-                if (sa) return -1;
-                if (sb) return 1;
-                return (a.title ?? '').toLowerCase().localeCompare((b.title ?? '').toLowerCase());
-              })
-              .map((m) => {
+            {pagedMeetings.map((m) => {
               const id = m.meetingId ?? `${m.title}-${m.scheduledStartTime}`;
               const details = m.meetingId ? detailsById[m.meetingId] : null;
               const isLoading = m.meetingId ? detailsLoading[m.meetingId] : false;
@@ -831,6 +842,18 @@ export default function GuildMeetingsSection({ guildId }: Props) {
               );
             })}
           </Accordion>
+        )}
+        {guildMeetings.length > 0 && (
+          <div className="mt-2 flex items-center justify-between">
+            <div className="text-xs text-white/70">
+              <span>Showing {(safePage - 1) * pageSize + 1}–{Math.min(sortedMeetings.length, safePage * pageSize)} of {sortedMeetings.length}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={safePage === 1} className={`rounded border border-[#f5c16c]/30 px-3 py-1.5 text-xs ${safePage===1?'text-[#f5c16c]/50':'text-[#f5c16c]'}`}>Prev</button>
+              <span className="text-xs text-white/70">Page {safePage} of {pageCount}</span>
+              <button onClick={() => setPage(p => Math.min(pageCount, p + 1))} disabled={safePage === pageCount} className={`rounded border border-[#f5c16c]/30 px-3 py-1.5 text-xs ${safePage===pageCount?'text-[#f5c16c]/50':'text-[#f5c16c]'}`}>Next</button>
+            </div>
+          </div>
         )}
       </div>
 

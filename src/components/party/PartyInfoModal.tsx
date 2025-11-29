@@ -95,6 +95,14 @@ export default function PartyInfoModal({ open, onClose, partyId }: Props) {
                 </div>
               </div>
             </section>
+
+            <section className="rounded-lg border border-white/10 bg-white/5 p-6">
+              <div className="mb-3 flex items-center gap-2 text-xl font-semibold text-white"><Users className="h-6 w-6" /> Joining Process</div>
+              <ul className="space-y-2 text-base text-white/90">
+                <li>For public party: click <span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">Join</span> to join the party.</li>
+                <li>For private party: you must be <span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">invited</span> by the <span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">Leader</span>.</li>
+              </ul>
+            </section>
           </div>
 
           <section className="mt-6 rounded-lg border border-white/10 bg-white/5 p-6">

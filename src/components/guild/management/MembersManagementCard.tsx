@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -53,6 +53,25 @@ export function MembersManagementCard({
 }: MembersManagementCardProps) {
   const [memberSearch, setMemberSearch] = useState<string>("");
   const [roleToAssignByMemberId, setRoleToAssignByMemberId] = useState<Record<string, GuildRole>>({});
+  const [page, setPage] = useState<number>(1);
+  const pageSize = 10;
+
+  const filtered = useMemo(() => {
+    return members.filter((m) => {
+      const name = [m.firstName, m.lastName].filter(Boolean).join(" ") || m.username || "";
+      const email = m.email || "";
+      const q = memberSearch.trim().toLowerCase();
+      if (!q) return true;
+      return name.toLowerCase().includes(q) || email.toLowerCase().includes(q);
+    });
+  }, [members, memberSearch]);
+  const pageCount = useMemo(() => Math.max(1, Math.ceil((filtered.length || 0) / pageSize)), [filtered.length]);
+  const safePage = useMemo(() => Math.min(Math.max(1, page), pageCount), [page, pageCount]);
+  const pagedMembers = useMemo(() => {
+    const start = (safePage - 1) * pageSize;
+    const end = start + pageSize;
+    return filtered.slice(start, end);
+  }, [filtered, safePage]);
 
   return (
     <Card className={CARD_CLASS}>
@@ -89,14 +108,7 @@ export function MembersManagementCard({
             <p className="text-sm text-white/60">No members found.</p>
           </div>
         ) : (
-          members
-            .filter((m) => {
-              const name = [m.firstName, m.lastName].filter(Boolean).join(" ") || m.username || "";
-              const email = m.email || "";
-              const q = memberSearch.trim().toLowerCase();
-              if (!q) return true;
-              return name.toLowerCase().includes(q) || email.toLowerCase().includes(q);
-            })
+          pagedMembers
             .map((m) => {
               const displayName =
                 [m.firstName, m.lastName].filter(Boolean).join(" ") ||
@@ -219,6 +231,18 @@ export function MembersManagementCard({
                 </div>
               );
             })
+        )}
+        {(!loading && !error && filtered.length > 0) && (
+          <div className="mt-2 flex items-center justify-between">
+            <div className="text-xs text-white/70">
+              <span>Showing {(safePage - 1) * pageSize + 1}–{Math.min(filtered.length, safePage * pageSize)} of {filtered.length}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="sm" onClick={() => setPage(p => Math.max(1, p - 1))} disabled={safePage === 1} className={`border-[#f5c16c]/30 ${safePage===1?'text-[#f5c16c]/50':'text-[#f5c16c]'}`}>Prev</Button>
+              <span className="text-xs text-white/70">Page {safePage} of {pageCount}</span>
+              <Button variant="outline" size="sm" onClick={() => setPage(p => Math.min(pageCount, p + 1))} disabled={safePage === pageCount} className={`border-[#f5c16c]/30 ${safePage===pageCount?'text-[#f5c16c]/50':'text-[#f5c16c]'}`}>Next</Button>
+            </div>
+          </div>
         )}
       </CardContent>
     </Card>

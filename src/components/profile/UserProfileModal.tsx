@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { LecturerVerificationPanel } from "@/components/profile/LecturerVerificationPanel";
@@ -29,6 +29,7 @@ export default function UserProfileModal({ open, onOpenChange, defaultTab = "pro
   const [bio, setBio] = useState<string>("");
   const [saving, setSaving] = useState(false);
   const [profileImageFile, setProfileImageFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [dragActive, setDragActive] = useState(false);
   const [joinRequests, setJoinRequests] = useState<GuildJoinRequestDto[]>([]);
   const [loadingJoinRequests, setLoadingJoinRequests] = useState(false);
@@ -44,6 +45,16 @@ export default function UserProfileModal({ open, onOpenChange, defaultTab = "pro
   const [loadingJoinRequestsHistory, setLoadingJoinRequestsHistory] = useState(false);
   const [joinRequestsHistoryError, setJoinRequestsHistoryError] = useState<string | null>(null);
   const [historyFilter, setHistoryFilter] = useState<'all' | 'accepted' | 'declined'>('all');
+  const [historyPage, setHistoryPage] = useState(1);
+  const historyPageSize = 5;
+  const filteredHistory = useMemo(() => joinRequestsHistory.filter(r => historyFilter==='all' ? true : historyFilter==='accepted' ? r.status==='Accepted' : r.status==='Declined'), [joinRequestsHistory, historyFilter]);
+  const historyPageCount = useMemo(() => Math.max(1, Math.ceil((filteredHistory.length || 0) / historyPageSize)), [filteredHistory.length]);
+  const safeHistoryPage = useMemo(() => Math.min(Math.max(1, historyPage), historyPageCount), [historyPage, historyPageCount]);
+  const pagedHistory = useMemo(() => {
+    const start = (safeHistoryPage - 1) * historyPageSize;
+    const end = start + historyPageSize;
+    return filteredHistory.slice(start, end);
+  }, [filteredHistory, safeHistoryPage]);
 
   useEffect(() => {
     let mounted = true;
@@ -60,6 +71,16 @@ export default function UserProfileModal({ open, onOpenChange, defaultTab = "pro
     if (open) load();
     return () => { mounted = false; };
   }, [open]);
+
+  useEffect(() => {
+    if (profileImageFile) {
+      const url = URL.createObjectURL(profileImageFile);
+      setPreviewUrl(url);
+      return () => { URL.revokeObjectURL(url); };
+    }
+    setPreviewUrl(profile?.profileImageUrl || null);
+    return undefined;
+  }, [profileImageFile, profile?.profileImageUrl]);
 
   useEffect(() => {
     let mounted = true;
@@ -271,6 +292,11 @@ export default function UserProfileModal({ open, onOpenChange, defaultTab = "pro
                         onDrop={(e) => { e.preventDefault(); setDragActive(false); const f = e.dataTransfer.files?.[0]; if (f) setProfileImageFile(f); }}
                         className={`border-2 border-dashed ${dragActive ? 'border-[#f5c16c]/50 bg-[#f5c16c]/5' : 'border-[#f5c16c]/20'} bg-[#0b0504]/40 rounded-xl p-6 flex flex-col items-center justify-center text-center cursor-pointer transition-all hover:border-[#f5c16c]/30`}
                       >
+                        {previewUrl ? (
+                          <div className="relative w-24 h-24 rounded-full overflow-hidden border border-[#f5c16c]/30 mb-3">
+                            <Image src={previewUrl} alt="Profile preview" fill className="object-cover" />
+                          </div>
+                        ) : null}
                         <div className="p-3 rounded-full bg-linear-to-br from-[#d23187]/20 to-[#f5c16c]/20 border border-[#f5c16c]/30 mb-3">
                           <UploadCloud className="h-5 w-5 text-[#f5c16c]" />
                         </div>
@@ -502,9 +528,9 @@ export default function UserProfileModal({ open, onOpenChange, defaultTab = "pro
                       <span className="text-sm font-semibold text-white">Guild Requests History</span>
                     </div>
                     <div className="flex gap-2">
-                      <button onClick={() => setHistoryFilter('all')} className={`px-3 py-1 text-xs rounded ${historyFilter==='all'?'bg-[#f5c16c]/20 text-[#f5c16c]':'border border-[#f5c16c]/20 text-white/70'}`}>All</button>
-                      <button onClick={() => setHistoryFilter('accepted')} className={`px-3 py-1 text-xs rounded ${historyFilter==='accepted'?'bg-emerald-500/20 text-emerald-400':'border border-emerald-500/30 text-white/70'}`}>Accepted</button>
-                      <button onClick={() => setHistoryFilter('declined')} className={`px-3 py-1 text-xs rounded ${historyFilter==='declined'?'bg-rose-500/20 text-rose-400':'border border-rose-500/30 text-white/70'}`}>Declined</button>
+                      <button onClick={() => { setHistoryFilter('all'); setHistoryPage(1); }} className={`px-3 py-1 text-xs rounded ${historyFilter==='all'?'bg-[#f5c16c]/20 text-[#f5c16c]':'border border-[#f5c16c]/20 text-white/70'}`}>All</button>
+                      <button onClick={() => { setHistoryFilter('accepted'); setHistoryPage(1); }} className={`px-3 py-1 text-xs rounded ${historyFilter==='accepted'?'bg-emerald-500/20 text-emerald-400':'border border-emerald-500/30 text-white/70'}`}>Accepted</button>
+                      <button onClick={() => { setHistoryFilter('declined'); setHistoryPage(1); }} className={`px-3 py-1 text-xs rounded ${historyFilter==='declined'?'bg-rose-500/20 text-rose-400':'border border-rose-500/30 text-white/70'}`}>Declined</button>
                     </div>
                   </div>
                   {loadingJoinRequestsHistory && (
@@ -518,9 +544,7 @@ export default function UserProfileModal({ open, onOpenChange, defaultTab = "pro
                   )}
                   {!loadingJoinRequestsHistory && !joinRequestsHistoryError && (
                     <div className="space-y-3">
-                      {joinRequestsHistory
-                        .filter(r => historyFilter==='all' ? true : historyFilter==='accepted' ? r.status==='Accepted' : r.status==='Declined')
-                        .map(r => (
+                      {pagedHistory.map(r => (
                           <div key={r.id} className="flex items-center justify-between rounded-xl border border-[#f5c16c]/20 bg-[#0b0504]/60 p-4">
                             <div className="flex items-center gap-3">
                               <div className="w-10 h-10 rounded-lg bg-[#f5c16c]/10 border border-[#f5c16c]/20 flex items-center justify-center">
@@ -536,6 +560,18 @@ export default function UserProfileModal({ open, onOpenChange, defaultTab = "pro
                             </div>
                           </div>
                         ))}
+                    </div>
+                  )}
+                  {!loadingJoinRequestsHistory && !joinRequestsHistoryError && filteredHistory.length > 0 && (
+                    <div className="mt-2 flex items-center justify-between">
+                      <div className="text-xs text-white/70">
+                        <span>Showing {(safeHistoryPage - 1) * historyPageSize + 1}–{Math.min(filteredHistory.length, safeHistoryPage * historyPageSize)} of {filteredHistory.length}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <button onClick={() => setHistoryPage(p => Math.max(1, p - 1))} disabled={safeHistoryPage === 1} className={`px-3 py-1 rounded-full border ${safeHistoryPage===1 ? 'border-[#f5c16c]/30 text-[#f5c16c]/50 cursor-not-allowed' : 'border-[#f5c16c]/30 text-[#f5c16c] hover:border-[#f5c16c] hover:bg-[#f5c16c]/15 hover:text-white'}`}>Prev</button>
+                        <span className="text-xs text-white/70">Page {safeHistoryPage} of {historyPageCount}</span>
+                        <button onClick={() => setHistoryPage(p => Math.min(historyPageCount, p + 1))} disabled={safeHistoryPage === historyPageCount} className={`px-3 py-1 rounded-full border ${safeHistoryPage===historyPageCount ? 'border-[#f5c16c]/30 text-[#f5c16c]/50 cursor-not-allowed' : 'border-[#f5c16c]/30 text-[#f5c16c] hover:border-[#f5c16c] hover:bg-[#f5c16c]/15 hover:text-white'}`}>Next</button>
+                      </div>
                     </div>
                   )}
                 </div>

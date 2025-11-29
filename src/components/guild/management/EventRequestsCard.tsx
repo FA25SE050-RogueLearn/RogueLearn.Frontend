@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
@@ -33,6 +33,8 @@ export function EventRequestsCard({ guildId }: EventRequestsCardProps) {
   const [eventRequests, setEventRequests] = useState<EventRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [page, setPage] = useState<number>(1);
+  const pageSize = 5;
 
   const fetchEventRequests = async () => {
     setLoading(true);
@@ -59,6 +61,14 @@ export function EventRequestsCard({ guildId }: EventRequestsCardProps) {
   useEffect(() => {
     fetchEventRequests();
   }, [guildId]);
+
+  const pageCount = useMemo(() => Math.max(1, Math.ceil((eventRequests.length || 0) / pageSize)), [eventRequests.length]);
+  const safePage = useMemo(() => Math.min(Math.max(1, page), pageCount), [page, pageCount]);
+  const pagedRequests = useMemo(() => {
+    const start = (safePage - 1) * pageSize;
+    const end = start + pageSize;
+    return eventRequests.slice(start, end);
+  }, [eventRequests, safePage]);
 
   const getStatusConfig = (status: string) => {
     switch (status) {
@@ -136,7 +146,7 @@ export function EventRequestsCard({ guildId }: EventRequestsCardProps) {
           </div>
         ) : (
           <div className="space-y-4">
-            {eventRequests.map((request) => {
+            {pagedRequests.map((request) => {
               const statusConfig = getStatusConfig(request.status);
               const StatusIcon = statusConfig.icon;
               // Handle both API response formats: participation_details and participation
@@ -225,6 +235,16 @@ export function EventRequestsCard({ guildId }: EventRequestsCardProps) {
                 </div>
               );
             })}
+            <div className="mt-2 flex items-center justify-between">
+              <div className="text-xs text-white/70">
+                <span>Showing {(safePage - 1) * pageSize + 1}–{Math.min(eventRequests.length, safePage * pageSize)} of {eventRequests.length}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button variant="outline" size="sm" onClick={() => setPage(p => Math.max(1, p - 1))} disabled={safePage === 1} className={`border-[#f5c16c]/30 ${safePage===1?'text-[#f5c16c]/50':'text-[#f5c16c]'}`}>Prev</Button>
+                <span className="text-xs text-white/70">Page {safePage} of {pageCount}</span>
+                <Button variant="outline" size="sm" onClick={() => setPage(p => Math.min(pageCount, p + 1))} disabled={safePage === pageCount} className={`border-[#f5c16c]/30 ${safePage===pageCount?'text-[#f5c16c]/50':'text-[#f5c16c]'}`}>Next</Button>
+              </div>
+            </div>
           </div>
         )}
       </CardContent>
