@@ -18,6 +18,7 @@ import {
   ChevronDown,
   Sparkles,
   Flame,
+  Swords,
 } from "lucide-react"
 import { createClient } from "@/utils/supabase/client"
 import profileApi from "@/api/profileApi"
@@ -42,6 +43,7 @@ const navItems = [
   { title: "Party", url: "/parties", icon: Users, color: "from-pink-500 to-rose-500" },
   { title: "Community", url: "/community", icon: Anvil, color: "from-orange-500 to-red-500" },
   { title: "Battle", url: "/code-battle", icon: Sword, color: "from-red-500 to-rose-600" },
+  { title: "Boss Fight", url: "/boss-fight", icon: Swords, color: "from-violet-500 to-fuchsia-600" },
   { title: "Adventure", url: "/game", icon: Compass, color: "from-indigo-500 to-purple-500" },
 ]
 

@@ -13,6 +13,15 @@ function generateJoinCode(): string {
 }
 
 export async function POST(req: NextRequest) {
+  // Extract userId from request body
+  let userId: string | null = null;
+  try {
+    const body = await req.json();
+    userId = body?.userId || null;
+  } catch {
+    // Body parsing failed or no body provided
+  }
+
   // If a backend URL is provided, attempt to proxy the request there.
   const backendUrl = process.env.GAME_BACKEND_URL || process.env.NEXT_PUBLIC_GAME_BACKEND_URL;
 
@@ -21,7 +30,7 @@ export async function POST(req: NextRequest) {
       const res = await fetch(`${backendUrl.replace(/\/$/, "")}/host`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({}),
+        body: JSON.stringify({ userId }),
       });
       if (!res.ok) {
         const text = await res.text();
@@ -55,6 +64,11 @@ export async function POST(req: NextRequest) {
         if (userApiBase) envs.push('-e', `USER_API_BASE=${userApiBase}`);
       }
       envs.push('-e', `INSECURE_TLS=${process.env.INSECURE_TLS || '0'}`);
+
+      // Pass userId to Unity server if provided
+      if (userId) {
+        envs.push('-e', `USER_ID=${userId}`);
+      }
 
       // Optional: map HTTP port and resource constraints to match your local run command
       const runArgs: string[] = ['run', '--rm', '--name', name, '-d'];
@@ -154,75 +168,26 @@ export async function POST(req: NextRequest) {
         throw new Error('Failed to obtain join code from container logs');
       }
 
-      const rawBase = process.env.USER_API_BASE || process.env.NEXT_PUBLIC_USER_API_URL || '';
-      let base = (rawBase || '').replace(/\/+$/, '');
-      if (base.endsWith('/api')) base = base.slice(0, -4);
-      let match_id: string | null = null;
-      try {
-        if (base) {
-          const url = `${base}/api/quests/game/sessions/create`;
-          const insecure = process.env.INSECURE_TLS === '1';
-          if (insecure && url.startsWith('https://')) process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
-          const payload = {
-            relay_join_code: String(joinData.joinCode),
-            pack_spec: { subject: 'PRF192', topic: 'basics', difficulty: 'easy', count: 5 },
-          };
-          const createRes = await fetch(url, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload),
-          });
-          if (createRes.ok) {
-            const sj = await createRes.json();
-            match_id = typeof sj?.match_id === 'string' ? sj.match_id : null;
-          }
-        }
-      } catch { }
-
+      // Don't create session here - let the caller (boss-fight or game page) create it with their config
       return NextResponse.json({
         ok: true,
         joinCode: joinData.joinCode,
         hostId: name,
         message: `Unity headless server started in Docker (${image}).`,
         wsUrl: process.env.NEXT_PUBLIC_GAME_WS_URL ?? null,
-        match_id,
       });
     } catch (dockerErr) {
       // Fallback stub: simulate host setup and return a fake join code to keep development/test flows working
       await new Promise((r) => setTimeout(r, 800));
       const joinCode = generateJoinCode();
-      const rawBase = process.env.USER_API_BASE || process.env.NEXT_PUBLIC_USER_API_URL || '';
-      let base = (rawBase || '').replace(/\/+$/, '');
-      if (base.endsWith('/api')) base = base.slice(0, -4);
-      let match_id: string | null = null;
-      try {
-        if (base) {
-          const url = `${base}/api/quests/game/sessions/create`;
-          const insecure = process.env.INSECURE_TLS === '1';
-          if (insecure && url.startsWith('https://')) process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
-          const payload = {
-            relay_join_code: String(joinCode),
-            pack_spec: { subject: 'PRF192', topic: 'basics', difficulty: 'easy', count: 5 },
-          };
-          const createRes = await fetch(url, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload),
-          });
-          if (createRes.ok) {
-            const sj = await createRes.json();
-            match_id = typeof sj?.match_id === 'string' ? sj.match_id : null;
-          }
-        }
-      } catch { }
 
+      // Don't create session here - let the caller create it with their config
       return NextResponse.json({
         ok: true,
         joinCode,
         hostId: `local-${Date.now()}`,
         message: `Docker start failed; returning a stubbed join code for development. Error: ${dockerErr}`,
         wsUrl: process.env.NEXT_PUBLIC_GAME_WS_URL ?? null,
-        match_id,
       });
     }
   } catch (err: any) {

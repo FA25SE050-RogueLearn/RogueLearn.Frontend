@@ -2080,13 +2080,13 @@ var tempI64;
 // === Body ===
 
 var ASM_CONSTS = {
-  7541728: function() {return Module.webglContextAttributes.premultipliedAlpha;},  
- 7541789: function() {return Module.webglContextAttributes.preserveDrawingBuffer;},  
- 7541853: function() {return Module.webglContextAttributes.powerPreference;},  
- 7541911: function() {Module['emscripten_get_now_backup'] = performance.now;},  
- 7541966: function($0) {performance.now = function() { return $0; };},  
- 7542014: function($0) {performance.now = function() { return $0; };},  
- 7542062: function() {performance.now = Module['emscripten_get_now_backup'];}
+  7548992: function() {return Module.webglContextAttributes.premultipliedAlpha;},  
+ 7549053: function() {return Module.webglContextAttributes.preserveDrawingBuffer;},  
+ 7549117: function() {return Module.webglContextAttributes.powerPreference;},  
+ 7549175: function() {Module['emscripten_get_now_backup'] = performance.now;},  
+ 7549230: function($0) {performance.now = function() { return $0; };},  
+ 7549278: function($0) {performance.now = function() { return $0; };},  
+ 7549326: function() {performance.now = Module['emscripten_get_now_backup'];}
 };
 
 
@@ -16911,10 +16911,16 @@ var dynCall_viiiiiiiiiiiiiiiii = Module["dynCall_viiiiiiiiiiiiiiiii"] = createEx
 var dynCall_viiiiiiiiiiiiiiiiii = Module["dynCall_viiiiiiiiiiiiiiiiii"] = createExportWrapper("dynCall_viiiiiiiiiiiiiiiiii");
 
 /** @type {function(...*):?} */
+var dynCall_viffi = Module["dynCall_viffi"] = createExportWrapper("dynCall_viffi");
+
+/** @type {function(...*):?} */
 var dynCall_viidiji = Module["dynCall_viidiji"] = createExportWrapper("dynCall_viidiji");
 
 /** @type {function(...*):?} */
 var dynCall_viidjii = Module["dynCall_viidjii"] = createExportWrapper("dynCall_viidjii");
+
+/** @type {function(...*):?} */
+var dynCall_viiiifi = Module["dynCall_viiiifi"] = createExportWrapper("dynCall_viiiifi");
 
 /** @type {function(...*):?} */
 var dynCall_viiiiiii = Module["dynCall_viiiiiii"] = createExportWrapper("dynCall_viiiiiii");
@@ -17109,9 +17115,6 @@ var dynCall_iiiiiifii = Module["dynCall_iiiiiifii"] = createExportWrapper("dynCa
 var dynCall_viiiiifi = Module["dynCall_viiiiifi"] = createExportWrapper("dynCall_viiiiifi");
 
 /** @type {function(...*):?} */
-var dynCall_viffi = Module["dynCall_viffi"] = createExportWrapper("dynCall_viffi");
-
-/** @type {function(...*):?} */
 var dynCall_viiifi = Module["dynCall_viiifi"] = createExportWrapper("dynCall_viiifi");
 
 /** @type {function(...*):?} */
@@ -17146,9 +17149,6 @@ var dynCall_vifffi = Module["dynCall_vifffi"] = createExportWrapper("dynCall_vif
 
 /** @type {function(...*):?} */
 var dynCall_viiiji = Module["dynCall_viiiji"] = createExportWrapper("dynCall_viiiji");
-
-/** @type {function(...*):?} */
-var dynCall_viiiifi = Module["dynCall_viiiifi"] = createExportWrapper("dynCall_viiiifi");
 
 /** @type {function(...*):?} */
 var dynCall_fiiffi = Module["dynCall_fiiffi"] = createExportWrapper("dynCall_fiiffi");
@@ -17226,7 +17226,13 @@ var dynCall_vjiiiii = Module["dynCall_vjiiiii"] = createExportWrapper("dynCall_v
 var dynCall_jiiiii = Module["dynCall_jiiiii"] = createExportWrapper("dynCall_jiiiii");
 
 /** @type {function(...*):?} */
+var dynCall_vffi = Module["dynCall_vffi"] = createExportWrapper("dynCall_vffi");
+
+/** @type {function(...*):?} */
 var dynCall_vifiii = Module["dynCall_vifiii"] = createExportWrapper("dynCall_vifiii");
+
+/** @type {function(...*):?} */
+var dynCall_vjii = Module["dynCall_vjii"] = createExportWrapper("dynCall_vjii");
 
 /** @type {function(...*):?} */
 var dynCall_iiiiiffi = Module["dynCall_iiiiiffi"] = createExportWrapper("dynCall_iiiiiffi");
@@ -17427,9 +17433,6 @@ var dynCall_vidddi = Module["dynCall_vidddi"] = createExportWrapper("dynCall_vid
 var dynCall_vijjjiii = Module["dynCall_vijjjiii"] = createExportWrapper("dynCall_vijjjiii");
 
 /** @type {function(...*):?} */
-var dynCall_vjii = Module["dynCall_vjii"] = createExportWrapper("dynCall_vjii");
-
-/** @type {function(...*):?} */
 var dynCall_ijjiii = Module["dynCall_ijjiii"] = createExportWrapper("dynCall_ijjiii");
 
 /** @type {function(...*):?} */
@@ -17440,9 +17443,6 @@ var dynCall_diiiii = Module["dynCall_diiiii"] = createExportWrapper("dynCall_dii
 
 /** @type {function(...*):?} */
 var dynCall_vfffi = Module["dynCall_vfffi"] = createExportWrapper("dynCall_vfffi");
-
-/** @type {function(...*):?} */
-var dynCall_vffi = Module["dynCall_vffi"] = createExportWrapper("dynCall_vffi");
 
 /** @type {function(...*):?} */
 var dynCall_vffffi = Module["dynCall_vffffi"] = createExportWrapper("dynCall_vffffi");

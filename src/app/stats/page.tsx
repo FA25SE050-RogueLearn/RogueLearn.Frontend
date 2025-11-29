@@ -1,5 +1,9 @@
 export const dynamic = 'force-dynamic'
 
+import { createClient } from '@/utils/supabase/server'
+import { headers } from 'next/headers'
+import PracticeButton from './PracticeButton'
+
 interface PlayerSummary {
   playerId: number
   totalQuestions: number
@@ -39,15 +43,36 @@ interface UnityMatch {
   playerSummaries: PlayerSummary[]
 }
 
-export default async function StatsPage() {
-  const origin = process.env.NEXT_PUBLIC_USER_API_URL || 'http://localhost:3000'
-  const url = `${origin}/api/quests/game/sessions/unity-matches?limit=10`
+export default async function StatsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>
+}) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+
+  // Get query params for quiz completion
+  const params = await searchParams
+  const quizCompleted = params.quizCompleted === 'true'
+  const quizScore = params.score ? parseInt(params.score as string) : 0
+  const quizTotal = params.total ? parseInt(params.total as string) : 0
+
+  // Build an absolute same-origin URL to satisfy Node fetch
+  const hdrs = await headers()
+  const host = hdrs.get('x-forwarded-host') || hdrs.get('host') || 'localhost:3000'
+  const defaultProto = host.includes('localhost') ? 'http' : 'https'
+  const proto = hdrs.get('x-forwarded-proto') || defaultProto
+  const origin = `${proto}://${host}`
+
+  const statsUrl = new URL('/api/quests/game/sessions/unity-matches', origin)
+  statsUrl.searchParams.set('limit', '10')
+  if (user) statsUrl.searchParams.set('userId', user.id)
 
   let ok = false
   let data: { matches: UnityMatch[] } = { matches: [] }
 
   try {
-    const res = await fetch(url, { cache: 'no-store' })
+    const res = await fetch(statsUrl.toString(), { cache: 'no-store' })
     ok = res.ok
     data = await res.json()
   } catch (e: any) {
@@ -70,19 +95,61 @@ export default async function StatsPage() {
   }
 
   const mostRecentMatch = data.matches[0]
+  const firstSummary = mostRecentMatch.playerSummaries?.[0]
+  const topics = firstSummary?.topicBreakdown || []
+  const questionsCount = (mostRecentMatch.questions && mostRecentMatch.questions.length > 0)
+    ? mostRecentMatch.questions.length
+    : topics.length
 
   return (
     <div style={{ padding: 24, maxWidth: 1200, margin: '0 auto' }}>
       <h1 style={{ marginBottom: 24, fontSize: 32, fontWeight: 700 }}>Your Game Stats</h1>
 
+      {/* Quiz Completion Banner */}
+      {quizCompleted && (
+        <div style={{
+          marginBottom: 24,
+          padding: 20,
+          background: quizScore / quizTotal >= 0.7 ? '#4caf50' : '#ff9800',
+          color: 'white',
+          borderRadius: 12,
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center'
+        }}>
+          <div>
+            <div style={{ fontSize: 24, fontWeight: 700, marginBottom: 4 }}>
+              {quizScore / quizTotal >= 0.7 ? '🎉 Great Job!' : '💪 Keep Practicing!'}
+            </div>
+            <div style={{ fontSize: 16 }}>
+              You scored {quizScore}/{quizTotal} ({Math.round((quizScore / quizTotal) * 100)}%) on the review quiz
+            </div>
+          </div>
+          <a
+            href="/stats"
+            style={{
+              padding: '8px 16px',
+              background: 'rgba(255,255,255,0.2)',
+              color: 'white',
+              borderRadius: 6,
+              textDecoration: 'none',
+              fontWeight: 600
+            }}
+          >
+            Dismiss
+          </a>
+        </div>
+      )}
+
       {/* Most Recent Match - Highlighted */}
       <div style={{
         marginBottom: 32,
         padding: 24,
-        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        background: 'white',
         borderRadius: 12,
-        color: 'white',
-        boxShadow: '0 4px 6px rgba(0,0,0,0.1)'
+        color: '#111',
+        border: '1px solid #e5e7eb',
+        boxShadow: '0 4px 6px rgba(0,0,0,0.06)'
       }}>
         <h2 style={{ marginBottom: 16, fontSize: 24, fontWeight: 600 }}>Latest Match</h2>
         <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap', marginBottom: 16 }}>
@@ -98,7 +165,7 @@ export default async function StatsPage() {
           </div>
           <div>
             <div style={{ fontSize: 14, opacity: 0.9 }}>Questions</div>
-            <div style={{ fontSize: 20, fontWeight: 600 }}>{mostRecentMatch.questions.length}</div>
+            <div style={{ fontSize: 20, fontWeight: 600 }}>{questionsCount}</div>
           </div>
           <div>
             <div style={{ fontSize: 14, opacity: 0.9 }}>Date</div>
@@ -141,7 +208,7 @@ export default async function StatsPage() {
 
                 {/* Topic Breakdown */}
                 <div style={{ marginTop: 16 }}>
-                  <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 8, color: '#666' }}>
+                  <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 8, color: '#374151' }}>
                     Topic Performance
                   </div>
                   {player.topicBreakdown.map((topic, i) => {
@@ -188,12 +255,48 @@ export default async function StatsPage() {
 
       {/* Questions Review - Focus on Wrong Answers for Exam Prep */}
       <div style={{ marginBottom: 32 }}>
-        <h2 style={{ marginBottom: 16, fontSize: 24, fontWeight: 600 }}>Questions Review</h2>
-        <div style={{ marginBottom: 12, padding: 12, background: '#fff3cd', borderRadius: 6, fontSize: 14 }}>
-          💡 Review the questions you got wrong to prepare better for your exam!
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+          <h2 style={{ fontSize: 24, fontWeight: 600 }}>Questions Review</h2>
+          {firstSummary && firstSummary.correctAnswers < firstSummary.totalQuestions && (
+            <PracticeButton
+              matchId={mostRecentMatch.matchId}
+              topics={topics.filter(t => t.correct < t.total).map(t => t.topic)}
+            />
+          )}
+        </div>
+        <div style={{
+          marginBottom: 12,
+          padding: 12,
+          background: '#fef3c7',
+          borderRadius: 8,
+          fontSize: 14,
+          color: '#1f2937',
+          border: '1px solid #f59e0b'
+        }}>
+          <span style={{ fontWeight: 600, color: '#92400e' }}>Tip:</span> Review the questions you got wrong to prepare better for your exam.
         </div>
 
-        {mostRecentMatch.questions.map((q, idx) => {
+        {topics.flatMap((t, topicIdx) =>
+          Array.from({ length: t.total }).map((_, qIdx) => {
+            // Always use topicBreakdown data as it's accurate
+            // First t.correct questions were answered correctly, rest were wrong
+            const isCorrect = qIdx < t.correct
+
+            return {
+              questionId: topicIdx * 100 + qIdx + 1,
+              topic: t.topic,
+              difficulty: '',
+              prompt: `${t.topic} - Question ${qIdx + 1}`,
+              correctAnswerIndex: 0,
+              playerAnswers: [{
+                playerId: 1,
+                chosenAnswer: isCorrect ? 0 : 1,
+                correct: isCorrect,
+                timeToAnswer: 0
+              }]
+            }
+          })
+        ).map((q, idx) => {
           const playerAnswers = q.playerAnswers || []
           const anyWrong = playerAnswers.some(pa => !pa.correct)
 
@@ -213,7 +316,7 @@ export default async function StatsPage() {
                   <div style={{ fontSize: 12, color: '#666', marginBottom: 4 }}>
                     Question {idx + 1} • {q.topic} • {q.difficulty}
                   </div>
-                  <div style={{ fontSize: 16, fontWeight: 500, marginBottom: 8 }}>
+                  <div style={{ fontSize: 16, fontWeight: 600, marginBottom: 8, color: '#111' }}>
                     {q.prompt}
                   </div>
                 </div>
@@ -277,12 +380,16 @@ export default async function StatsPage() {
                   <div style={{ fontSize: 16, fontWeight: 500, marginBottom: 4 }}>
                     {match.result === 'win' ? '🏆 Victory' : '💀 Defeat'}
                   </div>
-                  <div style={{ fontSize: 12, color: '#666' }}>
+                  <div style={{ fontSize: 12, color: '#374151' }}>
                     {new Date(match.endUtc).toLocaleString()} • {match.totalPlayers} players
                   </div>
                 </div>
-                <div style={{ fontSize: 14, color: '#666' }}>
-                  {match.questions.length} questions
+                <div style={{ fontSize: 14, color: '#374151' }}>
+                  {(match.questions && match.questions.length > 0)
+                    ? match.questions.length
+                    : ((match.playerSummaries && match.playerSummaries[0] && match.playerSummaries[0].topicBreakdown)
+                      ? match.playerSummaries[0].topicBreakdown.length
+                      : 0)} questions
                 </div>
               </div>
             ))}

@@ -1,9 +1,10 @@
 "use client";
-import React, { useCallback, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import UnityPlayer from "@/components/unity/UnityPlayer";
 import { useGameWs } from "@/hooks/useGameWs";
+import { createClient } from "@/utils/supabase/client";
 
 type Mode = "select" | "hosting" | "joining";
 
@@ -16,7 +17,19 @@ export default function GamePage() {
   const [wsUrl, setWsUrl] = useState<string | null>(null);
   const [matchId, setMatchId] = useState<string | null>(null);
   const [inviteUrl, setInviteUrl] = useState<string | null>(null);
+  const [userId, setUserId] = useState<string | null>(null);
   const ws = useGameWs({ url: wsUrl, autoConnect: !!wsUrl });
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        setUserId(user.id);
+      }
+    };
+    fetchUser();
+  }, []);
 
   const reset = useCallback(() => {
     setMode("select");
@@ -36,7 +49,11 @@ export default function GamePage() {
     setMatchId(null);
     setInviteUrl(null);
     try {
-      const res = await fetch("/api/game/host", { method: "POST" });
+      const res = await fetch("/api/game/host", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId })
+      });
       if (!res.ok) {
         throw new Error(`Host request failed: ${res.status}`);
       }
@@ -50,6 +67,7 @@ export default function GamePage() {
       let mid = typeof data?.match_id === "string" ? data.match_id : null;
       if (!mid) {
         const payload = {
+          user_id: userId,
           relay_join_code: String(data.joinCode),
           pack_spec: { subject: "PRN212", topic: "basics", difficulty: "easy", count: 10 },
         };
@@ -78,7 +96,7 @@ export default function GamePage() {
     } finally {
       setIsStarting(false);
     }
-  }, []);
+  }, [userId]);
 
   const onJoin = useCallback(() => {
     setMode("joining");

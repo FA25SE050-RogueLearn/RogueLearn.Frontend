@@ -2,6 +2,7 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { Unity, useUnityContext } from "react-unity-webgl";
 import { unityPaths, unityRelayConfig, userApiBase } from "@/config/unity";
+import { useRouter } from "next/navigation";
 
 type UnityPlayerProps = {
   initialJoinCode?: string;
@@ -26,6 +27,8 @@ export const UnityPlayer: React.FC<UnityPlayerProps> = ({
   packJson,
   userId,
 }) => {
+  const router = useRouter();
+
   // Prevent multiple Unity initializations
   const unityInstanceRef = useRef<boolean>(false);
   const baseConfiguredRef = useRef<boolean>(false);
@@ -123,6 +126,20 @@ export const UnityPlayer: React.FC<UnityPlayerProps> = ({
     setTimeout(tick, 500);
   }, [gameReady, mode, packJson]);
 
+  // Set up navigation callback for Unity to call when match ends
+  useEffect(() => {
+    // Define the function that Unity will call
+    (window as any).navigateToStats = (result: string) => {
+      console.log(`[UnityPlayer] Match ended with result: ${result}. Navigating to stats...`);
+      router.push('/stats');
+    };
+
+    // Cleanup function to remove the callback when component unmounts
+    return () => {
+      delete (window as any).navigateToStats;
+    };
+  }, [router]);
+
   const doConnect = useCallback(
     (code: string) => {
       const goName = gameObjectName ?? unityRelayConfig.gameObjectName;
@@ -176,7 +193,33 @@ export const UnityPlayer: React.FC<UnityPlayerProps> = ({
         <div style={{ color: "#b00020", marginBottom: 8 }}>Error: {error}</div>
       )}
       <div style={{ marginBottom: 8 }}>Status: {status}</div>
-      <Unity style={{ width: "100%", height: 540, background: "#000" }} unityProvider={unityProvider} />
+      {/* Full HD (1920x1080) container with 16:9 aspect ratio - 90% size for better viewport fit */}
+      <div style={{
+        width: "90vw",
+        maxWidth: "1728px", // 90% of 1920px
+        margin: "0 auto",
+        position: "relative",
+        paddingBottom: "50.625%", // 16:9 aspect ratio at 90% (9/16 * 90%)
+        background: "#000",
+        overflow: "hidden"
+      }}>
+        <div style={{
+          position: "absolute",
+          top: 0,
+          left: 0,
+          width: "100%",
+          height: "100%"
+        }}>
+          <Unity
+            style={{
+              width: "100%",
+              height: "100%",
+              background: "#000"
+            }}
+            unityProvider={unityProvider}
+          />
+        </div>
+      </div>
       {showJoinInput && (
         <div style={{ fontSize: 12, color: "#666", marginTop: 8 }}>
           Tip: The connect button calls Unity SendMessage to &quot;<code>{gameObjectName ?? unityRelayConfig.gameObjectName}</code>&quot;.
