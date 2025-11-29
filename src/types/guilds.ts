@@ -84,6 +84,7 @@ export interface GuildInvitationDto {
   createdAt: string; // ISO timestamp
   respondedAt?: string | null; // ISO timestamp
   guildName: string;
+  inviteeName: string;
 }
 
 /** Join request record for a user applying to a guild. */

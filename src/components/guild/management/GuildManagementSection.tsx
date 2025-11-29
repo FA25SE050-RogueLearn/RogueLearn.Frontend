@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState, useCallback, startTransition } from "reac
 import { useRouter } from "next/navigation";
 import guildsApi from "@/api/guildsApi";
 import profileApi from "@/api/profileApi";
-import type { GuildJoinRequestDto, GuildMemberDto, GuildRole } from "@/types/guilds";
+import type { GuildJoinRequestDto, GuildMemberDto, GuildRole, GuildInvitationDto } from "@/types/guilds";
 import { InviteMembersCard } from "@/components/guild/management/InviteMembersCard";
 import { JoinRequestsCard } from "@/components/guild/management/JoinRequestsCard";
 import { MembersManagementCard } from "@/components/guild/management/MembersManagementCard";
@@ -12,6 +12,7 @@ import { AccessRestrictedCard } from "@/components/guild/management/AccessRestri
 import { CreateEventRequestCard } from "@/components/guild/management/CreateEventRequestCard";
 import { EventRequestsCard } from "@/components/guild/management/EventRequestsCard";
 import { RegisteredEventsCard } from "@/components/guild/management/RegisteredEventsCard";
+import { PendingInvitationsCard } from "@/components/guild/management/PendingInvitationsCard";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -24,6 +25,7 @@ interface GuildManagementSectionProps {
 export function GuildManagementSection({ guildId, onLeftGuild }: GuildManagementSectionProps) {
   const [members, setMembers] = useState<GuildMemberDto[]>([]);
   const [joinRequests, setJoinRequests] = useState<GuildJoinRequestDto[]>([]);
+  const [invitations, setInvitations] = useState<GuildInvitationDto[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [myAuthUserId, setMyAuthUserId] = useState<string | null>(null);
@@ -57,6 +59,16 @@ export function GuildManagementSection({ guildId, onLeftGuild }: GuildManagement
           }
         } else {
           setJoinRequests([]);
+        }
+        if (role === "GuildMaster" || role === "Officer") {
+          try {
+            const invRes = await guildsApi.getInvitations(guildId);
+            setInvitations(invRes.data ?? []);
+          } catch {
+            setInvitations([]);
+          }
+        } else {
+          setInvitations([]);
         }
       } catch (err) {
         console.error("Failed to load management data", err);
@@ -173,6 +185,7 @@ export function GuildManagementSection({ guildId, onLeftGuild }: GuildManagement
       {isPrivileged && (
         <>
           <InviteMembersCard onInvite={sendInvite} />
+          <PendingInvitationsCard loading={loading} invitations={invitations} />
           {myRole === "GuildMaster" && (
             <CreateEventRequestCard guildId={guildId} onRequestCreated={reload} />
           )}

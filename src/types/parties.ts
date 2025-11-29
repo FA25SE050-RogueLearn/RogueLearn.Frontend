@@ -56,6 +56,7 @@ export interface PartyInvitationDto {
   respondedAt?: string | null; // ISO timestamp
   expiresAt: string; // ISO timestamp
   partyName: string;
+  inviteeName: string;
 }
 
 /** Shared note/resource stored in the party stash. */

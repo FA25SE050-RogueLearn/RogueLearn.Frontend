@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -309,6 +309,7 @@ export default function SocialScryingModal({ open, onOpenChange }: SocialScrying
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl max-h-[85vh] border-[#f5c16c]/30 bg-[#0b0a13]/95 p-0">
+        <DialogTitle className="sr-only">Social Scrying</DialogTitle>
         <SocialScryingContent />
       </DialogContent>
     </Dialog>
