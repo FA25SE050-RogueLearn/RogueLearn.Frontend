@@ -8,7 +8,10 @@ export default function InvitationManagement({ invites }: { invites: PartyInvita
   useEffect(() => {
     let mounted = true;
     (async () => {
-      const ids = Array.from(new Set(invites.map((inv) => inv.inviteeId).filter((id) => !!id)));
+      const ids = Array.from(new Set(invites
+        .filter((inv) => !inv.inviteeName)
+        .map((inv) => inv.inviteeId)
+        .filter((id) => !!id)));
       if (ids.length === 0) {
         if (mounted) setInviteeMap({});
         return;
@@ -44,7 +47,7 @@ export default function InvitationManagement({ invites }: { invites: PartyInvita
       <ul className="space-y-2">
         {invites.map(inv => (
           <li key={inv.id} className="flex items-center justify-between rounded bg-white/5 px-3 py-2 text-xs">
-            <span>{display(inv.inviteeId)}</span>
+            <span>{inv.inviteeName || display(inv.inviteeId)}</span>
             <span className="rounded bg-white/10 px-2 py-0.5">{inv.status}</span>
           </li>
         ))}

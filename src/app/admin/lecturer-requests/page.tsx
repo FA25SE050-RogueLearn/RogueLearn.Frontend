@@ -17,6 +17,8 @@ export default function AdminLecturerRequestsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [items, setItems] = useState<AdminLecturerVerificationRequestListItem[]>([]);
+  const [page, setPage] = useState(1);
+  const pageSize = 10;
 
   const fetchList = async () => {
     setLoading(true);
@@ -46,6 +48,10 @@ export default function AdminLecturerRequestsPage() {
   };
 
   useEffect(() => { fetchList(); }, [status]);
+  useEffect(() => { setPage(1); }, [status, search, items.length]);
+
+  const totalPages = Math.max(1, Math.ceil(items.length / pageSize));
+  const pagedItems = items.slice((page - 1) * pageSize, page * pageSize);
 
   return (
     <AdminLayout>
@@ -93,7 +99,7 @@ export default function AdminLecturerRequestsPage() {
             )}
             {!loading && !error && items.length > 0 && (
               <div className="space-y-3">
-                {items.map((it) => (
+                {pagedItems.map((it) => (
                   <div key={it.id} className="flex items-center justify-between rounded-lg border border-amber-900/30 bg-linear-to-r from-amber-950/30 to-transparent p-4">
                     <div>
                       <p className="text-sm font-semibold text-amber-100">{it.email}</p>
@@ -107,6 +113,25 @@ export default function AdminLecturerRequestsPage() {
                     </div>
                   </div>
                 ))}
+                <div className="flex items-center justify-between">
+                  <div className="text-xs text-amber-300">Page {page} of {totalPages}</div>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setPage(p => Math.max(1, p - 1))}
+                      disabled={page === 1}
+                      className="rounded bg-amber-900/30 px-3 py-1.5 text-xs text-amber-200 border border-amber-900/40 disabled:opacity-50"
+                    >
+                      Prev
+                    </button>
+                    <button
+                      onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                      disabled={page >= totalPages}
+                      className="rounded bg-amber-900/30 px-3 py-1.5 text-xs text-amber-200 border border-amber-900/40 disabled:opacity-50"
+                    >
+                      Next
+                    </button>
+                  </div>
+                </div>
               </div>
             )}
           </CardContent>

@@ -20,6 +20,8 @@ export function LecturerVerificationPanel() {
   const [items, setItems] = useState<MyLecturerVerificationRequestDto[]>([]);
   const [dragActive, setDragActive] = useState(false);
   const [hasLecturerRole, setHasLecturerRole] = useState(false);
+  const [reqPage, setReqPage] = useState(1);
+  const reqPageSize = 3;
 
   useEffect(() => {
     const load = async () => {
@@ -126,6 +128,14 @@ export function LecturerVerificationPanel() {
     });
     return sorted[0] || null;
   }, [items]);
+
+  const reqPageCount = useMemo(() => Math.max(1, Math.ceil((items.length || 0) / reqPageSize)), [items.length]);
+  const reqSafePage = useMemo(() => Math.min(Math.max(1, reqPage), reqPageCount), [reqPage, reqPageCount]);
+  const pagedItems = useMemo(() => {
+    const start = (reqSafePage - 1) * reqPageSize;
+    const end = start + reqPageSize;
+    return items.slice(start, end);
+  }, [items, reqSafePage]);
   const showRevokedInfo = !!latestRequest && latestRequest.status === 'Approved' && !hasLecturerRole;
 
   const onDragOver = (e: React.DragEvent) => { e.preventDefault(); setDragActive(true); };
@@ -253,7 +263,7 @@ export function LecturerVerificationPanel() {
               </div>
             )}
             {!loading && !error && items.length > 0 && (
-              items.map((r) => {
+              pagedItems.map((r) => {
                 const docs = r.documents || {};
                 const emailDoc = (docs as any)?.email as string | undefined;
                 const staffIdDoc = (docs as any)?.staffId as string | undefined;
@@ -293,6 +303,18 @@ export function LecturerVerificationPanel() {
                   </div>
                 );
               })
+            )}
+            {!loading && !error && items.length > 0 && (
+              <div className="mt-2 flex items-center justify-between">
+                <div className="text-xs text-white/70">
+                  <span>Showing {(reqSafePage - 1) * reqPageSize + 1}–{Math.min(items.length, reqSafePage * reqPageSize)} of {items.length}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button onClick={() => setReqPage(p => Math.max(1, p - 1))} disabled={reqSafePage === 1} className={`px-3 py-1 rounded-full border ${reqSafePage===1 ? 'border-[#f5c16c]/30 text-[#f5c16c]/50 cursor-not-allowed' : 'border-[#f5c16c]/30 text-[#f5c16c] hover:border-[#f5c16c] hover:bg-[#f5c16c]/15 hover:text-white'}`}>Prev</button>
+                  <span className="text-xs text-white/70">Page {reqSafePage} of {reqPageCount}</span>
+                  <button onClick={() => setReqPage(p => Math.min(reqPageCount, p + 1))} disabled={reqSafePage === reqPageCount} className={`px-3 py-1 rounded-full border ${reqSafePage===reqPageCount ? 'border-[#f5c16c]/30 text-[#f5c16c]/50 cursor-not-allowed' : 'border-[#f5c16c]/30 text-[#f5c16c] hover:border-[#f5c16c] hover:bg-[#f5c16c]/15 hover:text-white'}`}>Next</button>
+                </div>
+              </div>
             )}
           </div>
         </div>

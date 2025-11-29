@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import partiesApi from "@/api/partiesApi";
 import type { PartyStashItemDto } from "@/types/parties";
@@ -24,7 +24,8 @@ import {
 } from "@blocknote/react";
 import { DefaultChatTransport } from "ai";
 import { Input } from "@/components/ui/input";
-import { getMyContext, getUserProfileByAuthId } from "@/api/usersApi";
+import { getMyContext } from "@/api/usersApi";
+import { DashboardFrame } from "@/components/layout/DashboardFrame";
 import * as Y from "yjs";
 import YPartyKitProvider from "y-partykit/provider";
 import { CursorUsersProvider, nameToColor } from "@/components/collab/CursorUsersProvider";
@@ -47,7 +48,7 @@ export default function PartyStashDetailPage() {
 
   const [title, setTitle] = useState("");
   const [status, setStatus] = useState<EditorStatus>("loading");
-  const [sharedByName, setSharedByName] = useState<string>("");
+  
   const [initialBlocks, setInitialBlocks] = useState<
     PartialBlock[] | undefined
   >(undefined);
@@ -56,6 +57,12 @@ export default function PartyStashDetailPage() {
   const [canEdit, setCanEdit] = useState(false);
   const [cursorName, setCursorName] = useState("Anonymous");
   const [cursorColor, setCursorColor] = useState<string>(nameToColor("Anonymous"));
+  const [userProfile, setUserProfile] = useState<{
+    username: string;
+    firstName: string;
+    lastName: string;
+    profileImageUrl: string | null;
+  } | undefined>(undefined);
 
   useEffect(() => {
     const load = async () => {
@@ -67,18 +74,7 @@ export default function PartyStashDetailPage() {
           const n = res.data;
           setItem(n ?? null);
           setTitle(n.title ?? "");
-          const uid = n.sharedByUserId;
-          if (typeof uid === "string" && uid) {
-            try {
-              const prof = await getUserProfileByAuthId(uid);
-              const username = (prof.data as any)?.username || (prof.data as any)?.email || null;
-              setSharedByName(username ? String(username) : String(uid).slice(0, 8));
-            } catch {
-              setSharedByName(String(uid).slice(0, 8));
-            }
-          } else {
-            setSharedByName("");
-          }
+          
           let blocks: PartialBlock[] | undefined = undefined;
           const raw = n.content;
           if (raw) {
@@ -118,6 +114,25 @@ export default function PartyStashDetailPage() {
     };
     load();
   }, [partyId, stashId]);
+
+  useEffect(() => {
+    getMyContext()
+      .then((res) => {
+        if (!res.isSuccess || !res.data) return;
+        const ctx = res.data as any;
+        const display = (ctx.displayName || ctx.username || "").trim();
+        const parts = display.split(/\s+/);
+        const first = parts[0] || ctx.username || "";
+        const last = parts.slice(1).join(" ") || "";
+        setUserProfile({
+          username: ctx.username,
+          firstName: first,
+          lastName: last,
+          profileImageUrl: ctx.profileImageUrl ?? null,
+        });
+      })
+      .catch(() => {});
+  }, []);
 
   const onEditorChange = () => {
     if (!canEdit) return;
@@ -176,13 +191,12 @@ export default function PartyStashDetailPage() {
     };
   }, [partyId]);
 
-  const doc = new Y.Doc();
-  const provider = new YPartyKitProvider(
+  const doc = useMemo(() => new Y.Doc(), [partyId, stashId]);
+  const provider = useMemo(() => new YPartyKitProvider(
     "blocknote-dev.yousefed.partykit.dev",
-    // use a unique name as a "room" for your application:
     `${partyId}-${stashId}`,
     doc
-  );
+  ), [partyId, stashId, doc]);
 
   const AI_BASE_URL = "/api/blocknote";
   const editor = useCreateBlockNote(
@@ -211,6 +225,14 @@ export default function PartyStashDetailPage() {
   );
 
   useEffect(() => {
+    return () => {
+      try { (provider as any)?.destroy?.(); } catch {}
+    };
+  }, [provider]);
+
+  const initializedRef = useRef(false);
+  useEffect(() => {
+    if (initializedRef.current) return;
     if (!editor) return;
     if (!initialBlocks || initialBlocks.length === 0) return;
     const docBlocks = editor.document;
@@ -219,12 +241,14 @@ export default function PartyStashDetailPage() {
       const emptyParagraph = b?.type === "paragraph" && Array.isArray(b?.content) && b.content.every((c: any) => (c?.text ?? "") === "");
       if (emptyParagraph) {
         editor.replaceBlocks([b], initialBlocks as any);
+        initializedRef.current = true;
       }
     }
   }, [editor, initialBlocks]);
 
   return (
-    <div className="mx-auto max-w-4xl space-y-6 p-6">
+    <DashboardFrame userProfile={userProfile}>
+      <div className="mx-auto max-w-4xl space-y-6 p-6">
       {/* Header with RPG styling */}
       <div className="relative overflow-hidden rounded-[28px] border border-[#f5c16c]/30 bg-linear-to-br from-[#2d1810] via-[#1a0a08] to-black p-6 shadow-xl">
         <div
@@ -300,8 +324,6 @@ export default function PartyStashDetailPage() {
             <h2 className="text-2xl font-bold text-[#f5c16c]">{item.title}</h2>
             
             <div className="flex items-center gap-4 text-sm text-white/60">
-              <span>Shared by <span className="text-white">{sharedByName || item.sharedByUserId}</span></span>
-              <span>•</span>
               <span>{new Date(item.sharedAt).toLocaleString()}</span>
             </div>
             
@@ -373,6 +395,7 @@ export default function PartyStashDetailPage() {
           </div>
         </div>
       )}
-    </div>
+      </div>
+    </DashboardFrame>
   );
 }

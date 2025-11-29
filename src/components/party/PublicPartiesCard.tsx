@@ -16,6 +16,8 @@ export default function PublicPartiesCard({ onJoinedNavigate = true }: PublicPar
   const [memberCounts, setMemberCounts] = useState<Record<string, number>>({});
   const [fetchingCounts, setFetchingCounts] = useState<Record<string, boolean>>({});
   const [sortBy, setSortBy] = useState<"members" | "newest" | "name">("members");
+  const [page, setPage] = useState(1);
+  const pageSize = 10;
 
   useEffect(() => {
     let mounted = true;
@@ -49,9 +51,16 @@ export default function PublicPartiesCard({ onJoinedNavigate = true }: PublicPar
     return [...list].sort((a, b) => a.name.localeCompare(b.name));
   }, [publicParties, search, sortBy, memberCounts]);
 
+  const totalPages = useMemo(() => Math.max(1, Math.ceil(filtered.length / pageSize)), [filtered.length]);
+  const paged = useMemo(() => filtered.slice((page - 1) * pageSize, page * pageSize), [filtered, page]);
+
+  useEffect(() => {
+    if (page > totalPages) setPage(1);
+  }, [page, totalPages]);
+
   // Fetch member counts for visible items (lazy)
   useEffect(() => {
-    const visible = filtered.slice(0, 12);
+    const visible = paged;
     visible.forEach((p) => {
       if (memberCounts[p.id] !== undefined || fetchingCounts[p.id]) return;
       setFetchingCounts((prev) => ({ ...prev, [p.id]: true }));
@@ -68,7 +77,7 @@ export default function PublicPartiesCard({ onJoinedNavigate = true }: PublicPar
           setFetchingCounts((prev) => ({ ...prev, [p.id]: false }));
         });
     });
-  }, [filtered, memberCounts, fetchingCounts]);
+  }, [paged, memberCounts, fetchingCounts]);
 
   const handleJoin = async (partyIdToJoin: string) => {
     try {
@@ -113,7 +122,7 @@ export default function PublicPartiesCard({ onJoinedNavigate = true }: PublicPar
         <div className="text-xs text-white/60">No public parties available right now.</div>
       ) : (
         <ul className="space-y-2">
-          {filtered.map((p) => (
+          {paged.map((p) => (
             <li key={p.id} className="flex items-start justify-between rounded bg-white/5 p-3">
               <button className="text-left" onClick={() => (window.location.href = `/parties/${p.id}`)}>
                 <div className="text-sm font-medium text-white">{p.name}</div>
@@ -145,7 +154,30 @@ export default function PublicPartiesCard({ onJoinedNavigate = true }: PublicPar
               </div>
             </li>
           ))}
-      </ul>
+        </ul>
+      )}
+      {filtered.length > 0 && (
+        <div className="mt-3 flex items-center justify-between">
+          <div className="text-xs text-white/60">
+            Page {page} of {totalPages}
+          </div>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              disabled={page === 1}
+              className="rounded bg-white/10 px-3 py-1.5 text-xs text-white disabled:opacity-50"
+            >
+              Prev
+            </button>
+            <button
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              disabled={page >= totalPages}
+              className="rounded bg-white/10 px-3 py-1.5 text-xs text-white disabled:opacity-50"
+            >
+              Next
+            </button>
+          </div>
+        </div>
       )}
     </div>
   );

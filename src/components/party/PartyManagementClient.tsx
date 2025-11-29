@@ -29,7 +29,6 @@ export default function PartyManagementClient() {
   const [loadingInvites, setLoadingInvites] = useState(false);
   const [authUserId, setAuthUserId] = useState<string | null>(null);
   const [partyMembers, setPartyMembers] = useState<Record<string, PartyMemberDto[]>>({});
-  const [invitePartyNames, setInvitePartyNames] = useState<Record<string, string>>({});
   
 
   useEffect(() => {
@@ -83,18 +82,6 @@ export default function PartyManagementClient() {
     return () => { mounted = false; };
   }, []);
 
-  useEffect(() => {
-    let mounted = true;
-    (async () => {
-      const idsToResolve = myInvites.map((i) => i.partyId).filter((id) => !(id in invitePartyNames) && !(parties.find((p) => p.id === id)));
-      if (idsToResolve.length === 0) return;
-      const results = await Promise.all(idsToResolve.map((id) => partiesApi.getById(id)));
-      const map: Record<string, string> = { ...invitePartyNames };
-      idsToResolve.forEach((id, i) => { const data = results[i].data as PartyDto | null; if (data?.name) map[id] = data.name; });
-      if (mounted) setInvitePartyNames(map);
-    })();
-    return () => { mounted = false; };
-  }, [myInvites, parties, invitePartyNames]);
 
   useEffect(() => {
     let mounted = true;
@@ -269,8 +256,8 @@ export default function PartyManagementClient() {
               {myInvites.map((inv) => (
                 <div key={inv.id} className="flex items-center justify-between rounded-lg border border-[#f5c16c]/20 bg-black/40 p-3">
                   <div>
-                    <div className="text-sm text-white">Invitation to {partyNameById[inv.partyId] ?? invitePartyNames[inv.partyId] ?? inv.partyId}</div>
-                    <div className="text-[11px] text-white/60">Expires {new Date(inv.expiresAt).toLocaleDateString()}</div>
+                    <div className="text-sm text-white">Invitation to {inv.partyName || partyNameById[inv.partyId] || inv.partyId}</div>
+                    <div className="text-[11px] text-white/60">Invited {new Date(inv.invitedAt).toLocaleDateString()} • Expires {new Date(inv.expiresAt).toLocaleDateString()}</div>
                   </div>
                   <div className="flex gap-2">
                     <button onClick={() => handleAcceptInvite(inv)} className="rounded-md bg-emerald-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-emerald-700">Accept</button>
