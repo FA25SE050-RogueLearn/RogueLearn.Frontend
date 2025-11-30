@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Loader2, RefreshCw } from 'lucide-react';
 import { useRouter } from 'next/navigation';
@@ -16,8 +16,7 @@ export default function WeekStepAutoRefresh({ questId, stepNumber }: Props) {
   const [attempts, setAttempts] = useState(0);
   const [checking, setChecking] = useState(true);
 
-  const check = async () => {
-    setChecking(true);
+  const check = useCallback(async () => {
     for (let i = 0; i < 20; i++) {
       const res = await questApi.getQuestDetails(questId);
       const exists = res.isSuccess && !!res.data?.steps?.find(s => s.stepNumber === stepNumber);
@@ -30,11 +29,14 @@ export default function WeekStepAutoRefresh({ questId, stepNumber }: Props) {
       setAttempts(a => a + 1);
     }
     setChecking(false);
-  };
+  }, [questId, stepNumber, router]);
 
   useEffect(() => {
-    check();
-  }, []);
+    const timer = setTimeout(() => {
+      void check();
+    }, 0);
+    return () => clearTimeout(timer);
+  }, [check]);
 
   return (
     <div className="flex flex-col items-center gap-3">
