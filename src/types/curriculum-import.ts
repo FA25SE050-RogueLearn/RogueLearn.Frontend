@@ -24,6 +24,7 @@ export type ImportCurriculumCommandResponse = ImportCurriculumCommandResponseDat
 /** Import a single subject from raw text. */
 export interface ImportSubjectFromTextCommandRequest {
   rawText: string;
+  semester?: number;
 }
 
 /** Response data containing subject import results and warnings. */

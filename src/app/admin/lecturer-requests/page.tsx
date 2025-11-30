@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { AdminLayout } from "@/components/layout/AdminLayout";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
@@ -56,80 +56,52 @@ export default function AdminLecturerRequestsPage() {
   return (
     <AdminLayout>
       <div className="space-y-8">
-        <div className="relative">
-          <div className="absolute inset-0 bg-linear-to-r from-amber-900/20 via-transparent to-amber-900/20 rounded-lg blur-xl" />
-          <div className="relative p-6 rounded-lg border border-amber-900/30 bg-linear-to-br from-amber-950/30 to-transparent">
-            <h1 className="text-3xl font-bold tracking-tight text-amber-100">Lecturer Verification Requests</h1>
-            <p className="text-amber-700">Review, approve, or decline lecturer verification submissions</p>
-          </div>
+        <div className="p-6 rounded-lg border border-[#beaca3]/30 bg-white">
+          <h1 className="text-3xl font-bold tracking-tight text-[#2c2f33]">Lecturer Verification Requests</h1>
+          <p className="text-[#2c2f33]/60 mt-2">Review, approve, or decline lecturer verification submissions</p>
         </div>
 
-        <Card className="relative overflow-hidden border-amber-900/30 bg-linear-to-br from-[#1f1812] to-[#1a1410]">
-          <CardHeader className="relative border-b border-amber-900/20">
+        <Card className="bg-white border-[#beaca3]/30">
+          <CardHeader className="border-b border-[#beaca3]/20">
             <div className="flex items-center gap-3">
-              <Input
-                placeholder="Search by email or user id"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="flex-1 bg-black/20 border-amber-900/30 text-sm"
-              />
+              <Input placeholder="Search by email or user id" value={search} onChange={(e) => setSearch(e.target.value)} className="flex-1 border-[#beaca3]/30" />
               <Select value={status} onValueChange={setStatus}>
-                <SelectTrigger className="w-48 bg-black/20 border-amber-900/30">
-                  <SelectValue placeholder="All statuses" />
-                </SelectTrigger>
-                <SelectContent className="bg-[#1a1410] border-amber-900/30">
+                <SelectTrigger className="w-48 border-[#beaca3]/30"><SelectValue placeholder="All statuses" /></SelectTrigger>
+                <SelectContent className="bg-white border-[#beaca3]/30">
                   <SelectItem value="all">All</SelectItem>
                   <SelectItem value="Pending">Pending</SelectItem>
                   <SelectItem value="Approved">Approved</SelectItem>
                   <SelectItem value="Rejected">Rejected</SelectItem>
                 </SelectContent>
               </Select>
-              <Button variant="outline" onClick={fetchList} className="border-amber-700/50 text-amber-300">Refresh</Button>
+              <Button variant="outline" onClick={fetchList} className="border-[#7289da]/50 text-[#7289da] hover:bg-[#7289da]/10">Refresh</Button>
             </div>
           </CardHeader>
-          <CardContent className="relative space-y-3 pt-6">
-            {loading && (
-              <div className="flex items-center gap-2 text-amber-300"><Loader2 className="h-4 w-4 animate-spin" /> Loading...</div>
-            )}
-            {error && (
-              <div className="flex items-center gap-2 text-rose-400"><AlertCircle className="h-4 w-4" /> {error}</div>
-            )}
-            {!loading && !error && items.length === 0 && (
-              <p className="text-center text-amber-700">No requests found.</p>
-            )}
+          <CardContent className="space-y-3 pt-6">
+            {loading && <div className="flex items-center gap-2 text-[#7289da]"><Loader2 className="h-4 w-4 animate-spin" /> Loading...</div>}
+            {error && <div className="flex items-center gap-2 text-[#e07a5f]"><AlertCircle className="h-4 w-4" /> {error}</div>}
+            {!loading && !error && items.length === 0 && <p className="text-center text-[#2c2f33]/40">No requests found.</p>}
             {!loading && !error && items.length > 0 && (
               <div className="space-y-3">
                 {pagedItems.map((it) => (
-                  <div key={it.id} className="flex items-center justify-between rounded-lg border border-amber-900/30 bg-linear-to-r from-amber-950/30 to-transparent p-4">
+                  <div key={it.id} className="flex items-center justify-between rounded-lg border border-[#beaca3]/30 bg-[#f4f6f8] p-4">
                     <div>
-                      <p className="text-sm font-semibold text-amber-100">{it.email}</p>
-                      <p className="text-xs text-amber-700">User: {it.userId} • Staff ID: {it.staffId}</p>
+                      <p className="text-sm font-semibold text-[#2c2f33]">{it.email}</p>
+                      <p className="text-xs text-[#2c2f33]/50">User: {it.userId} • Staff ID: {it.staffId}</p>
                     </div>
                     <div className="flex items-center gap-3">
-                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-widest ${it.status === 'Approved' ? 'text-emerald-300 bg-emerald-900/30 border border-emerald-800/40' : it.status === 'Rejected' ? 'text-rose-300 bg-rose-900/30 border border-rose-800/40' : 'text-amber-200 bg-amber-900/30 border border-amber-800/40'}`}>{it.status}</span>
-                      <Button asChild size="sm" className="bg-amber-600 hover:bg-amber-700 text-black">
+                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-widest border ${it.status === 'Approved' ? 'text-emerald-600 bg-emerald-50 border-emerald-200' : it.status === 'Rejected' ? 'text-[#e07a5f] bg-[#e07a5f]/10 border-[#e07a5f]/30' : 'text-[#7289da] bg-[#7289da]/10 border-[#7289da]/30'}`}>{it.status}</span>
+                      <Button asChild size="sm" className="bg-[#7289da] hover:bg-[#7289da]/90 text-white">
                         <Link href={`/admin/lecturer-requests/${it.id}`}>Open</Link>
                       </Button>
                     </div>
                   </div>
                 ))}
-                <div className="flex items-center justify-between">
-                  <div className="text-xs text-amber-300">Page {page} of {totalPages}</div>
+                <div className="flex items-center justify-between pt-2">
+                  <div className="text-xs text-[#2c2f33]/60">Page {page} of {totalPages}</div>
                   <div className="flex gap-2">
-                    <button
-                      onClick={() => setPage(p => Math.max(1, p - 1))}
-                      disabled={page === 1}
-                      className="rounded bg-amber-900/30 px-3 py-1.5 text-xs text-amber-200 border border-amber-900/40 disabled:opacity-50"
-                    >
-                      Prev
-                    </button>
-                    <button
-                      onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-                      disabled={page >= totalPages}
-                      className="rounded bg-amber-900/30 px-3 py-1.5 text-xs text-amber-200 border border-amber-900/40 disabled:opacity-50"
-                    >
-                      Next
-                    </button>
+                    <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1} className="rounded bg-[#beaca3]/20 px-3 py-1.5 text-xs text-[#2c2f33] border border-[#beaca3]/30 disabled:opacity-50 hover:bg-[#beaca3]/30">Prev</button>
+                    <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page >= totalPages} className="rounded bg-[#beaca3]/20 px-3 py-1.5 text-xs text-[#2c2f33] border border-[#beaca3]/30 disabled:opacity-50 hover:bg-[#beaca3]/30">Next</button>
                   </div>
                 </div>
               </div>
