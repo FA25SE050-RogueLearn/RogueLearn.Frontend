@@ -43,6 +43,17 @@ interface UnityMatch {
   playerSummaries: PlayerSummary[]
 }
 
+const theme = {
+  bg: '#1f120c',
+  panel: '#2b1a12',
+  card: '#332018',
+  accent: '#ffb347',
+  accentSoft: '#ffd9a1',
+  text: '#f7f0e9',
+  muted: '#cbbfb3',
+  success: '#4ade80',
+}
+
 export default async function StatsPage({
   searchParams,
 }: {
@@ -51,13 +62,11 @@ export default async function StatsPage({
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
-  // Get query params for quiz completion
   const params = await searchParams
   const quizCompleted = params.quizCompleted === 'true'
   const quizScore = params.score ? parseInt(params.score as string) : 0
   const quizTotal = params.total ? parseInt(params.total as string) : 0
 
-  // Build an absolute same-origin URL to satisfy Node fetch
   const hdrs = await headers()
   const host = hdrs.get('x-forwarded-host') || hdrs.get('host') || 'localhost:3000'
   const defaultProto = host.includes('localhost') ? 'http' : 'https'
@@ -81,14 +90,27 @@ export default async function StatsPage({
 
   if (!ok || !data.matches || data.matches.length === 0) {
     return (
-      <div style={{ padding: 24, maxWidth: 1200, margin: '0 auto' }}>
-        <h1 style={{ marginBottom: 24, fontSize: 32, fontWeight: 700 }}>Your Game Stats</h1>
-        <div style={{ padding: 16, background: '#f5f5f5', borderRadius: 8 }}>
-          {!ok ? (
-            <p>Failed to load match data. Make sure the backend is running and RESULTS_LOG_ROOT is configured.</p>
-          ) : (
-            <p>No matches found yet. Play a game to see your stats here!</p>
-          )}
+      <div style={{
+        minHeight: '100vh',
+        background: theme.bg,
+        color: theme.text,
+        padding: '40px 20px',
+      }}>
+        <div style={{ maxWidth: 1200, margin: '0 auto' }}>
+          <h1 style={{ marginBottom: 16, fontSize: 32, fontWeight: 800 }}>Your Game Stats</h1>
+          <div style={{
+            padding: 16,
+            borderRadius: 12,
+            background: theme.card,
+            border: '1px solid rgba(255,255,255,0.08)',
+            color: theme.muted
+          }}>
+            {!ok ? (
+              <p>Failed to load match data. Make sure the backend is running and RESULTS_LOG_ROOT is configured.</p>
+            ) : (
+              <p>No matches found yet. Play a game to see your stats here!</p>
+            )}
+          </div>
         </div>
       </div>
     )
@@ -102,312 +124,348 @@ export default async function StatsPage({
     : topics.length
 
   return (
-    <div style={{ padding: 24, maxWidth: 1200, margin: '0 auto' }}>
-      <h1 style={{ marginBottom: 24, fontSize: 32, fontWeight: 700 }}>Your Game Stats</h1>
-
-      {/* Quiz Completion Banner */}
-      {quizCompleted && (
-        <div style={{
-          marginBottom: 24,
-          padding: 20,
-          background: quizScore / quizTotal >= 0.7 ? '#4caf50' : '#ff9800',
-          color: 'white',
-          borderRadius: 12,
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center'
-        }}>
+    <div style={{
+      minHeight: '100vh',
+      background: theme.bg,
+      color: theme.text,
+      padding: '40px 20px',
+    }}>
+      <div style={{ maxWidth: 1200, margin: '0 auto' }}>
+        <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 28 }}>
           <div>
-            <div style={{ fontSize: 24, fontWeight: 700, marginBottom: 4 }}>
-              {quizScore / quizTotal >= 0.7 ? '🎉 Great Job!' : '💪 Keep Practicing!'}
-            </div>
-            <div style={{ fontSize: 16 }}>
-              You scored {quizScore}/{quizTotal} ({Math.round((quizScore / quizTotal) * 100)}%) on the review quiz
-            </div>
+            <div style={{ fontSize: 13, color: theme.muted, letterSpacing: 1, textTransform: 'uppercase' }}>Overview</div>
+            <h1 style={{ margin: 0, fontSize: 32, fontWeight: 800, letterSpacing: -0.5 }}>Your Game Stats</h1>
           </div>
-          <a
-            href="/stats"
-            style={{
-              padding: '8px 16px',
-              background: 'rgba(255,255,255,0.2)',
-              color: 'white',
-              borderRadius: 6,
-              textDecoration: 'none',
-              fontWeight: 600
-            }}
-          >
-            Dismiss
-          </a>
-        </div>
-      )}
-
-      {/* Most Recent Match - Highlighted */}
-      <div style={{
-        marginBottom: 32,
-        padding: 24,
-        background: 'white',
-        borderRadius: 12,
-        color: '#111',
-        border: '1px solid #e5e7eb',
-        boxShadow: '0 4px 6px rgba(0,0,0,0.06)'
-      }}>
-        <h2 style={{ marginBottom: 16, fontSize: 24, fontWeight: 600 }}>Latest Match</h2>
-        <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap', marginBottom: 16 }}>
-          <div>
-            <div style={{ fontSize: 14, opacity: 0.9 }}>Result</div>
-            <div style={{ fontSize: 20, fontWeight: 600, textTransform: 'capitalize' }}>
-              {mostRecentMatch.result === 'win' ? '🏆 Victory' : '💀 Defeat'}
-            </div>
+          <div style={{
+            padding: '10px 14px',
+            background: theme.card,
+            borderRadius: 10,
+            border: '1px solid rgba(255,255,255,0.06)',
+            boxShadow: '0 10px 30px rgba(0,0,0,0.25)',
+            color: theme.muted,
+            fontSize: 13
+          }}>
+            Last updated: {new Date(mostRecentMatch.endUtc).toLocaleString()}
           </div>
-          <div>
-            <div style={{ fontSize: 14, opacity: 0.9 }}>Players</div>
-            <div style={{ fontSize: 20, fontWeight: 600 }}>{mostRecentMatch.totalPlayers}</div>
-          </div>
-          <div>
-            <div style={{ fontSize: 14, opacity: 0.9 }}>Questions</div>
-            <div style={{ fontSize: 20, fontWeight: 600 }}>{questionsCount}</div>
-          </div>
-          <div>
-            <div style={{ fontSize: 14, opacity: 0.9 }}>Date</div>
-            <div style={{ fontSize: 20, fontWeight: 600 }}>
-              {new Date(mostRecentMatch.endUtc).toLocaleDateString()}
-            </div>
-          </div>
-        </div>
-      </div>
+        </header>
 
-      {/* Player Performance */}
-      {mostRecentMatch.playerSummaries && mostRecentMatch.playerSummaries.length > 0 && (
-        <div style={{ marginBottom: 32 }}>
-          <h2 style={{ marginBottom: 16, fontSize: 24, fontWeight: 600 }}>Player Performance</h2>
-          {mostRecentMatch.playerSummaries.map((player, idx) => {
-            const accuracy = player.totalQuestions > 0
-              ? Math.round((player.correctAnswers / player.totalQuestions) * 100)
-              : 0
-
-            return (
-              <div
-                key={player.playerId}
-                style={{
-                  marginBottom: 16,
-                  padding: 20,
-                  background: 'white',
-                  border: '1px solid #e0e0e0',
-                  borderRadius: 8,
-                  boxShadow: '0 2px 4px rgba(0,0,0,0.05)'
-                }}
-              >
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-                  <h3 style={{ fontSize: 18, fontWeight: 600 }}>Player {player.playerId}</h3>
-                  <div style={{ display: 'flex', gap: 16, fontSize: 14 }}>
-                    <span>Accuracy: <strong>{accuracy}%</strong></span>
-                    <span>Score: <strong>{player.correctAnswers}/{player.totalQuestions}</strong></span>
-                    <span>Avg Time: <strong>{player.averageTime.toFixed(1)}s</strong></span>
-                  </div>
-                </div>
-
-                {/* Topic Breakdown */}
-                <div style={{ marginTop: 16 }}>
-                  <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 8, color: '#374151' }}>
-                    Topic Performance
-                  </div>
-                  {player.topicBreakdown.map((topic, i) => {
-                    const topicAccuracy = topic.total > 0
-                      ? Math.round((topic.correct / topic.total) * 100)
-                      : 0
-
-                    return (
-                      <div key={`${player.playerId}-${topic.topic}-${i}`} style={{ marginBottom: 12 }}>
-                        <div style={{
-                          display: 'flex',
-                          justifyContent: 'space-between',
-                          marginBottom: 4,
-                          fontSize: 14
-                        }}>
-                          <span style={{ fontWeight: 500 }}>{topic.topic}</span>
-                          <span style={{ color: '#666' }}>
-                            {topic.correct}/{topic.total} ({topicAccuracy}%)
-                          </span>
-                        </div>
-                        <div style={{
-                          width: '100%',
-                          height: 8,
-                          background: '#f0f0f0',
-                          borderRadius: 4,
-                          overflow: 'hidden'
-                        }}>
-                          <div style={{
-                            width: `${topicAccuracy}%`,
-                            height: '100%',
-                            background: topicAccuracy >= 70 ? '#4caf50' : topicAccuracy >= 50 ? '#ff9800' : '#f44336',
-                            transition: 'width 0.3s ease'
-                          }} />
-                        </div>
-                      </div>
-                    )
-                  })}
-                </div>
+        {quizCompleted && (
+          <div style={{
+            marginBottom: 20,
+            padding: 16,
+            borderRadius: 12,
+            border: '1px solid rgba(255,255,255,0.08)',
+            background: 'linear-gradient(120deg, #3b82f6, #8b5cf6)',
+            boxShadow: '0 12px 30px rgba(0,0,0,0.25)',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            color: '#fdfdfd'
+          }}>
+            <div>
+              <div style={{ fontSize: 18, fontWeight: 700, marginBottom: 4 }}>
+                {quizScore / quizTotal >= 0.7 ? 'Great work on the review quiz!' : 'Keep sharpening those skills!'}
               </div>
-            )
-          })}
-        </div>
-      )}
-
-      {/* Questions Review - Focus on Wrong Answers for Exam Prep */}
-      <div style={{ marginBottom: 32 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-          <h2 style={{ fontSize: 24, fontWeight: 600 }}>Questions Review</h2>
-          {firstSummary && firstSummary.correctAnswers < firstSummary.totalQuestions && (
-            <PracticeButton
-              matchId={mostRecentMatch.matchId}
-              topics={topics.filter(t => t.correct < t.total).map(t => t.topic)}
-            />
-          )}
-        </div>
-        <div style={{
-          marginBottom: 12,
-          padding: 12,
-          background: '#fef3c7',
-          borderRadius: 8,
-          fontSize: 14,
-          color: '#1f2937',
-          border: '1px solid #f59e0b'
-        }}>
-          <span style={{ fontWeight: 600, color: '#92400e' }}>Tip:</span> Review the questions you got wrong to prepare better for your exam.
-        </div>
-
-        {topics.flatMap((t, topicIdx) =>
-          Array.from({ length: t.total }).map((_, qIdx) => {
-            // Always use topicBreakdown data as it's accurate
-            // First t.correct questions were answered correctly, rest were wrong
-            const isCorrect = qIdx < t.correct
-
-            return {
-              questionId: topicIdx * 100 + qIdx + 1,
-              topic: t.topic,
-              difficulty: '',
-              prompt: `${t.topic} - Question ${qIdx + 1}`,
-              correctAnswerIndex: 0,
-              playerAnswers: [{
-                playerId: 1,
-                chosenAnswer: isCorrect ? 0 : 1,
-                correct: isCorrect,
-                timeToAnswer: 0
-              }]
-            }
-          })
-        ).map((q, idx) => {
-          const playerAnswers = q.playerAnswers || []
-          const anyWrong = playerAnswers.some(pa => !pa.correct)
-
-          return (
-            <div
-              key={q.questionId}
+              <div style={{ fontSize: 14 }}>
+                Score: {quizScore}/{quizTotal} ({Math.round((quizScore / quizTotal) * 100)}%)
+              </div>
+            </div>
+            <a
+              href="/stats"
               style={{
-                marginBottom: 12,
-                padding: 16,
-                background: anyWrong ? '#ffebee' : '#e8f5e9',
-                border: `2px solid ${anyWrong ? '#ef5350' : '#66bb6a'}`,
-                borderRadius: 8
+                padding: '10px 14px',
+                borderRadius: 10,
+                background: 'rgba(255,255,255,0.14)',
+                color: '#fff',
+                textDecoration: 'none',
+                fontWeight: 700
               }}
             >
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: 8 }}>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 12, color: '#666', marginBottom: 4 }}>
-                    Question {idx + 1} • {q.topic} • {q.difficulty}
-                  </div>
-                  <div style={{ fontSize: 16, fontWeight: 600, marginBottom: 8, color: '#111' }}>
-                    {q.prompt}
-                  </div>
-                </div>
-                <div style={{
-                  padding: '4px 12px',
-                  borderRadius: 4,
-                  fontSize: 12,
-                  fontWeight: 600,
-                  background: anyWrong ? '#f44336' : '#4caf50',
-                  color: 'white'
-                }}>
-                  {anyWrong ? '❌ Wrong' : '✅ Correct'}
-                </div>
-              </div>
-
-              {anyWrong && (
-                <div style={{
-                  marginTop: 8,
-                  padding: 12,
-                  background: 'white',
-                  borderRadius: 6,
-                  fontSize: 14
-                }}>
-                  <div style={{ fontWeight: 600, marginBottom: 4 }}>
-                    ✓ Correct Answer: Option {q.correctAnswerIndex + 1}
-                  </div>
-                  <div style={{ fontSize: 12, color: '#666', marginTop: 8 }}>
-                    {playerAnswers.map((pa, i) => (
-                      <div key={i}>
-                        Player {pa.playerId}: Selected option {pa.chosenAnswer + 1}
-                        {!pa.correct && ' (Incorrect)'}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          )
-        })}
-      </div>
-
-      {/* Match History */}
-      {data.matches.length > 1 && (
-        <div style={{ marginBottom: 32 }}>
-          <h2 style={{ marginBottom: 16, fontSize: 24, fontWeight: 600 }}>Recent Matches</h2>
-          <div style={{ display: 'grid', gap: 12 }}>
-            {data.matches.slice(1).map((match) => (
-              <div
-                key={match.matchId}
-                style={{
-                  padding: 16,
-                  background: 'white',
-                  border: '1px solid #e0e0e0',
-                  borderRadius: 8,
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center'
-                }}
-              >
-                <div>
-                  <div style={{ fontSize: 16, fontWeight: 500, marginBottom: 4 }}>
-                    {match.result === 'win' ? '🏆 Victory' : '💀 Defeat'}
-                  </div>
-                  <div style={{ fontSize: 12, color: '#374151' }}>
-                    {new Date(match.endUtc).toLocaleString()} • {match.totalPlayers} players
-                  </div>
-                </div>
-                <div style={{ fontSize: 14, color: '#374151' }}>
-                  {(match.questions && match.questions.length > 0)
-                    ? match.questions.length
-                    : ((match.playerSummaries && match.playerSummaries[0] && match.playerSummaries[0].topicBreakdown)
-                      ? match.playerSummaries[0].topicBreakdown.length
-                      : 0)} questions
-                </div>
-              </div>
-            ))}
+              Dismiss
+            </a>
           </div>
-        </div>
-      )}
+        )}
 
-      {/* Footer Tip */}
-      <div style={{
-        marginTop: 32,
-        padding: 16,
-        background: '#e3f2fd',
-        borderRadius: 8,
-        fontSize: 14,
-        color: '#1976d2'
-      }}>
-        💡 <strong>Exam Prep Tip:</strong> Focus on reviewing the questions you got wrong and
-        practice more on topics where your accuracy is below 70%.
+        <section style={{
+          display: 'grid',
+          gridTemplateColumns: '2fr 1fr',
+          gap: 16,
+          marginBottom: 20,
+          alignItems: 'stretch'
+        }}>
+          <div style={{
+            borderRadius: 14,
+            padding: 20,
+            background: theme.card,
+            border: '1px solid rgba(255,255,255,0.08)',
+            boxShadow: '0 12px 30px rgba(0,0,0,0.2)',
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+              <div>
+                <div style={{ fontSize: 13, color: theme.muted, textTransform: 'uppercase', letterSpacing: 1 }}>Latest Match</div>
+                <div style={{ fontSize: 20, fontWeight: 700 }}>Match {mostRecentMatch.matchId.slice(0, 6)}</div>
+              </div>
+              <div style={{
+                padding: '6px 12px',
+                borderRadius: 999,
+                background: mostRecentMatch.result === 'win' ? 'rgba(74, 222, 128, 0.15)' : 'rgba(248, 113, 113, 0.15)',
+                color: mostRecentMatch.result === 'win' ? '#4ade80' : '#f87171',
+                fontWeight: 700,
+                fontSize: 13,
+                border: `1px solid ${mostRecentMatch.result === 'win' ? 'rgba(74, 222, 128, 0.35)' : 'rgba(248, 113, 113, 0.35)'}`
+              }}>
+                {mostRecentMatch.result === 'win' ? 'Victory' : 'Defeat'}
+              </div>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0,1fr))', gap: 12 }}>
+              {[
+                { label: 'Players', value: mostRecentMatch.totalPlayers },
+                { label: 'Questions', value: questionsCount },
+                { label: 'Duration', value: `${Math.max(1, Math.round((new Date(mostRecentMatch.endUtc).getTime() - new Date(mostRecentMatch.startUtc).getTime()) / 60000))} min` },
+                { label: 'Date', value: new Date(mostRecentMatch.endUtc).toLocaleDateString() },
+              ].map((item, idx) => (
+                <div key={idx} style={{
+                  padding: 12,
+                  borderRadius: 10,
+                  background: theme.panel,
+                  border: '1px solid rgba(255,255,255,0.05)',
+                  color: theme.muted
+                }}>
+                  <div style={{ fontSize: 12, textTransform: 'uppercase', letterSpacing: 1 }}>{item.label}</div>
+                  <div style={{ fontSize: 18, fontWeight: 700, color: theme.text }}>{item.value}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div style={{
+            borderRadius: 14,
+            padding: 18,
+            background: 'linear-gradient(160deg, rgba(255,179,71,0.18), rgba(255,255,255,0.05))',
+            border: '1px solid rgba(255,255,255,0.08)',
+            boxShadow: '0 10px 25px rgba(0,0,0,0.2)'
+          }}>
+            <div style={{ fontSize: 13, color: theme.muted, marginBottom: 8, textTransform: 'uppercase', letterSpacing: 1 }}>Weak Topics</div>
+            <div style={{ fontSize: 18, fontWeight: 700, color: theme.text, marginBottom: 10 }}>
+              Practice the topics you missed
+            </div>
+            <p style={{ fontSize: 14, color: theme.muted, marginBottom: 14 }}>
+              Jump back into a focused review quiz based on your misses from the latest match.
+            </p>
+            <a
+              href={`/review-quiz?matchId=${mostRecentMatch.matchId}&topics=${topics.map(t => encodeURIComponent(t.topic)).join(',')}`}
+              style={{
+                display: 'inline-block',
+                padding: '12px 14px',
+                borderRadius: 10,
+                background: theme.accent,
+                color: '#1f120c',
+                fontWeight: 800,
+                textDecoration: 'none',
+                boxShadow: '0 8px 20px rgba(0,0,0,0.25)'
+              }}
+            >
+              Practice Weak Topics
+            </a>
+          </div>
+        </section>
+
+        {mostRecentMatch.playerSummaries && mostRecentMatch.playerSummaries.length > 0 && (
+          <section style={{
+            marginBottom: 20,
+            borderRadius: 14,
+            padding: 20,
+            background: theme.card,
+            border: '1px solid rgba(255,255,255,0.08)',
+            boxShadow: '0 10px 26px rgba(0,0,0,0.2)'
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+              <h2 style={{ margin: 0, fontSize: 22, fontWeight: 800 }}>Player Performance</h2>
+              <div style={{ fontSize: 13, color: theme.muted }}>Match breakdown by player and topic</div>
+            </div>
+
+            <div style={{ display: 'grid', gap: 12 }}>
+              {mostRecentMatch.playerSummaries.map((player) => {
+                const accuracy = player.totalQuestions > 0
+                  ? Math.round((player.correctAnswers / player.totalQuestions) * 100)
+                  : 0
+
+                return (
+                  <div key={player.playerId} style={{
+                    borderRadius: 10,
+                    padding: 16,
+                    background: theme.panel,
+                    border: '1px solid rgba(255,255,255,0.05)'
+                  }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+                      <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+                        <div style={{
+                          width: 36, height: 36, borderRadius: 10,
+                          background: 'rgba(255,255,255,0.06)',
+                          display: 'grid', placeItems: 'center',
+                          fontWeight: 700
+                        }}>
+                          P{player.playerId}
+                        </div>
+                        <div>
+                          <div style={{ fontWeight: 700, fontSize: 16 }}>Player {player.playerId}</div>
+                          <div style={{ fontSize: 12, color: theme.muted }}>Accuracy {accuracy}% · Score {player.correctAnswers}/{player.totalQuestions} · Avg Time {player.averageTime.toFixed(1)}s</div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'grid', gap: 10 }}>
+                      {player.topicBreakdown.map((topic, i) => {
+                        const topicAccuracy = topic.total > 0
+                          ? Math.round((topic.correct / topic.total) * 100)
+                          : 0
+                        return (
+                          <div key={`${player.playerId}-${topic.topic}-${i}`} style={{ display: 'grid', gap: 6 }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                              <div style={{ fontWeight: 600, color: theme.text }}>{topic.topic}</div>
+                              <div style={{ fontSize: 12, color: theme.muted }}>{topic.correct}/{topic.total} ({topicAccuracy}%)</div>
+                            </div>
+                            <div style={{
+                              width: '100%',
+                              height: 8,
+                              borderRadius: 999,
+                              background: 'rgba(255,255,255,0.08)',
+                              overflow: 'hidden'
+                            }}>
+                              <div style={{
+                                width: `${topicAccuracy}%`,
+                                height: '100%',
+                                background: theme.accent
+                              }} />
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </section>
+        )}
+
+        <section style={{
+          borderRadius: 14,
+          padding: 20,
+          background: theme.card,
+          border: '1px solid rgba(255,255,255,0.08)',
+          boxShadow: '0 10px 24px rgba(0,0,0,0.2)'
+        }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+            <div>
+              <h2 style={{ margin: 0, fontSize: 22, fontWeight: 800 }}>Questions Review</h2>
+              <p style={{ margin: 0, fontSize: 13, color: theme.muted }}>Replay the questions from this match and focus on your gaps.</p>
+            </div>
+            {firstSummary && firstSummary.correctAnswers < firstSummary.totalQuestions && (
+              <PracticeButton
+                matchId={mostRecentMatch.matchId}
+                topics={topics.filter(t => t.correct < t.total).map(t => t.topic)}
+              />
+            )}
+          </div>
+
+          {mostRecentMatch.questions && mostRecentMatch.questions.length > 0 ? (
+            <div style={{ display: 'grid', gap: 10 }}>
+              {mostRecentMatch.questions.map((q, i) => {
+                const playerAnswer = q.playerAnswers?.find(pa => pa.playerId === firstSummary?.playerId)
+                const gotRight = playerAnswer?.correct
+                return (
+                  <div
+                    key={q.questionId || i}
+                    style={{
+                      borderRadius: 10,
+                      padding: 14,
+                      background: gotRight ? 'rgba(74, 222, 128, 0.08)' : 'rgba(239, 68, 68, 0.08)',
+                      border: `1px solid ${gotRight ? 'rgba(74,222,128,0.25)' : 'rgba(239,68,68,0.25)'}`
+                    }}
+                  >
+                    <div style={{ fontSize: 12, color: theme.muted, marginBottom: 6 }}>
+                      Question {i + 1} • {q.topic || 'Mixed'}
+                    </div>
+                    <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 6, color: theme.text }}>
+                      {q.prompt}
+                    </div>
+                    <div style={{ fontSize: 13, color: theme.muted, marginBottom: 10 }}>
+                      Correct answer: {String.fromCharCode(65 + (q.correctAnswerIndex || 0))}
+                    </div>
+                    <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+                      <span style={{
+                        padding: '6px 10px',
+                        borderRadius: 999,
+                        background: gotRight ? 'rgba(74,222,128,0.15)' : 'rgba(239,68,68,0.15)',
+                        color: gotRight ? '#4ade80' : '#ef4444',
+                        fontWeight: 700,
+                        fontSize: 12
+                      }}>
+                        {gotRight ? 'Correct' : 'Review'}
+                      </span>
+                      {playerAnswer && (
+                        <span style={{ fontSize: 12, color: theme.muted }}>
+                          Your answer: {String.fromCharCode(65 + (playerAnswer.chosenAnswer || 0))}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          ) : (
+            <div style={{
+              padding: 16,
+              borderRadius: 10,
+              border: '1px dashed rgba(255,255,255,0.15)',
+              color: theme.muted,
+              background: 'rgba(255,255,255,0.03)'
+            }}>
+              No detailed questions were captured for this match.
+            </div>
+          )}
+        </section>
+
+        {data.matches.length > 1 && (
+          <section style={{ marginTop: 20 }}>
+            <h2 style={{ marginBottom: 12, fontSize: 20, fontWeight: 800, color: theme.text }}>Recent Matches</h2>
+            <div style={{ display: 'grid', gap: 10 }}>
+              {data.matches.slice(1).map((match) => (
+                <div
+                  key={match.matchId}
+                  style={{
+                    padding: 14,
+                    background: theme.card,
+                    border: '1px solid rgba(255,255,255,0.08)',
+                    borderRadius: 10,
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    boxShadow: '0 8px 18px rgba(0,0,0,0.18)'
+                  }}
+                >
+                  <div>
+                    <div style={{ fontSize: 16, fontWeight: 600, marginBottom: 4, color: theme.text }}>
+                      {match.result === 'win' ? 'Victory' : 'Defeat'}
+                    </div>
+                    <div style={{ fontSize: 12, color: theme.muted }}>
+                      {new Date(match.endUtc).toLocaleString()} • {match.totalPlayers} players
+                    </div>
+                  </div>
+                  <div style={{ fontSize: 14, color: theme.text }}>
+                    {(match.questions && match.questions.length > 0)
+                      ? match.questions.length
+                      : ((match.playerSummaries && match.playerSummaries[0] && match.playerSummaries[0].topicBreakdown)
+                        ? match.playerSummaries[0].topicBreakdown.length
+                        : 0)} questions
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
       </div>
     </div>
   )
