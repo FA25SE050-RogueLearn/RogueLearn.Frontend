@@ -6,6 +6,7 @@ export interface Problem {
   title: string;
   problem_statement: string;
   difficulty: number;
+  tags?: Tag[];
 }
 
 export interface ProblemDetails extends Problem {

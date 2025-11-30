@@ -35,7 +35,7 @@ export function CursorUsersProvider({ provider, defaultName, defaultColor, child
         const user = state?.user || {};
         return { clientId: Number(clientId), name: user.name || "Anonymous", color: user.color || nameToColor(String(clientId)) };
       });
-      setUsers(next);
+      Promise.resolve().then(() => setUsers(next));
     };
     awareness.on?.("change", update);
     update();

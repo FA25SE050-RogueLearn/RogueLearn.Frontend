@@ -5,81 +5,50 @@ import {
   Calendar,
   Library,
   Users,
-  Activity,
   Clock,
   CheckCircle,
   AlertCircle,
   TrendingUp,
-  Sword,
-  Shield,
-  Scroll,
   BookOpen,
   ArrowRight
 } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 
-
 export default function AdminDashboard() {
   const metrics = [
     {
       label: "Pending Requests",
       value: "3",
-      icon: Sword,
+      icon: Clock,
       trend: "+2 this week",
-      color: "text-amber-500",
-      bgGradient: "from-amber-950/50 to-amber-900/30"
+      color: "text-amber-600",
+      bgColor: "bg-amber-50"
     },
     {
-      label: "Content Vault",
-      value: "2 days",
+      label: "Content Items",
+      value: "157",
       icon: Library,
-      trend: "157 tomes updated",
-      color: "text-blue-400",
-      bgGradient: "from-blue-950/50 to-blue-900/30"
+      trend: "Updated 2 days ago",
+      color: "text-[#7289da]",
+      bgColor: "bg-[#7289da]/10"
     },
     {
-      label: "Active Adventurers",
+      label: "Active Users",
       value: "1,247",
       icon: Users,
       trend: "+8.3% vs last week",
-      color: "text-emerald-400",
-      bgGradient: "from-emerald-950/50 to-emerald-900/30"
+      color: "text-emerald-600",
+      bgColor: "bg-emerald-50"
     },
   ];
-
 
   const recentActivity = [
-    {
-      action: "Request Approved",
-      target: "Spring Java Championship 2025",
-      time: "2 hours ago",
-      icon: CheckCircle,
-      iconColor: "text-emerald-400"
-    },
-    {
-      action: "Vault Synced",
-      target: "FAP Course Data (157 courses)",
-      time: "2 days ago",
-      icon: Library,
-      iconColor: "text-blue-400"
-    },
-    {
-      action: "Request Submitted",
-      target: "Algorithm Mastery Tournament",
-      time: "3 days ago",
-      icon: Clock,
-      iconColor: "text-amber-400"
-    },
-    {
-      action: "Tome Updated",
-      target: "Agile Quest v2.2 published",
-      time: "5 days ago",
-      icon: TrendingUp,
-      iconColor: "text-purple-400"
-    },
+    { action: "Request Approved", target: "Spring Java Championship 2025", time: "2 hours ago", icon: CheckCircle, iconColor: "text-emerald-500" },
+    { action: "Content Synced", target: "FAP Course Data (157 courses)", time: "2 days ago", icon: Library, iconColor: "text-[#7289da]" },
+    { action: "Request Submitted", target: "Algorithm Mastery Tournament", time: "3 days ago", icon: Clock, iconColor: "text-amber-500" },
+    { action: "Content Updated", target: "Agile Quest v2.2 published", time: "5 days ago", icon: TrendingUp, iconColor: "text-[#7289da]" },
   ];
-
 
   const pendingTasks = [
     { task: "Review Spring Java Championship 2025", priority: "High", deadline: "Today" },
@@ -87,101 +56,49 @@ export default function AdminDashboard() {
     { task: "Approve Guild: Code Warriors", priority: "Low", deadline: "This week" },
   ];
 
-  // ADDED: Quick access links to major sections
   const quickLinks = [
     {
-      title: "Subject Tomes",
+      title: "Subject Catalog",
       description: "Manage subject syllabi and learning content",
       icon: BookOpen,
       href: "/admin/content/subjects",
-      color: "text-blue-300",
-      bgGradient: "from-blue-950/50 to-blue-900/30"
     },
     {
-      title: "Content Vault",
-      description: "Sync FAP/FLM course data and manage curriculum",
+      title: "Content Management",
+      description: "Sync course data and manage curriculum",
       icon: Library,
       href: "/admin/content",
-      color: "text-amber-300",
-      bgGradient: "from-amber-950/50 to-amber-900/30"
     },
   ];
 
   return (
     <AdminLayout>
-      <div className="space-y-8">
-        {/* Enhanced RPG Header */}
-        <div className="relative">
-          <div className="absolute inset-0 bg-gradient-to-r from-amber-900/20 via-amber-600/10 to-amber-900/20 rounded-2xl blur-2xl" />
-          <div className="relative overflow-hidden rounded-2xl border border-amber-900/30 bg-gradient-to-br from-amber-950/40 to-transparent p-8 shadow-2xl shadow-black/40">
-            {/* Texture overlay */}
-            <div
-              className="absolute inset-0 opacity-[0.03] pointer-events-none"
-              style={{
-                backgroundImage: `url('https://www.transparenttextures.com/patterns/dark-embroidery.png')`,
-              }}
-            />
-
-            {/* Back to Dashboard */}
-
-
-
-            {/* Decorative glow */}
-            <div className="absolute -top-20 -right-20 h-40 w-40 rounded-full bg-amber-600/20 blur-3xl" />
-
-
-            <div className="relative flex items-center gap-6">
-              {/* Icon with enhanced glow */}
-              <div className="relative">
-                <div className="absolute -inset-2 rounded-xl bg-gradient-to-br from-amber-600/50 to-amber-800/50 opacity-50 blur-lg" />
-                <div className="relative flex h-20 w-20 items-center justify-center rounded-xl bg-gradient-to-br from-amber-600 to-amber-800 shadow-2xl shadow-amber-900/50">
-                  <Shield className="h-10 w-10 text-amber-50" />
-                </div>
-              </div>
-
-
-              <div className="flex-1">
-                <h1 className="text-4xl font-bold tracking-tight text-amber-100">Command Center</h1>
-                <p className="mt-2 text-base text-amber-700">
-                  Master overview and realm control
-                </p>
-              </div>
-            </div>
-          </div>
+      <div className="space-y-6">
+        {/* Header */}
+        <div>
+          <h1 className="text-2xl font-bold text-[#2c2f33]">Dashboard</h1>
+          <p className="text-[#2c2f33]/60">Welcome to the admin management console</p>
         </div>
 
-        {/* ADDED: Quick Access Links */}
-        <div className="grid gap-6 md:grid-cols-2">
+        {/* Quick Access Links */}
+        <div className="grid gap-4 md:grid-cols-2">
           {quickLinks.map((link) => {
             const Icon = link.icon;
             return (
-              <Card
-                key={link.href}
-                className="group relative overflow-hidden border-amber-900/30 bg-gradient-to-br from-[#1f1812] to-[#1a1410] shadow-xl shadow-black/20 transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl hover:shadow-amber-900/20"
-              >
-                {/* Texture overlay */}
-                <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/dark-embroidery.png')] opacity-[0.03] pointer-events-none" />
-
-                {/* Glow effect on hover */}
-                <div className="absolute -inset-1 bg-gradient-to-br from-amber-600/0 via-amber-600/0 to-amber-600/0 opacity-0 blur-xl transition-opacity duration-300 group-hover:opacity-20" />
-
-                <CardHeader className="relative">
+              <Card key={link.href} className="bg-white border border-[#beaca3]/30 shadow-sm hover:shadow-md transition-shadow">
+                <CardHeader className="pb-2">
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
-                      <CardTitle className="text-lg text-amber-100">{link.title}</CardTitle>
-                      <p className="mt-2 text-sm text-amber-700">{link.description}</p>
+                      <CardTitle className="text-base font-semibold text-[#2c2f33]">{link.title}</CardTitle>
+                      <p className="mt-1 text-sm text-[#2c2f33]/60">{link.description}</p>
                     </div>
-                    <div className={`rounded-lg bg-gradient-to-br ${link.bgGradient} p-2.5 shadow-lg`}>
-                      <Icon className={`h-5 w-5 ${link.color}`} />
+                    <div className="rounded-lg bg-[#7289da]/10 p-2">
+                      <Icon className="h-5 w-5 text-[#7289da]" />
                     </div>
                   </div>
                 </CardHeader>
-                <CardContent className="relative">
-                  <Button
-                    asChild
-                    size="sm"
-                    className="bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-700 hover:to-amber-800 text-amber-50"
-                  >
+                <CardContent>
+                  <Button asChild size="sm" className="bg-[#7289da] hover:bg-[#7289da]/90 text-white">
                     <Link href={link.href} className="flex items-center gap-2">
                       Access
                       <ArrowRight className="h-4 w-4" />
@@ -193,68 +110,51 @@ export default function AdminDashboard() {
           })}
         </div>
 
-
-        {/* Enhanced Metrics Grid */}
-        <div className="grid gap-6 md:grid-cols-3">
+        {/* Metrics Grid */}
+        <div className="grid gap-4 md:grid-cols-3">
           {metrics.map((metric) => {
             const Icon = metric.icon;
             return (
-              <Card key={metric.label} className="group relative overflow-hidden border-amber-900/30 bg-gradient-to-br from-[#1f1812] to-[#1a1410] shadow-xl shadow-black/20 transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl hover:shadow-amber-900/20">
-                {/* Texture overlay */}
-                <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/dark-embroidery.png')] opacity-[0.03] pointer-events-none" />
-
-
-                {/* Glow effect on hover */}
-                <div className="absolute -inset-1 bg-gradient-to-br from-amber-600/0 via-amber-600/0 to-amber-600/0 opacity-0 blur-xl transition-opacity duration-300 group-hover:opacity-20" />
-
-
-                <CardHeader className="relative flex flex-row items-center justify-between space-y-0 pb-3">
-                  <CardTitle className="text-sm font-semibold uppercase tracking-wider text-amber-200/80">
-                    {metric.label}
-                  </CardTitle>
-                  <div className={`rounded-lg bg-gradient-to-br ${metric.bgGradient} p-2.5 shadow-lg`}>
+              <Card key={metric.label} className="bg-white border border-[#beaca3]/30 shadow-sm">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium text-[#2c2f33]/70">{metric.label}</CardTitle>
+                  <div className={`rounded-lg ${metric.bgColor} p-2`}>
                     <Icon className={`h-4 w-4 ${metric.color}`} />
                   </div>
                 </CardHeader>
-                <CardContent className="relative">
-                  <div className="text-3xl font-bold tracking-tight text-amber-100">{metric.value}</div>
-                  <p className="mt-1 text-xs font-medium text-amber-700">{metric.trend}</p>
+                <CardContent>
+                  <div className="text-2xl font-bold text-[#2c2f33]">{metric.value}</div>
+                  <p className="text-xs text-[#2c2f33]/50 mt-1">{metric.trend}</p>
                 </CardContent>
               </Card>
             );
           })}
         </div>
 
-        {/* System Status Card - Full Width */}
+        {/* System Status */}
         <StatusCard />
 
         <div className="grid gap-6 lg:grid-cols-2">
-          {/* Enhanced Recent Activity */}
-          <Card className="relative overflow-hidden border-amber-900/30 bg-gradient-to-br from-[#1f1812] to-[#1a1410] shadow-xl shadow-black/20">
-            {/* Texture overlay */}
-            <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/dark-embroidery.png')] opacity-[0.02] pointer-events-none" />
-
-
-            <CardHeader className="relative border-b border-amber-900/20">
-              <div className="flex items-center gap-3">
-                <div className="rounded-lg bg-gradient-to-br from-amber-950/50 to-amber-900/30 p-2">
-                  <Scroll className="h-5 w-5 text-amber-600" />
-                </div>
-                <CardTitle className="text-lg font-bold text-amber-100">Recent Chronicles</CardTitle>
+          {/* Recent Activity */}
+          <Card className="bg-white border border-[#beaca3]/30 shadow-sm">
+            <CardHeader className="border-b border-[#beaca3]/20">
+              <div className="flex items-center gap-2">
+                <Calendar className="h-5 w-5 text-[#2c2f33]/50" />
+                <CardTitle className="text-base font-semibold text-[#2c2f33]">Recent Activity</CardTitle>
               </div>
             </CardHeader>
-            <CardContent className="relative space-y-3 pt-6">
+            <CardContent className="pt-4 space-y-3">
               {recentActivity.map((item, index) => {
                 const Icon = item.icon;
                 return (
-                  <div key={index} className="group/item flex items-start gap-4 rounded-xl border border-amber-900/20 bg-gradient-to-r from-amber-950/20 to-transparent p-4 transition-all duration-300 hover:border-amber-900/40 hover:bg-amber-950/30">
-                    <div className={`rounded-lg bg-gradient-to-br from-amber-950/60 to-amber-900/40 p-2.5 ${item.iconColor} shadow-lg`}>
+                  <div key={index} className="flex items-start gap-3 p-3 rounded-lg bg-[#f4f6f8] border border-[#beaca3]/20">
+                    <div className={`mt-0.5 ${item.iconColor}`}>
                       <Icon className="h-4 w-4" />
                     </div>
-                    <div className="flex-1 space-y-1">
-                      <p className="text-sm font-semibold text-amber-200">{item.action}</p>
-                      <p className="text-xs font-medium text-amber-600">{item.target}</p>
-                      <p className="text-xs text-amber-800">{item.time}</p>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-[#2c2f33]">{item.action}</p>
+                      <p className="text-xs text-[#2c2f33]/60 truncate">{item.target}</p>
+                      <p className="text-xs text-[#2c2f33]/40 mt-1">{item.time}</p>
                     </div>
                   </div>
                 );
@@ -262,49 +162,32 @@ export default function AdminDashboard() {
             </CardContent>
           </Card>
 
-
-          {/* Enhanced Pending Tasks */}
-          <Card className="relative overflow-hidden border-amber-900/30 bg-gradient-to-br from-[#1f1812] to-[#1a1410] shadow-xl shadow-black/20">
-            {/* Texture overlay */}
-            <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/dark-embroidery.png')] opacity-[0.02] pointer-events-none" />
-
-
-            {/* Decorative glow */}
-            <div className="absolute -top-20 -right-20 h-40 w-40 rounded-full bg-amber-600/10 blur-3xl" />
-
-
-            <CardHeader className="relative border-b border-amber-900/20">
-              <div className="flex items-center gap-3">
-                <div className="rounded-lg bg-gradient-to-br from-amber-950/50 to-amber-900/30 p-2">
-                  <Sword className="h-5 w-5 text-amber-600" />
-                </div>
-                <CardTitle className="text-lg font-bold text-amber-100">Active Missions</CardTitle>
+          {/* Pending Tasks */}
+          <Card className="bg-white border border-[#beaca3]/30 shadow-sm">
+            <CardHeader className="border-b border-[#beaca3]/20">
+              <div className="flex items-center gap-2">
+                <AlertCircle className="h-5 w-5 text-[#2c2f33]/50" />
+                <CardTitle className="text-base font-semibold text-[#2c2f33]">Pending Tasks</CardTitle>
               </div>
             </CardHeader>
-            <CardContent className="relative space-y-3 pt-6">
+            <CardContent className="pt-4 space-y-3">
               {pendingTasks.map((item, index) => (
-                <div
-                  key={index}
-                  className="group/item flex items-start justify-between gap-4 rounded-xl border border-amber-900/30 bg-gradient-to-r from-amber-950/30 to-transparent p-4 transition-all duration-300 hover:border-amber-900/50 hover:bg-amber-950/40"
-                >
+                <div key={index} className="flex items-start justify-between gap-4 p-3 rounded-lg bg-[#f4f6f8] border border-[#beaca3]/20">
                   <div className="flex-1">
-                    <p className="text-sm font-semibold text-amber-200">{item.task}</p>
-                    <div className="mt-2 flex items-center gap-2 text-xs">
-                      <span
-                        className={`font-bold rounded-md px-2 py-1 ${item.priority === "High"
-                            ? "bg-red-950/60 text-red-400 border border-red-900/30"
-                            : item.priority === "Medium"
-                              ? "bg-orange-950/60 text-orange-400 border border-orange-900/30"
-                              : "bg-amber-950/60 text-amber-500 border border-amber-900/30"
-                          }`}
-                      >
+                    <p className="text-sm font-medium text-[#2c2f33]">{item.task}</p>
+                    <div className="mt-2 flex items-center gap-2">
+                      <span className={`text-xs font-medium px-2 py-0.5 rounded ${
+                        item.priority === "High"
+                          ? "bg-[#e07a5f]/10 text-[#e07a5f]"
+                          : item.priority === "Medium"
+                            ? "bg-amber-100 text-amber-700"
+                            : "bg-[#beaca3]/30 text-[#2c2f33]/70"
+                      }`}>
                         {item.priority}
                       </span>
-                      <span className="text-amber-800">•</span>
-                      <span className="font-medium text-amber-700">{item.deadline}</span>
+                      <span className="text-xs text-[#2c2f33]/50">{item.deadline}</span>
                     </div>
                   </div>
-                  <AlertCircle className="h-5 w-5 text-amber-600 opacity-60 group-hover/item:opacity-100 transition-opacity" />
                 </div>
               ))}
             </CardContent>

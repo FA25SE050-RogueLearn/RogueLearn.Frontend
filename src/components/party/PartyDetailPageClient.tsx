@@ -104,7 +104,10 @@ export default function PartyDetailPageClient({ partyId }: { partyId: string }) 
   useEffect(() => {
     let mounted = true;
     (async () => {
-      const ids = Array.from(new Set(invites.map(i => i.inviteeId))).filter(id => !!id && !(id in inviteeNameById));
+      const ids = Array.from(new Set(invites
+        .filter(i => !i.inviteeName)
+        .map(i => i.inviteeId)))
+        .filter(id => !!id && !(id in inviteeNameById));
       if (ids.length === 0) return;
       try {
         const results = await Promise.all(ids.map(id => usersApi.getUserProfileByAuthId(id)));
@@ -276,7 +279,7 @@ export default function PartyDetailPageClient({ partyId }: { partyId: string }) 
                     {invites.map((inv) => (
                       <li key={inv.id} className="flex items-center justify-between rounded bg-white/5 px-3 py-2 text-xs">
                         <div className="flex items-center gap-2">
-                          <span>To: {inviteeNameById[inv.inviteeId] ?? "External Invite"}</span>
+                          <span>To: {inv.inviteeName || inviteeNameById[inv.inviteeId] || "External Invite"}</span>
                           <span className="rounded bg-white/10 px-2 py-0.5 text-[11px] text-white/70">{inv.status}</span>
                         </div>
                       </li>

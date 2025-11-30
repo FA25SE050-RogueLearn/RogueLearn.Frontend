@@ -1,4 +1,3 @@
-// roguelearn-web/src/app/admin/programs/page.tsx
 "use client";
 
 import { useState, useEffect } from "react";
@@ -9,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, Plus, Trash2, BookOpen, ScrollText } from "lucide-react";
+import { Loader2, Plus, Trash2, ScrollText } from "lucide-react";
 import { toast } from "sonner";
 import curriculumProgramsApi from "@/api/curriculumProgramsApi";
 import subjectsApi from "@/api/subjectsApi";
@@ -21,21 +20,15 @@ export default function ProgramsManagementPage() {
     const [programs, setPrograms] = useState<CurriculumProgramDto[]>([]);
     const [subjects, setSubjects] = useState<Subject[]>([]);
     const [loading, setLoading] = useState(true);
-
-    // Selection for Structure Logic
     const [selectedProgram, setSelectedProgram] = useState<CurriculumProgramDto | null>(null);
-    const [programSubjects, setProgramSubjects] = useState<Subject[]>([]); // Note: The API might return Subject[] or a specific join DTO. Assuming Subject[] for now based on context.
+    const [programSubjects, setProgramSubjects] = useState<Subject[]>([]);
     const [structLoading, setStructLoading] = useState(false);
-
-    // Add Subject State
     const [addSubjectId, setAddSubjectId] = useState("");
-
-    // Create Program State
     const [isCreateOpen, setIsCreateOpen] = useState(false);
     const [newProgram, setNewProgram] = useState({
         programName: "",
         programCode: "",
-        degreeLevel: "Bachelor" as const, // Default
+        degreeLevel: "Bachelor" as const,
         totalCredits: 120,
         durationYears: 4
     });
@@ -51,8 +44,14 @@ export default function ProgramsManagementPage() {
                 curriculumProgramsApi.getAll(),
                 subjectsApi.getAll()
             ]);
-            if (pRes.isSuccess && pRes.data) setPrograms(pRes.data);
-            if (sRes.isSuccess && sRes.data) setSubjects(sRes.data);
+            if (pRes.isSuccess && pRes.data) {
+                const programData = pRes.data;
+                setPrograms(Array.isArray(programData) ? programData : []);
+            }
+            if (sRes.isSuccess && sRes.data) {
+                const subjectData = sRes.data;
+                setSubjects(Array.isArray(subjectData) ? subjectData : []);
+            }
         } catch {
             toast.error("Failed to load initial data");
         } finally {
@@ -66,7 +65,6 @@ export default function ProgramsManagementPage() {
             await curriculumProgramsApi.create(newProgram);
             toast.success("Program created");
             setIsCreateOpen(false);
-            // Reset
             setNewProgram({ programName: "", programCode: "", degreeLevel: "Bachelor", totalCredits: 120, durationYears: 4 });
             loadData();
         } catch {
@@ -78,26 +76,10 @@ export default function ProgramsManagementPage() {
         setSelectedProgram(prog);
         setStructLoading(true);
         try {
-            // Note: curriculumProgramsApi.getDetails returns detailed info including analysis, 
-            // but we might need a specific endpoint to get JUST the list of subjects efficiently or parse it from details.
-            // Assuming getDetails returns an object where we can find subjects. 
-            // However, typically 'getDetails' is for analysis. 
-            // If adminManagementApi has a 'getProgramSubjects' it would be here.
-            // Since it wasn't explicitly in the controller snippet provided (only Add/Remove), 
-            // we might need to rely on 'getDetails' or assume we fetch 'curriculum_program_subjects' via an expansion.
-            // For this implementation, I will use `curriculumProgramsApi.getDetails` and hope it includes the subject list or update `adminManagementApi` if a list endpoint exists.
-            // Update: The Controller snippet does NOT have a GET. This implies we use the general Program Details endpoint.
-
             const res = await curriculumProgramsApi.getDetails(prog.id);
             if (res.isSuccess && res.data) {
-                // We need the actual subject list here. If the DTO doesn't have it, we might need to fetch all subjects and filter?
-                // Or the `curriculumVersions` in `getDetails` contains it. 
-                // Given the new architecture "Simple Program Structure", likely we should have a list.
-                // I will assume we might need to fetch it or it's missing from the DTO provided in types earlier.
-                // Let's assume for now we can't easily get the list without a specific endpoint or expanding `getDetails`.
-                // Placeholder logic:
-                setProgramSubjects([]); // TODO: Bind to actual data source when available
-                toast.info("Subject list fetching logic requires backend update or specific DTO mapping.");
+                setProgramSubjects([]);
+                toast.info("Subject list fetching requires backend update.");
             }
         } catch {
             toast.error("Failed to load program structure");
@@ -111,7 +93,7 @@ export default function ProgramsManagementPage() {
         try {
             await adminManagementApi.addSubjectToProgram(selectedProgram.id, addSubjectId);
             toast.success("Subject added to program");
-            openStructure(selectedProgram); // reload
+            openStructure(selectedProgram);
         } catch {
             toast.error("Failed to add subject");
         }
@@ -128,30 +110,48 @@ export default function ProgramsManagementPage() {
         }
     };
 
+    const getDegreeBadge = (level: string) => {
+        const styles: Record<string, string> = {
+            Bachelor: "bg-[#7289da]/10 text-[#7289da] border-[#7289da]/30",
+            Master: "bg-purple-50 text-purple-700 border-purple-200",
+            Associate: "bg-emerald-50 text-emerald-700 border-emerald-200",
+        };
+        return styles[level] || styles.Bachelor;
+    };
+
     return (
         <AdminLayout>
             <div className="space-y-6">
+                {/* Header */}
                 <div className="flex justify-between items-center">
                     <div>
-                        <h1 className="text-2xl font-bold text-amber-100">Academic Programs</h1>
-                        <p className="text-amber-700">Manage degrees and their constituent subjects.</p>
+                        <h1 className="text-2xl font-bold text-[#2c2f33]">Programs Management</h1>
+                        <p className="text-[#2c2f33]/60">Manage academic programs and their subjects</p>
                     </div>
                     <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
                         <DialogTrigger asChild>
-                            <Button className="bg-amber-600 hover:bg-amber-700 text-white">
+                            <Button className="bg-[#7289da] hover:bg-[#7289da]/90 text-white">
                                 <Plus className="w-4 h-4 mr-2" /> Create Program
                             </Button>
                         </DialogTrigger>
-                        <DialogContent className="bg-[#1a1410] border-amber-900/30 text-amber-100">
-                            <DialogHeader><DialogTitle>New Program</DialogTitle></DialogHeader>
-                            <div className="space-y-4">
-                                <div><Label>Name</Label><Input value={newProgram.programName} onChange={e => setNewProgram({ ...newProgram, programName: e.target.value })} className="bg-black/40 border-amber-900/30" /></div>
-                                <div><Label>Code</Label><Input value={newProgram.programCode} onChange={e => setNewProgram({ ...newProgram, programCode: e.target.value })} className="bg-black/40 border-amber-900/30" /></div>
-                                <div>
-                                    <Label>Degree</Label>
+                        <DialogContent className="bg-white border-[#beaca3]/30">
+                            <DialogHeader>
+                                <DialogTitle className="text-[#2c2f33]">Create New Program</DialogTitle>
+                            </DialogHeader>
+                            <div className="space-y-4 py-4">
+                                <div className="space-y-2">
+                                    <Label className="text-[#2c2f33]/70">Program Name</Label>
+                                    <Input value={newProgram.programName} onChange={e => setNewProgram({ ...newProgram, programName: e.target.value })} placeholder="Enter program name" className="border-[#beaca3]/30" />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label className="text-[#2c2f33]/70">Program Code</Label>
+                                    <Input value={newProgram.programCode} onChange={e => setNewProgram({ ...newProgram, programCode: e.target.value })} placeholder="e.g., SE, IS" className="border-[#beaca3]/30" />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label className="text-[#2c2f33]/70">Degree Level</Label>
                                     <Select value={newProgram.degreeLevel} onValueChange={v => setNewProgram({ ...newProgram, degreeLevel: v as any })}>
-                                        <SelectTrigger className="bg-black/40 border-amber-900/30"><SelectValue /></SelectTrigger>
-                                        <SelectContent className="bg-[#1a1410] border-amber-900/30">
+                                        <SelectTrigger className="border-[#beaca3]/30"><SelectValue /></SelectTrigger>
+                                        <SelectContent>
                                             <SelectItem value="Bachelor">Bachelor</SelectItem>
                                             <SelectItem value="Master">Master</SelectItem>
                                             <SelectItem value="Associate">Associate</SelectItem>
@@ -159,71 +159,89 @@ export default function ProgramsManagementPage() {
                                     </Select>
                                 </div>
                             </div>
-                            <DialogFooter><Button onClick={handleCreateProgram} className="bg-amber-600">Create</Button></DialogFooter>
+                            <DialogFooter>
+                                <Button variant="outline" onClick={() => setIsCreateOpen(false)} className="border-[#beaca3]/30">Cancel</Button>
+                                <Button onClick={handleCreateProgram} className="bg-[#7289da] hover:bg-[#7289da]/90 text-white">Create</Button>
+                            </DialogFooter>
                         </DialogContent>
                     </Dialog>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {loading ? <Loader2 className="animate-spin text-amber-500" /> : programs.map(prog => (
-                        <Card key={prog.id} className="bg-black/40 border-amber-900/20 hover:border-amber-700/50 transition-all">
-                            <CardHeader className="pb-2">
-                                <div className="flex justify-between items-center">
-                                    <CardTitle className="text-lg text-amber-100">{prog.programCode}</CardTitle>
-                                    <span className="text-[10px] px-2 py-0.5 rounded border border-emerald-500/30 text-emerald-400">
-                                        {prog.degreeLevel}
-                                    </span>
-                                </div>
-                            </CardHeader>
-                            <CardContent>
-                                <p className="text-sm text-gray-400 mb-1 font-semibold">{prog.programName}</p>
-                                <p className="text-xs text-gray-500 mb-4">{prog.description || "No description"}</p>
-                                <Button
-                                    variant="outline"
-                                    className="w-full border-amber-600/30 text-amber-500 hover:bg-amber-900/20"
-                                    onClick={() => openStructure(prog)}
-                                >
-                                    <ScrollText className="w-4 h-4 mr-2" /> Manage Structure
-                                </Button>
-                            </CardContent>
-                        </Card>
-                    ))}
-                </div>
+                {/* Programs Grid */}
+                {loading ? (
+                    <div className="flex items-center justify-center py-12">
+                        <Loader2 className="h-8 w-8 animate-spin text-[#7289da]" />
+                    </div>
+                ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {(Array.isArray(programs) ? programs : []).map(prog => (
+                            <Card key={prog.id} className="bg-white border border-[#beaca3]/30 shadow-sm hover:shadow-md transition-shadow">
+                                <CardHeader className="pb-2">
+                                    <div className="flex justify-between items-center">
+                                        <CardTitle className="text-base font-semibold text-[#2c2f33]">{prog.programCode}</CardTitle>
+                                        <span className={`text-xs px-2 py-0.5 rounded-full border ${getDegreeBadge(prog.degreeLevel)}`}>
+                                            {prog.degreeLevel}
+                                        </span>
+                                    </div>
+                                </CardHeader>
+                                <CardContent>
+                                    <p className="text-sm font-medium text-[#2c2f33] mb-1">{prog.programName}</p>
+                                    <p className="text-sm text-[#2c2f33]/60 mb-4">{prog.description || "No description"}</p>
+                                    <Button
+                                        variant="outline"
+                                        className="w-full border-[#7289da]/30 text-[#7289da] hover:bg-[#7289da]/10"
+                                        onClick={() => openStructure(prog)}
+                                    >
+                                        <ScrollText className="w-4 h-4 mr-2" /> Manage Structure
+                                    </Button>
+                                </CardContent>
+                            </Card>
+                        ))}
+                    </div>
+                )}
 
                 {/* Structure Manager Dialog */}
                 <Dialog open={!!selectedProgram} onOpenChange={(o) => !o && setSelectedProgram(null)}>
-                    <DialogContent className="bg-[#1a1410] border-amber-900/30 text-amber-100 max-w-3xl">
+                    <DialogContent className="bg-white border-[#beaca3]/30 max-w-3xl">
                         <DialogHeader>
-                            <DialogTitle>Program Structure: <span className="text-amber-500">{selectedProgram?.programName}</span></DialogTitle>
+                            <DialogTitle className="text-[#2c2f33]">
+                                Program Structure: <span className="text-[#7289da]">{selectedProgram?.programName}</span>
+                            </DialogTitle>
                         </DialogHeader>
 
-                        <div className="flex gap-4 items-end border-b border-amber-900/20 pb-4 mb-4">
-                            <div className="flex-1">
-                                <Label>Add Subject</Label>
+                        <div className="flex gap-4 items-end border-b border-[#beaca3]/20 pb-4 mb-4">
+                            <div className="flex-1 space-y-2">
+                                <Label className="text-[#2c2f33]/70">Add Subject</Label>
                                 <Select onValueChange={setAddSubjectId}>
-                                    <SelectTrigger className="bg-black/40 border-amber-900/30"><SelectValue placeholder="Select Subject..." /></SelectTrigger>
-                                    <SelectContent className="bg-[#1a1410] border-amber-900/30">
-                                        {subjects.map(s => (
+                                    <SelectTrigger className="border-[#beaca3]/30"><SelectValue placeholder="Select Subject..." /></SelectTrigger>
+                                    <SelectContent>
+                                        {(Array.isArray(subjects) ? subjects : []).map(s => (
                                             <SelectItem key={s.id} value={s.id}>{s.subjectCode} - {s.subjectName}</SelectItem>
                                         ))}
                                     </SelectContent>
                                 </Select>
                             </div>
-                            <Button onClick={handleAddSubject} className="bg-amber-600"><Plus className="w-4 h-4" /></Button>
+                            <Button onClick={handleAddSubject} className="bg-[#7289da] hover:bg-[#7289da]/90 text-white">
+                                <Plus className="w-4 h-4" />
+                            </Button>
                         </div>
 
                         <div className="space-y-2 max-h-[400px] overflow-y-auto">
-                            {structLoading ? <Loader2 className="animate-spin mx-auto" /> : programSubjects.length === 0 ? (
-                                <p className="text-center text-gray-600 italic py-8">No subjects in this program yet (or list unavailable).</p>
+                            {structLoading ? (
+                                <div className="flex justify-center py-8">
+                                    <Loader2 className="animate-spin text-[#7289da]" />
+                                </div>
+                            ) : (Array.isArray(programSubjects) ? programSubjects : []).length === 0 ? (
+                                <p className="text-center text-[#2c2f33]/40 py-8">No subjects in this program yet (or list unavailable).</p>
                             ) : (
-                                programSubjects.map(sub => (
-                                    <div key={sub.id} className="flex justify-between items-center bg-black/20 p-2 rounded border border-white/5">
+                                (Array.isArray(programSubjects) ? programSubjects : []).map(sub => (
+                                    <div key={sub.id} className="flex justify-between items-center bg-[#f4f6f8] p-3 rounded-lg border border-[#beaca3]/20">
                                         <div className="flex items-center gap-3">
-                                            <span className="text-amber-500 font-mono text-xs">{sub.subjectCode}</span>
-                                            <span className="text-sm text-white/90">{sub.subjectName}</span>
+                                            <span className="text-[#7289da] font-mono text-xs">{sub.subjectCode}</span>
+                                            <span className="text-sm text-[#2c2f33]">{sub.subjectName}</span>
                                         </div>
-                                        <Button size="icon" variant="ghost" className="h-6 w-6 text-red-400 hover:bg-red-950/20" onClick={() => handleRemoveSubject(sub.id)}>
-                                            <Trash2 className="w-3 h-3" />
+                                        <Button size="icon" variant="ghost" className="h-7 w-7 text-[#e07a5f] hover:bg-[#e07a5f]/10" onClick={() => handleRemoveSubject(sub.id)}>
+                                            <Trash2 className="w-3.5 h-3.5" />
                                         </Button>
                                     </div>
                                 ))

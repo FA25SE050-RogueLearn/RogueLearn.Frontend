@@ -8,7 +8,6 @@ import { Button } from "@/components/ui/button";
 import {
   Calendar,
   Users,
-  DollarSign,
   Clock,
   ArrowRight,
   CheckCircle,
@@ -26,24 +25,23 @@ interface DisplayEvent {
   guild: string;
   startDate?: string;
   endDate?: string;
-  participants: number; // Number of guilds
+  participants: number;
   status: string;
 }
 
 function EventCard({ event, type }: { event: DisplayEvent; type: string }) {
   const statusConfig = {
-    pending: { icon: AlertCircle, color: "text-orange-400", bg: "bg-orange-950/50" },
-    approved: { icon: CheckCircle, color: "text-emerald-400", bg: "bg-emerald-950/50" },
-    rejected: { icon: XCircle, color: "text-rose-400", bg: "bg-rose-950/50" },
+    pending: { icon: AlertCircle, color: "text-amber-600", bg: "bg-amber-50" },
+    approved: { icon: CheckCircle, color: "text-emerald-600", bg: "bg-emerald-50" },
+    rejected: { icon: XCircle, color: "text-[#e07a5f]", bg: "bg-[#e07a5f]/10" },
   };
 
   const config = statusConfig[event.status as keyof typeof statusConfig] || statusConfig.pending;
   const StatusIcon = config.icon;
 
   return (
-    <Card className="border-amber-900/30 bg-gradient-to-br from-[#1f1812] to-[#1a1410] transition-all hover:border-amber-700/50 hover:shadow-lg hover:shadow-amber-900/20">
-      <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/dark-embroidery.png')] opacity-5 rounded-lg pointer-events-none" />
-      <CardContent className="relative flex flex-col gap-4 p-6">
+    <Card className="bg-white border border-[#beaca3]/30 shadow-sm hover:shadow-md transition-shadow">
+      <CardContent className="flex flex-col gap-4 p-5">
         <div className="flex items-start justify-between">
           <div className="flex-1">
             <div className="mb-2 flex items-center gap-2">
@@ -54,44 +52,39 @@ function EventCard({ event, type }: { event: DisplayEvent; type: string }) {
                 {event.status}
               </span>
             </div>
-            <h3 className="text-lg font-semibold text-amber-100">{event.title}</h3>
-            <p className="text-sm text-amber-700">{event.guild}</p>
+            <h3 className="text-base font-semibold text-[#2c2f33]">{event.title}</h3>
+            <p className="text-sm text-[#2c2f33]/60">{event.guild}</p>
           </div>
         </div>
 
-        <div className="grid grid-cols-3 gap-4 rounded-lg border border-amber-900/30 bg-gradient-to-br from-amber-950/30 to-transparent p-4">
+        <div className="grid grid-cols-3 gap-3 rounded-lg bg-[#f4f6f8] border border-[#beaca3]/20 p-3">
           <div className="space-y-1">
-            <div className="flex items-center gap-2 text-amber-700">
-              <Users className="h-4 w-4" />
+            <div className="flex items-center gap-1.5 text-[#2c2f33]/50">
+              <Users className="h-3.5 w-3.5" />
               <span className="text-xs">Guilds</span>
             </div>
-            <p className="text-sm font-semibold text-amber-200">{event.participants}</p>
+            <p className="text-sm font-semibold text-[#2c2f33]">{event.participants}</p>
           </div>
           <div className="space-y-1">
-            <div className="flex items-center gap-2 text-amber-700">
-              <Calendar className="h-4 w-4" />
-              <span className="text-xs">Start Date</span>
+            <div className="flex items-center gap-1.5 text-[#2c2f33]/50">
+              <Calendar className="h-3.5 w-3.5" />
+              <span className="text-xs">Start</span>
             </div>
-            <p className="text-sm font-semibold text-amber-200">{event.startDate || 'N/A'}</p>
+            <p className="text-sm font-semibold text-[#2c2f33]">{event.startDate || 'N/A'}</p>
           </div>
           <div className="space-y-1">
-            <div className="flex items-center gap-2 text-amber-700">
-              <Clock className="h-4 w-4" />
-              <span className="text-xs">End Date</span>
+            <div className="flex items-center gap-1.5 text-[#2c2f33]/50">
+              <Clock className="h-3.5 w-3.5" />
+              <span className="text-xs">End</span>
             </div>
-            <p className="text-sm font-semibold text-amber-200">
-              {event.endDate || 'N/A'}
-            </p>
+            <p className="text-sm font-semibold text-[#2c2f33]">{event.endDate || 'N/A'}</p>
           </div>
         </div>
 
         {type === "pending" && (
-          <Button
-            asChild
-            className="w-full bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-700 hover:to-amber-800 text-amber-50 shadow-lg shadow-amber-900/50"
-          >
+          <Button asChild className="w-full bg-[#7289da] hover:bg-[#7289da]/90 text-white">
             <Link href={`/admin/events/${event.id}`} className="flex items-center justify-center gap-2">
-              Review Quest
+              Review Request
               <ArrowRight className="h-4 w-4" />
             </Link>
           </Button>
@@ -128,13 +121,9 @@ export default function EventManagementPage() {
     }
   };
 
-  // Transform EventRequest to DisplayEvent
   const transformEventRequest = (req: EventRequest): DisplayEvent => {
-    // Handle both API response formats: participation_details and participation
     const participation = (req as any).participation_details || req.participation;
     const maxGuilds = participation ? participation.max_guilds : 0;
-
-    // Handle both id and request_id
     const requestId = (req as any).id || req.request_id;
 
     return {
@@ -143,50 +132,33 @@ export default function EventManagementPage() {
       guild: req.requester_guild_id || 'Unknown Guild',
       startDate: req.proposed_start_date ? new Date(req.proposed_start_date).toLocaleDateString('en-US') : undefined,
       endDate: req.proposed_end_date ? new Date(req.proposed_end_date).toLocaleDateString('en-US') : undefined,
-      participants: maxGuilds, // Number of guilds, not total players
+      participants: maxGuilds,
       status: req.status || 'pending',
     };
   };
 
-  const pendingEvents = eventRequests
-    .filter(req => req.status === 'pending')
-    .map(transformEventRequest);
-
-  const approvedEvents = eventRequests
-    .filter(req => req.status === 'approved')
-    .map(transformEventRequest);
-
-  const rejectedEvents = eventRequests
-    .filter(req => req.status === 'rejected')
-    .map(transformEventRequest);
+  const pendingEvents = eventRequests.filter(req => req.status === 'pending').map(transformEventRequest);
+  const approvedEvents = eventRequests.filter(req => req.status === 'approved').map(transformEventRequest);
+  const rejectedEvents = eventRequests.filter(req => req.status === 'rejected').map(transformEventRequest);
 
   return (
     <AdminLayout>
-      <div className="space-y-8">
-        {/* RPG-styled Header */}
-        <div className="relative">
-          <div className="absolute inset-0 bg-gradient-to-r from-amber-900/20 via-transparent to-amber-900/20 rounded-lg blur-xl" />
-          <div className="relative p-6 rounded-lg border border-amber-900/30 bg-gradient-to-br from-amber-950/30 to-transparent">
-            <h1 className="text-3xl font-bold tracking-tight text-amber-100">Quest Management</h1>
-            <p className="text-amber-700">
-              Oversee, approve and chronicle guild quests
-            </p>
-          </div>
+      <div className="space-y-6">
+        {/* Header */}
+        <div>
+          <h1 className="text-2xl font-bold text-[#2c2f33]">Event Requests</h1>
+          <p className="text-[#2c2f33]/60">Review and manage event requests from guilds</p>
         </div>
 
         {/* Error Message */}
         {error && (
-          <Card className="border-rose-900/30 bg-gradient-to-br from-rose-950/30 to-transparent">
-            <CardContent className="p-6">
-              <div className="flex items-center gap-2 text-rose-400">
+          <Card className="bg-[#e07a5f]/10 border border-[#e07a5f]/30">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-2 text-[#e07a5f]">
                 <XCircle className="h-5 w-5" />
-                <p>{error}</p>
+                <p className="text-sm">{error}</p>
               </div>
-              <Button
-                onClick={fetchEventRequests}
-                variant="outline"
-                className="mt-4 border-rose-700/50 bg-rose-950/30 text-rose-400 hover:bg-rose-900/50"
-              >
+              <Button onClick={fetchEventRequests} variant="outline" size="sm" className="mt-3 border-[#e07a5f]/30 text-[#e07a5f] hover:bg-[#e07a5f]/10">
                 Retry
               </Button>
             </CardContent>
@@ -196,39 +168,29 @@ export default function EventManagementPage() {
         {/* Loading State */}
         {loading ? (
           <div className="flex items-center justify-center py-12">
-            <Loader2 className="h-8 w-8 animate-spin text-amber-600" />
-            <span className="ml-3 text-amber-700">Loading event requests...</span>
+            <Loader2 className="h-8 w-8 animate-spin text-[#7289da]" />
+            <span className="ml-3 text-[#2c2f33]/60">Loading event requests...</span>
           </div>
         ) : (
-          /* Tabs */
           <Tabs defaultValue="pending" className="w-full">
-            <TabsList className="grid w-full max-w-md grid-cols-3 bg-amber-950/30 border border-amber-900/30">
-              <TabsTrigger
-                value="pending"
-                className="data-[state=active]:bg-amber-900/40 data-[state=active]:text-amber-100 text-amber-600"
-              >
-                Awaiting ({pendingEvents.length})
+            <TabsList className="grid w-full max-w-md grid-cols-3 bg-[#beaca3]/20">
+              <TabsTrigger value="pending" className="data-[state=active]:bg-white data-[state=active]:text-[#2c2f33]">
+                Pending ({pendingEvents.length})
               </TabsTrigger>
-              <TabsTrigger
-                value="approved"
-                className="data-[state=active]:bg-amber-900/40 data-[state=active]:text-amber-100 text-amber-600"
-              >
+              <TabsTrigger value="approved" className="data-[state=active]:bg-white data-[state=active]:text-[#2c2f33]">
                 Approved ({approvedEvents.length})
               </TabsTrigger>
-              <TabsTrigger
-                value="rejected"
-                className="data-[state=active]:bg-amber-900/40 data-[state=active]:text-amber-100 text-amber-600"
-              >
+              <TabsTrigger value="rejected" className="data-[state=active]:bg-white data-[state=active]:text-[#2c2f33]">
                 Rejected ({rejectedEvents.length})
               </TabsTrigger>
             </TabsList>
 
-            <TabsContent value="pending" className="space-y-4">
+            <TabsContent value="pending" className="mt-4 space-y-4">
               {pendingEvents.length === 0 ? (
-                <Card className="border-amber-900/30 bg-gradient-to-br from-amber-950/30 to-transparent">
+                <Card className="bg-white border border-[#beaca3]/30">
                   <CardContent className="py-12 text-center">
-                    <AlertCircle className="mx-auto h-12 w-12 text-amber-700/50" />
-                    <p className="mt-4 text-amber-700">No pending event requests</p>
+                    <AlertCircle className="mx-auto h-12 w-12 text-[#beaca3]" />
+                    <p className="mt-4 text-[#2c2f33]/60">No pending event requests</p>
                   </CardContent>
                 </Card>
               ) : (
@@ -240,12 +202,12 @@ export default function EventManagementPage() {
               )}
             </TabsContent>
 
-            <TabsContent value="approved" className="space-y-4">
+            <TabsContent value="approved" className="mt-4 space-y-4">
               {approvedEvents.length === 0 ? (
-                <Card className="border-amber-900/30 bg-gradient-to-br from-amber-950/30 to-transparent">
+                <Card className="bg-white border border-[#beaca3]/30">
                   <CardContent className="py-12 text-center">
-                    <CheckCircle className="mx-auto h-12 w-12 text-emerald-700/50" />
-                    <p className="mt-4 text-amber-700">No approved event requests</p>
+                    <CheckCircle className="mx-auto h-12 w-12 text-[#beaca3]" />
+                    <p className="mt-4 text-[#2c2f33]/60">No approved event requests</p>
                   </CardContent>
                 </Card>
               ) : (
@@ -257,12 +219,12 @@ export default function EventManagementPage() {
               )}
             </TabsContent>
 
-            <TabsContent value="rejected" className="space-y-4">
+            <TabsContent value="rejected" className="mt-4 space-y-4">
               {rejectedEvents.length === 0 ? (
-                <Card className="border-amber-900/30 bg-gradient-to-br from-amber-950/30 to-transparent">
+                <Card className="bg-white border border-[#beaca3]/30">
                   <CardContent className="py-12 text-center">
-                    <XCircle className="mx-auto h-12 w-12 text-rose-700/50" />
-                    <p className="mt-4 text-amber-700">No rejected event requests</p>
+                    <XCircle className="mx-auto h-12 w-12 text-[#beaca3]" />
+                    <p className="mt-4 text-[#2c2f33]/60">No rejected event requests</p>
                   </CardContent>
                 </Card>
               ) : (

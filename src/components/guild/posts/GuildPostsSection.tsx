@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,6 +15,7 @@ import guildsApi from "@/api/guildsApi";
 import profileApi from "@/api/profileApi";
 import type { GuildPostDto } from "@/types/guild-posts";
 import type { GuildRole, GuildMemberDto } from "@/types/guilds";
+import { toast } from "sonner";
 
 interface GuildPostsSectionProps {
   guildId: string;
@@ -66,6 +67,8 @@ export function GuildPostsSection({ guildId }: GuildPostsSectionProps) {
   const [members, setMembers] = useState<GuildMemberDto[]>([]);
   const [commentLikedMap, setCommentLikedMap] = useState<Record<string, boolean>>({});
   const [commentLikeCountMap, setCommentLikeCountMap] = useState<Record<string, number>>({});
+  const [page, setPage] = useState<number>(1);
+  const pageSize = 5;
 
   const reload = () => {
     if (!guildId) return;
@@ -107,6 +110,14 @@ export function GuildPostsSection({ guildId }: GuildPostsSectionProps) {
       .finally(() => {});
   }, [guildId]);
 
+  const pageCount = useMemo(() => Math.max(1, Math.ceil((posts.length || 0) / pageSize)), [posts.length]);
+  const safePage = useMemo(() => Math.min(Math.max(1, page), pageCount), [page, pageCount]);
+  const pagedPosts = useMemo(() => {
+    const start = (safePage - 1) * pageSize;
+    const end = start + pageSize;
+    return posts.slice(start, end);
+  }, [posts, safePage]);
+
   const handleCreate = async () => {
     if (!guildId || !title.trim() || !content.trim()) return;
     setSubmitting(true);
@@ -123,7 +134,7 @@ export function GuildPostsSection({ guildId }: GuildPostsSectionProps) {
       setCreateOpen(false);
     } catch (err) {
       console.error(err);
-      alert("Failed to create post.");
+      toast.error("Failed to create post.");
     } finally {
       setSubmitting(false);
     }
@@ -187,7 +198,7 @@ export function GuildPostsSection({ guildId }: GuildPostsSectionProps) {
       reload();
     } catch (err) {
       console.error(err);
-      alert("Failed to edit post.");
+      toast.error("Failed to edit post.");
     }
   };
 
@@ -198,7 +209,7 @@ export function GuildPostsSection({ guildId }: GuildPostsSectionProps) {
       reload();
     } catch (err) {
       console.error(err);
-      alert("Failed to delete post.");
+      toast.error("Failed to delete post.");
     }
   };
 
@@ -358,7 +369,7 @@ export function GuildPostsSection({ guildId }: GuildPostsSectionProps) {
     const doCopy = async () => {
       try {
         await navigator.clipboard.writeText(url);
-        alert("Link copied");
+        toast.success("Link copied");
       } catch {}
     };
     try {
@@ -482,7 +493,7 @@ export function GuildPostsSection({ guildId }: GuildPostsSectionProps) {
         </div>
       ) : (
         <div className="space-y-4">
-          {posts.map((post) => (
+          {pagedPosts.map((post) => (
             <Card key={post.id} className={POST_CARD_CLASS}>
               {/* Texture overlay */}
               <div className="pointer-events-none absolute inset-0" style={CARD_TEXTURE} />
@@ -810,6 +821,16 @@ export function GuildPostsSection({ guildId }: GuildPostsSectionProps) {
               </CardContent>
             </Card>
           ))}
+          <div className="mt-2 flex items-center justify-between">
+            <div className="text-xs text-white/70">
+              <span>Showing {(safePage - 1) * pageSize + 1}–{Math.min(posts.length, safePage * pageSize)} of {posts.length}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="sm" onClick={() => setPage(p => Math.max(1, p - 1))} disabled={safePage === 1} className={`border-[#f5c16c]/30 ${safePage===1?'text-[#f5c16c]/50':'text-[#f5c16c]'}`}>Prev</Button>
+              <span className="text-xs text-white/70">Page {safePage} of {pageCount}</span>
+              <Button variant="outline" size="sm" onClick={() => setPage(p => Math.min(pageCount, p + 1))} disabled={safePage === pageCount} className={`border-[#f5c16c]/30 ${safePage===pageCount?'text-[#f5c16c]/50':'text-[#f5c16c]'}`}>Next</Button>
+            </div>
+          </div>
         </div>
       )}
     </div>

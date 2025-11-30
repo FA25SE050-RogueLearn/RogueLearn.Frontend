@@ -78,3 +78,11 @@ export type UpdateSubjectResponse = Subject;
 
 export type GetAllSubjectsResponse = Subject[];
 export type GetSubjectByIdResponse = Subject;
+
+export interface PaginatedSubjectsResponse {
+  items: Subject[];
+  page: number;
+  pageSize: number;
+  totalCount: number;
+  totalPages: number;
+}

@@ -27,6 +27,9 @@ const curriculumImportApi = {
   importSubjectFromText: (payload: ImportSubjectFromTextCommandRequest): Promise<ApiResponse<ImportSubjectFromTextCommandResponse>> => {
     const formData = new FormData();
     formData.append('rawText', payload.rawText);
+    if (payload.semester !== undefined && payload.semester !== null) {
+      formData.append('semester', payload.semester.toString());
+    }
     return axiosClient
       .post<ImportSubjectFromTextCommandResponse>('/api/admin/subjects/import-from-text', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },

@@ -1,4 +1,3 @@
-// roguelearn-web/src/components/admin/AdminSidebarNav.tsx
 "use client";
 
 import Link from "next/link";
@@ -14,19 +13,21 @@ import {
   GraduationCap,
   BookCopy,
   ScrollText,
-  ChevronLeft
+  ChevronLeft,
+  MessageSquare
 } from "lucide-react";
 
 const navItems = [
-  { href: "/admin", label: "Command Center", icon: LayoutDashboard },
+  { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
   { href: "/admin/events", label: "Event Requests", icon: Calendar },
-  { href: "/admin/content", label: "Content Vault", icon: Library },
+  { href: "/admin/content", label: "Content", icon: Library },
   { href: "/admin/lecturer-requests", label: "Lecturer Requests", icon: Scroll },
-  { href: "/admin/programs", label: "Programs", icon: ScrollText }, // New: Manage Programs & Subjects
+  { href: "/admin/programs", label: "Programs", icon: ScrollText },
   { href: "/admin/classes", label: "Classes", icon: GraduationCap },
-  { href: "/admin/skills", label: "Skill Tree", icon: Network },
-  { href: "/admin/mappings", label: "Subject skills Map", icon: BookCopy },
+  { href: "/admin/skills", label: "Skills", icon: Network },
+  { href: "/admin/mappings", label: "Subject Mappings", icon: BookCopy },
   { href: "/admin/user-roles", label: "User Roles", icon: Shield },
+  { href: "/admin/feedback", label: "Feedback", icon: MessageSquare },
   { href: "/admin/settings", label: "Settings", icon: Settings },
 ];
 
@@ -34,19 +35,19 @@ export function AdminSidebarNav() {
   const pathname = usePathname();
 
   return (
-    <nav className="flex h-full flex-col p-6">
-      {/* RPG-styled header */}
-      <div className="mb-8 flex items-center gap-3 pb-6 border-b border-amber-900/30">
-        <div className="relative flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-amber-600 to-amber-800 shadow-lg shadow-amber-900/50">
-          <Shield className="h-5 w-5 text-amber-50" />
-          <div className="absolute -inset-0.5 rounded-lg bg-gradient-to-br from-amber-500/50 to-transparent opacity-50 blur-sm" />
+    <nav className="flex h-full flex-col p-4">
+      {/* Header */}
+      <div className="mb-6 flex items-center gap-3 px-2 py-4 border-b border-[#beaca3]/40">
+        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#7289da]">
+          <Shield className="h-5 w-5 text-white" />
         </div>
         <div>
-          <h2 className="text-lg font-bold text-amber-100">Admin Sanctum</h2>
-          <p className="text-xs text-amber-700">Master&apos;s Chamber</p>
+          <h2 className="text-base font-semibold text-[#2c2f33]">Admin Panel</h2>
+          <p className="text-xs text-[#2c2f33]/60">Management Console</p>
         </div>
       </div>
 
+      {/* Navigation Items */}
       <div className="flex-1 space-y-1">
         {navItems.map((item) => {
           const isActive = pathname === item.href || (item.href !== "/admin" && pathname.startsWith(item.href));
@@ -56,25 +57,24 @@ export function AdminSidebarNav() {
             <Link
               key={item.href}
               href={item.href}
-              className={`group relative flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium transition-all ${isActive
-                  ? "bg-amber-900/20 text-amber-200 border-l-2 border-amber-600"
-                  : "text-gray-400 hover:bg-amber-900/10 hover:text-amber-300 hover:border-l-2 hover:border-amber-800/50"
-                }`}
+              className={`group flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+                isActive
+                  ? "bg-[#beaca3]/50 text-[#2c2f33]"
+                  : "text-[#2c2f33]/70 hover:bg-[#beaca3]/30 hover:text-[#2c2f33]"
+              }`}
             >
-              {isActive && (
-                <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-gradient-to-b from-amber-500 via-amber-600 to-amber-700 rounded-r-full shadow-lg shadow-amber-600/50" />
-              )}
-              <Icon className={`h-4 w-4 ${isActive ? 'text-amber-500' : 'text-gray-500 group-hover:text-amber-600'}`} />
+              <Icon className={`h-4 w-4 ${isActive ? 'text-[#7289da]' : 'text-[#2c2f33]/50 group-hover:text-[#7289da]'}`} />
               <span>{item.label}</span>
             </Link>
           );
         })}
       </div>
 
-      <div className="mt-6 border-t border-amber-900/30 pt-6">
+      {/* Back to Dashboard */}
+      <div className="mt-4 border-t border-[#beaca3]/40 pt-4">
         <Link
           href="/dashboard"
-          className="flex items-center gap-2 rounded-md border border-amber-700/50 bg-amber-900/20 px-3 py-2 text-amber-300 hover:bg-amber-800/30 hover:text-amber-200"
+          className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-[#2c2f33]/70 hover:bg-[#beaca3]/30 hover:text-[#2c2f33] transition-colors"
         >
           <ChevronLeft className="h-4 w-4" />
           Back to Dashboard

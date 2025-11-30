@@ -12,8 +12,20 @@ export async function GET(request: NextRequest) {
     const supabase = await createClient();
     const { error } = await supabase.auth.exchangeCodeForSession(code);
     if (!error) {
-      // On successful exchange, redirect the user to their dashboard
-      return NextResponse.redirect(`${origin}${next}`);
+      const { data: { session } } = await supabase.auth.getSession();
+      const response = NextResponse.redirect(`${origin}${next}`);
+      try {
+        const isHttps = new URL(request.url).protocol === 'https:';
+        const domain = process.env['NEXT_PUBLIC_COOKIE_DOMAIN'];
+        if (session?.access_token) {
+          const exp = session.expires_at ? Math.max(0, Math.floor(session.expires_at - Math.floor(Date.now() / 1000))) : 3600;
+          response.cookies.set('rl_access_token', session.access_token, { path: '/', maxAge: exp, secure: isHttps, sameSite: isHttps ? 'none' : 'lax', domain });
+        }
+        if (session?.refresh_token) {
+          response.cookies.set('rl_refresh_token', session.refresh_token, { path: '/', maxAge: 60 * 60 * 24 * 30, secure: isHttps, sameSite: isHttps ? 'none' : 'lax', domain });
+        }
+      } catch {}
+      return response;
     }
   }
 

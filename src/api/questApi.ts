@@ -46,6 +46,20 @@ interface QuestGenerationProgressResponse {
   updatedAt: string;
 }
 
+interface AdminStepFeedbackItem {
+  id: string;
+  questId: string;
+  stepId: string;
+  subjectId: string;
+  authUserId: string;
+  rating: number;
+  category: 'ContentError' | 'TechnicalIssue' | 'TooDifficult' | 'TooEasy' | 'Other';
+  comment?: string;
+  adminNotes?: string | null;
+  isResolved: boolean;
+  createdAt: string;
+}
+
 
 /**
  * API service for handling quest-specific interactions.
@@ -288,6 +302,34 @@ const questApi = {
         data: null,
         message: error.response?.data?.message || error.message
       })),
+  adminListFeedback: (
+    params: { subjectId?: string; questId?: string; unresolvedOnly?: boolean }
+  ): Promise<ApiResponse<AdminStepFeedbackItem[]>> =>
+    axiosClient
+      .get<AdminStepFeedbackItem[]>(`/api/admin/quests/feedback`, { params })
+      .then(res => ({ isSuccess: true as const, data: res.data }))
+      .catch(error => ({ isSuccess: false, data: null, message: error.response?.data?.message || error.message })),
+  adminUpdateFeedback: (
+    id: string,
+    payload: { isResolved?: boolean; adminNotes?: string }
+  ): Promise<ApiResponse<void>> =>
+    axiosClient
+      .patch(`/api/admin/quests/feedback/${id}`, payload)
+      .then(() => ({ isSuccess: true as const, data: undefined }))
+      .catch(error => ({ isSuccess: false, data: null, message: error.response?.data?.message || error.message })),
+  submitStepFeedback: async (
+    questId: string,
+    stepId: string,
+    payload: { rating: number; category: 'ContentError' | 'TechnicalIssue' | 'TooDifficult' | 'TooEasy' | 'Other'; comment?: string }
+  ): Promise<ApiResponse<void>> => {
+    try {
+      await axiosClient.post(`/api/quests/${questId}/steps/${stepId}/feedback`, payload);
+      return { isSuccess: true, data: undefined };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to submit feedback';
+      return { isSuccess: false, data: null, message };
+    }
+  },
       submitQuizAnswer: async (
   questId: string,
   stepId: string,

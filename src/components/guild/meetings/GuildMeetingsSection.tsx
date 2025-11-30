@@ -1,6 +1,6 @@
 "use client";
 import React, { useEffect, useMemo, useState } from "react";
-import { Swords, Video, Calendar, Clock, Users, ExternalLink, Play, Square, AlertCircle } from "lucide-react";
+import { Swords, Video, Calendar, Clock, Users, ExternalLink, Play, Square, AlertCircle, FileText } from "lucide-react";
 import { useGoogleMeet, MeetScopes } from "@/hooks/useGoogleMeet";
 import googleMeetApi from "@/api/googleMeetApi";
 import meetingsApi from "@/api/meetingsApi";
@@ -66,6 +66,8 @@ export default function GuildMeetingsSection({ guildId }: Props) {
   const [detailsLoading, setDetailsLoading] = useState<Record<string, boolean>>({});
   const [loadingMeetings, setLoadingMeetings] = useState(false);
   const [members, setMembers] = useState<GuildMemberDto[]>([]);
+  const [page, setPage] = useState<number>(1);
+  const pageSize = 5;
 
   function isUnauthorized(err: any): boolean {
     const msg = typeof err?.message === "string" ? err.message : "";
@@ -127,6 +129,24 @@ export default function GuildMeetingsSection({ guildId }: Props) {
     const me = members.find((m) => m.authUserId === authUserId);
     return me?.role ?? null;
   }, [members, authUserId]);
+
+  const sortedMeetings = useMemo(() => {
+    return [...guildMeetings].sort((a, b) => {
+      const sa = (a.spaceName ?? '').toLowerCase();
+      const sb = (b.spaceName ?? '').toLowerCase();
+      if (sa && sb) return sa.localeCompare(sb);
+      if (sa) return -1;
+      if (sb) return 1;
+      return (a.title ?? '').toLowerCase().localeCompare((b.title ?? '').toLowerCase());
+    });
+  }, [guildMeetings]);
+  const pageCount = useMemo(() => Math.max(1, Math.ceil((sortedMeetings.length || 0) / pageSize)), [sortedMeetings.length]);
+  const safePage = useMemo(() => Math.min(Math.max(1, page), pageCount), [page, pageCount]);
+  const pagedMeetings = useMemo(() => {
+    const start = (safePage - 1) * pageSize;
+    const end = start + pageSize;
+    return sortedMeetings.slice(start, end);
+  }, [sortedMeetings, safePage]);
 
   const requiredCreateScopes: MeetScopes[] = [
     "https://www.googleapis.com/auth/meetings.space.created",
@@ -701,16 +721,7 @@ export default function GuildMeetingsSection({ guildId }: Props) {
             setExpandedId(v);
             if (v) loadDetailsIfNeeded(v);
           }}>
-            {[...guildMeetings]
-              .sort((a, b) => {
-                const sa = (a.spaceName ?? '').toLowerCase();
-                const sb = (b.spaceName ?? '').toLowerCase();
-                if (sa && sb) return sa.localeCompare(sb);
-                if (sa) return -1;
-                if (sb) return 1;
-                return (a.title ?? '').toLowerCase().localeCompare((b.title ?? '').toLowerCase());
-              })
-              .map((m) => {
+            {pagedMeetings.map((m) => {
               const id = m.meetingId ?? `${m.title}-${m.scheduledStartTime}`;
               const details = m.meetingId ? detailsById[m.meetingId] : null;
               const isLoading = m.meetingId ? detailsLoading[m.meetingId] : false;
@@ -735,16 +746,40 @@ export default function GuildMeetingsSection({ guildId }: Props) {
                         </div>
                       </div>
                       <div className="ml-4 flex items-center gap-2">
-                        {m.meetingLink && m.status === MeetingStatus.Active && (
-                          <a
-                            href={m.meetingLink}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="rounded border border-white/20 bg-transparent px-3 py-1.5 text-xs font-medium text-white hover:bg-white/10"
-                          >
-                            Join Meet ↗
-                          </a>
-                        )}
+                        {m.meetingLink && m.status === MeetingStatus.Active && (() => {
+                          const now = Date.now();
+                          const start = new Date(m.scheduledStartTime).getTime();
+                          const end = new Date(m.scheduledEndTime).getTime();
+                          const within = now >= start && now <= end;
+                          const restrictRole = myRole === "Recruit" || myRole === "Member" || myRole === "Veteran";
+                          const disableJoin = restrictRole && !within;
+                          const cls = disableJoin
+                            ? "rounded border border-white/20 bg-transparent px-3 py-1.5 text-xs font-medium text-white opacity-50 cursor-not-allowed"
+                            : "rounded border border-white/20 bg-transparent px-3 py-1.5 text-xs font-medium text-white hover:bg-white/10";
+                          return (
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <a
+                                    href={m.meetingLink}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    aria-disabled={disableJoin}
+                                    className={cls}
+                                    onClick={(e) => { if (disableJoin) e.preventDefault(); }}
+                                  >
+                                    Join Meet ↗
+                                  </a>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  {disableJoin
+                                    ? `Available between ${formatBangkok(m.scheduledStartTime, { includeSeconds: false })} and ${formatBangkok(m.scheduledEndTime, { includeSeconds: false })}`
+                                    : "Join Google Meet"}
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          );
+                        })()}
                         {(myRole === "GuildMaster" || myRole === "Officer" || authUserId === m.organizerId) && (
                           <>
                           {m.status === MeetingStatus.Active && (
@@ -760,13 +795,14 @@ export default function GuildMeetingsSection({ guildId }: Props) {
                             <Tooltip>
                               <TooltipTrigger asChild>
                                 <span>
-                                  <button
-                                    onClick={(e) => { e.preventDefault(); handleSyncMeetingFor(m); }}
-                                    disabled={!(m.status === MeetingStatus.EndedProcessing && m.actualEndTime && (Date.now() - new Date(m.actualEndTime).getTime() >= 10 * 60 * 1000))}
-                                    className="rounded border border-white/20 bg-transparent px-3 py-1.5 text-xs font-medium text-white disabled:opacity-50 hover:bg-white/10"
-                                  >
-                                    Transcript
-                                  </button>
+                              <button
+                                onClick={(e) => { e.preventDefault(); handleSyncMeetingFor(m); }}
+                                disabled={!(m.status === MeetingStatus.EndedProcessing && m.actualEndTime && (Date.now() - new Date(m.actualEndTime).getTime() >= 10 * 60 * 1000))}
+                                className="group inline-flex items-center gap-2 rounded-lg border border-[#f5c16c]/40 bg-linear-to-r from-[#f5c16c] to-[#d4a855] px-4 py-2.5 text-sm font-bold text-black shadow-[0_0_15px_rgba(245,193,108,0.25)] hover:from-[#d4a855] hover:to-[#f5c16c] disabled:opacity-50 disabled:cursor-not-allowed"
+                              >
+                                <FileText className="h-4 w-4" />
+                                Transcript
+                              </button>
                                 </span>
                               </TooltipTrigger>
                               <TooltipContent>
@@ -831,6 +867,18 @@ export default function GuildMeetingsSection({ guildId }: Props) {
               );
             })}
           </Accordion>
+        )}
+        {guildMeetings.length > 0 && (
+          <div className="mt-2 flex items-center justify-between">
+            <div className="text-xs text-white/70">
+              <span>Showing {(safePage - 1) * pageSize + 1}–{Math.min(sortedMeetings.length, safePage * pageSize)} of {sortedMeetings.length}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={safePage === 1} className={`rounded border border-[#f5c16c]/30 px-3 py-1.5 text-xs ${safePage===1?'text-[#f5c16c]/50':'text-[#f5c16c]'}`}>Prev</button>
+              <span className="text-xs text-white/70">Page {safePage} of {pageCount}</span>
+              <button onClick={() => setPage(p => Math.min(pageCount, p + 1))} disabled={safePage === pageCount} className={`rounded border border-[#f5c16c]/30 px-3 py-1.5 text-xs ${safePage===pageCount?'text-[#f5c16c]/50':'text-[#f5c16c]'}`}>Next</button>
+            </div>
+          </div>
         )}
       </div>
 

@@ -19,10 +19,9 @@ import {
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useGuildRoles } from "@/hooks/useGuildRoles";
 import { Users, Shield, Lock, Globe, Scroll, Swords, Crown, Settings, HelpCircle, Trophy } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { getMyFullInfo } from "@/api/usersApi";
+import { toast } from "sonner";
 
 const SECTION_CARD_CLASS = 'relative overflow-hidden rounded-3xl border border-[#f5c16c]/25 bg-[#120806]/80';
 const HERO_CARD_CLASS = 'relative overflow-hidden rounded-[32px] border border-[#f5c16c]/30 bg-linear-to-br from-[#1c0906]/95 via-[#120605]/98 to-[#040101]';
@@ -42,7 +41,7 @@ const BACKDROP_TEXTURE: CSSProperties = {
 export default function GuildDetailPage() {
   const { guildId } = useParams<{ guildId: string }>();
   const [guild, setGuild] = useState<GuildDto | null>(null);
-  const [myGuildId, setMyGuildId] = useState<string | null>(null);
+  
   const [memberCount, setMemberCount] = useState<number | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -52,7 +51,7 @@ export default function GuildDetailPage() {
   const [showInfoModal, setShowInfoModal] = useState<boolean>(false);
   const [myAuthUserId, setMyAuthUserId] = useState<string | null>(null);
   const [members, setMembers] = useState<GuildMemberDto[]>([]);
-  const { roles: myRoles } = useGuildRoles(guildId as string);
+  const [myRole, setMyRole] = useState<GuildRole | null>(null);
   const [isLecturerGuild, setIsLecturerGuild] = useState<boolean>(false);
   const [configOpen, setConfigOpen] = useState<boolean>(false);
   const [cfgName, setCfgName] = useState<string>("");
@@ -68,31 +67,18 @@ export default function GuildDetailPage() {
     setLoading(true);
     Promise.all([
       guildsApi.getById(guildId as string),
-      guildsApi.getMyGuild(),
       guildsApi.getMembers(guildId as string),
       profileApi.getMyProfile(),
-      getMyFullInfo().catch(() => ({ data: null } as any)),
     ])
-      .then(([gRes, myRes, membersRes, pRes, fullRes]) => {
+      .then(([gRes, membersRes, pRes]) => {
         if (cancelled) return;
         const g = gRes.data ?? null;
         setGuild(g);
-        setMyGuildId(myRes.data?.id ?? null);
         const authId = pRes.data?.authUserId ?? null;
         setMyAuthUserId(authId);
         setMembers(Array.isArray(membersRes.data) ? (membersRes.data as GuildMemberDto[]) : []);
-        // Prefer a directly computed member count from the members endpoint.
-        // Fallback to my guild count (if this is the user's guild), then to the guild dto field.
-        const directCount = Array.isArray(membersRes.data)
-          ? membersRes.data.length
-          : null;
-        const isMyGuild = (myRes.data?.id ?? null) === (gRes.data?.id ?? null);
-        const fallbackMyCount = isMyGuild
-          ? myRes.data?.memberCount ?? null
-          : null;
-        setMemberCount(
-          directCount ?? fallbackMyCount ?? gRes.data?.memberCount ?? null
-        );
+        const directCount = Array.isArray(membersRes.data) ? membersRes.data.length : null;
+        setMemberCount(directCount ?? gRes.data?.memberCount ?? null);
         setIsLecturerGuild(!!g?.isLecturerGuild);
         if (g) {
           setCfgName(g.name);
@@ -113,6 +99,12 @@ export default function GuildDetailPage() {
     };
   }, [guildId]);
 
+  // Derive my role from members + my auth id
+  useEffect(() => {
+    const me = members.find((m) => m.authUserId === myAuthUserId) || null;
+    setMyRole(me?.role ?? null);
+  }, [members, myAuthUserId]);
+
   // Sync tabs with hash (#home, #posts, #rankings, #meetings, #manage)
   useEffect(() => {
     const applyHash = () => {
@@ -120,8 +112,8 @@ export default function GuildDetailPage() {
         typeof window !== "undefined"
           ? window.location.hash.replace(/^#/, "")
           : "";
-      const isMemberNow = !!guild && myGuildId === guild.id;
-      const canSeeMeetingsNow = isMemberNow && !myRoles.includes("Recruit");
+      const isMemberNow = !!guild && !!members.find((m) => m.authUserId === myAuthUserId);
+      const canSeeMeetingsNow = isMemberNow && myRole !== "Recruit";
       if (hash === "home" || hash === "posts" || hash === "rankings") {
         setActiveTab(hash);
       } else if (hash === "meetings") {
@@ -133,11 +125,11 @@ export default function GuildDetailPage() {
     applyHash();
     window.addEventListener("hashchange", applyHash);
     return () => window.removeEventListener("hashchange", applyHash);
-  }, [myRoles, guild, myGuildId]);
+  }, [myRole, guild, members, myAuthUserId]);
 
-  const isMember = guild && myGuildId === guild.id;
-  const canSeeMeetings = isMember && !myRoles.includes("Recruit");
-  const canManage = isMember && (myRoles.includes("GuildMaster") || myRoles.includes("Officer"));
+  const isMember = !!guild && !!members.find((m) => m.authUserId === myAuthUserId);
+  const canSeeMeetings = isMember && myRole !== "Recruit";
+  const canManage = isMember && (myRole === "GuildMaster" || myRole === "Officer");
 
   const displayName = (m?: GuildMemberDto | null): string | undefined => {
     if (!m) return undefined;
@@ -155,6 +147,15 @@ export default function GuildDetailPage() {
   const rest = useMemo(() => sortedMembers.slice(3), [sortedMembers]);
   const myEntry = useMemo(() => sortedMembers.find((m) => m.authUserId === myAuthUserId) || null, [sortedMembers, myAuthUserId]);
   const rankOf = (m: GuildMemberDto, idx: number) => (typeof m.rankWithinGuild === "number" && m.rankWithinGuild > 0 ? m.rankWithinGuild : idx + 1);
+  const [rankPage, setRankPage] = useState<number>(1);
+  const rankPageSize = 10;
+  const rankPageCount = useMemo(() => Math.max(1, Math.ceil((sortedMembers.length || 0) / rankPageSize)), [sortedMembers.length]);
+  const safeRankPage = useMemo(() => Math.min(Math.max(1, rankPage), rankPageCount), [rankPage, rankPageCount]);
+  const rankPagedMembers = useMemo(() => {
+    const start = (safeRankPage - 1) * rankPageSize;
+    const end = start + rankPageSize;
+    return sortedMembers.slice(start, end);
+  }, [sortedMembers, safeRankPage]);
 
   const handleApply = async () => {
     if (!guildId) return;
@@ -163,20 +164,11 @@ export default function GuildDetailPage() {
       await guildsApi.applyToJoin(guildId as string, {
         message: joinMessage || null,
       });
-      try {
-        const my = await guildsApi.getMyGuild();
-        if (my.data?.id === guildId) {
-          alert("Joined successfully.");
-        } else {
-          alert("Join request submitted.");
-        }
-      } catch {
-        alert("Join request submitted.");
-      }
+      toast.info("Join request submitted.");
       setJoinMessage("");
     } catch (err) {
       console.error(err);
-      alert("Failed to submit join request.");
+      toast.error("Failed to submit join request.");
     } finally {
       setSubmitting(false);
     }
@@ -184,7 +176,7 @@ export default function GuildDetailPage() {
 
   return (
     <div className="relative flex min-h-screen flex-col overflow-hidden">
-      <div aria-hidden="true" className="pointer-events-none absolute inset-0" style={BACKDROP_GRADIENT} />
+      {/* <div aria-hidden="true" className="pointer-events-none absolute inset-0" style={BACKDROP_GRADIENT} /> */}
       <div aria-hidden="true" className="pointer-events-none absolute inset-0" style={BACKDROP_TEXTURE} />
       
       <div className="relative z-20">
@@ -321,7 +313,7 @@ export default function GuildDetailPage() {
                       </Dialog>
                     )}
                     
-                    {isMember && myRoles.includes("GuildMaster") && (
+                    {isMember && myRole === "GuildMaster" && (
                       <div className="flex items-center gap-2 rounded-full border border-amber-400/40 bg-amber-400/15 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-amber-300">
                         <Crown className="h-3.5 w-3.5" />
                         Guild Master
@@ -399,9 +391,9 @@ export default function GuildDetailPage() {
                             const refreshed = await guildsApi.getById(guildId as string);
                             if (refreshed.isSuccess) setGuild(refreshed.data || guild);
                             setConfigOpen(false);
-                            alert('Guild settings updated.');
+                            toast.success('Guild settings updated.');
                           } catch (err) {
-                            alert('Failed to update settings.');
+                            toast.error('Failed to update settings.');
                           } finally {
                             setCfgSubmitting(false);
                           }
@@ -561,9 +553,9 @@ export default function GuildDetailPage() {
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-[#f5c16c]/15">
-                          {sortedMembers.map((m, i) => (
+                          {rankPagedMembers.map((m, i) => (
                             <tr key={m.memberId} className="hover:bg-black/40 transition">
-                              <td className="p-4 font-bold text-foreground/60">#{rankOf(m, i)}</td>
+                              <td className="p-4 font-bold text-foreground/60">#{rankOf(m, (safeRankPage - 1) * rankPageSize + i)}</td>
                               <td className="p-4 flex items-center gap-3 text-white">
                                 <div className="w-8 h-8 rounded-full overflow-hidden bg-black">
                                   <Avatar className="w-full h-full">
@@ -602,6 +594,16 @@ export default function GuildDetailPage() {
                         </div>
                       )}
                     </CardContent>
+                    <div className="px-4 pb-4 flex items-center justify-between">
+                      <div className="text-xs text-white/70">
+                        <span>Showing {(safeRankPage - 1) * rankPageSize + 1}–{Math.min(sortedMembers.length, safeRankPage * rankPageSize)} of {sortedMembers.length}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <button onClick={() => setRankPage(p => Math.max(1, p - 1))} disabled={safeRankPage === 1} className={`rounded border border-[#f5c16c]/30 px-3 py-1.5 text-xs ${safeRankPage===1?'text-[#f5c16c]/50':'text-[#f5c16c]'}`}>Prev</button>
+                        <span className="text-xs text-white/70">Page {safeRankPage} of {rankPageCount}</span>
+                        <button onClick={() => setRankPage(p => Math.min(rankPageCount, p + 1))} disabled={safeRankPage === rankPageCount} className={`rounded border border-[#f5c16c]/30 px-3 py-1.5 text-xs ${safeRankPage===rankPageCount?'text-[#f5c16c]/50':'text-[#f5c16c]'}`}>Next</button>
+                      </div>
+                    </div>
                   </Card>
                 </TabsContent>
 
