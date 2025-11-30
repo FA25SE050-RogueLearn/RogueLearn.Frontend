@@ -360,7 +360,7 @@ export default function ProblemBankPage() {
                     <div className="space-y-2">
                       <h3 className="text-lg font-semibold text-amber-200">Sample Test Cases</h3>
                       <div className="space-y-3">
-                        {problemDetails.test_cases.filter(tc => !tc.is_hidden).slice(0, 3).map((testCase, index) => (
+                        {problemDetails.test_cases.filter(tc => tc.is_sample).slice(0, 3).map((testCase, index) => (
                           <div key={index} className="rounded-lg border border-amber-900/30 bg-amber-950/20 p-4 space-y-2">
                             <div>
                               <h4 className="text-xs font-semibold text-amber-400 mb-1">Input:</h4>
