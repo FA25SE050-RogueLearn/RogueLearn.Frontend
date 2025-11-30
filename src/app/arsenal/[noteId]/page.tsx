@@ -1084,10 +1084,12 @@ function LeftNotesSidebar() {
     };
   }, []);
   useEffect(() => {
-    const h = setTimeout(() => setSearch(searchInput), 300);
+    const h = setTimeout(() => {
+      setSearch(searchInput);
+      setPage(1);
+    }, 300);
     return () => clearTimeout(h);
   }, [searchInput]);
-  useEffect(() => { setPage(1); }, [search]);
   const filteredAll = items.filter((n) => {
     if (!search) return true;
     const q = search.toLowerCase();

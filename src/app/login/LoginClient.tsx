@@ -31,6 +31,21 @@ export default function LoginClient() {
     if (error) {
       setError(error.message);
     } else {
+      const { data: { session } } = await supabase.auth.getSession();
+      try {
+        const isHttps = typeof window !== 'undefined' && window.location.protocol === 'https:';
+        const domain = process.env['NEXT_PUBLIC_COOKIE_DOMAIN'];
+        const secure = isHttps ? '; Secure' : '';
+        const sameSite = isHttps ? 'None' : 'Lax';
+        const dom = domain ? `; Domain=${domain}` : '';
+        if (session?.access_token) {
+          const exp = session.expires_at ? Math.max(0, Math.floor(session.expires_at - Math.floor(Date.now() / 1000))) : 3600;
+          document.cookie = `rl_access_token=${encodeURIComponent(session.access_token)}; Path=/; Max-Age=${exp}${secure}; SameSite=${sameSite}${dom}`;
+        }
+        if (session?.refresh_token) {
+          document.cookie = `rl_refresh_token=${encodeURIComponent(session.refresh_token)}; Path=/; Max-Age=${60 * 60 * 24 * 30}${secure}; SameSite=${sameSite}${dom}`;
+        }
+      } catch {}
       router.push('/dashboard');
       router.refresh();
     }
