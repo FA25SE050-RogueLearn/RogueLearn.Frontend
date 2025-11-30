@@ -14,7 +14,7 @@ export async function POST(req: NextRequest) {
   const { messages, toolDefinition, toolDefinitions } = await req.json().catch(() => ({}));
 
   const reqId = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-  const modelId = "gemini-2.5-flash-lite";
+  const modelId = "gemini-2.5-flash";
 
   const defs = toolDefinitions ?? toolDefinition;
   const toolsFromDefinitions = defs

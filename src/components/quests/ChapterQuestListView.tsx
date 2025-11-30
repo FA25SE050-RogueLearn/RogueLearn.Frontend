@@ -207,6 +207,46 @@ export function ChapterQuestListView({ learningPath, chapter, onGenerateFirstQue
                             </Card>
                         ))
                     )}
+
+                    {/* Boss Fight Option - Show when chapter is completed */}
+                    {progressPercentage === 100 && (
+                        <Card className="module-card relative overflow-hidden rounded-[28px] border-2 border-violet-500/60 bg-gradient-to-br from-violet-500/20 via-fuchsia-500/15 to-violet-500/20 shadow-[0_0_40px_rgba(168,85,247,0.4)] animate-pulse-slow">
+                            <div
+                                className="pointer-events-none absolute inset-0 opacity-10 mix-blend-overlay"
+                                style={{
+                                    backgroundImage: 'url(/images/asfalt-dark.png)',
+                                    backgroundSize: '350px 350px',
+                                    backgroundRepeat: 'repeat'
+                                }}
+                            />
+                            <CardContent className="relative z-10 p-8">
+                                <div className="flex items-center justify-between gap-6">
+                                    <div className="flex-1 space-y-3">
+                                        <div className="flex items-center gap-3">
+                                            <Trophy className="h-8 w-8 text-amber-400" />
+                                            <h3 className="text-2xl font-bold text-white">Chapter Complete!</h3>
+                                        </div>
+                                        <p className="text-white/80 text-sm">
+                                            Test your mastery with a boss fight! Face {totalQuests} challenging questions to prove you've conquered this chapter.
+                                        </p>
+                                        <div className="flex items-center gap-2 text-xs text-fuchsia-300">
+                                            <Swords className="h-4 w-4" />
+                                            <span>Mock Exam Mode • {totalQuests} Questions</span>
+                                        </div>
+                                    </div>
+                                    <Button
+                                        asChild
+                                        className="rounded-full px-8 py-6 text-lg font-bold bg-gradient-to-r from-violet-500 via-fuchsia-500 to-violet-500 text-white hover:from-violet-600 hover:via-fuchsia-600 hover:to-violet-600 shadow-[0_0_30px_rgba(168,85,247,0.6)] transition-all"
+                                    >
+                                        <Link href={`/boss-fight?chapterId=${chapter.id}`}>
+                                            <Swords className="mr-2 h-5 w-5" />
+                                            Fight Boss
+                                        </Link>
+                                    </Button>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    )}
                 </div>
 
                 <QuestGenerationModal
