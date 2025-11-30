@@ -3,6 +3,7 @@ import axiosClient from './axiosClient';
 import { ApiResponse } from '../types/base/Api';
 import { CurriculumProgramDto } from '@/types/curriculum-programs';
 import { Subject, SyllabusContent, PaginatedSubjectsResponse } from '@/types/subjects';
+import { WeeklyModuleContent } from '@/types/quest';
 // REMOVED: Obsolete imports
 // import { CurriculumVersionDto } from '@/types/curriculum-versions';
 // import { Subject } from '@/types/subjects';
@@ -42,6 +43,17 @@ updateSubjectContent: (subjectId: string, content: SyllabusContent): Promise<Api
   axiosClient.put<SyllabusContent>(`/api/admin/subjects/${subjectId}/content`, content).then(res => ({
     isSuccess: true,
     data: res.data,
+  })),
+
+/** GET /api/admin/quest-steps/{questStepId}/content - Get quest step content for admin review */
+getQuestStepContent: (questStepId: string): Promise<ApiResponse<WeeklyModuleContent>> =>
+  axiosClient.get<WeeklyModuleContent>(`/api/admin/quest-steps/${questStepId}/content`).then(res => ({
+    isSuccess: true as const,
+    data: res.data,
+  })).catch(error => ({
+    isSuccess: false as const,
+    data: null,
+    message: error.response?.data?.message || error.message,
   })),
 
 };

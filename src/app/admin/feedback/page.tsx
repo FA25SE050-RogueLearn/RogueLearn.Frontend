@@ -9,7 +9,8 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
-import { Loader2, MessageSquare, CheckCircle2, ChevronsUpDown, Check } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Loader2, MessageSquare, CheckCircle2, ChevronsUpDown, Check, Eye, BookOpen, HelpCircle, Code, FileText } from "lucide-react";
 import { useEffect, useMemo, useState, useCallback } from "react";
 import { cn } from "@/lib/utils";
 import questApi from "@/api/questApi";
@@ -17,6 +18,7 @@ import { toast } from "sonner";
 import subjectsApi from "@/api/subjectsApi";
 import adminContentApi from "@/api/adminContentApi";
 import type { Subject } from "@/types/subjects";
+import type { WeeklyModuleContent, Activity } from "@/types/quest";
 import debounce from "lodash/debounce";
 
 type Category = 'ContentError' | 'TechnicalIssue' | 'TooDifficult' | 'TooEasy' | 'Other' | 'all';
@@ -53,6 +55,12 @@ export default function AdminFeedbackPage() {
   const [subjectsPage, setSubjectsPage] = useState(1);
   const [subjectsHasMore, setSubjectsHasMore] = useState(false);
   const [loadingSubjects, setLoadingSubjects] = useState(false);
+  
+  // Quest step content dialog state
+  const [contentDialogOpen, setContentDialogOpen] = useState(false);
+  const [selectedFeedbackItem, setSelectedFeedbackItem] = useState<FeedbackItem | null>(null);
+  const [stepContent, setStepContent] = useState<WeeklyModuleContent | null>(null);
+  const [loadingContent, setLoadingContent] = useState(false);
 
   const filtered = useMemo(() => {
     const arr = Array.isArray(items) ? items : [];
@@ -125,6 +133,45 @@ export default function AdminFeedbackPage() {
     const res = await questApi.adminUpdateFeedback(id, { adminNotes: notes });
     if (res.isSuccess) { setItems(prev => prev.map(it => it.id === id ? { ...it, adminNotes: notes } : it)); toast.success('Notes saved'); }
     else { toast.error(res.message || 'Failed to save notes'); }
+  };
+
+  const viewStepContent = async (item: FeedbackItem) => {
+    setSelectedFeedbackItem(item);
+    setContentDialogOpen(true);
+    setLoadingContent(true);
+    setStepContent(null);
+    try {
+      const res = await adminContentApi.getQuestStepContent(item.stepId);
+      if (res.isSuccess && res.data) {
+        setStepContent(res.data);
+      } else {
+        toast.error(res.message || 'Failed to load step content');
+      }
+    } catch (e: any) {
+      toast.error('Failed to load step content');
+    } finally {
+      setLoadingContent(false);
+    }
+  };
+
+  const getActivityIcon = (type: string) => {
+    switch (type) {
+      case 'Reading': return <FileText className="h-4 w-4" />;
+      case 'KnowledgeCheck': return <HelpCircle className="h-4 w-4" />;
+      case 'Quiz': return <BookOpen className="h-4 w-4" />;
+      case 'Coding': return <Code className="h-4 w-4" />;
+      default: return <FileText className="h-4 w-4" />;
+    }
+  };
+
+  const getActivityColor = (type: string) => {
+    switch (type) {
+      case 'Reading': return 'bg-blue-50 text-blue-600 border-blue-200';
+      case 'KnowledgeCheck': return 'bg-purple-50 text-purple-600 border-purple-200';
+      case 'Quiz': return 'bg-emerald-50 text-emerald-600 border-emerald-200';
+      case 'Coding': return 'bg-orange-50 text-orange-600 border-orange-200';
+      default: return 'bg-gray-50 text-gray-600 border-gray-200';
+    }
   };
 
   return (
@@ -242,7 +289,16 @@ export default function AdminFeedbackPage() {
                         )}>{it.category}</span>
                       </TableCell>
                       <TableCell><div className="flex gap-0.5">{[...Array(5)].map((_, i) => <div key={i} className={cn("h-1.5 w-1.5 rounded-full", i < it.rating ? "bg-[#7289da]" : "bg-[#beaca3]/40")} />)}</div></TableCell>
-                      <TableCell className="text-sm text-[#2c2f33]/80 leading-relaxed min-w-[250px]">{it.comment}<div className="mt-1 flex gap-2 text-[10px] font-mono text-[#2c2f33]/40"><span>Q: {it.questId.substring(0, 8)}...</span><span>S: {it.stepId.substring(0, 8)}...</span></div></TableCell>
+                      <TableCell className="text-sm text-[#2c2f33]/80 leading-relaxed min-w-[250px]">
+                        {it.comment}
+                        <div className="mt-1 flex items-center gap-2">
+                          <span className="text-[10px] font-mono text-[#2c2f33]/40">Q: {it.questId.substring(0, 8)}...</span>
+                          <span className="text-[10px] font-mono text-[#2c2f33]/40">S: {it.stepId.substring(0, 8)}...</span>
+                          <Button variant="ghost" size="sm" className="h-5 px-1.5 text-[10px] text-[#7289da] hover:bg-[#7289da]/10" onClick={() => viewStepContent(it)}>
+                            <Eye className="h-3 w-3 mr-1" /> View Content
+                          </Button>
+                        </div>
+                      </TableCell>
                       <TableCell><Input defaultValue={it.adminNotes ?? ''} onBlur={(e) => saveNotes(it.id, e.target.value)} placeholder="Add notes..." className="h-8 border-[#beaca3]/30 text-xs focus:border-[#7289da]" /></TableCell>
                       <TableCell className="text-right">
                         <Button size="sm" onClick={() => markResolved(it.id, !it.isResolved)} className={cn("h-8 text-xs border", it.isResolved ? "bg-emerald-50 text-emerald-600 border-emerald-200 hover:bg-emerald-100" : "bg-[#beaca3]/20 text-[#2c2f33] border-[#beaca3]/30 hover:bg-[#beaca3]/30")}>
@@ -264,6 +320,145 @@ export default function AdminFeedbackPage() {
             )}
           </CardContent>
         </Card>
+
+        {/* Quest Step Content Dialog */}
+        <Dialog open={contentDialogOpen} onOpenChange={setContentDialogOpen}>
+          <DialogContent className="max-w-4xl max-h-[90vh] bg-white border-[#beaca3]/30">
+            <DialogHeader>
+              <DialogTitle className="text-[#2c2f33] flex items-center gap-2">
+                <Eye className="h-5 w-5 text-[#7289da]" />
+                Quest Step Content
+              </DialogTitle>
+              {selectedFeedbackItem && (
+                <div className="text-xs text-[#2c2f33]/50 font-mono mt-1">
+                  Step ID: {selectedFeedbackItem.stepId}
+                </div>
+              )}
+            </DialogHeader>
+            
+            <div className="max-h-[70vh] overflow-y-auto pr-4">
+              {loadingContent ? (
+                <div className="flex items-center justify-center py-12">
+                  <Loader2 className="h-8 w-8 animate-spin text-[#7289da]" />
+                  <span className="ml-3 text-[#2c2f33]/60">Loading content...</span>
+                </div>
+              ) : stepContent?.activities ? (
+                <div className="space-y-4">
+                  {stepContent.activities.map((activity, index) => (
+                    <div key={activity.activityId} className="border border-[#beaca3]/30 rounded-lg overflow-hidden">
+                      {/* Activity Header */}
+                      <div className={cn("px-4 py-2 flex items-center gap-2 border-b border-[#beaca3]/20", getActivityColor(activity.type))}>
+                        {getActivityIcon(activity.type)}
+                        <span className="font-semibold text-sm">{activity.type}</span>
+                        <span className="text-xs opacity-70">#{index + 1}</span>
+                        {activity.payload && 'experiencePoints' in activity.payload && (
+                          <span className="ml-auto text-xs font-medium">+{activity.payload.experiencePoints} XP</span>
+                        )}
+                      </div>
+                      
+                      {/* Activity Content */}
+                      <div className="p-4 bg-[#f4f6f8]/50">
+                        {/* Topic if available */}
+                        {activity.payload && 'topic' in activity.payload && (
+                          <div className="mb-3">
+                            <span className="text-xs font-medium text-[#2c2f33]/50 uppercase tracking-wide">Topic</span>
+                            <p className="text-sm font-medium text-[#2c2f33]">{(activity.payload as any).topic}</p>
+                          </div>
+                        )}
+                        
+                        {/* Questions for KnowledgeCheck/Quiz */}
+                        {activity.payload && 'questions' in activity.payload && (
+                          <div className="space-y-3">
+                            <span className="text-xs font-medium text-[#2c2f33]/50 uppercase tracking-wide">
+                              Questions ({(activity.payload as any).questions.length})
+                            </span>
+                            {(activity.payload as any).questions.map((q: any, qIdx: number) => (
+                              <div key={qIdx} className="bg-white border border-[#beaca3]/20 rounded-lg p-3">
+                                <p className="text-sm font-medium text-[#2c2f33] mb-2">
+                                  {qIdx + 1}. {q.question}
+                                </p>
+                                <div className="space-y-1 mb-2">
+                                  {q.options?.map((opt: string, oIdx: number) => (
+                                    <div 
+                                      key={oIdx} 
+                                      className={cn(
+                                        "text-xs px-2 py-1 rounded",
+                                        opt === q.correctAnswer 
+                                          ? "bg-emerald-50 text-emerald-700 border border-emerald-200" 
+                                          : "bg-[#f4f6f8] text-[#2c2f33]/70"
+                                      )}
+                                    >
+                                      {String.fromCharCode(65 + oIdx)}. {opt}
+                                      {opt === q.correctAnswer && <span className="ml-2 font-semibold">(Correct)</span>}
+                                    </div>
+                                  ))}
+                                </div>
+                                {q.explanation && (
+                                  <div className="text-xs text-[#7289da] bg-[#7289da]/5 p-2 rounded border border-[#7289da]/20">
+                                    <span className="font-semibold">Explanation:</span> {q.explanation}
+                                  </div>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                        
+                        {/* Reading content */}
+                        {activity.type === 'Reading' && activity.payload && 'articleTitle' in activity.payload && (
+                          <div className="space-y-2">
+                            <div>
+                              <span className="text-xs font-medium text-[#2c2f33]/50 uppercase tracking-wide">Article</span>
+                              <p className="text-sm font-medium text-[#2c2f33]">{(activity.payload as any).articleTitle}</p>
+                            </div>
+                            {(activity.payload as any).summary && (
+                              <div>
+                                <span className="text-xs font-medium text-[#2c2f33]/50 uppercase tracking-wide">Summary</span>
+                                <p className="text-sm text-[#2c2f33]/70">{(activity.payload as any).summary}</p>
+                              </div>
+                            )}
+                            {(activity.payload as any).url && (
+                              <a href={(activity.payload as any).url} target="_blank" rel="noopener noreferrer" className="text-xs text-[#7289da] hover:underline">
+                                Open Article →
+                              </a>
+                            )}
+                          </div>
+                        )}
+                        
+                        {/* Coding content */}
+                        {activity.type === 'Coding' && activity.payload && (
+                          <div className="space-y-2">
+                            {'problemTitle' in activity.payload && (
+                              <div>
+                                <span className="text-xs font-medium text-[#2c2f33]/50 uppercase tracking-wide">Problem</span>
+                                <p className="text-sm font-medium text-[#2c2f33]">{(activity.payload as any).problemTitle}</p>
+                              </div>
+                            )}
+                            {'problemDescription' in activity.payload && (
+                              <div>
+                                <span className="text-xs font-medium text-[#2c2f33]/50 uppercase tracking-wide">Description</span>
+                                <p className="text-sm text-[#2c2f33]/70 whitespace-pre-wrap">{(activity.payload as any).problemDescription}</p>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                        
+                        {/* Activity ID */}
+                        <div className="mt-3 pt-2 border-t border-[#beaca3]/20">
+                          <span className="text-[10px] font-mono text-[#2c2f33]/30">ID: {activity.activityId}</span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="flex flex-col items-center justify-center py-12 text-[#2c2f33]/40">
+                  <MessageSquare className="h-12 w-12 mb-3" />
+                  <p>No content found for this quest step</p>
+                </div>
+              )}
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     </AdminLayout>
   );
