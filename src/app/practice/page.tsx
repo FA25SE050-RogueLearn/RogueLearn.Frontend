@@ -1,11 +1,11 @@
 
 "use client";
-import React, { useEffect, useState } from "react";
+import React, { Suspense, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useSearchParams } from "next/navigation";
 import UnityPlayer from "@/components/unity/UnityPlayer";
 
-export default function PracticePage() {
+function PracticeContent() {
   const params = useSearchParams();
   const router = useRouter();
   const userId = params.get("userId") ?? undefined;
@@ -65,5 +65,13 @@ export default function PracticePage() {
       <p style={{ marginBottom: 12 }}>{status}</p>
       <UnityPlayer initialJoinCode={joinCode} autoConnectViaBridge={true} showJoinInput={false} userId={userId} />
     </div>
+  );
+}
+
+export default function PracticePage() {
+  return (
+    <Suspense fallback={<div style={{ padding: 16 }}>Loading...</div>}>
+      <PracticeContent />
+    </Suspense>
   );
 }

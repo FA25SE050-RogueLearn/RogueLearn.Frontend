@@ -3,7 +3,7 @@
 
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { CheckCircle, ArrowLeft, Play, BookOpen, Loader2, Sparkles, ChevronRight } from "lucide-react";
+import { CheckCircle, ArrowLeft, Play, BookOpen, Loader2, Sparkles, ChevronRight, Trophy, Swords } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useEffect, useRef, useState } from "react";
 import { gsap } from "gsap";

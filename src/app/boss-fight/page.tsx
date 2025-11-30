@@ -408,7 +408,7 @@ export default function BossFightSetupPage() {
   if (mode === 'playing' && sessionId) {
     return (
       <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #0a0508 0%, #1a0b10 50%, #0a0508 100%)', padding: 32 }}>
-        <UnityPlayer matchId={sessionId} />
+        <UnityPlayer initialJoinCode={joinCodeInput || undefined} userId={userId || undefined} />
       </div>
     )
   }
