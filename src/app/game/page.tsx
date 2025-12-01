@@ -71,7 +71,7 @@ export default function GamePage() {
           relay_join_code: String(data.joinCode),
           pack_spec: { subject: "PRN212", topic: "basics", difficulty: "easy", count: 10 },
         };
-        const rawBase = process.env.NEXT_PUBLIC_USER_API_URL || "https://localhost:5051";
+        const rawBase = process.env.NEXT_PUBLIC_API_URL || "https://localhost:5051";
         let base = (rawBase || "").replace(/\/+$/, "");
         if (base.endsWith("/api")) base = base.slice(0, -4);
         const createUrl = `${base}/api/quests/game/sessions/create`;

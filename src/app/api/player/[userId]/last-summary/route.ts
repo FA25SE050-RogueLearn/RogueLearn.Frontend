@@ -5,10 +5,10 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ user
   try {
     const { userId } = await params
     if (!userId) return NextResponse.json({ ok: false, error: 'Missing userId' }, { status: 400 })
-    const rawBase = process.env.USER_API_BASE || process.env.NEXT_PUBLIC_USER_API_URL || ''
+    const rawBase = process.env.API_BASE || process.env.NEXT_PUBLIC_API_URL || ''
     const base = String(rawBase).replace(/\/+$/, '')
     if (!base) return NextResponse.json({ ok: false, error: 'USER_API_BASE not configured' }, { status: 500 })
-    if (process.env.INSECURE_TLS === '1') { try { (process.env as any).NODE_TLS_REJECT_UNAUTHORIZED = '0' } catch {} }
+    if (process.env.INSECURE_TLS === '1') { try { (process.env as any).NODE_TLS_REJECT_UNAUTHORIZED = '0' } catch { } }
     const url = `${base}/api/player/${userId}/last-summary`
     const res = await fetch(url, { cache: 'no-store' })
     const txt = await res.text()

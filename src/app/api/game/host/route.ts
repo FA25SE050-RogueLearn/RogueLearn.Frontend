@@ -23,7 +23,7 @@ export async function POST(req: NextRequest) {
   }
 
   // If a backend URL is provided, attempt to proxy the request there.
-  const backendUrl = process.env.GAME_BACKEND_URL || process.env.NEXT_PUBLIC_GAME_BACKEND_URL;
+  const backendUrl = process.env.GAME_BACKEND_URL || process.env.NEXT_PUBLIC_API_URL;
 
   try {
     if (backendUrl) {

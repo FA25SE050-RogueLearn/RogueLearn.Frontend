@@ -35,7 +35,7 @@ export async function POST(req: NextRequest) {
     const joinCode = host.joinCode
 
     // 3) Create a session with the personalized pack
-    const rawBase = process.env.USER_API_BASE || process.env.NEXT_PUBLIC_USER_API_URL || ''
+    const rawBase = process.env.USER_API_BASE || process.env.NEXT_PUBLIC_API_URL || ''
     const base = (rawBase || '').replace(/\/+$/, '')
     const url = `${base}/api/quests/game/sessions/create`
     const payload = {

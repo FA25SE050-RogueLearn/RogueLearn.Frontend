@@ -41,7 +41,7 @@ export default function BossFightSetupPage() {
 
       // Fetch user's subjects from their quests
       try {
-        const origin = process.env.NEXT_PUBLIC_USER_API_URL || 'http://localhost:5051'
+        const origin = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5051'
         const { data: { session } } = await supabase.auth.getSession()
         const token = session?.access_token
 
@@ -134,7 +134,7 @@ export default function BossFightSetupPage() {
       setJoinCode(code)
 
       // Step 2: Create game session with configured subjects
-      const origin = process.env.NEXT_PUBLIC_USER_API_URL || 'http://localhost:5051'
+      const origin = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5051'
       const selectedSubjectCodes = subjects
         .filter(s => selectedSubjects.includes(s.id))
         .map(s => s.subjectCode)
