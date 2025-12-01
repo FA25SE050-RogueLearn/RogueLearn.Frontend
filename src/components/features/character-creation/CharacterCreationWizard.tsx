@@ -155,9 +155,9 @@ export function CharacterCreationWizard({ onOnboardingComplete }: CharacterCreat
   }
 
   return (
-    <div className="h-screen overflow-hidden flex flex-col">
+    <div className="h-full overflow-hidden flex flex-col">
       {/* Header Section - Fixed */}
-      <div className="px-6 py-6 border-b border-white/5">
+      <div className="px-6 py-4 border-b border-white/5 flex-shrink-0">
         <div className="flex items-center justify-between mb-4">
           <p className="text-xs uppercase tracking-[0.4em] text-foreground/60">RogueLearn Character Creation</p>
           <p className="text-xs uppercase tracking-[0.4em] text-foreground/60">Step {stepNumber} / 3</p>
@@ -171,8 +171,8 @@ export function CharacterCreationWizard({ onOnboardingComplete }: CharacterCreat
       </div>
 
       {/* Content Section - Scrollable */}
-      <div className="flex-1 overflow-y-auto px-6 py-8">
-        <div className="max-w-6xl mx-auto">
+      <div className="flex-1 overflow-y-auto px-6 py-6 min-h-0">
+        <div className="max-w-6xl mx-auto h-full">
           {currentStep === "route" && (
             <RouteSelectionStep
               routes={routes}

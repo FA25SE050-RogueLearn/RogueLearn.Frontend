@@ -7,11 +7,13 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { Loader2, AlertCircle, Sparkles, BookCopy, RefreshCw, GitBranch } from 'lucide-react';
+import { Loader2, AlertCircle, BookCopy, RefreshCw, GitBranch } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { UserProfileDto } from '@/types/user-profile';
-import profileApi from '@/api/profileApi';
+import profileApi, { invalidateMyProfileCache } from '@/api/profileApi';
 // MODIFICATION: The API call now comes from the refactored usersApi.
 import { processAcademicRecord } from '@/api/usersApi';
+import { CharacterCreationWizard } from '@/components/features/character-creation/CharacterCreationWizard';
 
 // MODIFICATION: The flow is simplified. We only process the record and then complete.
 type FlowStep = 'form' | 'processing' | 'complete';
@@ -31,6 +33,7 @@ export default function ConnectFapPage() {
   const [error, setError] = useState<string | null>(null);
   const [userProfile, setUserProfile] = useState<UserProfileDto | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [showCharacterWizard, setShowCharacterWizard] = useState(false);
 
   const isUpdateFlow = userProfile?.onboardingCompleted ?? false;
 
@@ -38,11 +41,15 @@ export default function ConnectFapPage() {
     setIsLoading(true);
     setError(null);
     try {
-      const profileResponse = await profileApi.getMyProfile();
-      if (!profileResponse.isSuccess || !profileResponse.data || !profileResponse.data.routeId) {
-        throw new Error("Could not load your user profile or you haven't selected an academic route. Please complete onboarding first.");
+      const profileResponse = await profileApi.getMyProfile({ forceRefresh: true });
+      if (!profileResponse.isSuccess || !profileResponse.data) {
+        throw new Error("Could not load your user profile.");
       }
       setUserProfile(profileResponse.data);
+      // Show wizard if routeId or classId is missing
+      if (!profileResponse.data.routeId || !profileResponse.data.classId) {
+        setShowCharacterWizard(true);
+      }
     } catch (err: any) {
       setError(err.message || "An unexpected error occurred while loading page data.");
     } finally {
@@ -86,6 +93,13 @@ export default function ConnectFapPage() {
   };
 
   const isSubmitting = step !== 'form';
+
+  const handleOnboardingComplete = async () => {
+    setShowCharacterWizard(false);
+    // Refresh profile data after onboarding is complete
+    invalidateMyProfileCache();
+    await fetchData();
+  };
 
   const renderContent = () => {
     if (isLoading) {
@@ -151,27 +165,51 @@ export default function ConnectFapPage() {
   };
 
   return (
-    <div className="mx-auto max-w-3xl">
-      <Card className="relative overflow-hidden border-amber-900/30 bg-gradient-to-br from-[#1f1812] to-[#1a1410]">
-        <CardHeader className="relative border-b border-amber-900/20">
-          <div className="flex items-center gap-4">
-            <BookCopy className="h-8 w-8 text-accent" />
-            <div>
-              <CardTitle className="text-amber-100">
-                {isUpdateFlow ? "Update Academic Record" : "Sync Academic Record"}
-              </CardTitle>
-              <CardDescription>
-                {isUpdateFlow
-                  ? "Update your questline and skill tree with your latest progress from FAP."
-                  : "Forge your personalized questline by connecting your FAP academic record."}
-              </CardDescription>
+    <>
+      <div className="mx-auto max-w-3xl">
+        <Card className="relative overflow-hidden border-amber-900/30 bg-gradient-to-br from-[#1f1812] to-[#1a1410]">
+          <CardHeader className="relative border-b border-amber-900/20">
+            <div className="flex items-center gap-4">
+              <BookCopy className="h-8 w-8 text-accent" />
+              <div>
+                <CardTitle className="text-amber-100">
+                  {isUpdateFlow ? "Update Academic Record" : "Sync Academic Record"}
+                </CardTitle>
+                <CardDescription>
+                  {isUpdateFlow
+                    ? "Update your questline and skill tree with your latest progress from FAP."
+                    : "Forge your personalized questline by connecting your FAP academic record."}
+                </CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="relative pt-6">
+            {renderContent()}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Character Creation Wizard Dialog - shows when routeId or classId is missing */}
+      <Dialog open={showCharacterWizard} onOpenChange={setShowCharacterWizard}>
+        <DialogContent 
+          aria-describedby="character-wizard-description" 
+          className="max-w-[1200px] w-[95vw] h-[90vh] overflow-hidden rounded-[40px] border border-white/12 bg-linear-to-br from-[#12060a] via-[#1d0a11] to-[#060205] p-0 shadow-[0_32px_140px_rgba(20,2,16,0.85)] backdrop-blur-2xl"
+        >
+          <DialogHeader>
+            <DialogTitle className="sr-only">Character Creation</DialogTitle>
+            <p id="character-wizard-description" className="sr-only">
+              Complete your character setup by choosing your academic route and career class before syncing your FAP record.
+            </p>
+          </DialogHeader>
+          <div className="h-full overflow-hidden bg-linear-to-br from-[#1d0a10] via-[#240d14] to-[#090307]">
+            <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(210,49,135,0.32),transparent_70%)] opacity-45" />
+            <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_bottom_right,rgba(240,177,90,0.26),transparent_72%)] opacity-50" />
+            <div className="relative z-10 h-full">
+              <CharacterCreationWizard onOnboardingComplete={handleOnboardingComplete} />
             </div>
           </div>
-        </CardHeader>
-        <CardContent className="relative pt-6">
-          {renderContent()}
-        </CardContent>
-      </Card>
-    </div>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
