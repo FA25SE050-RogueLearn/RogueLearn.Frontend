@@ -672,9 +672,9 @@ export default function NoteEditorPage() {
                                   Note must be public to share.
                                 </div>
                               )}
-                              {sharePartyId && !(shareRole === "Leader" || shareRole === "CoLeader") && (
+                              {sharePartyId && !shareRole && (
                                 <div className="rounded-md border border-red-600/40 bg-red-900/20 p-2 text-xs text-red-200">
-                                  Only Leader or CoLeader of the selected party can share notes.
+                                  You must be a party member to share notes.
                                 </div>
                               )}
                               <div className="grid grid-cols-2 gap-2 items-center">
@@ -701,7 +701,7 @@ export default function NoteEditorPage() {
                             </div>
                             <DialogFooter>
                               <Button
-                                disabled={!isPublic || !sharePartyId || !(shareRole === "Leader" || shareRole === "CoLeader")}
+                                disabled={!isPublic || !sharePartyId || !shareRole}
                                 onClick={async () => {
                                   if (!isPublic) {
                                     toast.error("Note must be public to share.");
@@ -711,8 +711,8 @@ export default function NoteEditorPage() {
                                     toast.error("Please select a party.");
                                     return;
                                   }
-                                  if (!(shareRole === "Leader" || shareRole === "CoLeader")) {
-                                    toast.error("Only Leader or CoLeader can share to this party.");
+                                  if (!shareRole) {
+                                    toast.error("You must be a party member to share to this party.");
                                     return;
                                   }
                                   try {

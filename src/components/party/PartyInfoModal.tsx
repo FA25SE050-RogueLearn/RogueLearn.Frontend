@@ -50,10 +50,10 @@ export default function PartyInfoModal({ open, onClose, partyId }: Props) {
               <ul className="space-y-2 text-base text-white/90">
                 <li className="flex items-start gap-2"><Settings className="mt-0.5 h-4 w-4 text-white/60" /><span>Configure party <span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">settings</span>: name, description, privacy, max members.</span></li>
                 <li className="flex items-start gap-2"><UserPlus className="mt-0.5 h-4 w-4 text-white/60" /><span><span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">Invite</span> <span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">members</span> and view pending <span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">invitations</span>.</span></li>
-                <li className="flex items-start gap-2"><ShieldCheck className="mt-0.5 h-4 w-4 text-white/60" /><span>Manage membership: <span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">transfer leadership</span>, <span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">promote/demote Co-Leader</span>, <span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">remove members</span>.</span></li>
+                <li className="flex items-start gap-2"><ShieldCheck className="mt-0.5 h-4 w-4 text-white/60" /><span>Manage membership: <span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">transfer leadership</span>, <span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">remove members</span>.</span></li>
                 <li className="flex items-start gap-2"><CalendarDays className="mt-0.5 h-4 w-4 text-white/60" /><span>Study <span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">sprints</span> and <span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">meetings</span>: create, end, and sync <span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">transcripts</span> from <span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">Google Meet</span>.</span></li>
-                <li className="flex items-start gap-2"><FileText className="mt-0.5 h-4 w-4 text-white/60" /><span>Party <span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">stash</span>: share <span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">resources</span>, <span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">tag</span> and <span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">search</span>; leaders and co-leaders can <span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">add</span>, <span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">edit</span>, <span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">delete</span>.</span></li>
-                <li className="flex items-start gap-2"><LogOut className="mt-0.5 h-4 w-4 text-white/60" /><span><span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">Leave party</span>; <span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">Leaders</span> must transfer leadership first or the next highest role member will be the <span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">Leader</span>.</span></li>
+                <li className="flex items-start gap-2"><FileText className="mt-0.5 h-4 w-4 text-white/60" /><span>Party <span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">stash</span>: share <span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">resources</span>, <span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">tag</span> and <span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">search</span>; <span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">Members</span> can <span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">add</span>, <span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">edit</span>, <span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">delete</span>.</span></li>
+                <li className="flex items-start gap-2"><LogOut className="mt-0.5 h-4 w-4 text-white/60" /><span><span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">Leave party</span>; <span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">Leaders</span> must transfer leadership first.</span></li>
               </ul>
             </section>
 
@@ -66,22 +66,9 @@ export default function PartyInfoModal({ open, onClose, partyId }: Props) {
                     <li>Configure <span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">settings</span></li>
                     <li><span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">Invite</span> <span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">members</span></li>
                     <li><span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">Transfer leadership</span></li>
-                    <li><span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">Promote/demote Co-Leader</span></li>
-                    <li>Remove <span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">members</span> (except <span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">Leader</span>)</li>
+                    <li>Remove <span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">members</span></li>
                     <li>Create/end <span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">meetings</span>; sync <span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">transcripts</span></li>
                     <li>Authorize <span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">Google Meet</span> access</li>
-                    <li><span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">Add</span>/<span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">edit</span>/<span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">delete</span> stash <span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">resources</span></li>
-                  </ul>
-                </div>
-                <div>
-                  <div className="mb-1 text-lg font-semibold text-[#f5c16c]">CoLeader</div>
-                  <ul className="space-y-1">
-                    <li>Configure <span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">settings</span></li>
-                    <li><span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">Invite</span> <span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">members</span></li>
-                    <li>Create/end <span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">meetings</span>; sync <span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">transcripts</span></li>
-                    <li>Authorize <span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">Google Meet</span> access</li>
-                    <li><span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">Add</span>/<span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">edit</span>/<span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">delete</span> stash <span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">resources</span></li>
-                    <li>Cannot <span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">transfer leadership</span> or modify <span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">Leader</span></li>
                   </ul>
                 </div>
                 <div>
@@ -91,6 +78,7 @@ export default function PartyInfoModal({ open, onClose, partyId }: Props) {
                     <li><span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">Join</span> meetings via link</li>
                     <li>View meeting details and <span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">transcripts</span></li>
                     <li><span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">Browse</span> and <span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">search</span> stash <span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">resources</span></li>
+                    <li><span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">Add</span>/<span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">edit</span>/<span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">delete</span> stash <span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">resources</span></li>
                   </ul>
                 </div>
               </div>
