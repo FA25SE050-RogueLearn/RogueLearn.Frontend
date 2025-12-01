@@ -558,7 +558,7 @@ export function ModuleLearningView({
     }
 
     return (
-        <div className="space-y-6 pb-40">
+        <div className="space-y-6">
             {/* Coding Challenge Modal */}
             {activeCodingChallenge && (
                 <CodingChallengeModal
@@ -616,8 +616,8 @@ export function ModuleLearningView({
                 </div>
             </div>
 
-            {/* Main Activity Card */}
-            <Card className="relative overflow-hidden border-[#f5c16c]/20 bg-gradient-to-br from-[#2d1810] via-[#1a0a08] to-[#0a0506]">
+            {/* Main Activity Card - Full Width & Height */}
+            <Card className="relative overflow-hidden border-[#f5c16c]/20 bg-gradient-to-br from-[#2d1810] via-[#1a0a08] to-[#0a0506] min-h-[calc(100vh-280px)]">
                 <div
                     className="pointer-events-none absolute inset-0 opacity-25 mix-blend-overlay"
                     style={{
@@ -626,26 +626,73 @@ export function ModuleLearningView({
                         backgroundRepeat: 'repeat'
                     }}
                 />
-                <CardHeader className="relative z-10">
-                    <CardTitle className="flex items-center justify-between text-white">
-                        <span className="flex-1">
-                            Activity {currentActivityIndex + 1}: {currentActivity.type}
+                {/* Integrated Navigation Bar at Top of Card */}
+                <div className="relative z-10 flex items-center justify-between gap-4 px-6 py-2.5 border-b border-[#f5c16c]/20 bg-black/30">
+                    {/* Previous Button */}
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={handlePrevActivity}
+                        disabled={isFirstActivity}
+                        className="text-white/70 hover:text-white hover:bg-[#f5c16c]/10 disabled:opacity-30 disabled:cursor-not-allowed"
+                    >
+                        <ArrowLeft className="w-4 h-4 mr-1" /> Previous
+                    </Button>
+
+                    {/* Center: Activity Info + Complete Button */}
+                    <div className="flex items-center gap-4">
+                        <span className="text-sm text-white/60">
+                            Activity {currentActivityIndex + 1}/{totalActivities}: <span className="text-white font-medium">{currentActivity.type}</span>
                         </span>
-                        <div className="flex items-center gap-4">
-                            {(currentActivity.payload as any).experiencePoints > 0 && (
-                                <span className="flex items-center gap-2 text-sm font-semibold text-[#f5c16c] bg-[#f5c16c]/10 border border-[#f5c16c]/30 rounded-full px-3 py-1">
-                                    <Sparkles className="w-4 h-4" /> +{(currentActivity.payload as any).experiencePoints} XP
-                                </span>
-                            )}
-                            {isActivityComplete && (
-                                <span className="flex items-center gap-2 text-sm text-emerald-400">
-                                    <CheckCircle className="w-4 h-4" /> Completed
-                                </span>
-                            )}
-                        </div>
-                    </CardTitle>
-                </CardHeader>
-                <CardContent className="relative z-10">
+                        {(currentActivity.payload as any).experiencePoints > 0 && (
+                            <span className="flex items-center gap-1.5 text-xs font-semibold text-[#f5c16c] bg-[#f5c16c]/10 border border-[#f5c16c]/30 rounded-full px-2 py-0.5">
+                                <Sparkles className="w-3 h-3" /> +{(currentActivity.payload as any).experiencePoints} XP
+                            </span>
+                        )}
+                        {!isActivityComplete ? (
+                            <Button
+                                size="sm"
+                                className={`font-semibold ${
+                                    currentActivity.type === 'Quiz' && quizPassedState !== true
+                                        ? 'bg-gray-600 cursor-not-allowed opacity-50'
+                                        : 'bg-gradient-to-r from-[#f5c16c] to-[#d4a855] text-black hover:from-[#d4a855] hover:to-[#f5c16c]'
+                                    }`}
+                                onClick={handleCompleteActivity}
+                                disabled={
+                                    isCompleting ||
+                                    (currentActivity.type === 'Quiz' && quizPassedState !== true)
+                                }
+                            >
+                                {isCompleting ? (
+                                    <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+                                ) : (
+                                    <CheckCircle className="w-4 h-4 mr-1" />
+                                )}
+                                {currentActivity.type === 'Quiz' && quizPassedState !== true
+                                    ? 'Pass Quiz First'
+                                    : 'Mark Complete'
+                                }
+                            </Button>
+                        ) : (
+                            <span className="flex items-center gap-1.5 text-sm text-emerald-400 font-semibold">
+                                <CheckCircle className="w-4 h-4" /> Completed
+                            </span>
+                        )}
+                    </div>
+
+                    {/* Next Button */}
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={handleNextActivity}
+                        disabled={isLastActivity}
+                        className="text-white/70 hover:text-white hover:bg-[#f5c16c]/10 disabled:opacity-30 disabled:cursor-not-allowed"
+                    >
+                        Next <ArrowRight className="w-4 h-4 ml-1" />
+                    </Button>
+                </div>
+
+                <CardContent className="relative z-10 p-6">
                     {renderActivityContent(currentActivity)}
                 </CardContent>
             </Card>
@@ -688,66 +735,7 @@ export function ModuleLearningView({
                 </Card>
             )}
 
-            {/* Activity Navigation - Fixed Bottom Bar */}
-            <div className="fixed bottom-36 left-0 right-0 z-40">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="flex items-center justify-between py-4">
-                        {/* Previous Button */}
-                        <Button
-                            variant="outline"
-                            size="lg"
-                            onClick={handlePrevActivity}
-                            disabled={isFirstActivity}
-                            className="border-[#f5c16c]/20 bg-black/40 hover:bg-[#f5c16c]/10 text-white disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                            <ArrowLeft className="w-5 h-5 mr-2" /> Previous
-                        </Button>
 
-                        {/* Complete Button */}
-                        {!isActivityComplete ? (
-                            <Button
-                                size="lg"
-                                className={`bg-gradient-to-r text-black font-bold ${
-                                    // ⭐ NEW: For Quiz, disable until passed
-                                    currentActivity.type === 'Quiz' && quizPassedState !== true
-                                        ? 'from-gray-500 to-gray-600 cursor-not-allowed opacity-50'
-                                        : 'from-[#f5c16c] to-[#d4a855] hover:from-[#d4a855] hover:to-[#f5c16c]'
-                                    }`}
-                                onClick={handleCompleteActivity}
-                                disabled={
-                                    isCompleting ||
-                                    (currentActivity.type === 'Quiz' && quizPassedState !== true)
-                                }
-                            >
-                                {isCompleting ? (
-                                    <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                                ) : (
-                                    <CheckCircle className="w-5 h-5 mr-2" />
-                                )}
-                                {currentActivity.type === 'Quiz' && quizPassedState !== true
-                                    ? 'Pass Quiz First'
-                                    : 'Mark as Complete'
-                                }
-                            </Button>
-                        ) : (
-                            <div className="flex items-center gap-2 text-emerald-400 font-semibold px-4">
-                                <CheckCircle className="w-5 h-5" /> Activity Completed
-                            </div>
-                        )}
-
-                        {/* Next Button */}
-                        <Button
-                            variant="outline"
-                            size="lg"
-                            onClick={handleNextActivity}
-                            disabled={isLastActivity}
-                            className="border-[#f5c16c]/20 bg-black/40 hover:bg-[#f5c16c]/10 text-white disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                            Next <ArrowRight className="w-5 h-5 ml-2" />
-                        </Button>
-                    </div>
-                </div>
-            </div>
         </div>
     );
 }
