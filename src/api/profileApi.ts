@@ -54,8 +54,6 @@ const profileApi = {
   },
   getAllUserProfilesAuthorized: (): Promise<ApiResponse<GetAllUserProfilesResponse>> =>
     axiosClient.get<GetAllUserProfilesResponse>('/api/profiles').then(res => ({ isSuccess: true, data: res.data })),
-  getAllUserProfilesAdmin: (): Promise<ApiResponse<GetAllUserProfilesResponse>> =>
-    axiosClient.get<GetAllUserProfilesResponse>('/api/admin/profiles').then(res => ({ isSuccess: true, data: res.data })),
   getByAuthId: (authId: string): Promise<ApiResponse<GetUserProfileByAuthIdResponse>> =>
     axiosClient.get<UserProfileDto>(`/api/profiles/${authId}`).then(res => ({ isSuccess: true, data: res.data ?? null })),
   getSocialByAuthId: (authId: string, page?: { size?: number; number?: number }): Promise<ApiResponse<FullUserInfoSocialResponse>> => {

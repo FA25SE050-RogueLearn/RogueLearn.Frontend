@@ -27,6 +27,10 @@ import {
 } from "@/types/parties";
 
 const partiesApi = {
+  // =================================================================
+  // PARTIES (PartiesController)
+  // =================================================================
+
   // === Query Endpoints ===
 
   /** GET /api/parties - Get all parties */
@@ -233,121 +237,6 @@ const partiesApi = {
     axiosClient
       .post(`/api/parties/${partyId}/transfer-leadership`, payload)
       .then(() => {}),
-
-  // === Role Management Endpoints ===
-
-  /** POST /api/parties/{partyId}/members/{memberAuthUserId}/roles/assign - Assign a party role to a member (Party Leader only) */
-  assignRole: (
-    partyId: string,
-    memberAuthUserId: string,
-    role: PartyRole
-  ): Promise<void> =>
-    axiosClient
-      .post(
-        `/api/parties/${partyId}/members/${memberAuthUserId}/roles/assign`,
-        { role }
-      )
-      .then(() => {}),
-
-  /** POST /api/parties/{partyId}/members/{memberAuthUserId}/roles/revoke - Revoke a party role from a member (Party Leader only) */
-  revokeRole: (
-    partyId: string,
-    memberAuthUserId: string,
-    role: PartyRole
-  ): Promise<void> =>
-    axiosClient
-      .post(
-        `/api/parties/${partyId}/members/${memberAuthUserId}/roles/revoke`,
-        { role }
-      )
-      .then(() => {}),
-
-  // === Admin Endpoints ===
-
-  /** GET /api/admin/parties - Get all parties (Platform admin only) */
-  admin: {
-    /** POST /api/admin/parties/{partyId}/invite - Admin-only: Invite a user to the party */
-    inviteMember: (
-      partyId: string,
-      payload: InviteMemberRequest
-    ): Promise<ApiResponse<PartyInvitationDto>> =>
-      axiosClient
-        .post<PartyInvitationDto>(
-          `/api/admin/parties/${partyId}/invite`,
-          payload
-        )
-        .then((res) => ({
-          isSuccess: true,
-          data: res.data,
-        })),
-
-    /** GET /api/admin/parties/{partyId}/invitations/pending - Admin-only: Get pending invitations for a party */
-    getPendingInvitations: (
-      partyId: string
-    ): Promise<ApiResponse<GetPendingInvitationsQueryResponse>> =>
-      axiosClient
-        .get<PartyInvitationDto[]>(
-          `/api/admin/parties/${partyId}/invitations/pending`
-        )
-        .then((res) => ({
-          isSuccess: true,
-          data: res.data,
-        })),
-
-    /** POST /api/admin/parties/{partyId}/stash - Admin-only: Add a resource to party stash */
-    addResource: (
-      partyId: string,
-      payload: AddPartyResourceRequest
-    ): Promise<ApiResponse<PartyStashItemDto>> =>
-      axiosClient
-        .post<PartyStashItemDto>(`/api/admin/parties/${partyId}/stash`, payload)
-        .then((res) => ({
-          isSuccess: true,
-          data: res.data,
-        })),
-
-    /** POST /api/admin/parties/{partyId}/members/{memberAuthUserId}/roles/assign - Admin-only: Assign a party role to a member */
-    assignRole: (
-      partyId: string,
-      memberAuthUserId: string,
-      role: PartyRole
-    ): Promise<void> =>
-      axiosClient
-        .post(
-          `/api/admin/parties/${partyId}/members/${memberAuthUserId}/roles/assign`,
-          { role }
-        )
-        .then(() => {}),
-
-    /** POST /api/admin/parties/{partyId}/members/{memberAuthUserId}/roles/revoke - Admin-only: Revoke a party role from a member */
-    revokeRole: (
-      partyId: string,
-      memberAuthUserId: string,
-      role: PartyRole
-    ): Promise<void> =>
-      axiosClient
-        .post(
-          `/api/admin/parties/${partyId}/members/${memberAuthUserId}/roles/revoke`,
-          { role }
-        )
-        .then(() => {}),
-
-    /** PUT /api/admin/parties/{partyId}/stash/{stashItemId} - Admin-only: Update a party stash item */
-    updateResource: (
-      partyId: string,
-      stashItemId: string,
-      payload: UpdatePartyResourceRequest
-    ): Promise<void> =>
-      axiosClient
-        .put(`/api/admin/parties/${partyId}/stash/${stashItemId}`, payload)
-        .then(() => {}),
-
-    /** DELETE /api/admin/parties/{partyId}/stash/{stashItemId} - Admin-only: Delete a party stash item */
-    deleteResource: (partyId: string, stashItemId: string): Promise<void> =>
-      axiosClient
-        .delete(`/api/admin/parties/${partyId}/stash/${stashItemId}`)
-        .then(() => {}),
-  },
 };
 
 export default partiesApi;

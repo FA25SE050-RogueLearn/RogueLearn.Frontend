@@ -13,6 +13,10 @@ import {
 import { ImportSubjectFromTextCommandResponse } from '@/types/curriculum-import';
 
 const subjectsApi = {
+  // =================================================================
+  // SUBJECTS (SubjectsController)
+  // =================================================================
+  
   /** GET /api/admin/subjects */
   getAll: (): Promise<ApiResponse<GetAllSubjectsResponse>> =>
     axiosClient.get<Subject[]>('/api/admin/subjects').then(res => ({
