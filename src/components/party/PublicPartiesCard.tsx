@@ -1,7 +1,7 @@
 "use client";
 import React, { useEffect, useMemo, useState } from "react";
 import partiesApi from "@/api/partiesApi";
-import { PartyDto } from "@/types/parties";
+import { PartyDto, PartyMemberDto } from "@/types/parties";
 import { toast } from "sonner";
 
 interface PublicPartiesCardProps {
@@ -13,8 +13,8 @@ export default function PublicPartiesCard({ onJoinedNavigate = true }: PublicPar
   const [loadingPublic, setLoadingPublic] = useState(false);
   const [search, setSearch] = useState("");
   const [joinBusyId, setJoinBusyId] = useState<string | null>(null);
-  const [memberCounts, setMemberCounts] = useState<Record<string, number>>({});
-  const [fetchingCounts, setFetchingCounts] = useState<Record<string, boolean>>({});
+  const [partyMembers, setPartyMembers] = useState<Record<string, PartyMemberDto[]>>({});
+  const [fetchingMembers, setFetchingMembers] = useState<Record<string, boolean>>({});
   const [sortBy, setSortBy] = useState<"members" | "newest" | "name">("members");
   const [page, setPage] = useState(1);
   const pageSize = 10;
@@ -43,13 +43,13 @@ export default function PublicPartiesCard({ onJoinedNavigate = true }: PublicPar
     const list = publicParties.filter((p) => p.name.toLowerCase().includes(term));
     // Sort according to selected option
     if (sortBy === "members") {
-      return [...list].sort((a, b) => (memberCounts[b.id] ?? 0) - (memberCounts[a.id] ?? 0));
+      return [...list].sort((a, b) => (partyMembers[b.id]?.length ?? 0) - (partyMembers[a.id]?.length ?? 0));
     }
     if (sortBy === "newest") {
       return [...list].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
     }
     return [...list].sort((a, b) => a.name.localeCompare(b.name));
-  }, [publicParties, search, sortBy, memberCounts]);
+  }, [publicParties, search, sortBy, partyMembers]);
 
   const totalPages = useMemo(() => Math.max(1, Math.ceil(filtered.length / pageSize)), [filtered.length]);
   const paged = useMemo(() => filtered.slice((page - 1) * pageSize, page * pageSize), [filtered, page]);
@@ -58,26 +58,50 @@ export default function PublicPartiesCard({ onJoinedNavigate = true }: PublicPar
     if (page > totalPages) setPage(1);
   }, [page, totalPages]);
 
-  // Fetch member counts for visible items (lazy)
+  // Fetch members for visible items (lazy)
   useEffect(() => {
     const visible = paged;
     visible.forEach((p) => {
-      if (memberCounts[p.id] !== undefined || fetchingCounts[p.id]) return;
-      setFetchingCounts((prev) => ({ ...prev, [p.id]: true }));
+      if (partyMembers[p.id] !== undefined || fetchingMembers[p.id]) return;
+      setFetchingMembers((prev) => ({ ...prev, [p.id]: true }));
       partiesApi
         .getMembers(p.id)
         .then((res) => {
-          const count = (res.data ?? []).length;
-          setMemberCounts((prev) => ({ ...prev, [p.id]: count }));
+          setPartyMembers((prev) => ({ ...prev, [p.id]: res.data ?? [] }));
         })
         .catch(() => {
-          // ignore errors, keep undefined
+          setPartyMembers((prev) => ({ ...prev, [p.id]: [] }));
         })
         .finally(() => {
-          setFetchingCounts((prev) => ({ ...prev, [p.id]: false }));
+          setFetchingMembers((prev) => ({ ...prev, [p.id]: false }));
         });
     });
-  }, [paged, memberCounts, fetchingCounts]);
+  }, [paged, partyMembers, fetchingMembers]);
+
+  const renderMemberSlots = (p: PartyDto) => {
+    const members = partyMembers[p.id] ?? [];
+    const filled = members.slice(0, Math.min(members.length, p.maxMembers));
+    const emptyCount = Math.max(p.maxMembers - filled.length, 0);
+    return (
+      <div className="mt-3 flex items-center gap-1">
+        {filled.map((m) => (
+          <div key={m.id} className="h-7 w-7 overflow-hidden rounded-full ring-2 ring-[#f5c16c]/30">
+            {m.profileImageUrl ? (
+              <img src={m.profileImageUrl} alt={m.username ?? m.email ?? "Member"} className="h-full w-full object-cover" />
+            ) : (
+              <div className="flex h-full w-full items-center justify-center bg-[#f5c16c]/10 text-[10px] text-[#f5c16c]">
+                {(m.username ?? m.email ?? "?").slice(0, 1).toUpperCase()}
+              </div>
+            )}
+          </div>
+        ))}
+        {emptyCount > 0 && emptyCount <= 5 && Array.from({ length: emptyCount }).map((_, i) => (
+          <div key={`empty-${i}`} className="h-7 w-7 rounded-full border border-dashed border-white/20" />
+        ))}
+        {emptyCount > 5 && <span className="ml-1 text-[10px] text-white/40">+{emptyCount} slots</span>}
+      </div>
+    );
+  };
 
   const handleJoin = async (partyIdToJoin: string) => {
     try {
@@ -95,84 +119,83 @@ export default function PublicPartiesCard({ onJoinedNavigate = true }: PublicPar
   };
 
   return (
-    <div className="mt-6 rounded-lg border border-white/10 bg-[#0a0710] p-4">
-      <div className="mb-3 flex items-center justify-between">
-        <h4 className="text-sm font-semibold text-white">Discover Public Parties</h4>
-        {loadingPublic && <span className="text-xs text-white/60">Loading...</span>}
-      </div>
-      <div className="mb-3 flex gap-3">
+    <div className="space-y-4">
+      {/* Search and Sort */}
+      <div className="flex gap-3">
         <input
           type="text"
           placeholder="Search public parties..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="flex-1 rounded-md border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder:text-white/50 focus:border-fuchsia-500/60 focus:outline-none"
+          className="flex-1 rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-sm text-white placeholder:text-white/40 focus:border-[#f5c16c]/40 focus:outline-none"
         />
         <select
           value={sortBy}
           onChange={(e) => setSortBy(e.target.value as any)}
-          className="rounded-md border border-white/10 bg-white/5 px-3 py-2 text-sm text-white focus:border-fuchsia-500/60 focus:outline-none"
+          className="rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-sm text-white focus:border-[#f5c16c]/40 focus:outline-none"
         >
           <option value="members">Most Members</option>
           <option value="newest">Newest</option>
           <option value="name">A–Z</option>
         </select>
+        {loadingPublic && <span className="self-center text-xs text-white/40">Loading...</span>}
       </div>
+
+      {/* Party List */}
       {filtered.length === 0 ? (
-        <div className="text-xs text-white/60">No public parties available right now.</div>
+        <div className="flex flex-col items-center justify-center py-16 text-center">
+          <div className="text-sm text-white/40">No public parties available right now.</div>
+        </div>
       ) : (
-        <ul className="space-y-2">
+        <div className="grid grid-cols-1 gap-3 lg:grid-cols-2 xl:grid-cols-3">
           {paged.map((p) => (
-            <li key={p.id} className="flex items-start justify-between rounded bg-white/5 p-3">
-              <button className="text-left" onClick={() => (window.location.href = `/parties/${p.id}`)}>
-                <div className="text-sm font-medium text-white">{p.name}</div>
-                {p.description && (
-                  <div className="mt-0.5 line-clamp-2 text-xs text-white/70">{p.description}</div>
-                )}
-                <div className="mt-1 text-[11px] text-white/50">
-                  {p.partyType} • Max {p.maxMembers} • Created {new Date(p.createdAt).toLocaleDateString()}
-                </div>
-                <div className="text-[11px] text-white/50">Owner ID: {p.createdBy}</div>
-                <div className="mt-1 text-[11px] text-white/60">
-                  Members: {memberCounts[p.id] !== undefined ? memberCounts[p.id] : fetchingCounts[p.id] ? "Loading…" : "—"}
-                </div>
-              </button>
-              <div className="ml-4 flex items-center gap-2">
-                <a
-                  href={`/parties/${p.id}`}
-                  className="rounded bg-white/10 px-3 py-1.5 text-xs text-white"
-                >
-                  Open
-                </a>
-                <button
-                  onClick={() => handleJoin(p.id)}
-                  disabled={joinBusyId === p.id}
-                  className="rounded bg-emerald-600 px-3 py-1.5 text-xs text-white disabled:opacity-50"
-                >
-                  {joinBusyId === p.id ? "Joining…" : "Join"}
+            <div key={p.id} className="group rounded-xl border border-white/10 bg-black/30 p-4 transition-all hover:border-[#f5c16c]/30 hover:bg-black/40">
+              <div className="flex items-start justify-between">
+                <button className="flex-1 text-left" onClick={() => (window.location.href = `/parties/${p.id}`)}>
+                  <div className="text-sm font-medium text-white group-hover:text-[#f5c16c]">{p.name}</div>
+                  {p.description && (
+                    <div className="mt-1 line-clamp-2 text-xs text-white/50">{p.description}</div>
+                  )}
                 </button>
+                <div className="ml-3 flex items-center gap-1.5">
+                  <button
+                    onClick={() => handleJoin(p.id)}
+                    disabled={joinBusyId === p.id}
+                    className="rounded-lg bg-gradient-to-r from-[#f5c16c] to-[#d4a855] px-3 py-1.5 text-xs font-medium text-black disabled:opacity-50"
+                  >
+                    {joinBusyId === p.id ? "..." : "Join"}
+                  </button>
+                </div>
               </div>
-            </li>
+              {renderMemberSlots(p)}
+              <div className="mt-2 flex items-center gap-3 text-[11px] text-white/40">
+                <span className="rounded-full border border-[#f5c16c]/20 bg-[#f5c16c]/10 px-2 py-0.5 text-[#f5c16c]">{p.partyType}</span>
+                <span>{partyMembers[p.id]?.length ?? (fetchingMembers[p.id] ? "..." : 0)}/{p.maxMembers} members</span>
+                <span>{new Date(p.createdAt).toLocaleDateString()}</span>
+              </div>
+            </div>
           ))}
-        </ul>
+        </div>
       )}
+
+      {/* Pagination */}
       {filtered.length > 0 && (
-        <div className="mt-3 flex items-center justify-between">
-          <div className="text-xs text-white/60">
-            Page {page} of {totalPages}
+        <div className="flex items-center justify-between pt-2">
+          <div className="text-xs text-white/40">
+            Page {page} of {totalPages} ({filtered.length} parties)
           </div>
           <div className="flex gap-2">
             <button
               onClick={() => setPage((p) => Math.max(1, p - 1))}
               disabled={page === 1}
-              className="rounded bg-white/10 px-3 py-1.5 text-xs text-white disabled:opacity-50"
+              className="rounded-lg border border-white/10 bg-black/30 px-3 py-1.5 text-xs text-white/70 disabled:opacity-30 hover:border-white/20"
             >
               Prev
             </button>
             <button
               onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
               disabled={page >= totalPages}
-              className="rounded bg-white/10 px-3 py-1.5 text-xs text-white disabled:opacity-50"
+              className="rounded-lg border border-white/10 bg-black/30 px-3 py-1.5 text-xs text-white/70 disabled:opacity-30 hover:border-white/20"
             >
               Next
             </button>

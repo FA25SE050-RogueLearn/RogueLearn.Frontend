@@ -1,41 +1,38 @@
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import PartyManagementClient from "@/components/party/PartyManagementClient";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Users } from "lucide-react";
-const HERO_CARD_CLASS = "relative overflow-hidden rounded-[32px] border border-[#f5c16c]/25 bg-linear-to-br from-[#1c0906]/95 via-[#120605]/98 to-[#040101]";
-const CARD_TEXTURE = {
-  backgroundImage: "url('https://www.transparenttextures.com/patterns/asfalt-dark.png')",
-  opacity: 0.25,
-};
 
 export default function PartiesManagementPage() {
   return (
     <DashboardLayout>
-      <div className="w-full p-6">
-        <Card className={HERO_CARD_CLASS}>
-          <div aria-hidden="true" className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(210,49,135,0.18),transparent_55%)]" />
-          <div aria-hidden="true" className="absolute inset-0" style={CARD_TEXTURE as any} />
-          <CardHeader className="relative z-10 border-b border-[#f5c16c]/20 pb-6">
-            <div className="flex items-start gap-3">
-              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#d23187]/20 border border-[#d23187]/40">
+      <div className="flex flex-col gap-6 pb-24">
+        {/* Arsenal-Style Header */}
+        <section className="relative overflow-hidden rounded-[28px] border border-[#f5c16c]/30 bg-gradient-to-br from-[#2d1810]/60 via-[#1a0a08]/80 to-black/90 p-8 shadow-2xl">
+          <div
+            className="pointer-events-none absolute inset-0 opacity-25"
+            style={{
+              backgroundImage: "url('/images/asfalt-dark.png')",
+              backgroundSize: "100px",
+              backgroundBlendMode: "overlay",
+            }}
+          />
+          <div className="relative z-10 flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className="rounded-full bg-[#f5c16c]/10 p-4">
                 <Users className="h-8 w-8 text-[#f5c16c]" />
               </div>
-              <div>
-                <p className="text-xs uppercase tracking-[0.4em] text-[#f5c16c]">Party Nexus</p>
-                <CardTitle className="text-3xl text-white">Form Your Party</CardTitle>
+              <div className="space-y-2">
+                <p className="text-xs uppercase tracking-[0.35em] text-[#f5c16c]/60">Party Nexus</p>
+                <h1 className="text-3xl font-semibold text-[#f5c16c]">Form Your Party</h1>
+                <p className="max-w-2xl text-sm leading-relaxed text-white/70">
+                  Unite with peers to study together, share resources, and coordinate sprints.
+                </p>
               </div>
             </div>
-          </CardHeader>
-          <CardContent className="relative z-10">
-            <p className="text-sm text-foreground/70">
-              Unite with peers to study together, share resources, and coordinate sprints.
-            </p>
-          </CardContent>
-        </Card>
+          </div>
+        </section>
 
-        <div className="mt-6">
-          <PartyManagementClient />
-        </div>
+        <PartyManagementClient />
       </div>
     </DashboardLayout>
   );

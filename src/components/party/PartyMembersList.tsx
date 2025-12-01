@@ -65,63 +65,120 @@ export default function PartyMembersList({ partyId, members, maxMembers, onRefre
     const fullName = [m.firstName, m.lastName].filter(Boolean).join(" ");
     return m.username ?? (fullName || m.email || "Member");
   };
+
+  const getInitials = (m: PartyMemberDto) => {
+    const name = getDisplayName(m);
+    const parts = name.split(" ");
+    if (parts.length >= 2) {
+      return (parts[0][0] + parts[1][0]).toUpperCase();
+    }
+    return name.slice(0, 2).toUpperCase();
+  };
+
+  // Generate a consistent color based on name
+  const getAvatarColor = (m: PartyMemberDto) => {
+    const colors = [
+      "from-[#f5c16c]/30 to-[#d4a855]/30 text-[#f5c16c]",
+      "from-[#d23187]/30 to-[#a0256a]/30 text-[#d23187]",
+      "from-emerald-500/30 to-green-600/30 text-emerald-400",
+      "from-blue-500/30 to-indigo-600/30 text-blue-400",
+      "from-purple-500/30 to-violet-600/30 text-purple-400",
+      "from-orange-500/30 to-amber-600/30 text-orange-400",
+    ];
+    const hash = getDisplayName(m).split("").reduce((acc, char) => acc + char.charCodeAt(0), 0);
+    return colors[hash % colors.length];
+  };
+
   return (
     <>
-    <section className="rounded-lg border border-white/10 bg-white/5 p-0 overflow-hidden">
-      <div className="px-4 py-3 border-b border-[#2D2842] bg-[#1E1B2E] flex items-center justify-between">
-        <h4 className="text-xs font-bold uppercase tracking-wider text-white">Party Members</h4>
-        <span className="bg-[#2D2842] text-gray-400 text-[10px] px-2 py-0.5 rounded-md font-mono">{members.length} / {maxMembers ?? 8}</span>
+    <div className="space-y-3">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2 text-xs uppercase tracking-[0.3em] text-white/40">
+          <Shield className="h-4 w-4" />
+          <span>Members</span>
+        </div>
+        <span className="rounded-full border border-[#f5c16c]/20 bg-[#f5c16c]/10 px-2 py-0.5 text-[10px] text-[#f5c16c]">
+          {members.length}/{maxMembers ?? 8}
+        </span>
       </div>
-      <div className="divide-y divide-[#2D2842]">
+
+      <div className="space-y-2">
         {members.map((m) => {
           const name = getDisplayName(m);
           const isActive = String(m.status).toLowerCase() === "active";
-          const roleBadgeClass = m.role === "Leader"
-            ? "bg-[#d4a353]/10 text-[#d4a353] border-[#d4a353]/20"
-            : "bg-[#2D2842] text-gray-400 border-transparent group-hover:border-gray-600";
+          const isLeaderMember = m.role === "Leader";
           return (
-            <div key={m.id} className="group flex items-center justify-between p-4 hover:bg-[#1E1B2E] transition-colors">
-              <div className="flex items-center gap-4">
+            <div 
+              key={m.id} 
+              className={`group relative rounded-xl border p-3 transition-all ${
+                isLeaderMember 
+                  ? "border-[#f5c16c]/30 bg-gradient-to-r from-[#f5c16c]/5 to-transparent" 
+                  : "border-white/10 bg-black/30 hover:border-white/20 hover:bg-black/40"
+              }`}
+            >
+              <div className="flex items-center gap-3">
+                {/* Avatar */}
                 <div className="relative">
                   {m.profileImageUrl ? (
-                    <Image src={m.profileImageUrl} alt={name} width={40} height={40} className="w-10 h-10 rounded-full bg-black/40 border border-[#2D2842] object-cover" />
+                    <Image 
+                      src={m.profileImageUrl} 
+                      alt={name} 
+                      width={48} 
+                      height={48} 
+                      className="h-12 w-12 rounded-full border-2 border-white/10 object-cover" 
+                    />
                   ) : (
-                    <div className="w-10 h-10 rounded-full bg-black/40 border border-[#2D2842]" />
+                    <div className={`flex h-12 w-12 items-center justify-center rounded-full border-2 border-white/10 bg-gradient-to-br font-bold ${getAvatarColor(m)}`}>
+                      {getInitials(m)}
+                    </div>
                   )}
-                  <div className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-[#161422] ${isActive ? "bg-green-500" : "bg-gray-500"}`} />
+                  {/* Online indicator */}
+                  <div className={`absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 rounded-full border-2 border-black ${isActive ? "bg-emerald-500" : "bg-white/30"}`} />
                 </div>
-                <div>
+
+                {/* Info */}
+                <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
-                    <span className={`font-bold text-sm ${m.role === "Leader" ? "text-[#d4a353]" : "text-white"}`}>{name}</span>
-                    {m.role === "Leader" && (
-                      <Crown className="size-3.5 text-[#d4a353]" />
-                    )}
+                    <span className={`font-semibold text-sm truncate ${isLeaderMember ? "text-[#f5c16c]" : "text-white"}`}>
+                      {name}
+                    </span>
+                    {isLeaderMember && <Crown className="h-4 w-4 text-[#f5c16c] flex-shrink-0" />}
                   </div>
-                  <div className="flex items-center gap-1.5 text-xs text-gray-500 mt-0.5">
-                    <Mail className="size-3" />
-                    <span>{m.email}</span>
+                  <div className="flex items-center gap-2 mt-0.5">
+                    <span className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${
+                      isLeaderMember 
+                        ? "border border-[#f5c16c]/30 bg-[#f5c16c]/10 text-[#f5c16c]" 
+                        : "border border-white/20 bg-white/5 text-white/60"
+                    }`}>
+                      {m.role}
+                    </span>
+                    <span className="text-[10px] text-white/40 truncate">{m.email}</span>
                   </div>
                 </div>
-              </div>
-              <div className="flex items-center gap-3">
-                <div className={`px-3 py-1 rounded text-xs font-bold border flex items-center gap-2 ${roleBadgeClass}`}>
-                  {m.role === "Leader" ? <Crown className="size-3" /> : <Shield className="size-3" />}
-                  {m.role}
-                </div>
-                { isLeader && m.role !== "Leader" && (
+
+                {/* Actions */}
+                {isLeader && !isLeaderMember && (
                   <DropdownMenu>
-                    <DropdownMenuTrigger className="p-2 text-gray-500 hover:text-white hover:bg-[#2D2842] rounded-lg transition outline-none" disabled={busyMemberId === m.id}>
-                      <MoreVertical className="size-4" />
+                    <DropdownMenuTrigger 
+                      className="rounded-lg p-2 text-white/40 hover:bg-white/10 hover:text-white transition-all outline-none opacity-0 group-hover:opacity-100" 
+                      disabled={busyMemberId === m.id}
+                    >
+                      <MoreVertical className="h-4 w-4" />
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-48 bg-[#13111C] border-[#2D2842] text-gray-200">
-                      <DropdownMenuLabel className="text-xs text-gray-500 uppercase tracking-wider">Manage {name}</DropdownMenuLabel>
-                      <DropdownMenuSeparator className="bg-[#2D2842]" />
-                      <DropdownMenuItem onClick={() => handleTransferLeadership(m)} className="text-yellow-500 focus:text-yellow-400 focus:bg-[#d4a353]/10 cursor-pointer gap-2">
-                        <ArrowRightLeft className="size-3.5" /> Transfer Leadership
+                    <DropdownMenuContent align="end" className="w-48 bg-black/95 border-white/10 text-white">
+                      <DropdownMenuLabel className="text-[10px] text-white/40 uppercase tracking-wider">Manage</DropdownMenuLabel>
+                      <DropdownMenuSeparator className="bg-white/10" />
+                      <DropdownMenuItem 
+                        onClick={() => handleTransferLeadership(m)} 
+                        className="text-[#f5c16c] focus:text-[#f5c16c] focus:bg-[#f5c16c]/10 cursor-pointer gap-2"
+                      >
+                        <ArrowRightLeft className="h-3.5 w-3.5" /> Transfer Leadership
                       </DropdownMenuItem>
-                      
-                      <DropdownMenuItem onClick={() => handleRemoveMember(m)} className="text-red-500 focus:text-red-400 focus:bg-red-500/10 cursor-pointer gap-2">
-                        <UserMinus className="size-3.5" /> Remove from Party
+                      <DropdownMenuItem 
+                        onClick={() => handleRemoveMember(m)} 
+                        className="text-rose-400 focus:text-rose-400 focus:bg-rose-500/10 cursor-pointer gap-2"
+                      >
+                        <UserMinus className="h-3.5 w-3.5" /> Remove
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
@@ -130,11 +187,14 @@ export default function PartyMembersList({ partyId, members, maxMembers, onRefre
             </div>
           );
         })}
+
+
+
         {members.length === 0 && (
-          <div className="p-4 text-xs text-white/50">No members found.</div>
+          <div className="py-8 text-center text-xs text-white/40">No members found.</div>
         )}
       </div>
-    </section>
+    </div>
 
     {/* Confirm Remove Member */}
     <Dialog open={removeOpen} onOpenChange={setRemoveOpen}>
