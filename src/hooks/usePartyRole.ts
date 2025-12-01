@@ -48,7 +48,6 @@ export function usePartyRole(partyId: string) {
 
   const role: PartyRole | null = useMemo(() => {
     if (roles.includes("Leader")) return "Leader";
-    if (roles.includes("CoLeader")) return "CoLeader";
     if (roles.includes("Member")) return "Member";
     return null;
   }, [roles]);

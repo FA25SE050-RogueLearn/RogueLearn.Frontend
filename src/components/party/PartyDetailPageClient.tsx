@@ -202,7 +202,7 @@ export default function PartyDetailPageClient({ partyId }: { partyId: string }) 
           <HelpCircle className="h-4 w-4" />
           Info
         </button>
-        <RoleGate partyId={partyId} requireAny={["Leader", "CoLeader"]}>
+        <RoleGate partyId={partyId} requireAny={["Leader"]}>
           <button
             onClick={() => setShowSettingsModal(true)}
             className="flex items-center gap-2 rounded-lg border border-[#f5c16c]/20 bg-black/40 px-4 py-2 text-sm font-medium text-white/80 transition-colors hover:border-[#f5c16c]/40 hover:bg-black/60 hover:text-white"
@@ -212,7 +212,7 @@ export default function PartyDetailPageClient({ partyId }: { partyId: string }) 
             Settings
           </button>
         </RoleGate>
-        <RoleGate partyId={partyId} requireAny={["Leader", "CoLeader"]}>
+        <RoleGate partyId={partyId} requireAny={["Leader"]}>
           <button
             onClick={() => setShowInviteModal(true)}
             className="flex items-center gap-2 rounded-lg border border-[#f5c16c]/20 bg-black/40 px-4 py-2 text-sm font-medium text-white/80 transition-colors hover:border-[#f5c16c]/40 hover:bg-black/60 hover:text-white"
@@ -294,7 +294,7 @@ export default function PartyDetailPageClient({ partyId }: { partyId: string }) 
               <div className="rounded-lg border border-white/10 bg-white/5 p-4">
                 <div className="mb-3 flex items-center justify-between">
                   <div className="text-sm font-semibold">Study Sprints</div>
-                  <RoleGate partyId={partyId} requireAny={["Leader", "CoLeader"]}>
+                  <RoleGate partyId={partyId} requireAny={["Leader"]}>
                     <button onClick={() => setShowScheduleModal(true)} className="rounded bg-linear-to-r from-[#f5c16c] to-[#d4a855] px-4 py-2 text-xs font-semibold text-black">📅 Schedule Sprint</button>
                   </RoleGate>
                 </div>

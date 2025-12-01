@@ -87,7 +87,7 @@ export default function PartyDashboard({ partyId, refreshAt, onChanged }: PartyD
 
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
         <PartyMembersList partyId={partyId} members={members} onRefresh={refreshMembers} />
-        <RoleGate partyId={partyId} requireAny={["Leader", "CoLeader"]}>
+        <RoleGate partyId={partyId} requireAny={["Leader"]}>
           <InvitationManagement invites={invites} />
         </RoleGate>
       </div>
