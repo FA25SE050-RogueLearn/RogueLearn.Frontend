@@ -4,31 +4,15 @@ import { useParams, useRouter } from "next/navigation";
 import partiesApi from "@/api/partiesApi";
 import type { PartyStashItemDto } from "@/types/parties";
 import Link from "next/link";
-import { BlockNoteView } from "@blocknote/shadcn";
+import dynamic from "next/dynamic";
 import { PartialBlock } from "@blocknote/core";
-import { en } from "@blocknote/core/locales";
-import { en as aiEn } from "@blocknote/xl-ai/locales";
-import {
-  AIMenuController,
-  AIToolbarButton,
-  createAIExtension,
-  getAISlashMenuItems,
-} from "@blocknote/xl-ai";
-import {
-  FormattingToolbar,
-  FormattingToolbarController,
-  getDefaultReactSlashMenuItems,
-  getFormattingToolbarItems,
-  SuggestionMenuController,
-  useCreateBlockNote,
-} from "@blocknote/react";
-import { DefaultChatTransport } from "ai";
 import { Input } from "@/components/ui/input";
 import { getMyContext } from "@/api/usersApi";
 import { DashboardFrame } from "@/components/layout/DashboardFrame";
 import * as Y from "yjs";
 import YPartyKitProvider from "y-partykit/provider";
-import { CursorUsersProvider, nameToColor } from "@/components/collab/CursorUsersProvider";
+import { nameToColor } from "@/components/collab/CursorUsersProvider";
+const BlockNoteStashEditor = dynamic(() => import("@/components/party/BlockNoteStashEditor"), { ssr: false });
 
 // BlockNote styles for consistent editor appearance
 import "@blocknote/core/fonts/inter.css";
@@ -134,9 +118,9 @@ export default function PartyStashDetailPage() {
       .catch(() => {});
   }, []);
 
-  const onEditorChange = () => {
+  const onEditorChange = (json: any) => {
     if (!canEdit) return;
-    if (!stashId || !partyId || !editor) return;
+    if (!stashId || !partyId) return;
     if (saveTimerRef.current) {
       clearTimeout(saveTimerRef.current);
     }
@@ -144,7 +128,6 @@ export default function PartyStashDetailPage() {
     saveTimerRef.current = window.setTimeout(async () => {
       setStatus("saving");
       try {
-        const json = editor.document;
         await partiesApi.updateResource(partyId, stashId, {
           title: title.trim(),
           content: json,
@@ -179,7 +162,7 @@ export default function PartyStashDetailPage() {
         }
         const rolesRes = await partiesApi.getMemberRoles(partyId, authId);
         const roles = rolesRes.data ?? [];
-        const allowed = roles.includes("Leader") || roles.includes("CoLeader");
+        const allowed = roles.includes("Leader") || roles.includes("Member");
         setCanEdit(allowed);
       } catch {
         if (!mounted) return;
@@ -197,32 +180,9 @@ export default function PartyStashDetailPage() {
     `${partyId}-${stashId}`,
     doc
   ), [partyId, stashId, doc]);
+  const fragment = useMemo(() => doc.getXmlFragment("document-store"), [doc]);
 
   const AI_BASE_URL = "/api/blocknote";
-  const editor = useCreateBlockNote(
-    {
-      dictionary: AI_BASE_URL ? ({ ...en, ai: aiEn } as any) : undefined,
-      extensions: AI_BASE_URL
-        ? [
-            createAIExtension({
-              transport: new DefaultChatTransport({
-                api: `${AI_BASE_URL}/regular/streamText`,
-              }),
-            }),
-          ]
-        : undefined,
-      collaboration: {
-        provider,
-        fragment: doc.getXmlFragment("document-store"),
-        user: {
-          name: cursorName,
-          color: cursorColor,
-        },
-        showCursorLabels: "activity",
-      },
-    },
-    [AI_BASE_URL, cursorName, cursorColor]
-  );
 
   useEffect(() => {
     return () => {
@@ -230,21 +190,7 @@ export default function PartyStashDetailPage() {
     };
   }, [provider]);
 
-  const initializedRef = useRef(false);
-  useEffect(() => {
-    if (initializedRef.current) return;
-    if (!editor) return;
-    if (!initialBlocks || initialBlocks.length === 0) return;
-    const docBlocks = editor.document;
-    if (docBlocks.length === 1) {
-      const b = docBlocks[0] as any;
-      const emptyParagraph = b?.type === "paragraph" && Array.isArray(b?.content) && b.content.every((c: any) => (c?.text ?? "") === "");
-      if (emptyParagraph) {
-        editor.replaceBlocks([b], initialBlocks as any);
-        initializedRef.current = true;
-      }
-    }
-  }, [editor, initialBlocks]);
+  
 
   return (
     <DashboardFrame userProfile={userProfile}>
@@ -341,56 +287,16 @@ export default function PartyStashDetailPage() {
             )}
 
             <div className="rounded-lg border border-[#f5c16c]/20 bg-black/40 p-6">
-              <CursorUsersProvider provider={provider} defaultName={cursorName} defaultColor={cursorColor}>
-                <BlockNoteView
-                  editor={editor}
-                  onChange={onEditorChange}
-                  formattingToolbar={false}
-                  slashMenu={false}
-                  editable={canEdit}
-                  style={{ minHeight: "60vh" }}
-                >
-                  {AI_BASE_URL && canEdit && <AIMenuController />}
-
-                  <FormattingToolbarController
-                    formattingToolbar={() => (
-                      <FormattingToolbar>
-                        {getFormattingToolbarItems()}
-                        {AI_BASE_URL && canEdit && <AIToolbarButton />}
-                      </FormattingToolbar>
-                    )}
-                  />
-
-                  {canEdit && (
-                    <SuggestionMenuController
-                      triggerCharacter="/"
-                      getItems={async (query) => {
-                        const items = [
-                          ...getDefaultReactSlashMenuItems(editor),
-                          ...(AI_BASE_URL ? getAISlashMenuItems(editor) : []),
-                        ];
-                        const q = (query ?? "").toLowerCase();
-                        if (!q) return items;
-                        return items.filter((item: any) => {
-                          const title = (
-                            item?.title ||
-                            item?.label ||
-                            ""
-                          ).toLowerCase();
-                          const keywords: string[] =
-                            item?.keywords || item?.aliases || [];
-                          const matchKeywords =
-                            Array.isArray(keywords) &&
-                            keywords.some((k) =>
-                              (k || "").toLowerCase().includes(q)
-                            );
-                          return title.includes(q) || matchKeywords;
-                        });
-                      }}
-                    />
-                  )}
-                </BlockNoteView>
-              </CursorUsersProvider>
+              <BlockNoteStashEditor
+                initialBlocks={initialBlocks}
+                editable={canEdit}
+                provider={provider}
+                fragment={fragment}
+                cursorName={cursorName}
+                cursorColor={cursorColor}
+                onChange={onEditorChange}
+                aiBaseUrl={AI_BASE_URL}
+              />
             </div>
           </div>
         </div>

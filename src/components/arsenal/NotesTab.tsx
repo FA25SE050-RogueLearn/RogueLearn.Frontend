@@ -647,14 +647,6 @@ export default function NotesTab() {
                   <span key={`${tid}-${i}`}> {">"} {tagIndex.get(tid)?.name ?? tid}</span>
                 ))}
               </div>
-              <div className="flex items-center gap-2">
-                <Button variant={viewMode === "list" ? "default" : "secondary"} size="icon" onClick={() => setViewMode("list")}> 
-                  <List className="h-4 w-4" />
-                </Button>
-                <Button variant={viewMode === "grid" ? "default" : "secondary"} size="icon" onClick={() => setViewMode("grid")}> 
-                  <LayoutGrid className="h-4 w-4" />
-                </Button>
-              </div>
             </div>
             <div
               className="mb-4 rounded-2xl border border-dashed border-[#f5c16c]/40 bg-[#0c0508]/60 p-6"

@@ -193,7 +193,7 @@ export default function PartyStash({ partyId }: { partyId: string }) {
           >
             Refresh
           </button>
-          {role && role !== null && role !== "Member" && (
+          {role && (
             <button
               className="rounded bg-fuchsia-600 px-3 py-2 text-xs font-medium"
               onClick={() => setShowAdd(true)}
@@ -291,7 +291,7 @@ export default function PartyStash({ partyId }: { partyId: string }) {
                   >
                     View
                   </Link>
-                  {role && role !== null && role !== "Member" && (
+                  {role && (
                     <>
                       <button
                         className="rounded bg-white/10 px-3 py-1.5 text-xs"

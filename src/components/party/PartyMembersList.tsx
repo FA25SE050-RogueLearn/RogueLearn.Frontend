@@ -46,32 +46,7 @@ export default function PartyMembersList({ partyId, members, maxMembers, onRefre
   }, [authUserId, members]);
 
   const isLeader = myRole === "Leader";
-  const isCoLeader = myRole === "CoLeader";
-
-  const handleRoleChange = async (member: PartyMemberDto, nextRole: PartyRole) => {
-    if (!isLeader) return;
-    if (member.role === nextRole) return;
-    setBusyMemberId(member.id);
-    try {
-      if (nextRole === "CoLeader") {
-        if (member.role !== "Leader") {
-          await partiesApi.assignRole(partyId, member.authUserId, "CoLeader");
-          toast.success(`Granted CoLeader to ${member.username ?? member.email ?? member.authUserId.slice(0,8)}`);
-        }
-      } else if (nextRole === "Member") {
-        if (member.role === "CoLeader") {
-          await partiesApi.revokeRole(partyId, member.authUserId, "CoLeader");
-          toast.success(`Revoked CoLeader from ${member.username ?? member.email ?? member.authUserId.slice(0,8)}`);
-        }
-      }
-      // Refresh members
-      await onRefresh?.();
-    } catch (e: any) {
-      toast.error(e?.message ?? "Failed to update role");
-    } finally {
-      setBusyMemberId(null);
-    }
-  };
+  
 
   const handleRemoveMember = async (member: PartyMemberDto) => {
     if (!isLeader) return;
@@ -144,16 +119,7 @@ export default function PartyMembersList({ partyId, members, maxMembers, onRefre
                       <DropdownMenuItem onClick={() => handleTransferLeadership(m)} className="text-yellow-500 focus:text-yellow-400 focus:bg-[#d4a353]/10 cursor-pointer gap-2">
                         <ArrowRightLeft className="size-3.5" /> Transfer Leadership
                       </DropdownMenuItem>
-                      {m.role === "Member" && (
-                        <DropdownMenuItem onClick={() => handleRoleChange(m, "CoLeader")} className="text-amber-400 focus:text-amber-300 focus:bg-amber-500/10 cursor-pointer gap-2">
-                          <Shield className="size-3.5" /> Promote to CoLeader
-                        </DropdownMenuItem>
-                      )}
-                      {m.role === "CoLeader" && (
-                        <DropdownMenuItem onClick={() => handleRoleChange(m, "Member")} className="text-gray-300 focus:text-white focus:bg-[#2D2842] cursor-pointer gap-2">
-                          <Shield className="size-3.5" /> Demote to Member
-                        </DropdownMenuItem>
-                      )}
+                      
                       <DropdownMenuItem onClick={() => handleRemoveMember(m)} className="text-red-500 focus:text-red-400 focus:bg-red-500/10 cursor-pointer gap-2">
                         <UserMinus className="size-3.5" /> Remove from Party
                       </DropdownMenuItem>
