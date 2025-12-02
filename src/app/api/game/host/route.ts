@@ -28,19 +28,27 @@ export async function POST(req: NextRequest) {
   const backendUrl = process.env.GAME_BACKEND_URL;
 
   try {
+    let backendError: string | null = null;
     if (backendUrl) {
-      const res = await fetch(`${backendUrl.replace(/\/$/, "")}/host`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId }),
-      });
-      if (!res.ok) {
+      try {
+        const res = await fetch(`${backendUrl.replace(/\/$/, "")}/host`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ userId }),
+        });
+        if (res.ok) {
+          const data = await res.json();
+          // Expect backend to return { joinCode, hostId, message, wsUrl }
+          return NextResponse.json({ ok: true, ...data });
+        }
         const text = await res.text();
-        return NextResponse.json({ ok: false, error: `Backend error: ${res.status} ${text}` }, { status: 502 });
+        backendError = `Backend error: ${res.status} ${text}`;
+        console.error(`[host] backend responded non-OK: ${backendError}`);
+      } catch (err: any) {
+        backendError = err?.message ?? String(err);
+        console.error(`[host] backend fetch failed: ${backendError}`);
       }
-      const data = await res.json();
-      // Expect backend to return { joinCode, hostId, message, wsUrl }
-      return NextResponse.json({ ok: true, ...data });
+      // Fall through to local/docker stub if backend fails so hosting still works in dev/prod.
     }
 
     // No external backend configured: try to start a local Docker container for the Unity headless server
