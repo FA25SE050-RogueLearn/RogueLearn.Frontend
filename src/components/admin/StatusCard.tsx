@@ -65,14 +65,14 @@ export function StatusCard() {
   const onlineCount = services.filter(s => s.status === 'online').length;
 
   return (
-    <Card className="bg-white border border-[#beaca3]/30 shadow-sm">
+    <Card className="bg-white border border-slate-200 shadow-sm">
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="rounded-lg bg-[#beaca3]/30 p-2">
-              <Activity className="h-5 w-5 text-[#2c2f33]" />
+            <div className="rounded-lg bg-slate-100 p-2">
+              <Activity className="h-5 w-5 text-slate-600" />
             </div>
-            <CardTitle className="text-lg font-semibold text-[#2c2f33]">System Status</CardTitle>
+            <CardTitle className="text-lg font-semibold text-slate-800">System Status</CardTitle>
           </div>
 
           <div className="flex items-center gap-2">
@@ -83,8 +83,8 @@ export function StatusCard() {
               </>
             ) : allOffline ? (
               <>
-                <XCircle className="h-5 w-5 text-[#e07a5f]" />
-                <span className="text-sm font-medium text-[#e07a5f]">All Services Down</span>
+                <XCircle className="h-5 w-5 text-red-500" />
+                <span className="text-sm font-medium text-red-600">All Services Down</span>
               </>
             ) : (
               <>
@@ -95,9 +95,9 @@ export function StatusCard() {
           </div>
         </div>
 
-        <div className="mt-2 flex items-center gap-2 text-xs text-[#2c2f33]/60">
+        <div className="mt-2 flex items-center gap-2 text-xs text-slate-500">
           <div className="flex items-center gap-1.5">
-            <div className={`h-1.5 w-1.5 rounded-full ${isPolling ? 'bg-[#7289da] animate-pulse' : 'bg-[#beaca3]'}`} />
+            <div className={`h-1.5 w-1.5 rounded-full ${isPolling ? 'bg-indigo-500 animate-pulse' : 'bg-slate-300'}`} />
             <span>Auto-updates every 60s</span>
           </div>
           <span>•</span>
@@ -110,9 +110,9 @@ export function StatusCard() {
           {services.map((service) => (
             <div
               key={service.name}
-              className="flex items-center justify-between rounded-lg border border-[#beaca3]/20 bg-[#f4f6f8] p-3"
+              className="flex items-center justify-between rounded-lg border border-slate-100 bg-slate-50 p-3"
             >
-              <span className="text-sm font-medium text-[#2c2f33]">{service.name}</span>
+              <span className="text-sm font-medium text-slate-700">{service.name}</span>
               <div className="flex items-center gap-2">
                 {service.status === 'online' ? (
                   <>
@@ -121,8 +121,8 @@ export function StatusCard() {
                   </>
                 ) : (
                   <>
-                    <div className="h-2 w-2 rounded-full bg-[#e07a5f]" />
-                    <span className="text-xs font-medium text-[#e07a5f]">Offline</span>
+                    <div className="h-2 w-2 rounded-full bg-red-500" />
+                    <span className="text-xs font-medium text-red-600">Offline</span>
                   </>
                 )}
               </div>

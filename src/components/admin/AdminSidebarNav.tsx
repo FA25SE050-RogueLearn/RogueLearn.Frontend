@@ -37,13 +37,13 @@ export function AdminSidebarNav() {
   return (
     <nav className="flex h-full flex-col p-4">
       {/* Header */}
-      <div className="mb-6 flex items-center gap-3 px-2 py-4 border-b border-[#beaca3]/40">
-        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#7289da]">
+      <div className="mb-6 flex items-center gap-3 px-2 py-4 border-b border-slate-200">
+        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-600 shadow-lg shadow-indigo-600/20">
           <Shield className="h-5 w-5 text-white" />
         </div>
         <div>
-          <h2 className="text-base font-semibold text-[#2c2f33]">Admin Panel</h2>
-          <p className="text-xs text-[#2c2f33]/60">Management Console</p>
+          <h2 className="text-base font-bold text-slate-800">Admin Panel</h2>
+          <p className="text-xs text-slate-500">Management Console</p>
         </div>
       </div>
 
@@ -57,13 +57,13 @@ export function AdminSidebarNav() {
             <Link
               key={item.href}
               href={item.href}
-              className={`group flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+              className={`group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all ${
                 isActive
-                  ? "bg-[#beaca3]/50 text-[#2c2f33]"
-                  : "text-[#2c2f33]/70 hover:bg-[#beaca3]/30 hover:text-[#2c2f33]"
+                  ? "bg-indigo-50 text-indigo-700 border border-indigo-100"
+                  : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
               }`}
             >
-              <Icon className={`h-4 w-4 ${isActive ? 'text-[#7289da]' : 'text-[#2c2f33]/50 group-hover:text-[#7289da]'}`} />
+              <Icon className={`h-4 w-4 ${isActive ? 'text-indigo-600' : 'text-slate-400 group-hover:text-indigo-600'}`} />
               <span>{item.label}</span>
             </Link>
           );
@@ -71,10 +71,10 @@ export function AdminSidebarNav() {
       </div>
 
       {/* Back to Dashboard */}
-      <div className="mt-4 border-t border-[#beaca3]/40 pt-4">
+      <div className="mt-4 border-t border-slate-200 pt-4">
         <Link
           href="/dashboard"
-          className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-[#2c2f33]/70 hover:bg-[#beaca3]/30 hover:text-[#2c2f33] transition-colors"
+          className="flex items-center gap-2 rounded-lg px-3 py-2.5 text-sm font-medium text-slate-500 hover:bg-slate-100 hover:text-slate-700 transition-all"
         >
           <ChevronLeft className="h-4 w-4" />
           Back to Dashboard

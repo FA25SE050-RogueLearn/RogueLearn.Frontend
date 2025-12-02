@@ -3,17 +3,15 @@ import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import partiesApi from "@/api/partiesApi";
 import { PartyDto } from "@/types/parties";
-import PartyDetailClient from "./PartyDetailClient";
 import PartyStash from "./PartyStash";
 import MeetingManagement from "./MeetingManagement";
 import InviteMemberModal from "./InviteMemberModal";
 import { createClient } from "@/utils/supabase/client";
 import RoleGate from "@/components/party/RoleGate";
 import { usePartyRole } from "@/hooks/usePartyRole";
-import { Users, Settings, UserPlus, LogOut, MoreVertical, Crown, HelpCircle } from "lucide-react";
+import { Users, Settings, UserPlus, LogOut, ArrowLeft, Calendar, Package, Info } from "lucide-react";
 import PartyInfoModal from "./PartyInfoModal";
-import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "@/components/ui/dropdown-menu";
-import type { PartyMemberDto, PartyInvitationDto, PartyRole } from "@/types/parties";
+import type { PartyMemberDto, PartyInvitationDto } from "@/types/parties";
 import * as usersApi from "@/api/usersApi";
 import PartyMembersList from "./PartyMembersList";
 
@@ -180,136 +178,167 @@ export default function PartyDetailPageClient({ partyId }: { partyId: string }) 
     }
   };
 
-  const header = (
-    <div className="flex w-full items-center justify-between">
-      <div className="flex items-center gap-4">
-        <div className="flex h-14 w-14 items-center justify-center rounded-xl border-2 border-[#f5c16c]/30 bg-linear-to-br from-[#f5c16c]/20 to-[#d4a855]/20 shadow-lg">
-          <Users className="h-7 w-7 text-[#f5c16c]" />
-        </div>
-        <div>
-          <h2 className="text-xl font-semibold text-[#f5c16c]">{party?.name ?? "Party"}</h2>
-          {party && (
-            <div className="text-sm text-white/60">{party.partyType} • {party.isPublic ? "Public" : "Private"} • Max {party.maxMembers}</div>
-          )}
-        </div>
+  if (loading || role === null || !party) {
+    return (
+      <div className="flex items-center justify-center py-32">
+        <div className="h-6 w-6 animate-spin rounded-full border-2 border-white/30 border-t-[#f5c16c]" />
       </div>
-      <div className="flex gap-2">
-        <button
-          onClick={() => setShowInfoModal(true)}
-          className="flex items-center gap-2 rounded-lg border border-[#f5c16c]/20 bg-black/40 px-4 py-2 text-sm font-medium text-white/80 transition-colors hover:border-[#f5c16c]/40 hover:bg-black/60 hover:text-white"
-          title="Party overview"
-        >
-          <HelpCircle className="h-4 w-4" />
-          Info
-        </button>
-        <RoleGate partyId={partyId} requireAny={["Leader"]}>
-          <button
-            onClick={() => setShowSettingsModal(true)}
-            className="flex items-center gap-2 rounded-lg border border-[#f5c16c]/20 bg-black/40 px-4 py-2 text-sm font-medium text-white/80 transition-colors hover:border-[#f5c16c]/40 hover:bg-black/60 hover:text-white"
-            title="Configure settings"
-          >
-            <Settings className="h-4 w-4" />
-            Settings
-          </button>
-        </RoleGate>
-        <RoleGate partyId={partyId} requireAny={["Leader"]}>
-          <button
-            onClick={() => setShowInviteModal(true)}
-            className="flex items-center gap-2 rounded-lg border border-[#f5c16c]/20 bg-black/40 px-4 py-2 text-sm font-medium text-white/80 transition-colors hover:border-[#f5c16c]/40 hover:bg-black/60 hover:text-white"
-          >
-            <UserPlus className="h-4 w-4" />
-            Invite Member
-          </button>
-        </RoleGate>
-        <button
-          onClick={() => setShowLeaveConfirm(true)}
-          className="flex items-center gap-2 rounded-lg border border-rose-500/20 bg-rose-500/10 px-4 py-2 text-sm font-medium text-rose-300 transition-colors hover:border-rose-500/40 hover:bg-rose-500/20"
-        >
-          <LogOut className="h-4 w-4" />
-          Leave Party
-        </button>
-      </div>
-    </div>
-  );
+    );
+  }
 
   return (
-    <div className="space-y-4">
-      {(loading || role === null || !party) && (
-        <div className="flex items-center justify-center py-16">
-          <div className="h-6 w-6 animate-spin rounded-full border-2 border-white/30 border-t-[#f5c16c]" />
-        </div>
-      )}
-      {showInfoModal && (
-        <PartyInfoModal open={showInfoModal} onClose={() => setShowInfoModal(false)} partyId={partyId} />
-      )}
-      {!loading && role !== null && party && (
-        <PartyDetailClient header={header}>
-          <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-            {/* Left: Social / Meta (30%) */}
-            <div className="lg:col-span-1 space-y-4">
-              <div className="rounded-lg border border-white/10 bg-white/5 p-4">
-                <div className="text-sm font-semibold text-white">Party Info</div>
-                <div className="mt-1 text-xs italic text-white/70">{(party as any).description || "No description."}</div>
-                <div className="mt-2 flex items-center gap-3 text-xs text-white/80">
-                  <span title="Members">👥 {members.length}</span>
-                  <span title="Stash">📦 {stashCount}</span>
-                  {invites.length > 0 && <span title="Invites">✉️ {invites.length}</span>}
-                </div>
-              </div>
-
-              <div className="rounded-lg border border-white/10 bg-white/5 p-4">
-                <div className="text-sm font-semibold text-white">Party Details</div>
-                {party && (
-                  <div className="mt-2 space-y-2 text-xs text-white/80">
-                    <div className="flex items-center justify-between"><span>Type</span><span className="rounded bg-white/10 px-2 py-0.5 text-white/70">{party.partyType}</span></div>
-                    <div className="flex items-center justify-between"><span>Privacy</span><span className="rounded bg-white/10 px-2 py-0.5 text-white/70">{party.isPublic ? "Public" : "Private"}</span></div>
-                    <div className="flex items-center justify-between"><span>Max Members</span><span className="rounded bg-white/10 px-2 py-0.5 text-white/70">{party.maxMembers}</span></div>
-                    <div className="flex items-center justify-between"><span>Owner ID</span><span className="rounded bg-white/10 px-2 py-0.5 text-white/70">{party.createdBy}</span></div>
-                    <div className="flex items-center justify-between"><span>Created</span><span className="rounded bg-white/10 px-2 py-0.5 text-white/70">{new Date(party.createdAt).toLocaleDateString()}</span></div>
-                  </div>
-                )}
-              </div>
-
-              <PartyMembersList partyId={party.id} members={members} maxMembers={party.maxMembers} onRefresh={async () => { triggerRefresh(); }} />
-
-              {invites.length > 0 && (
-                <div className="rounded-lg border border-[#f5c16c]/20 bg-black/40 p-4">
-                  <div className="mb-2 text-sm font-medium text-[#f5c16c]">Pending Invitations</div>
-                  <ul className="space-y-2">
-                    {invites.map((inv) => (
-                      <li key={inv.id} className="flex items-center justify-between rounded bg-white/5 px-3 py-2 text-xs">
-                        <div className="flex items-center gap-2">
-                          <span>To: {inv.inviteeName || inviteeNameById[inv.inviteeId] || "External Invite"}</span>
-                          <span className="rounded bg-white/10 px-2 py-0.5 text-[11px] text-white/70">{inv.status}</span>
-                        </div>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
+    <div className="flex flex-col gap-6 pb-24">
+      {/* Arsenal-Style Header */}
+      <section className="relative overflow-hidden rounded-[28px] border border-[#f5c16c]/30 bg-gradient-to-br from-[#2d1810]/60 via-[#1a0a08]/80 to-black/90 p-8 shadow-2xl">
+        <div
+          className="pointer-events-none absolute inset-0 opacity-25"
+          style={{
+            backgroundImage: "url('/images/asfalt-dark.png')",
+            backgroundSize: "100px",
+            backgroundBlendMode: "overlay",
+          }}
+        />
+        <div className="relative z-10 flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <div className="rounded-full bg-[#f5c16c]/10 p-4">
+              <Users className="h-8 w-8 text-[#f5c16c]" />
             </div>
-
-            {/* Right: Workspace (70%) */}
-            <div className="lg:col-span-2 space-y-4">
-              <div className="rounded-lg border border-white/10 bg-white/5 p-4">
-                <div className="mb-3 flex items-center justify-between">
-                  <div className="text-sm font-semibold">Study Sprints</div>
-                  <RoleGate partyId={partyId} requireAny={["Leader"]}>
-                    <button onClick={() => setShowScheduleModal(true)} className="rounded bg-linear-to-r from-[#f5c16c] to-[#d4a855] px-4 py-2 text-xs font-semibold text-black">📅 Schedule Sprint</button>
-                  </RoleGate>
-                </div>
-                <div>
-                  <MeetingManagement partyId={party.id} variant="compact" />
-                </div>
-              </div>
-
-              <div className="rounded-lg border border-white/10 bg-white/5 p-4">
-                <PartyStash partyId={party.id} />
+            <div className="space-y-2">
+              <p className="text-xs uppercase tracking-[0.35em] text-[#f5c16c]/60">Party Hub</p>
+              <h1 className="text-3xl font-semibold text-[#f5c16c]">{party.name}</h1>
+              <div className="flex items-center gap-4 text-sm text-white/70">
+                <span>{party.partyType}</span>
+                <span>•</span>
+                <span>{party.isPublic ? "Public" : "Private"}</span>
+                <span>•</span>
+                <span>{members.length}/{party.maxMembers} members</span>
+                <span>•</span>
+                <span>{stashCount} resources</span>
               </div>
             </div>
           </div>
-        </PartyDetailClient>
+          <div className="flex items-center gap-2">
+            <RoleGate partyId={partyId} requireAny={["Leader"]}>
+              <button
+                onClick={() => setShowInviteModal(true)}
+                className="flex items-center gap-2 rounded-lg bg-gradient-to-r from-[#f5c16c] to-[#d4a855] px-4 py-2 text-sm font-medium text-black"
+              >
+                <UserPlus className="h-4 w-4" />
+                Invite
+              </button>
+            </RoleGate>
+            <RoleGate partyId={partyId} requireAny={["Leader"]}>
+              <button
+                onClick={() => setShowSettingsModal(true)}
+                className="rounded-lg border border-[#f5c16c]/30 bg-transparent px-3 py-2 text-sm text-[#f5c16c] hover:bg-[#f5c16c]/10"
+              >
+                <Settings className="h-4 w-4" />
+              </button>
+            </RoleGate>
+            <button
+              onClick={() => setShowInfoModal(true)}
+              className="rounded-lg border border-white/20 bg-transparent px-3 py-2 text-sm text-white/70 hover:bg-white/5"
+            >
+              <Info className="h-4 w-4" />
+            </button>
+            <button
+              onClick={() => router.push("/parties")}
+              className="rounded-lg border border-white/20 bg-transparent px-3 py-2 text-sm text-white/70 hover:bg-white/5"
+            >
+              <ArrowLeft className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
+      </section>
+
+      {showInfoModal && (
+        <PartyInfoModal open={showInfoModal} onClose={() => setShowInfoModal(false)} partyId={partyId} />
       )}
+
+      {/* Main Content Grid */}
+      <div className="rounded-2xl border border-white/10 bg-black/20 min-h-[70vh] grid grid-cols-[280px_1fr]">
+        {/* Left Sidebar */}
+        <div className="border-r border-white/10 p-4 space-y-4">
+          {/* Party Info */}
+          <div className="space-y-2">
+            <div className="flex items-center gap-2 text-xs uppercase tracking-[0.3em] text-white/40">
+              <Info className="h-4 w-4" />
+              <span>About</span>
+            </div>
+            <p className="text-xs text-white/60 italic">{(party as any).description || "No description."}</p>
+            <div className="flex flex-wrap gap-2 pt-2">
+              <span className="rounded-full border border-[#f5c16c]/20 bg-[#f5c16c]/10 px-2 py-0.5 text-[10px] text-[#f5c16c]">{party.partyType}</span>
+              <span className="rounded-full border border-white/20 bg-white/5 px-2 py-0.5 text-[10px] text-white/60">{party.isPublic ? "Public" : "Private"}</span>
+            </div>
+          </div>
+
+          {/* Members */}
+          <div className="border-t border-white/10 pt-4">
+            <PartyMembersList partyId={party.id} members={members} maxMembers={party.maxMembers} onRefresh={async () => { triggerRefresh(); }} />
+          </div>
+
+          {/* Pending Invitations */}
+          {invites.length > 0 && (
+            <div className="border-t border-white/10 pt-4">
+              <div className="flex items-center gap-2 text-xs uppercase tracking-[0.3em] text-[#d23187]/80 mb-3">
+                <UserPlus className="h-4 w-4" />
+                <span>Pending ({invites.length})</span>
+              </div>
+              <div className="space-y-2">
+                {invites.map((inv) => (
+                  <div key={inv.id} className="rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-xs">
+                    <span className="text-white/70">{inv.inviteeName || inviteeNameById[inv.inviteeId] || "External"}</span>
+                    <span className="ml-2 text-white/40">{inv.status}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Leave Party */}
+          <div className="border-t border-white/10 pt-4">
+            <button
+              onClick={() => setShowLeaveConfirm(true)}
+              className="flex w-full items-center justify-center gap-2 rounded-lg border border-rose-500/30 bg-rose-500/10 px-3 py-2 text-xs text-rose-400 hover:bg-rose-500/20"
+            >
+              <LogOut className="h-4 w-4" />
+              Leave Party
+            </button>
+          </div>
+        </div>
+
+        {/* Main Content */}
+        <div className="p-6 space-y-6 overflow-y-auto">
+          {/* Study Sprints */}
+          <div>
+            <div className="mb-4 flex items-center justify-between">
+              <div className="flex items-center gap-2 text-sm font-medium text-white">
+                <Calendar className="h-4 w-4 text-[#f5c16c]" />
+                Study Sprints
+              </div>
+              <RoleGate partyId={partyId} requireAny={["Leader"]}>
+                <button onClick={() => setShowScheduleModal(true)} className="rounded-lg bg-gradient-to-r from-[#f5c16c] to-[#d4a855] px-3 py-1.5 text-xs font-medium text-black">
+                  Schedule Sprint
+                </button>
+              </RoleGate>
+            </div>
+            <div className="rounded-xl border border-white/10 bg-black/30 p-4">
+              <MeetingManagement partyId={party.id} variant="compact" />
+            </div>
+          </div>
+
+          {/* Party Stash */}
+          <div>
+            <div className="mb-4 flex items-center gap-2 text-sm font-medium text-white">
+              <Package className="h-4 w-4 text-[#f5c16c]" />
+              Party Stash
+            </div>
+            <div className="rounded-xl border border-white/10 bg-black/30 p-4">
+              <PartyStash partyId={party.id} />
+            </div>
+          </div>
+        </div>
+      </div>
       {showLeaveConfirm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm">
           <div className="absolute inset-0 bg-black/80" onClick={() => setShowLeaveConfirm(false)} />
