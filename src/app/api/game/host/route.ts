@@ -22,8 +22,10 @@ export async function POST(req: NextRequest) {
     // Body parsing failed or no body provided
   }
 
-  // If a backend URL is provided, attempt to proxy the request there.
-  const backendUrl = process.env.GAME_BACKEND_URL || process.env.NEXT_PUBLIC_API_URL;
+  // If a backend URL is provided explicitly, attempt to proxy the request there.
+  // NOTE: The User API currently has no /host endpoint, so default to local stub unless
+  // GAME_BACKEND_URL is set to a service that actually exposes hosting.
+  const backendUrl = process.env.GAME_BACKEND_URL;
 
   try {
     if (backendUrl) {
