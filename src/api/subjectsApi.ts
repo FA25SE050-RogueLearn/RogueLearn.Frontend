@@ -7,15 +7,17 @@ import {
   CreateSubjectResponse,
   UpdateSubjectCommandRequest,
   UpdateSubjectResponse,
-  GetAllSubjectsResponse,
   GetSubjectByIdResponse,
+  PaginatedSubjectsResponse,
 } from '@/types/subjects';
 import { ImportSubjectFromTextCommandResponse } from '@/types/curriculum-import';
 
 const subjectsApi = {
   /** GET /api/admin/subjects */
-  getAll: (): Promise<ApiResponse<GetAllSubjectsResponse>> =>
-    axiosClient.get<Subject[]>('/api/admin/subjects').then(res => ({
+  getAll: (page: number = 1, pageSize: number = 100): Promise<ApiResponse<PaginatedSubjectsResponse>> =>
+    axiosClient.get<PaginatedSubjectsResponse>('/api/admin/subjects', {
+      params: { page, pageSize },
+    }).then(res => ({
       isSuccess: true,
       data: res.data,
     })),

@@ -43,7 +43,7 @@ export default function ClassesManagementPage() {
                 setClassList(Array.isArray(classData) ? classData : []);
             }
             if (sRes.isSuccess && sRes.data) {
-                const subjectData = sRes.data;
+                const subjectData = sRes.data.items;
                 setSubjects(Array.isArray(subjectData) ? subjectData : []);
             }
         } catch {

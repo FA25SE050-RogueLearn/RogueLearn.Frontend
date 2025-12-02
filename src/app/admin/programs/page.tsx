@@ -49,7 +49,7 @@ export default function ProgramsManagementPage() {
                 setPrograms(Array.isArray(programData) ? programData : []);
             }
             if (sRes.isSuccess && sRes.data) {
-                const subjectData = sRes.data;
+                const subjectData = sRes.data.items;
                 setSubjects(Array.isArray(subjectData) ? subjectData : []);
             }
         } catch {

@@ -130,7 +130,10 @@ export default function CurriculumMapPage() {
         setLoadingSubjects(true);
         try {
             const [subRes, skillsRes] = await Promise.all([subjectsApi.getAll(), adminManagementApi.getAllSkills()]);
-            if (subRes.isSuccess && subRes.data) setSubjects(Array.isArray(subRes.data) ? subRes.data : []);
+            if (subRes.isSuccess && subRes.data) {
+                const items = subRes.data.items;
+                setSubjects(Array.isArray(items) ? items : []);
+            }
             if (skillsRes.isSuccess && skillsRes.data) setAllSkills(Array.isArray(skillsRes.data?.skills) ? skillsRes.data.skills : []);
         } catch (e) { toast.error("Failed to load initial catalog."); }
         finally { setLoadingSubjects(false); }
