@@ -278,9 +278,33 @@ export function CreateProblemForm() {
         ]);
       } else {
         console.error('❌ Problem creation failed:', response.error);
-        toast.error("Failed to create problem", {
-          description: response.error?.message || "An error occurred"
-        });
+        
+        // Check if there are validation results in the error details
+        const errorDetails = response.error?.details as any;
+        if (errorDetails?.validation_results) {
+          // Show validation failure results
+          setValidationResults({
+            problem_id: "",
+            title: title,
+            validation_results: errorDetails.validation_results
+          });
+          
+          // Build detailed error message
+          const failedLanguages = Object.entries(errorDetails.validation_results)
+            .filter(([_, result]: [string, any]) => !result.success)
+            .map(([langId, result]: [string, any]) => {
+              const langName = getLanguageName(langId);
+              return `${langName}: ${result.message}`;
+            });
+          
+          toast.error("Test solution validation failed", {
+            description: failedLanguages.join("; ") || response.error?.message || "Validation failed"
+          });
+        } else {
+          toast.error("Failed to create problem", {
+            description: response.error?.message || "An error occurred"
+          });
+        }
       }
     } catch (err) {
       console.error("❌ Unexpected error creating problem:", err);
@@ -304,19 +328,39 @@ export function CreateProblemForm() {
           <div className="pointer-events-none absolute inset-0" style={CARD_TEXTURE} />
           <CardHeader className="relative border-b border-amber-900/20">
             <CardTitle className="flex items-center gap-2 text-amber-100">
-              <CheckCircle className="h-5 w-5 text-amber-500" />
-              Problem Created Successfully
+              {validationResults.problem_id ? (
+                <>
+                  <CheckCircle className="h-5 w-5 text-emerald-500" />
+                  Problem Created Successfully
+                </>
+              ) : (
+                <>
+                  <AlertCircle className="h-5 w-5 text-rose-500" />
+                  Validation Failed
+                </>
+              )}
             </CardTitle>
           </CardHeader>
           <CardContent className="relative space-y-4 pt-6">
-            <div className="rounded-lg border border-amber-900/30 bg-amber-950/20 p-4">
-              <p className="text-sm text-amber-200">
-                <strong>Problem ID:</strong> {validationResults.problem_id}
-              </p>
-              <p className="text-sm text-amber-200">
-                <strong>Title:</strong> {validationResults.title}
-              </p>
-            </div>
+            {validationResults.problem_id ? (
+              <div className="rounded-lg border border-emerald-500/30 bg-emerald-950/20 p-4">
+                <p className="text-sm text-emerald-200">
+                  <strong>Problem ID:</strong> {validationResults.problem_id}
+                </p>
+                <p className="text-sm text-emerald-200">
+                  <strong>Title:</strong> {validationResults.title}
+                </p>
+              </div>
+            ) : (
+              <div className="rounded-lg border border-rose-500/30 bg-rose-950/20 p-4">
+                <p className="text-sm text-rose-200">
+                  <strong>Title:</strong> {validationResults.title}
+                </p>
+                <p className="text-sm text-rose-300 mt-2">
+                  The problem was not created because the test solution validation failed. Please fix the issues below and try again.
+                </p>
+              </div>
+            )}
 
             <div className="space-y-3">
               <h3 className="text-sm font-semibold text-amber-100">Validation Results</h3>
@@ -346,7 +390,7 @@ export function CreateProblemForm() {
                     Passed: {result.passed_tests} / {result.total_tests}
                   </p>
                   {result.execution_log && (
-                    <details className="mt-2">
+                    <details className="mt-2" open={!result.success}>
                       <summary className="cursor-pointer text-xs text-amber-400">Execution Log</summary>
                       <pre className="mt-2 text-[10px] text-white/70 whitespace-pre-wrap bg-black/30 p-2 rounded">
                         {result.execution_log}

@@ -94,7 +94,7 @@ const adminManagementApi = {
     })),
 
   removeClassSpecialization: (classId: string, subjectId: string): Promise<ApiResponse<void>> =>
-    axiosClient.delete<void>(`/api/admin/classes/${classId}/specialization/${subjectId}`).then(() => ({
+    axiosClient.delete<void>(`/api/admin/classes/${classId}/specialization-subjects/${subjectId}`).then(() => ({
       isSuccess: true,
       data: undefined
     })),

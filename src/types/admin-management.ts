@@ -2,11 +2,13 @@
 
 export interface SpecializationSubjectEntry {
   id: string;
+  classId: string;
   subjectId: string;
-  subjectName: string;
-  subjectCode: string;
+  subjectName?: string;
+  subjectCode?: string;
+  placeholderSubjectCode?: string;
   semester: number;
-  isRequired: boolean;
+  isRequired?: boolean;
 }
 
 export interface AddSpecializationRequest {

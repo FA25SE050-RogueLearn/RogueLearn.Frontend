@@ -1,10 +1,26 @@
 // roguelearn-web/src/api/axiosCodeBattleClient.ts
 import axios, { AxiosError } from 'axios';
 import { createClient } from '@/utils/supabase/client';
-import { ApiErrorPayload, NormalizedApiErrorInfo } from '@/types/base/Error';
+import { NormalizedApiErrorInfo } from '@/types/base/Error';
 
 /**
- * Creates a dedicated Axios instance for the Code Battle service.
+ * Event Service API response format:
+ * {
+ *   "success": boolean,
+ *   "data": { ... } | null,
+ *   "message": string,
+ *   "error_message": string
+ * }
+ */
+interface EventServiceErrorResponse {
+  success: boolean;
+  data?: any;
+  message?: string;
+  error_message?: string;
+}
+
+/**
+ * Creates a dedicated Axios instance for the Code Battle / Event service.
  * It uses a different baseURL from the main client.
  */
 const axiosCodeBattleClient = axios.create({});
@@ -32,28 +48,57 @@ const authInterceptor = async (config: any) => {
 // Apply the interceptor to the Code Battle client.
 axiosCodeBattleClient.interceptors.request.use(authInterceptor);
 
-// Mirror error handling to provide consistent behavior across clients
+/**
+ * Maps HTTP status codes to user-friendly error messages for Event Service
+ */
+const getStatusMessage = (status: number | undefined): string => {
+  switch (status) {
+    case 400: return 'Bad Request - Validation failed';
+    case 401: return 'Unauthorized - Please log in again';
+    case 403: return 'Access Denied - You do not have permission';
+    case 404: return 'Not Found';
+    case 409: return 'Conflict - Resource already exists';
+    case 422: return 'Validation Error';
+    case 429: return 'Too Many Requests - Please try again later';
+    case 500: return 'Server Error - Please try again later';
+    default: return 'Request failed';
+  }
+};
+
+// Response interceptor with Event Service-specific error handling
 axiosCodeBattleClient.interceptors.response.use(
   (response) => response,
   (error) => {
-    const normalizeApiError = (err: AxiosError): NormalizedApiErrorInfo => {
+    const normalizeEventServiceError = (err: AxiosError): NormalizedApiErrorInfo => {
       const status = err.response?.status;
-      const payload = err.response?.data as ApiErrorPayload | undefined;
-      // Prefer backend message; avoid axios generic error text
-      const message = payload?.error?.message ?? 'Request failed';
-      const details = payload?.error?.details;
+      const payload = err.response?.data as EventServiceErrorResponse | undefined;
+      
+      // Event Service returns: { success, data, message, error_message }
+      // Extract the most relevant error message
+      const message = payload?.message || 
+                      payload?.error_message || 
+                      getStatusMessage(status);
+      
+      // For validation errors, the data field contains detailed results
+      const details = payload?.data;
+      
       return { status, message, details };
     };
 
     if (axios.isAxiosError(error)) {
-      const { status, message, details } = normalizeApiError(error);
-      if (status === 400) {
-        // Keep Code Battle UX consistent
-        // No global toast library imported here on purpose; rely on callers to display messages.
-        // Attach normalized info for the caller
-        (error as any).normalized = { status, message, details } as NormalizedApiErrorInfo;
-      } else {
-        (error as any).normalized = { status, message, details } as NormalizedApiErrorInfo;
+      const normalized = normalizeEventServiceError(error);
+      
+      // Attach normalized info for the caller to use
+      (error as any).normalized = normalized;
+      
+      // Log for debugging in development
+      if (process.env.NODE_ENV === 'development') {
+        console.error('[EventService Error]', {
+          status: normalized.status,
+          message: normalized.message,
+          details: normalized.details,
+          url: error.config?.url,
+        });
       }
     }
 

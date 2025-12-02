@@ -26,9 +26,8 @@ export function AdminLayout({ children }: { children: ReactNode }) {
         const payload = JSON.parse(atob(token.split(".")[1]));
         const roles: string[] = payload.roles || [];
 
-        const isAdmin = roles.some(
-          (role) => role.toLowerCase() === "admin" || role.toLowerCase() === "administrator"
-        );
+        const adminRoles = ["Admin", "Administrator", "Game Master"];
+        const isAdmin = roles.some((role) => adminRoles.includes(role));
 
         if (!isAdmin) {
           router.replace("/unauthorized");
@@ -46,25 +45,32 @@ export function AdminLayout({ children }: { children: ReactNode }) {
 
   if (isAuthorized === null) {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+      <div className="min-h-screen bg-[#0a0506] flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
-          <Loader2 className="h-8 w-8 animate-spin text-indigo-600" />
-          <p className="text-slate-600">Verifying access...</p>
+          <Loader2 className="h-8 w-8 animate-spin text-[#f5c16c]" />
+          <p className="text-white/60">Verifying access...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      <div className="flex min-h-screen">
+    <div className="relative min-h-screen w-full bg-[#0a0506] text-white">
+      {/* Background layers */}
+      <div className="pointer-events-none fixed inset-0">
+        <div className="absolute inset-0 bg-gradient-to-br from-[#1a0b08]/90 via-[#0a0506] to-[#0b0510]/90" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(245,193,108,0.08),transparent_50%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_bottom_left,rgba(210,49,135,0.06),transparent_50%)]" />
+      </div>
+
+      <div className="relative z-10 flex min-h-screen">
         {/* Sidebar */}
-        <aside className="hidden w-64 border-r border-slate-200 bg-white lg:block">
+        <aside className="hidden w-64 border-r border-[#f5c16c]/10 bg-[#1a0b08]/80 backdrop-blur-sm lg:block">
           <AdminSidebarNav />
         </aside>
 
         {/* Main content */}
-        <main className="flex-1 overflow-y-auto bg-slate-50">
+        <main className="flex-1 overflow-y-auto">
           <div className="container mx-auto p-6 lg:p-8">
             {children}
           </div>

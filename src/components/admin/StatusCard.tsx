@@ -65,39 +65,39 @@ export function StatusCard() {
   const onlineCount = services.filter(s => s.status === 'online').length;
 
   return (
-    <Card className="bg-white border border-slate-200 shadow-sm">
+    <Card className="bg-[#1a0b08]/80 border border-[#f5c16c]/20">
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="rounded-lg bg-slate-100 p-2">
-              <Activity className="h-5 w-5 text-slate-600" />
+            <div className="rounded-lg bg-[#f5c16c]/20 p-2">
+              <Activity className="h-5 w-5 text-[#f5c16c]" />
             </div>
-            <CardTitle className="text-lg font-semibold text-slate-800">System Status</CardTitle>
+            <CardTitle className="text-lg font-semibold text-white">System Status</CardTitle>
           </div>
 
           <div className="flex items-center gap-2">
             {allOnline ? (
               <>
-                <CheckCircle className="h-5 w-5 text-emerald-500" />
-                <span className="text-sm font-medium text-emerald-600">All Systems Operational</span>
+                <CheckCircle className="h-5 w-5 text-emerald-400" />
+                <span className="text-sm font-medium text-emerald-400">All Systems Operational</span>
               </>
             ) : allOffline ? (
               <>
-                <XCircle className="h-5 w-5 text-red-500" />
-                <span className="text-sm font-medium text-red-600">All Services Down</span>
+                <XCircle className="h-5 w-5 text-red-400" />
+                <span className="text-sm font-medium text-red-400">All Services Down</span>
               </>
             ) : (
               <>
-                <AlertCircle className="h-5 w-5 text-amber-500" />
-                <span className="text-sm font-medium text-amber-600">{onlineCount}/{services.length} Services Online</span>
+                <AlertCircle className="h-5 w-5 text-[#f5c16c]" />
+                <span className="text-sm font-medium text-[#f5c16c]">{onlineCount}/{services.length} Services Online</span>
               </>
             )}
           </div>
         </div>
 
-        <div className="mt-2 flex items-center gap-2 text-xs text-slate-500">
+        <div className="mt-2 flex items-center gap-2 text-xs text-white/40">
           <div className="flex items-center gap-1.5">
-            <div className={`h-1.5 w-1.5 rounded-full ${isPolling ? 'bg-indigo-500 animate-pulse' : 'bg-slate-300'}`} />
+            <div className={`h-1.5 w-1.5 rounded-full ${isPolling ? 'bg-[#d23187] animate-pulse' : 'bg-white/30'}`} />
             <span>Auto-updates every 60s</span>
           </div>
           <span>•</span>
@@ -110,19 +110,19 @@ export function StatusCard() {
           {services.map((service) => (
             <div
               key={service.name}
-              className="flex items-center justify-between rounded-lg border border-slate-100 bg-slate-50 p-3"
+              className="flex items-center justify-between rounded-lg border border-white/10 bg-white/5 p-3"
             >
-              <span className="text-sm font-medium text-slate-700">{service.name}</span>
+              <span className="text-sm font-medium text-white">{service.name}</span>
               <div className="flex items-center gap-2">
                 {service.status === 'online' ? (
                   <>
-                    <div className="h-2 w-2 rounded-full bg-emerald-500" />
-                    <span className="text-xs font-medium text-emerald-600">Online</span>
+                    <div className="h-2 w-2 rounded-full bg-emerald-400" />
+                    <span className="text-xs font-medium text-emerald-400">Online</span>
                   </>
                 ) : (
                   <>
-                    <div className="h-2 w-2 rounded-full bg-red-500" />
-                    <span className="text-xs font-medium text-red-600">Offline</span>
+                    <div className="h-2 w-2 rounded-full bg-red-400" />
+                    <span className="text-xs font-medium text-red-400">Offline</span>
                   </>
                 )}
               </div>
