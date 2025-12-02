@@ -2,6 +2,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import eventServiceApi from '@/api/eventServiceApi';
 import { createClient } from '@/utils/supabase/client';
 import type { Event, Room, Problem } from '@/types/event-service';
@@ -34,6 +35,8 @@ const statusToApiParam = (status: StatusFilter): string | undefined => {
 };
 
 export default function CodeBattlePage() {
+  const router = useRouter();
+  
   // Navigation state
   const [currentView, setCurrentView] = useState<ViewState>('events');
 
@@ -388,7 +391,7 @@ export default function CodeBattlePage() {
       });
 
       eventSource.addEventListener('EVENT_ENDED', () => {
-        addNotification('Event has ended - Returning to events...', 'info');
+        addNotification('Event has ended! Redirecting to results...', 'success');
 
         // Close SSE connection
         if (eventSourceRef.current) {
@@ -396,9 +399,22 @@ export default function CodeBattlePage() {
           eventSourceRef.current = null;
         }
 
-        // Return to events selection after a brief delay
+        // Show toast notification
+        toast.success('Battle Complete!', {
+          description: 'The event has ended. Redirecting to the leaderboard...',
+          duration: 3000,
+        });
+
+        // Redirect to results page after a brief delay
+        const eventIdForRedirect = selectedEventId;
         setTimeout(() => {
-          setCurrentView('events');
+          if (eventIdForRedirect) {
+            router.push(`/code-battle/${eventIdForRedirect}/results`);
+          } else {
+            // Fallback to events if no event ID
+            setCurrentView('events');
+          }
+          // Clean up state
           setSelectedEventId(null);
           setSelectedRoomId(null);
           setSelectedProblemId(null);
