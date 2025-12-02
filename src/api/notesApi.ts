@@ -24,6 +24,10 @@ import {
 } from '@/types/ai-tagging';
 
 const notesApi = {
+  // =================================================================
+  // NOTES (NotesController)
+  // =================================================================
+
   /** GET /api/notes/me */
   getMyNotes: (): Promise<ApiResponse<GetMyNotesResponse>> =>
     axiosClient.get<NoteDto[]>(`/api/notes/me`).then(res => ({
@@ -67,13 +71,6 @@ const notesApi = {
       data: res.data,
     }));
   },
-
-  /** GET /api/notes/public */
-  getPublicNotes: (search?: string): Promise<ApiResponse<GetPublicNotesResponse>> =>
-    axiosClient.get<NoteDto[]>(`/api/notes/public`, { params: { search } }).then(res => ({
-      isSuccess: true,
-      data: res.data,
-    })),
 
   // --- AI Tagging ---
   /** POST /api/ai/tagging/suggest */

@@ -20,6 +20,11 @@ import type {
   GetAcademicStatusResponse,
 } from '@/types/student';
 
+// =================================================================
+// USERS (UsersController)
+// =================================================================
+
+
 /**
  * Processes the authenticated user's academic record, syncs their gradebook,
  * and triggers the generation of their personalized learning path and high-level quests.

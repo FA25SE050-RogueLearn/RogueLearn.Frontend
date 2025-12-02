@@ -8,6 +8,10 @@ import { UserQuestProgress } from '../types/academic';
  * Corresponds to UserQuestProgressController.cs
  */
 const userQuestProgressApi = {
+  // =================================================================
+  // USER QUEST PROGRESS (UserQuestProgressController)
+  // =================================================================
+  
   /**
    * Gets the user's progress for a specific quest, including the status of each step.
    * Corresponds to GET /api/user-progress/quests/{questId}

@@ -67,6 +67,10 @@ interface AdminStepFeedbackItem {
  * Updated to support weekly module structure and background job polling.
  */
 const questApi = {
+  // =================================================================
+  // QUESTS (QuestsController)
+  // =================================================================
+
   /**
    * Gets the detailed information for a single quest, including all weekly steps.
    * Corresponds to GET /api/quests/{questId}

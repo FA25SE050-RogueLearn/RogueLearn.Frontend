@@ -9,6 +9,10 @@ import {
 } from "@/types/meetings";
 
 const meetingsApi = {
+  // =================================================================
+  // MEETINGS (MeetingsController)
+  // =================================================================
+
   /** POST /api/meetings - Upsert a meeting (create or update basic metadata) */
   upsertMeeting: (payload: MeetingDto): Promise<ApiResponse<MeetingDto>> =>
     axiosClient.post<MeetingDto>(`/api/meetings`, payload).then((res) => ({

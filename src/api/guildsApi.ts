@@ -14,9 +14,6 @@ import {
   ConfigureGuildSettingsCommandRequest,
   InviteGuildMembersResponse,
   ApplyGuildJoinRequestRequest,
-  AssignGuildRoleCommandRequest,
-  RevokeGuildRoleCommandRequest,
-  RemoveGuildMemberCommandRequest,
   TransferGuildLeadershipCommandRequest,
   InviteGuildMembersRequest,
   ListAllPublicGuildsQueryRequest,
@@ -24,6 +21,10 @@ import {
 } from '@/types/guilds';
 
 const guildsApi = {
+  // =================================================================
+  // GUILDS (GuildsController)
+  // =================================================================
+
   /** GET /api/guilds */
   listAllPublic: (params: ListAllPublicGuildsQueryRequest): Promise<ApiResponse<GuildDto[]>> =>
     axiosClient.get<GuildDto[]>('/api/guilds', { params }).then(res => ({
