@@ -103,9 +103,9 @@ export default function LoginClient() {
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(245,193,108,0.15),transparent_50%)]" />
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_80%,rgba(210,49,135,0.1),transparent_50%)]" />
         
-        <div className="relative z-10 flex flex-col justify-center px-12 py-16">
+        <div className="relative z-10 flex flex-col justify-center px-8 py-16">
           <div>
-            <div className="flex items-center gap-3 mb-12">
+            <div className="flex items-center mb-12">
               <Image
                 src="/RougeLearn-Clear.png"
                 alt="RogueLearn"
@@ -113,14 +113,14 @@ export default function LoginClient() {
                 height={56}
                 className="rounded-xl"
               />
-              <span className="text-3xl font-bold text-[#f5c16c]">RogueLearn</span>
+              <span className="text-3xl font-bold text-[#f5c16c] -ml-3">ogueLearn</span>
             </div>
             <h1 className="text-4xl font-bold text-white leading-tight mb-5">
-              study with friends.<br />
-              <span className="text-[#f5c16c]">maybe learn something.</span>
+              Transform Your<br />
+              <span className="text-[#f5c16c]">Learning Experience</span>
             </h1>
             <p className="text-base text-white/50 max-w-sm">
-              it's like discord but for studying. or a game but educational. idk it's hard to explain just try it.
+              A gamified learning platform designed to help students achieve academic excellence through personalized skill trees and collaborative study tools.
             </p>
           </div>
         </div>
@@ -143,7 +143,7 @@ export default function LoginClient() {
 
           <div className="mb-8">
             <h2 className="text-3xl font-bold text-white mb-2">Welcome back</h2>
-            <p className="text-white/50">Continue your learning adventure</p>
+            <p className="text-white/50">Sign in to access your personalized learning dashboard</p>
           </div>
 
           <form onSubmit={handleSignIn} className="space-y-5">
