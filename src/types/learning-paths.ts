@@ -33,6 +33,12 @@ export interface QuestSummaryDto {
   sequenceOrder: number;
   learningPathId: string;
   chapterId: string;
+  // Difficulty indicator based on academic performance
+  subjectCode?: string;
+  subjectGrade?: string;           // e.g., "8.5" or null
+  subjectStatus?: string;          // "Passed", "NotPassed", "Studying"
+  expectedDifficulty?: 'Challenging' | 'Standard' | 'Supportive' | 'Adaptive';
+  difficultyReason?: string;       // e.g., "High score (8.5) - advanced content"
 }
 
 // Queries

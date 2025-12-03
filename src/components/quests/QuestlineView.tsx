@@ -3,18 +3,11 @@
 
 import { useEffect, useRef, useState } from 'react';
 import gsap from 'gsap';
-import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import {
-  BookOpen,
   CheckCircle,
   Lock,
-  Play,
-  Sparkles,
   Map,
-  ChevronRight,
-  Trophy,
   ArrowLeft
 } from 'lucide-react';
 import Link from 'next/link';
@@ -22,6 +15,7 @@ import { LearningPath, QuestSummary } from '@/types/quest';
 import { usePageTransition } from '@/components/layout/PageTransition';
 import { useQuestGeneration } from '@/hooks/useQuestGeneration';
 import QuestGenerationModal from '@/components/quests/QuestGenerationModal';
+import QuestCard from '@/components/quests/QuestCard';
 import questApi from '@/api/questApi';
 
 interface QuestlineViewProps {
@@ -242,81 +236,16 @@ export default function QuestlineView({ learningPath }: QuestlineViewProps) {
 
                 {/* Quests Grid */}
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
-                  {chapter.quests.map((quest) => {
-                    // Logic to determine if a specific quest is locked
-                    // In free mode: nothing is locked.
-                    const isQuestLocked = false;
-
-                    const isQuestActive = quest.status === 'InProgress';
-
-                    return (
-                      <Card
-                        key={quest.id}
-                        className={`group relative overflow-hidden rounded-[24px] border transition-all duration-300
-                          ${isQuestLocked
-                            ? 'border-white/5 bg-white/5'
-                            : quest.status === 'Completed'
-                              ? 'border-emerald-500/30 bg-gradient-to-br from-emerald-950/30 to-black hover:border-emerald-500/50'
-                              : isQuestActive
-                                ? 'border-[#f5c16c]/60 bg-gradient-to-br from-[#2d1810] to-black shadow-[0_0_30px_rgba(245,193,108,0.15)]'
-                                : 'border-[#f5c16c]/20 bg-gradient-to-br from-[#2d1810]/80 to-black hover:border-[#f5c16c]/50 hover:-translate-y-1 hover:shadow-[0_10px_30px_rgba(245,193,108,0.15)]'
-                          }`}
-                      >
-                        {/* Texture */}
-                        <div className="pointer-events-none absolute inset-0 opacity-[0.03]" style={{ backgroundImage: 'url(/images/asfalt-dark.png)' }} />
-
-                        <CardContent className="p-5 flex flex-col h-full gap-4">
-                          <div className="flex items-start justify-between gap-3">
-                            <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border 
-                              ${isQuestLocked ? 'border-white/10 bg-white/5 text-white/20' :
-                                quest.status === 'Completed' ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-400' :
-                                  'border-[#f5c16c]/30 bg-[#f5c16c]/10 text-[#f5c16c]'}`}
-                            >
-                              {quest.status === 'Completed' ? <Trophy className="h-5 w-5" /> :
-                                isQuestLocked ? <Lock className="h-5 w-5" /> :
-                                  <BookOpen className="h-5 w-5" />}
-                            </div>
-                            {quest.isRecommended && !isQuestLocked && quest.status !== 'Completed' && (
-                              <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/20 px-2 py-0.5 text-[10px] font-medium text-amber-300 border border-amber-500/30 animate-pulse">
-                                <Sparkles className="h-3 w-3" /> Recommended
-                              </span>
-                            )}
-                          </div>
-
-                          <div className="flex-1">
-                            <h3 className={`font-semibold text-lg leading-tight mb-1 ${isQuestLocked ? 'text-white/40' : 'text-white'}`}>
-                              {quest.title}
-                            </h3>
-                            <p className="text-xs text-white/40 uppercase tracking-wider">
-                              Quest {chapter.sequence}.{quest.sequenceOrder}
-                            </p>
-                          </div>
-
-                          <div className="mt-auto pt-2">
-                            {isQuestLocked ? (
-                              <Button disabled variant="ghost" className="w-full justify-start pl-0 text-white/30 hover:bg-transparent cursor-not-allowed">
-                                <Lock className="mr-2 h-4 w-4" /> Locked
-                              </Button>
-                            ) : (
-                              <Button
-                                onClick={() => handleStartQuest(quest, chapter.id)}
-                                disabled={generatingQuestId === quest.id}
-                                className={`w-full justify-between group-hover:pl-6 transition-all duration-300
-                                  ${quest.status === 'Completed'
-                                    ? 'bg-white/5 hover:bg-white/10 text-white border border-white/10'
-                                    : 'bg-gradient-to-r from-[#f5c16c] to-[#d4a855] text-black font-semibold hover:shadow-lg'}`}
-                              >
-                                {generatingQuestId === quest.id ? 'Forging...' :
-                                  quest.status === 'Completed' ? 'Review Quest' :
-                                    quest.status === 'InProgress' ? 'Continue' : 'Start Quest'}
-                                <ChevronRight className="h-4 w-4 opacity-60 group-hover:translate-x-1 transition-transform" />
-                              </Button>
-                            )}
-                          </div>
-                        </CardContent>
-                      </Card>
-                    );
-                  })}
+                  {chapter.quests.map((quest) => (
+                    <QuestCard
+                      key={quest.id}
+                      quest={quest}
+                      chapterSequence={chapter.sequence}
+                      isLocked={false}
+                      isGenerating={generatingQuestId === quest.id}
+                      onStartQuest={() => handleStartQuest(quest, chapter.id)}
+                    />
+                  ))}
                 </div>
               </div>
             );

@@ -12,7 +12,15 @@ import { LearningPath, QuestChapter, QuestSummary } from "@/types/quest";
 import { useQuestGeneration } from "@/hooks/useQuestGeneration";
 import questApi from "@/api/questApi";
 import QuestGenerationModal from "@/components/quests/QuestGenerationModal";
+import DifficultyBadge from "@/components/quests/DifficultyBadge";
 import { useRouter } from "next/navigation";
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipProvider,
+    TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { GraduationCap, TrendingUp, TrendingDown, Minus, Clock } from "lucide-react";
 
 interface ChapterQuestListViewProps {
     learningPath: LearningPath;
@@ -185,7 +193,16 @@ export function ChapterQuestListView({ learningPath, chapter, onGenerateFirstQue
                                 <CardContent className="relative z-10 p-5">
                                     <div className="flex items-center justify-between gap-4">
                                         <div className="flex flex-1 items-start gap-4">
-                                            <h3 className="text-lg font-semibold text-white">{quest.title}</h3>
+                                            <div className="flex-1 space-y-2">
+                                                <h3 className="text-lg font-semibold text-white">{quest.title}</h3>
+                                                <DifficultyBadge
+                                                    difficulty={quest.expectedDifficulty}
+                                                    reason={quest.difficultyReason}
+                                                    subjectGrade={quest.subjectGrade}
+                                                    subjectStatus={quest.subjectStatus}
+                                                    size="sm"
+                                                />
+                                            </div>
                                         </div>
                                         <Button
                                             onClick={() => handleStartQuest(quest)}
