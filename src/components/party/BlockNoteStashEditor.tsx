@@ -1,5 +1,5 @@
 "use client";
-import { useMemo } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { BlockNoteView } from "@blocknote/shadcn";
 import { DefaultChatTransport } from "ai";
 import {
@@ -51,10 +51,22 @@ export default function BlockNoteStashEditor({ initialBlocks, editable, provider
         user: { name: cursorName, color: cursorColor },
         showCursorLabels: "always",
       },
-      initialContent: initialBlocks,
     },
     [aiBaseUrl, provider, fragment, cursorName, cursorColor, initialBlocks]
   );
+
+  const seededRef = useRef(false);
+  useEffect(() => {
+    if (seededRef.current) return;
+    if (!initialBlocks || initialBlocks.length === 0) return;
+    try {
+      const fragLen = (fragment as any)?.length ?? 0;
+      if (fragLen === 0) {
+        editor.replaceBlocks(editor.document, initialBlocks);
+        seededRef.current = true;
+      }
+    } catch {}
+  }, [editor, initialBlocks, fragment]);
 
   const handleChange = () => {
     try { onChange(editor.document); } catch { }
@@ -62,7 +74,7 @@ export default function BlockNoteStashEditor({ initialBlocks, editable, provider
 
   return (
     <CursorUsersProvider provider={provider} defaultName={cursorName} defaultColor={cursorColor}>
-      <BlockNoteView editor={editor} onChange={handleChange} formattingToolbar={false} slashMenu={false} editable={editable} style={{ minHeight: "60vh" }}>
+      <BlockNoteView editor={editor} onChange={handleChange} formattingToolbar={false} slashMenu={false} editable={editable} style={{ minHeight: "60vh", position: "relative" }}>
         {aiBaseUrl && editable && <AIMenuController />}
         <FormattingToolbarController formattingToolbar={() => (
           <FormattingToolbar>
