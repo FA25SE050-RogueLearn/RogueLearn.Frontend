@@ -45,6 +45,25 @@ const authInterceptor = async (config: any) => {
 axiosClient.interceptors.request.use(authInterceptor);
 
 /**
+ * Maps HTTP status codes to user-friendly error messages
+ */
+const getStatusMessage = (status: number | undefined): string => {
+  switch (status) {
+    case 400: return 'Bad Request';
+    case 401: return 'Unauthorized - Please log in again';
+    case 403: return 'Access Denied - You do not have permission to access this resource';
+    case 404: return 'Not Found';
+    case 409: return 'Conflict - Resource already exists';
+    case 422: return 'Validation Error';
+    case 429: return 'Too Many Requests - Please try again later';
+    case 500: return 'Server Error - Please try again later';
+    case 502: return 'Bad Gateway';
+    case 503: return 'Service Unavailable';
+    default: return 'Request failed';
+  }
+};
+
+/**
  * ⭐ UPDATED: Response interceptor with smart 404 handling
  * 
  * Polling endpoints (checkGenerationStatus, getGenerationProgress) should NOT
@@ -60,7 +79,8 @@ axiosClient.interceptors.response.use(
     const normalizeApiError = (err: AxiosError): NormalizedApiErrorInfo => {
       const status = err.response?.status;
       const payload = err.response?.data as ApiErrorPayload | undefined;
-      const message = payload?.error?.message ?? 'Request failed';
+      // Use API error message if available, otherwise use status-based message
+      const message = payload?.error?.message ?? getStatusMessage(status);
       const details = payload?.error?.details;
       return { status, message, details };
     };
@@ -74,10 +94,17 @@ axiosClient.interceptors.response.use(
         error.config?.url?.includes('/generation-progress/');
       
       const is404 = status === 404;
+      const is403 = status === 403;
 
       // ⭐ Don't show toast for polling 404s - let caller decide
       if (!(isPollingEndpoint && is404)) {
-        toast.error(message);
+        if (is403) {
+          toast.error('Access Denied', {
+            description: message,
+          });
+        } else {
+          toast.error(message);
+        }
       }
 
       // ⭐ Always attach normalized info for downstream handling
@@ -86,6 +113,7 @@ axiosClient.interceptors.response.use(
       // ⭐ Store endpoint info for caller logic
       (error as any).isPollingEndpoint = isPollingEndpoint;
       (error as any).is404 = is404;
+      (error as any).is403 = is403;
     } else {
       // Network or unexpected error - only show if not a polling endpoint
       toast.error('Unexpected error', {

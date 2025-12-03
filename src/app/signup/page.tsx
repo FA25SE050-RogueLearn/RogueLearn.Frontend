@@ -99,9 +99,9 @@ export default function SignupPage() {
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(210,49,135,0.15),transparent_50%)]" />
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_80%,rgba(245,193,108,0.1),transparent_50%)]" />
         
-        <div className="relative z-10 flex flex-col justify-center px-12 py-16">
+        <div className="relative z-10 flex flex-col justify-center px-8 py-16">
           <div>
-            <div className="flex items-center gap-3 mb-12">
+            <div className="flex items-center mb-12">
               <Image
                 src="/RougeLearn-Clear.png"
                 alt="RogueLearn"
@@ -109,14 +109,14 @@ export default function SignupPage() {
                 height={56}
                 className="rounded-xl"
               />
-              <span className="text-3xl font-bold text-[#f5c16c]">RogueLearn</span>
+              <span className="text-3xl font-bold text-[#f5c16c] -ml-3">ogueLearn</span>
             </div>
             <h1 className="text-4xl font-bold text-white leading-tight mb-5">
-              studying but<br />
-              <span className="text-[#d23187]">make it fun.</span>
+              Elevate Your<br />
+              <span className="text-[#d23187]">Academic Journey</span>
             </h1>
             <p className="text-base text-white/50 max-w-sm">
-              we made studying not boring. takes 30 seconds to sign up. your gpa will thank you later (probably).
+              Join a platform that transforms your curriculum into an engaging learning experience with skill-based progression and collaborative study features.
             </p>
           </div>
         </div>
@@ -139,7 +139,7 @@ export default function SignupPage() {
 
           <div className="mb-8">
             <h2 className="text-3xl font-bold text-white mb-2">Create your account</h2>
-            <p className="text-white/50">Start your learning adventure today</p>
+            <p className="text-white/50">Register to begin your personalized learning experience</p>
           </div>
 
           <form onSubmit={handleSignUp} className="space-y-4">

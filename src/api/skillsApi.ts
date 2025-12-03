@@ -9,6 +9,10 @@ import { SkillDetailDto } from '@/types/skill-details';
 type GetMySkillsResponse = GetUserSkillsResponse;
 
 const skillsApi = {
+  // =================================================================
+  // SKILLS (SkillsController)
+  // =================================================================
+  
   /**
    * Fetches all tracked skills and their progress for the currently authenticated user.
    */

@@ -11,6 +11,10 @@ import {
 } from '@/types/roles';
 
 const rolesApi = {
+  // =================================================================
+  // ROLES (RolesController)
+  // =================================================================
+
   /** GET /api/admin/roles */
   getAll: (): Promise<ApiResponse<GetAllRolesResponse>> =>
     axiosClient.get<GetAllRolesResponse>(`/api/admin/roles`).then(res => ({

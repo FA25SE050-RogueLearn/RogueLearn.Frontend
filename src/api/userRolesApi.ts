@@ -11,6 +11,10 @@ import {
 } from '@/types/user-roles';
 
 const userRolesApi = {
+  // =================================================================
+  // USER ROLES (UserRolesController)
+  // =================================================================
+
   /** GET /api/admin/users/{authUserId}/roles (auth-based) */
   getByAuthUserId: (authUserId: string): Promise<ApiResponse<GetUserRolesResponse>> =>
     axiosClient.get<UserRoleDto[]>(`/api/admin/users/${authUserId}/roles`).then(res => ({

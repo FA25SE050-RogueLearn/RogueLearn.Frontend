@@ -185,21 +185,24 @@ export default function ClassesManagementPage() {
                                     </div>
                                     {(Array.isArray(specSubjects) ? specSubjects : [])
                                         .slice()
-                                        .sort((a, b) => ((a.semester ?? 0) - (b.semester ?? 0)) || ((a.subjectCode ?? '').localeCompare(b.subjectCode ?? '')))
-                                        .map(sub => (
-                                            <div key={sub.id} className="grid grid-cols-[1fr_100px_48px] items-center bg-[#f4f6f8] p-3 rounded-lg border border-[#beaca3]/20">
-                                                <div className="flex items-center gap-3">
-                                                    <span className="text-[#7289da] font-mono text-xs">{sub.subjectCode ?? 'N/A'}</span>
-                                                    {sub.subjectName && <span className="text-sm text-[#2c2f33]">{sub.subjectName}</span>}
+                                        .sort((a, b) => ((a.semester ?? 0) - (b.semester ?? 0)) || ((a.subjectCode ?? a.placeholderSubjectCode ?? '').localeCompare(b.subjectCode ?? b.placeholderSubjectCode ?? '')))
+                                        .map(sub => {
+                                            const displayCode = sub.subjectCode || sub.placeholderSubjectCode || 'N/A';
+                                            return (
+                                                <div key={sub.id} className="grid grid-cols-[1fr_100px_48px] items-center bg-[#f4f6f8] p-3 rounded-lg border border-[#beaca3]/20">
+                                                    <div className="flex items-center gap-3">
+                                                        <span className="text-[#7289da] font-mono text-xs">{displayCode}</span>
+                                                        {sub.subjectName && <span className="text-sm text-[#2c2f33]">{sub.subjectName}</span>}
+                                                    </div>
+                                                    <div className="text-sm text-[#2c2f33]/70 text-right">{sub.semester}</div>
+                                                    <div className="flex justify-end">
+                                                        <Button size="icon" variant="ghost" className="h-7 w-7 text-[#e07a5f] hover:bg-[#e07a5f]/10" onClick={() => handleRemoveSpec(sub.subjectId)}>
+                                                            <Trash2 className="w-3.5 h-3.5" />
+                                                        </Button>
+                                                    </div>
                                                 </div>
-                                                <div className="text-sm text-[#2c2f33]/70 text-right">{sub.semester}</div>
-                                                <div className="flex justify-end">
-                                                    <Button size="icon" variant="ghost" className="h-7 w-7 text-[#e07a5f] hover:bg-[#e07a5f]/10" onClick={() => handleRemoveSpec(sub.subjectId)}>
-                                                        <Trash2 className="w-3.5 h-3.5" />
-                                                    </Button>
-                                                </div>
-                                            </div>
-                                        ))}
+                                            );
+                                        })}
                                 </div>
                             )}
                         </div>

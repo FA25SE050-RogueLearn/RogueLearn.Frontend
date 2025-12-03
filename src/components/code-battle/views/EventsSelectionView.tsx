@@ -1,12 +1,13 @@
 "use client";
 
-import { useMemo, useState, useEffect, type CSSProperties } from 'react';
-import { ArrowRight, Trophy, Calendar, Users, Target, Activity, Flame, Plus, ChevronLeft } from 'lucide-react';
+import { useMemo, useState, useEffect, useRef, useCallback, type CSSProperties } from 'react';
+import { ArrowRight, Trophy, Calendar, Users, Target, Activity, Flame, Plus, ChevronLeft, Clock, Zap } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useRouter } from 'next/navigation';
 import type { Event } from '@/types/event-service';
 import { createClient } from '@/utils/supabase/client';
+import { toast } from 'sonner';
 
 interface EventsSelectionViewProps {
   events: Event[];
@@ -134,15 +135,170 @@ export default function EventsSelectionView({
   const [currentTime, setCurrentTime] = useState(() => Date.now());
   const [userId, setUserId] = useState<string | null>(null);
   const [registeredEventIds, setRegisteredEventIds] = useState<Set<string>>(new Set());
+  const [countdowns, setCountdowns] = useState<Record<string, string>>({});
+  
+  // Track previous preparing events to detect transitions to live
+  const previousPreparingEventsRef = useRef<Set<string>>(new Set());
+  const notifiedEventsRef = useRef<Set<string>>(new Set());
 
-  // Update current time every minute to refresh featured event
+  // Helper to format countdown time
+  const formatCountdown = useCallback((ms: number): string => {
+    if (ms <= 0) return 'Starting now!';
+    
+    const seconds = Math.floor(ms / 1000);
+    const minutes = Math.floor(seconds / 60);
+    const hours = Math.floor(minutes / 60);
+    const days = Math.floor(hours / 24);
+    
+    if (days > 0) return `${days}d ${hours % 24}h ${minutes % 60}m`;
+    if (hours > 0) return `${hours}h ${minutes % 60}m ${seconds % 60}s`;
+    if (minutes > 0) return `${minutes}m ${seconds % 60}s`;
+    return `${seconds}s`;
+  }, []);
+
+  // Get preparing events for polling
+  const preparingEvents = useMemo(() => {
+    return events.filter(event => {
+      const status = resolveEventStatus(event);
+      return status.key === 'preparing';
+    });
+  }, [events]);
+
+  // Faster polling for preparing events (every 5 seconds)
   useEffect(() => {
-    const interval = setInterval(() => {
-      setCurrentTime(Date.now());
-    }, 60000); // Update every minute
+    if (preparingEvents.length === 0) return;
+
+    const updateCountdowns = () => {
+      const now = Date.now();
+      const newCountdowns: Record<string, string> = {};
+      
+      preparingEvents.forEach(event => {
+        const eventId = event.id || event.ID || '';
+        const startTime = new Date(event.started_date || event.StartedDate || '').getTime();
+        const timeLeft = startTime - now;
+        newCountdowns[eventId] = formatCountdown(timeLeft);
+      });
+      
+      setCountdowns(newCountdowns);
+      setCurrentTime(now);
+    };
+
+    // Initial update
+    updateCountdowns();
+
+    // Poll every 5 seconds for preparing events
+    const interval = setInterval(updateCountdowns, 5000);
 
     return () => clearInterval(interval);
-  }, []);
+  }, [preparingEvents, formatCountdown]);
+
+  // Track live events for end detection
+  const previousLiveEventsRef = useRef<Set<string>>(new Set());
+  const endNotifiedEventsRef = useRef<Set<string>>(new Set());
+
+  // Get live events for monitoring
+  const liveEvents = useMemo(() => {
+    return events.filter(event => {
+      const status = resolveEventStatus(event);
+      return status.key === 'live';
+    });
+  }, [events]);
+
+  // Detect preparing -> live transitions and notify
+  useEffect(() => {
+    const currentPreparingIds = new Set(
+      preparingEvents.map(e => e.id || e.ID || '')
+    );
+    
+    // Check if any previously preparing event is now live
+    events.forEach(event => {
+      const eventId = event.id || event.ID || '';
+      const status = resolveEventStatus(event);
+      
+      // If event was preparing and is now live, and we haven't notified yet
+      if (
+        previousPreparingEventsRef.current.has(eventId) &&
+        status.key === 'live' &&
+        !notifiedEventsRef.current.has(eventId)
+      ) {
+        // Show notification
+        toast.success(`${event.Title || event.title} is now LIVE!`, {
+          description: 'The battle has begun. Enter the arena now!',
+          duration: 10000,
+          action: {
+            label: 'Enter Arena',
+            onClick: () => onSelectEvent(eventId),
+          },
+        });
+        
+        // Play notification sound if available
+        try {
+          const audio = new Audio('/sounds/battle-start.mp3');
+          audio.volume = 0.5;
+          audio.play().catch(() => {});
+        } catch {}
+        
+        notifiedEventsRef.current.add(eventId);
+      }
+    });
+    
+    // Update the previous preparing events ref
+    previousPreparingEventsRef.current = currentPreparingIds;
+  }, [events, preparingEvents, onSelectEvent]);
+
+  // Detect live -> completed transitions and notify with redirect to results
+  useEffect(() => {
+    const currentLiveIds = new Set(
+      liveEvents.map(e => e.id || e.ID || '')
+    );
+    
+    // Check if any previously live event is now completed
+    events.forEach(event => {
+      const eventId = event.id || event.ID || '';
+      const status = resolveEventStatus(event);
+      
+      // If event was live and is now completed, and we haven't notified yet
+      if (
+        previousLiveEventsRef.current.has(eventId) &&
+        status.key === 'completed' &&
+        !endNotifiedEventsRef.current.has(eventId)
+      ) {
+        // Show notification with redirect action
+        toast.success(`${event.Title || event.title} has ended!`, {
+          description: 'View the final leaderboard and results.',
+          duration: 10000,
+          action: {
+            label: 'View Results',
+            onClick: () => router.push(`/code-battle/${eventId}/results`),
+          },
+        });
+        
+        // Play notification sound if available
+        try {
+          const audio = new Audio('/sounds/battle-end.mp3');
+          audio.volume = 0.5;
+          audio.play().catch(() => {});
+        } catch {}
+        
+        endNotifiedEventsRef.current.add(eventId);
+      }
+    });
+    
+    // Update the previous live events ref
+    previousLiveEventsRef.current = currentLiveIds;
+  }, [events, liveEvents, router]);
+
+  // Standard time update every minute for non-preparing events
+  useEffect(() => {
+    // Only run if no preparing events (they have their own faster polling)
+    if (preparingEvents.length > 0) return;
+    
+    const interval = setInterval(() => {
+      setCurrentTime(Date.now());
+    }, 60000);
+
+    return () => clearInterval(interval);
+  }, [preparingEvents.length]);
 
   useEffect(() => {
     const checkGuildMasterStatusAndRegistrations = async () => {
@@ -333,9 +489,15 @@ export default function EventsSelectionView({
                 </span>
               )}
               {showRegistrationClosed && (
-                <span className="inline-flex items-center gap-1 rounded-full border border-red-500/30 bg-red-500/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-red-400">
-                  Registration Closed
-                </span>
+                <>
+                  <span className="inline-flex items-center gap-1 rounded-full border border-amber-500/30 bg-amber-500/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-400 animate-pulse">
+                    <Clock className="h-3 w-3" />
+                    {countdowns[eventId] || 'Starting soon...'}
+                  </span>
+                  <span className="inline-flex items-center gap-1 rounded-full border border-red-500/30 bg-red-500/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-red-400">
+                    Registration Closed
+                  </span>
+                </>
               )}
               <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${status.color} border-current/30 bg-current/10`}>
                 <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-current" />
@@ -384,6 +546,17 @@ export default function EventsSelectionView({
               View Details & Register
               <ArrowRight className={`ml-2 ${compact ? 'h-3 w-3' : 'h-3.5 w-3.5'}`} />
             </Button>
+          ) : status.key === 'preparing' ? (
+            <div className="space-y-2">
+              <Button
+                onClick={() => router.push(`/code-battle/${event.ID}`)}
+                variant="outline"
+                className={`w-full ${compact ? 'px-3 py-1.5 text-[10px]' : 'px-5 py-2.5 text-xs'} font-semibold uppercase tracking-wider border-[#f5c16c]/40 bg-[#f5c16c]/10 text-[#f5c16c] hover:bg-[#f5c16c]/20`}
+              >
+                <Zap className={`mr-2 ${compact ? 'h-3 w-3' : 'h-3.5 w-3.5'} animate-pulse`} />
+                Starts in {countdowns[eventId] || '...'}
+              </Button>
+            </div>
           ) : status.key === 'completed' ? (
             <Button
               onClick={() => router.push(`/code-battle/${event.ID}/results`)}

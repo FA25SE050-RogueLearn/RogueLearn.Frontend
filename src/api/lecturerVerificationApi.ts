@@ -11,6 +11,10 @@ import {
 } from '@/types/lecturer-verification';
 
 const lecturerVerificationApi = {
+  // =================================================================
+  // LECTURER VERIFICATION (LecturerVerificationController)
+  // =================================================================
+
   createRequest: async (
     payload: CreateLecturerVerificationRequestPayload
   ): Promise<ApiResponse<CreateLecturerVerificationRequestResponse>> =>

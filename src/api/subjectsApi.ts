@@ -13,6 +13,10 @@ import {
 import { ImportSubjectFromTextCommandResponse } from '@/types/curriculum-import';
 
 const subjectsApi = {
+  // =================================================================
+  // SUBJECTS (SubjectsController)
+  // =================================================================
+  
   /** GET /api/admin/subjects */
   getAll: (page: number = 1, pageSize: number = 100): Promise<ApiResponse<PaginatedSubjectsResponse>> =>
     axiosClient.get<PaginatedSubjectsResponse>('/api/admin/subjects', {

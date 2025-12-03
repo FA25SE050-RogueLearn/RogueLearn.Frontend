@@ -4,26 +4,23 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
-import { Label } from '@/components/ui/label';
-import { Loader2, AlertCircle, BookCopy, RefreshCw, GitBranch } from 'lucide-react';
+import { Loader2, AlertCircle, RefreshCw, GitBranch, Sparkles, CheckCircle2, Copy, ExternalLink, FileText, Map, Trophy, ChevronDown, ChevronUp } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { UserProfileDto } from '@/types/user-profile';
 import profileApi, { invalidateMyProfileCache } from '@/api/profileApi';
-// MODIFICATION: The API call now comes from the refactored usersApi.
 import { processAcademicRecord } from '@/api/usersApi';
 import { CharacterCreationWizard } from '@/components/features/character-creation/CharacterCreationWizard';
 
-// MODIFICATION: The flow is simplified. We only process the record and then complete.
 type FlowStep = 'form' | 'processing' | 'complete';
-type ProgressMessage = {
-  [key in FlowStep]?: string;
-};
 
-const progressMessages: ProgressMessage = {
-  processing: 'Processing academic record, forging quests, and building your skill tree...',
-  complete: 'Synchronization complete! Redirecting to your skill tree...'
+const HERO_CARD_CLASS = "relative overflow-hidden rounded-[28px] border border-[#f5c16c]/30 bg-gradient-to-br from-[#2d1810]/60 via-[#1a0a08]/80 to-black/90 shadow-2xl";
+const CARD_TEXTURE = {
+  backgroundImage: "url('https://www.transparenttextures.com/patterns/asfalt-dark.png')",
+  backgroundSize: "100px",
+  backgroundBlendMode: "overlay" as const,
+  opacity: 0.25,
 };
 
 export default function ConnectFapPage() {
@@ -34,8 +31,12 @@ export default function ConnectFapPage() {
   const [userProfile, setUserProfile] = useState<UserProfileDto | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [showCharacterWizard, setShowCharacterWizard] = useState(false);
+  const [showInstructions, setShowInstructions] = useState(false);
+  const [processingStep, setProcessingStep] = useState(0);
 
   const isUpdateFlow = userProfile?.onboardingCompleted ?? false;
+  const hasContent = htmlContent.trim().length > 0;
+  const contentLength = htmlContent.length;
 
   const fetchData = useCallback(async () => {
     setIsLoading(true);
@@ -46,7 +47,6 @@ export default function ConnectFapPage() {
         throw new Error("Could not load your user profile.");
       }
       setUserProfile(profileResponse.data);
-      // Show wizard if routeId or classId is missing
       if (!profileResponse.data.routeId || !profileResponse.data.classId) {
         setShowCharacterWizard(true);
       }
@@ -62,7 +62,6 @@ export default function ConnectFapPage() {
   }, [fetchData]);
 
   const handleProcessAndInitialize = async () => {
-    // MODIFICATION: The logic now correctly checks for the program ID (routeId) from the profile.
     if (!htmlContent.trim() || !userProfile?.routeId) {
       setError('Please paste the HTML content from your FAP academic record.');
       return;
@@ -71,24 +70,33 @@ export default function ConnectFapPage() {
 
     try {
       setStep('processing');
-      // MODIFICATION: A single API call now orchestrates the entire backend process.
+      setProcessingStep(1);
+      
+      // Simulate processing steps for better UX
+      await new Promise(r => setTimeout(r, 500));
+      setProcessingStep(2);
+      
       const recordResult = await processAcademicRecord(htmlContent, userProfile.routeId);
 
       if (!recordResult.isSuccess || !recordResult.data) {
         throw new Error(recordResult.message || 'Failed to process academic record.');
       }
-      console.log(`✓ Processed ${recordResult.data.subjectsProcessed} subjects, GPA: ${recordResult.data.calculatedGpa}`);
+      
+      setProcessingStep(3);
+      await new Promise(r => setTimeout(r, 500));
+      setProcessingStep(4);
 
       setStep('complete');
       setTimeout(() => {
-        router.push('/skills'); // Redirect to the skill tree page to see the results.
+        router.push('/skills');
         router.refresh();
-      }, 2000);
+      }, 1500);
 
     } catch (err: any) {
       const errorMessage = (err.response?.data?.error?.message || err.message) ?? "An unexpected error occurred during processing.";
       setError(errorMessage);
       setStep('form');
+      setProcessingStep(0);
     }
   };
 
@@ -96,27 +104,44 @@ export default function ConnectFapPage() {
 
   const handleOnboardingComplete = async () => {
     setShowCharacterWizard(false);
-    // Refresh profile data after onboarding is complete
     invalidateMyProfileCache();
     await fetchData();
   };
 
+  const processingSteps = [
+    { label: 'Reading academic data', icon: FileText },
+    { label: 'Analyzing subjects & grades', icon: FileText },
+    { label: 'Building skill tree', icon: Map },
+    { label: 'Creating your questline', icon: Trophy },
+  ];
+
   const renderContent = () => {
     if (isLoading) {
       return (
-        <div className="flex flex-col items-center justify-center gap-4 py-12">
-          <Loader2 className="h-12 w-12 animate-spin text-accent" />
-          <p className="text-foreground/70">Loading your academic context...</p>
+        <div className="flex flex-col items-center justify-center gap-4 py-16">
+          <div className="rounded-full bg-[#f5c16c]/10 p-4">
+            <Loader2 className="h-10 w-10 animate-spin text-[#f5c16c]" />
+          </div>
+          <p className="text-white/60">Loading your academic context...</p>
         </div>
       );
     }
+
     if (error && !isSubmitting) {
       return (
-        <div className="flex flex-col items-center justify-center gap-4 py-12 text-center">
-          <AlertCircle className="w-12 h-12 text-red-400" />
-          <h3 className="text-xl font-semibold text-red-300">Failed to Load Data</h3>
-          <p className="text-foreground/70">{error}</p>
-          <Button onClick={fetchData} variant="outline" className="mt-4">Retry</Button>
+        <div className="flex flex-col items-center justify-center gap-4 py-16 text-center">
+          <div className="rounded-full bg-red-500/10 p-4">
+            <AlertCircle className="h-10 w-10 text-red-400" />
+          </div>
+          <h3 className="text-xl font-semibold text-white">Failed to Load Data</h3>
+          <p className="max-w-md text-white/60">{error}</p>
+          <Button 
+            onClick={fetchData} 
+            variant="outline" 
+            className="mt-4 border-[#f5c16c]/50 text-[#f5c16c] hover:bg-[#f5c16c]/10"
+          >
+            Try Again
+          </Button>
         </div>
       );
     }
@@ -124,27 +149,51 @@ export default function ConnectFapPage() {
     if (step === 'form') {
       return (
         <div className="space-y-6">
-          {/* REMOVED: The curriculum version dropdown is obsolete. */}
-          <div className="space-y-2">
-            <Label htmlFor="fap-html" className="text-amber-300">Paste FAP Academic Record HTML</Label>
-            <Textarea
-              id="fap-html"
-              value={htmlContent}
-              onChange={(e) => setHtmlContent(e.target.value)}
-              placeholder="Go to your FAP portal, view your academic record, right-click, select 'View Page Source', and paste the entire HTML content here..."
-              rows={15}
-              className="rounded-lg border-amber-900/30 bg-amber-950/20 text-amber-200 placeholder:text-amber-700 font-mono text-sm"
-            />
+          {/* Textarea area */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-white/70">Paste your FAP page source here</span>
+              {hasContent && (
+                <span className="flex items-center gap-1.5 text-xs text-emerald-400">
+                  <CheckCircle2 className="h-3.5 w-3.5" />
+                  {contentLength.toLocaleString()} characters
+                </span>
+              )}
+            </div>
+            <div className={`rounded-2xl p-px transition-all duration-300 ${hasContent ? 'bg-gradient-to-r from-emerald-500/40 via-emerald-400/30 to-[#f5c16c]/40' : 'bg-gradient-to-r from-[#d23187]/30 via-[#f061a6]/20 to-[#f5c16c]/30'}`}>
+              <Textarea
+                id="fap-html"
+                value={htmlContent}
+                onChange={(e) => setHtmlContent(e.target.value)}
+                placeholder="Paste the HTML content here... (Ctrl+V)"
+                rows={10}
+                className="rounded-2xl border-0 bg-[#1a0a08]/90 text-white placeholder:text-white/40 font-mono text-sm focus:ring-2 focus:ring-[#f5c16c]/30 resize-none"
+              />
+            </div>
           </div>
+
           {error && (
-            <div className="flex items-center gap-2 rounded-lg border border-red-700/50 bg-red-950/30 p-3 text-red-400 text-sm">
-              <AlertCircle className="h-5 w-5" />
+            <div className="flex items-center gap-3 rounded-xl border border-red-500/30 bg-red-500/10 p-4 text-red-300 text-sm">
+              <AlertCircle className="h-5 w-5 shrink-0" />
               <p>{error}</p>
             </div>
           )}
-          <Button onClick={handleProcessAndInitialize} disabled={isSubmitting || !userProfile?.routeId || !htmlContent} className="w-full h-12 text-sm uppercase tracking-widest">
-            {isUpdateFlow ? <RefreshCw className="mr-2 h-4 w-4" /> : <GitBranch className="mr-2 h-4 w-4" />}
-            {isUpdateFlow ? "Sync & Update Progress" : "Sync & Build Skill Tree"}
+
+          {/* Action Button */}
+          <Button 
+            onClick={handleProcessAndInitialize} 
+            disabled={isSubmitting || !userProfile?.routeId || !hasContent} 
+            className={`w-full h-14 rounded-2xl text-sm font-semibold uppercase tracking-[0.2em] transition-all duration-300 ${
+              hasContent 
+                ? 'bg-gradient-to-r from-[#d23187] via-[#f061a6] to-[#f5c16c] text-[#1a0b08] shadow-lg shadow-[#d23187]/30 hover:shadow-[#d23187]/50' 
+                : 'bg-white/10 text-white/50 cursor-not-allowed'
+            }`}
+          >
+            {isUpdateFlow ? <RefreshCw className="mr-2 h-5 w-5" /> : <GitBranch className="mr-2 h-5 w-5" />}
+            {hasContent 
+              ? (isUpdateFlow ? "Sync & Update Progress" : "Build My Skill Tree") 
+              : "Paste HTML to continue"
+            }
           </Button>
         </div>
       );
@@ -152,11 +201,59 @@ export default function ConnectFapPage() {
 
     if (isSubmitting) {
       return (
-        <div className="flex flex-col items-center justify-center gap-4 py-12">
-          <Loader2 className="h-12 w-12 animate-spin text-accent" />
-          <p className="text-foreground/70 animate-pulse">
-            {progressMessages[step]}
-          </p>
+        <div className="space-y-8 py-8">
+          {/* Progress Steps */}
+          <div className="space-y-3">
+            {processingSteps.map((s, i) => {
+              const isActive = processingStep === i + 1;
+              const isComplete = processingStep > i + 1;
+              const Icon = s.icon;
+              
+              return (
+                <div 
+                  key={i}
+                  className={`flex items-center gap-4 rounded-xl border p-4 transition-all duration-500 ${
+                    isComplete 
+                      ? 'border-emerald-500/30 bg-emerald-500/10' 
+                      : isActive 
+                        ? 'border-[#f5c16c]/50 bg-[#f5c16c]/10' 
+                        : 'border-white/10 bg-white/5'
+                  }`}
+                >
+                  <div className={`flex h-10 w-10 items-center justify-center rounded-lg transition-all duration-500 ${
+                    isComplete 
+                      ? 'bg-emerald-500/20' 
+                      : isActive 
+                        ? 'bg-[#f5c16c]/20' 
+                        : 'bg-white/10'
+                  }`}>
+                    {isComplete ? (
+                      <CheckCircle2 className="h-5 w-5 text-emerald-400" />
+                    ) : isActive ? (
+                      <Loader2 className="h-5 w-5 animate-spin text-[#f5c16c]" />
+                    ) : (
+                      <Icon className={`h-5 w-5 ${isActive ? 'text-[#f5c16c]' : 'text-white/40'}`} />
+                    )}
+                  </div>
+                  <span className={`text-sm font-medium transition-colors duration-500 ${
+                    isComplete ? 'text-emerald-400' : isActive ? 'text-white' : 'text-white/40'
+                  }`}>
+                    {s.label}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+
+          {step === 'complete' && (
+            <div className="flex flex-col items-center gap-3 pt-4">
+              <div className="flex items-center gap-2 text-emerald-400">
+                <Sparkles className="h-5 w-5" />
+                <span className="text-sm font-medium uppercase tracking-[0.2em]">All Done!</span>
+              </div>
+              <p className="text-sm text-white/60">Redirecting to your skill tree...</p>
+            </div>
+          )}
         </div>
       );
     }
@@ -166,34 +263,135 @@ export default function ConnectFapPage() {
 
   return (
     <>
-      <div className="mx-auto max-w-3xl">
-        <Card className="relative overflow-hidden border-amber-900/30 bg-gradient-to-br from-[#1f1812] to-[#1a1410]">
-          <CardHeader className="relative border-b border-amber-900/20">
-            <div className="flex items-center gap-4">
-              <BookCopy className="h-8 w-8 text-accent" />
-              <div>
-                <CardTitle className="text-amber-100">
-                  {isUpdateFlow ? "Update Academic Record" : "Sync Academic Record"}
-                </CardTitle>
-                <CardDescription>
-                  {isUpdateFlow
-                    ? "Update your questline and skill tree with your latest progress from FAP."
-                    : "Forge your personalized questline by connecting your FAP academic record."}
-                </CardDescription>
+      <div className="flex flex-col gap-6 pb-24">
+        {/* Step Indicator - only show during form step */}
+        {step === 'form' && !isLoading && !error && (
+          <div className="flex items-center justify-center gap-2">
+            <div className="flex items-center gap-2">
+              <div className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold ${hasContent ? 'bg-emerald-500 text-white' : 'bg-[#f5c16c] text-[#1a0b08]'}`}>
+                {hasContent ? <CheckCircle2 className="h-4 w-4" /> : '1'}
               </div>
+              <span className="text-sm text-white/70">Paste HTML</span>
             </div>
-          </CardHeader>
-          <CardContent className="relative pt-6">
+            <div className={`h-px w-8 ${hasContent ? 'bg-emerald-500/50' : 'bg-white/20'}`} />
+            <div className="flex items-center gap-2">
+              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-white/10 text-xs font-bold text-white/40">2</div>
+              <span className="text-sm text-white/40">Process</span>
+            </div>
+            <div className="h-px w-8 bg-white/20" />
+            <div className="flex items-center gap-2">
+              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-white/10 text-xs font-bold text-white/40">3</div>
+              <span className="text-sm text-white/40">Done</span>
+            </div>
+          </div>
+        )}
+
+        {/* Main Card */}
+        <Card className={HERO_CARD_CLASS}>
+          {/* Texture overlay */}
+          <div 
+            aria-hidden="true" 
+            className="pointer-events-none absolute inset-0" 
+            style={CARD_TEXTURE as React.CSSProperties} 
+          />
+          {/* Glows */}
+          <div aria-hidden="true" className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(210,49,135,0.18),transparent_55%)]" />
+          <div aria-hidden="true" className="absolute inset-0 bg-[radial-gradient(circle_at_bottom_left,rgba(245,193,108,0.12),transparent_55%)]" />
+          {/* Decorative runes */}
+          <div className="absolute right-6 top-6 text-[#f5c16c]/10 text-2xl">◆</div>
+          
+          {/* Header */}
+          <div className="relative z-10 border-b border-[#f5c16c]/20 p-6 md:p-8">
+            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+              <div>
+                <h1 className="text-2xl font-semibold text-[#f5c16c] md:text-3xl">
+                  {isUpdateFlow ? "Update Your Progress" : "Connect Your FAP"}
+                </h1>
+                <p className="mt-1 text-sm text-white/60">
+                  {isUpdateFlow
+                    ? "Sync your latest grades to update your skill tree"
+                    : "Import your academic record to unlock your personalized learning journey"}
+                </p>
+              </div>
+              {/* What you'll get badges - only on form */}
+              {step === 'form' && !isLoading && (
+                <div className="flex flex-wrap gap-2">
+                  <span className="inline-flex items-center gap-1.5 rounded-full border border-[#f5c16c]/20 bg-[#f5c16c]/10 px-3 py-1 text-xs text-[#f5c16c]">
+                    <Map className="h-3 w-3" /> Skill Tree
+                  </span>
+                  <span className="inline-flex items-center gap-1.5 rounded-full border border-[#d23187]/20 bg-[#d23187]/10 px-3 py-1 text-xs text-[#d23187]">
+                    <Trophy className="h-3 w-3" /> Quests
+                  </span>
+                </div>
+              )}
+            </div>
+          </div>
+          
+          <CardContent className="relative z-10 p-6 md:p-8">
             {renderContent()}
           </CardContent>
+
+          {/* Bottom accent line */}
+          <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-[#f5c16c]/30 to-transparent" />
         </Card>
+
+        {/* Collapsible Instructions */}
+        {step === 'form' && !isLoading && !error && (
+          <Card className="relative overflow-hidden rounded-[20px] border border-[#f5c16c]/20 bg-gradient-to-br from-[#1f0d09]/95 to-[#2a1510]/95">
+            <div 
+              aria-hidden="true" 
+              className="pointer-events-none absolute inset-0" 
+              style={{ ...CARD_TEXTURE, opacity: 0.15 } as React.CSSProperties} 
+            />
+            
+            <button 
+              onClick={() => setShowInstructions(!showInstructions)}
+              className="relative z-10 flex w-full items-center justify-between p-4 text-left transition-colors hover:bg-white/5"
+            >
+              <div className="flex items-center gap-3">
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg border border-[#f5c16c]/30 bg-[#f5c16c]/10">
+                  <ExternalLink className="h-4 w-4 text-[#f5c16c]" />
+                </div>
+                <span className="text-sm font-medium text-white">Need help getting the HTML?</span>
+              </div>
+              {showInstructions ? (
+                <ChevronUp className="h-5 w-5 text-white/50" />
+              ) : (
+                <ChevronDown className="h-5 w-5 text-white/50" />
+              )}
+            </button>
+            
+            {showInstructions && (
+              <CardContent className="relative z-10 border-t border-[#f5c16c]/10 p-4 pt-4">
+                <ol className="grid gap-2 text-sm md:grid-cols-2">
+                  {[
+                    { step: 1, text: 'Open FAP portal & log in', icon: ExternalLink },
+                    { step: 2, text: 'Go to Academic Record', icon: FileText },
+                    { step: 3, text: 'Press Ctrl+U (View Source)', icon: FileText },
+                    { step: 4, text: 'Press Ctrl+A then Ctrl+C', icon: Copy },
+                  ].map((item) => (
+                    <li key={item.step} className="flex items-center gap-3 rounded-lg border border-white/5 bg-black/20 px-3 py-2.5">
+                      <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#f5c16c]/20 text-xs font-bold text-[#f5c16c]">
+                        {item.step}
+                      </span>
+                      <span className="text-white/70">{item.text}</span>
+                    </li>
+                  ))}
+                </ol>
+                <p className="mt-3 text-center text-xs text-white/40">
+                  Then come back here and paste with Ctrl+V
+                </p>
+              </CardContent>
+            )}
+          </Card>
+        )}
       </div>
 
-      {/* Character Creation Wizard Dialog - shows when routeId or classId is missing */}
+      {/* Character Creation Wizard Dialog */}
       <Dialog open={showCharacterWizard} onOpenChange={setShowCharacterWizard}>
         <DialogContent 
           aria-describedby="character-wizard-description" 
-          className="max-w-[1200px] w-[95vw] h-[90vh] overflow-hidden rounded-[40px] border border-white/12 bg-linear-to-br from-[#12060a] via-[#1d0a11] to-[#060205] p-0 shadow-[0_32px_140px_rgba(20,2,16,0.85)] backdrop-blur-2xl"
+          className="max-w-[1200px] w-[95vw] h-[90vh] overflow-hidden rounded-[40px] border border-white/12 bg-gradient-to-br from-[#12060a] via-[#1d0a11] to-[#060205] p-0 shadow-[0_32px_140px_rgba(20,2,16,0.85)] backdrop-blur-2xl"
         >
           <DialogHeader>
             <DialogTitle className="sr-only">Character Creation</DialogTitle>
@@ -201,7 +399,7 @@ export default function ConnectFapPage() {
               Complete your character setup by choosing your academic route and career class before syncing your FAP record.
             </p>
           </DialogHeader>
-          <div className="h-full overflow-hidden bg-linear-to-br from-[#1d0a10] via-[#240d14] to-[#090307]">
+          <div className="h-full overflow-hidden bg-gradient-to-br from-[#1d0a10] via-[#240d14] to-[#090307]">
             <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(210,49,135,0.32),transparent_70%)] opacity-45" />
             <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_bottom_right,rgba(240,177,90,0.26),transparent_72%)] opacity-50" />
             <div className="relative z-10 h-full">

@@ -17,10 +17,6 @@ import {
   LockGuildPostResponse,
   UnlockGuildPostCommandRequest,
   UnlockGuildPostResponse,
-  ApproveGuildPostCommandRequest,
-  ApproveGuildPostResponse,
-  RejectGuildPostCommandRequest,
-  RejectGuildPostResponse,
   CreateGuildPostCommentRequest,
   CreateGuildPostCommentResponse,
   EditGuildPostCommentRequest,
@@ -29,15 +25,15 @@ import {
   GetGuildPostCommentsResponse,
   LikeGuildPostResponse,
   UnlikeGuildPostResponse,
-  ForceDeleteGuildPostCommandRequest,
-  ForceDeleteGuildPostResponse,
-  ForceDeleteGuildPostCommentCommandRequest,
-  ForceDeleteGuildPostCommentResponse,
   GetGuildPostsQueryRequest,
   UploadGuildPostImagesResponse,
 } from '@/types/guild-posts';
 
 const guildPostsApi = {
+  // =================================================================
+  // GUILD POSTS (GuildPostsController)
+  // =================================================================
+
   /** GET /api/guilds/{guildId}/posts */
   getByGuild: (guildId: string, params?: Omit<GetGuildPostsQueryRequest, 'guildId'>): Promise<ApiResponse<GuildPostDto[]>> =>
     axiosClient.get<GuildPostDto[]>(`/api/guilds/${guildId}/posts`, { params }).then(res => ({
@@ -123,14 +119,6 @@ const guildPostsApi = {
   unlock: (payload: UnlockGuildPostCommandRequest): Promise<UnlockGuildPostResponse> =>
     axiosClient.post<void>(`/api/guilds/${payload.guildId}/posts/${payload.postId}/unlock`).then(() => {}),
 
-  /** POST /api/guilds/{guildId}/posts/{postId}/approve */
-  approve: (payload: ApproveGuildPostCommandRequest): Promise<ApproveGuildPostResponse> =>
-    axiosClient.post<void>(`/api/guilds/${payload.guildId}/posts/${payload.postId}/approve`, payload.note ?? null).then(() => {}),
-
-  /** POST /api/guilds/{guildId}/posts/{postId}/reject */
-  reject: (payload: RejectGuildPostCommandRequest): Promise<RejectGuildPostResponse> =>
-    axiosClient.post<void>(`/api/guilds/${payload.guildId}/posts/${payload.postId}/reject`, payload.reason ?? null).then(() => {}),
-
   createComment: (guildId: string, postId: string, payload: CreateGuildPostCommentRequest): Promise<ApiResponse<CreateGuildPostCommentResponse>> =>
     axiosClient.post<CreateGuildPostCommentResponse>(`/api/guilds/${guildId}/posts/${postId}/comments`, payload).then(res => ({
       isSuccess: true,
@@ -154,12 +142,6 @@ const guildPostsApi = {
 
   unlike: (guildId: string, postId: string): Promise<UnlikeGuildPostResponse> =>
     axiosClient.delete<void>(`/api/guilds/${guildId}/posts/${postId}/like`).then(() => {}),
-
-  forceDelete: (payload: ForceDeleteGuildPostCommandRequest): Promise<ForceDeleteGuildPostResponse> =>
-    axiosClient.delete<void>(`/api/admin/guilds/${payload.guildId}/posts/${payload.postId}`).then(() => {}),
-
-  forceDeleteComment: (payload: ForceDeleteGuildPostCommentCommandRequest): Promise<ForceDeleteGuildPostCommentResponse> =>
-    axiosClient.delete<void>(`/api/admin/guilds/${payload.guildId}/posts/${payload.postId}/comments/${payload.commentId}`).then(() => {}),
 
   uploadImages: (guildId: string, postId: string, files: File[]): Promise<ApiResponse<UploadGuildPostImagesResponse>> => {
     const form = new FormData();

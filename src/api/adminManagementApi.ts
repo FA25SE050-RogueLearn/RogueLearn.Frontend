@@ -11,7 +11,6 @@ import {
 } from '@/types/admin-management';
 
 const adminManagementApi = {
-  // ... (SKILLS CRUD & DEPENDENCIES - No Change) ...
   // =================================================================
   // SKILLS CRUD (AdminSkillsController)
   // =================================================================
@@ -80,7 +79,9 @@ const adminManagementApi = {
       data: undefined
     })),
 
-  // ... (CLASSES & SPECIALIZATION - No Change) ...
+  // =================================================================
+  // CLASS SPECIALIZATION (ClassSpecializationController)
+  // =================================================================
   getClassSpecialization: (classId: string): Promise<ApiResponse<SpecializationSubjectEntry[]>> =>
     axiosClient.get<SpecializationSubjectEntry[]>(`/api/admin/classes/${classId}/specialization-subjects`).then(res => ({
       isSuccess: true,
@@ -94,13 +95,13 @@ const adminManagementApi = {
     })),
 
   removeClassSpecialization: (classId: string, subjectId: string): Promise<ApiResponse<void>> =>
-    axiosClient.delete<void>(`/api/admin/classes/${classId}/specialization/${subjectId}`).then(() => ({
+    axiosClient.delete<void>(`/api/admin/classes/${classId}/specialization-subjects/${subjectId}`).then(() => ({
       isSuccess: true,
       data: undefined
     })),
     
    // =================================================================
-   // SUBJECT SKILL MAPPINGS
+   // SUBJECT SKILL MAPPINGS (SubjectsController)
    // =================================================================
    
    // ⭐ UPDATE: Return correct DTO type
@@ -122,7 +123,10 @@ const adminManagementApi = {
        data: undefined
      })),
      
-   // ... (PROGRAMS - No Change) ...
+   // =================================================================
+   // SUBJECT PROGRAM MAPPINGS (CurriculumProgramSubjectsController)
+   // =================================================================
+
    addSubjectToProgram: (programId: string, subjectId: string): Promise<ApiResponse<void>> =>
      axiosClient.post<void>(`/api/admin/programs/${programId}/subjects`, { subjectId } as AddSubjectToProgramRequest).then(() => ({
         isSuccess: true,

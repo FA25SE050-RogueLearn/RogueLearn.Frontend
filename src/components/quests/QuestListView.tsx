@@ -17,6 +17,7 @@ import questApi from '@/api/questApi';
 import { usePageTransition } from '@/components/layout/PageTransition';
 import { useQuestGeneration } from '@/hooks/useQuestGeneration';
 import QuestGenerationModal from '@/components/quests/QuestGenerationModal';
+import DifficultyBadge from '@/components/quests/DifficultyBadge';
 
 interface QuestListViewProps {
   activeQuests: QuestSummary[];
@@ -199,6 +200,13 @@ export default function QuestListView({
                       {quest.recommendationReason || 'Recommended'}
                     </span>
                   )}
+
+                  <DifficultyBadge
+                    difficulty={quest.expectedDifficulty}
+                    reason={quest.difficultyReason}
+                    subjectGrade={quest.subjectGrade}
+                    subjectStatus={quest.subjectStatus}
+                  />
                 </div>
 
                 <p className="text-xs uppercase tracking-[0.3em] text-white/50">

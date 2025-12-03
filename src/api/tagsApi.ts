@@ -16,6 +16,10 @@ import {
 } from '@/types/tags';
 
 const tagsApi = {
+  // =================================================================
+  // TAGS (TagsController)
+  // =================================================================
+
   /** GET /api/tags/me */
   getMyTags: (): Promise<ApiResponse<GetMyTagsResponse>> =>
     axiosClient.get<GetMyTagsResponse>(`/api/tags/me`).then(res => ({
