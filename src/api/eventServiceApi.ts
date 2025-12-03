@@ -652,6 +652,78 @@ const eventServiceApi = {
   },
 
   /**
+   * Create a new tag (admin only)
+   */
+  async createTag(name: string): Promise<ApiResponse<Tag>> {
+    try {
+      const response = await axiosCodeBattleClient.post('/tags', { name });
+      console.log('✅ Tag creation response:', response.data);
+
+      if (response.data.success && response.data.data) {
+        return { success: true, data: response.data.data };
+      }
+      return { success: false, error: { message: 'Invalid response format' } };
+    } catch (error: any) {
+      console.error('❌ Error creating tag:', error);
+      return {
+        success: false,
+        error: {
+          message: error.normalized?.message || 'Failed to create tag',
+          details: error.normalized?.details,
+        },
+      };
+    }
+  },
+
+  /**
+   * Update an existing tag (admin only)
+   */
+  async updateTag(tagId: string, name: string): Promise<ApiResponse<Tag>> {
+    try {
+      const response = await axiosCodeBattleClient.put(`/tags/${tagId}`, { name });
+      console.log('✅ Tag update response:', response.data);
+
+      if (response.data.success && response.data.data) {
+        return { success: true, data: response.data.data };
+      }
+      return { success: false, error: { message: 'Invalid response format' } };
+    } catch (error: any) {
+      console.error('❌ Error updating tag:', error);
+      return {
+        success: false,
+        error: {
+          message: error.normalized?.message || 'Failed to update tag',
+          details: error.normalized?.details,
+        },
+      };
+    }
+  },
+
+  /**
+   * Delete a tag (admin only)
+   */
+  async deleteTag(tagId: string): Promise<ApiResponse<null>> {
+    try {
+      const response = await axiosCodeBattleClient.delete(`/tags/${tagId}`);
+      console.log('✅ Tag deletion response:', response.data);
+
+      if (response.data.success) {
+        return { success: true, data: null };
+      }
+      return { success: false, error: { message: 'Invalid response format' } };
+    } catch (error: any) {
+      console.error('❌ Error deleting tag:', error);
+      return {
+        success: false,
+        error: {
+          message: error.normalized?.message || 'Failed to delete tag',
+          details: error.normalized?.details,
+        },
+      };
+    }
+  },
+
+  /**
    * Leave a room intentionally (authenticated)
    */
   async leaveRoom(eventId: string, roomId: string): Promise<ApiResponse<any>> {
@@ -747,6 +819,36 @@ const eventServiceApi = {
         success: false,
         error: {
           message: error.normalized?.message || error.response?.data?.message || error.response?.data?.error_message || 'Failed to create problem',
+          details: error.normalized?.details || error.response?.data?.data,
+        },
+      };
+    }
+  },
+
+  /**
+   * Update an existing problem (admin only)
+   */
+  async updateProblem(problemId: string, payload: import('@/types/event-service').UpdateProblemRequest): Promise<ApiResponse<import('@/types/event-service').UpdateProblemResponse>> {
+    try {
+      console.log('📤 Updating problem with payload:', JSON.stringify(payload, null, 2));
+      const response = await axiosCodeBattleClient.put(`/problems/${problemId}`, payload);
+      console.log('✅ Problem update response:', response.data);
+
+      if (response.data.success && response.data.data) {
+        return { success: true, data: response.data.data };
+      }
+      return { success: false, error: { message: 'Invalid response format' } };
+    } catch (error: any) {
+      console.error('❌ Problem update error:', {
+        message: error.normalized?.message,
+        details: error.normalized?.details,
+        status: error.normalized?.status,
+        raw: error.response?.data
+      });
+      return {
+        success: false,
+        error: {
+          message: error.normalized?.message || error.response?.data?.message || error.response?.data?.error_message || 'Failed to update problem',
           details: error.normalized?.details || error.response?.data?.data,
         },
       };

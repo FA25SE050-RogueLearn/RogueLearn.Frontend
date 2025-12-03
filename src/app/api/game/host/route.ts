@@ -22,16 +22,26 @@ export async function POST(req: NextRequest) {
     // Body parsing failed or no body provided
   }
 
-  // If a backend URL is provided explicitly, attempt to proxy the request there.
-  // NOTE: The User API currently has no /host endpoint, so default to local stub unless
-  // GAME_BACKEND_URL is set to a service that actually exposes hosting.
-  const backendUrl = process.env.GAME_BACKEND_URL;
+  // Prefer calling the backend controller that can actually run Docker.
+  const controllerBase =
+    process.env.HOST_CONTROLLER_URL ||
+    process.env.NEXT_PUBLIC_API_URL ||
+    "";
+  const controllerPath =
+    process.env.HOST_CONTROLLER_PATH || "/api/quests/game/sessions/host";
+  const controllerUrl = controllerBase
+    ? `${controllerBase.replace(/\/$/, "")}${controllerPath.startsWith("/") ? controllerPath : `/${controllerPath}`
+    }`
+    : null;
+  const enableLocalDocker =
+    process.env.ENABLE_LOCAL_DOCKER !== "0" &&
+    process.env.ENABLE_LOCAL_DOCKER !== "false";
 
   try {
     let backendError: string | null = null;
-    if (backendUrl) {
+    if (controllerUrl) {
       try {
-        const res = await fetch(`${backendUrl.replace(/\/$/, "")}/host`, {
+        const res = await fetch(controllerUrl, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ userId }),
@@ -49,6 +59,14 @@ export async function POST(req: NextRequest) {
         console.error(`[host] backend fetch failed: ${backendError}`);
       }
       // Fall through to local/docker stub if backend fails so hosting still works in dev/prod.
+    }
+
+    // On serverless, skip local Docker unless explicitly enabled
+    if (!enableLocalDocker) {
+      const message = backendError
+        ? `Host controller failed: ${backendError}`
+        : "Host controller not configured";
+      return NextResponse.json({ ok: false, error: message }, { status: 502 });
     }
 
     // No external backend configured: try to start a local Docker container for the Unity headless server

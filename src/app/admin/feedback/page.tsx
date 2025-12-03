@@ -166,60 +166,60 @@ export default function AdminFeedbackPage() {
 
   const getActivityColor = (type: string) => {
     switch (type) {
-      case 'Reading': return 'bg-blue-500/20 text-blue-400 border-blue-500/30';
-      case 'KnowledgeCheck': return 'bg-purple-500/20 text-purple-400 border-purple-500/30';
-      case 'Quiz': return 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30';
-      case 'Coding': return 'bg-orange-500/20 text-orange-400 border-orange-500/30';
-      default: return 'bg-white/10 text-white/60 border-white/20';
+      case 'Reading': return 'bg-blue-50 text-blue-600 border-blue-200';
+      case 'KnowledgeCheck': return 'bg-purple-50 text-purple-600 border-purple-200';
+      case 'Quiz': return 'bg-emerald-50 text-emerald-600 border-emerald-200';
+      case 'Coding': return 'bg-orange-50 text-orange-600 border-orange-200';
+      default: return 'bg-gray-50 text-gray-600 border-gray-200';
     }
   };
 
   return (
     <AdminLayout>
       <div className="space-y-8">
-        <div className="p-6 rounded-lg border border-[#f5c16c]/20 bg-[#1a0b08]/80">
+        <div className="p-6 rounded-lg border border-[#f5c16c]/30 bg-[#1a1410]">
           <div className="flex items-center gap-3">
-            <div className="rounded-lg bg-[#f5c16c]/20 p-2">
+            <div className="rounded-lg bg-[#f5c16c]/10 p-2">
               <MessageSquare className="h-5 w-5 text-[#f5c16c]" />
             </div>
             <h1 className="text-3xl font-bold tracking-tight text-white">Quest Feedback</h1>
           </div>
-          <p className="text-white/50 mt-2">Review and resolve user-reported issues across quests</p>
+          <p className="text-white/60 mt-2">Review and resolve user-reported issues across quests</p>
         </div>
 
-        <Card className="bg-[#1a0b08]/80 border-[#f5c16c]/20">
-          <CardHeader className="border-b border-[#f5c16c]/10"><CardTitle className="text-white">Filters</CardTitle></CardHeader>
+        <Card className="bg-[#1a1410] border-[#f5c16c]/30">
+          <CardHeader className="border-b border-[#f5c16c]/20"><CardTitle className="text-white">Filters</CardTitle></CardHeader>
           <CardContent className="flex flex-wrap gap-3 pt-6">
-            <Input placeholder="Search comments/notes..." value={search} onChange={(e) => setSearch(e.target.value)} className="flex-1 min-w-[200px] border-[#f5c16c]/20 bg-black/30 text-white placeholder:text-white/40" />
+            <Input placeholder="Search comments/notes..." value={search} onChange={(e) => setSearch(e.target.value)} className="flex-1 min-w-[200px] border-[#f5c16c]/30" />
 
             <Popover open={subjectOpen} onOpenChange={setSubjectOpen}>
               <PopoverTrigger asChild>
-                <Button variant="outline" role="combobox" aria-expanded={subjectOpen} className="w-[300px] justify-between border-[#f5c16c]/20 bg-black/30 text-white hover:bg-[#f5c16c]/10">
+                <Button variant="outline" role="combobox" aria-expanded={subjectOpen} className="w-[300px] justify-between border-[#f5c16c]/30 text-white hover:bg-[#f5c16c]/20">
                   {subjectId ? (subjectMap[subjectId] ? `${subjectMap[subjectId].subjectCode} - ${subjectMap[subjectId].subjectName.substring(0, 20)}...` : "Loading...") : "Filter by Subject..."}
                   <ChevronsUpDown className="ml-2 h-4 w-4 opacity-50" />
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-[300px] p-0 bg-[#1a0b08] border-[#f5c16c]/20">
+              <PopoverContent className="w-[300px] p-0 bg-[#1a1410] border-[#f5c16c]/30">
                 <Command shouldFilter={false}>
-                  <CommandInput placeholder="Search subjects..." value={subjectSearch} onValueChange={handleSubjectSearchInput} className="text-white" />
+                  <CommandInput placeholder="Search subjects..." value={subjectSearch} onValueChange={handleSubjectSearchInput} />
                   <CommandList>
-                    <CommandEmpty className="text-white/50">No subject found.</CommandEmpty>
+                    <CommandEmpty>No subject found.</CommandEmpty>
                     <CommandGroup>
-                      <CommandItem value="all_subjects" onSelect={() => { setSubjectId(""); setSubjectOpen(false); }} className="cursor-pointer hover:bg-[#f5c16c]/10 text-white">
+                      <CommandItem value="all_subjects" onSelect={() => { setSubjectId(""); setSubjectOpen(false); }} className="cursor-pointer hover:bg-[#f5c16c]/20">
                         <Check className={cn("mr-2 h-4 w-4", subjectId === "" ? "opacity-100" : "opacity-0")} /> All Subjects
                       </CommandItem>
                       {subjectOptions.map((subject) => (
-                        <CommandItem key={subject.id} value={subject.id} onSelect={(v) => { setSubjectId(v === subjectId ? "" : v); setSubjectOpen(false); }} className="cursor-pointer hover:bg-[#f5c16c]/10 text-white">
+                        <CommandItem key={subject.id} value={subject.id} onSelect={(v) => { setSubjectId(v === subjectId ? "" : v); setSubjectOpen(false); }} className="cursor-pointer hover:bg-[#f5c16c]/20">
                           <Check className={cn("mr-2 h-4 w-4", subjectId === subject.id ? "opacity-100" : "opacity-0")} />
                           <div className="flex flex-col">
-                            <span className="font-bold text-xs text-[#f5c16c]">{subject.subjectCode}</span>
+                            <span className="font-bold text-xs text-white">{subject.subjectCode}</span>
                             <span className="text-xs text-white/60">{subject.subjectName}</span>
                           </div>
                         </CommandItem>
                       ))}
                     </CommandGroup>
                     {subjectsHasMore && (
-                      <div className="p-2 border-t border-[#f5c16c]/20">
+                      <div className="p-2 border-t border-[#f5c16c]/30">
                         <Button variant="ghost" size="sm" className="w-full text-xs text-[#f5c16c] hover:bg-[#f5c16c]/10" onClick={(e) => { e.preventDefault(); e.stopPropagation(); loadMoreSubjects(); }} disabled={loadingSubjects}>
                           {loadingSubjects && <Loader2 className="h-3 w-3 animate-spin mr-2" />} Load more...
                         </Button>
@@ -230,11 +230,11 @@ export default function AdminFeedbackPage() {
               </PopoverContent>
             </Popover>
 
-            <Input placeholder="Exact Quest ID" value={questId} onChange={(e) => setQuestId(e.target.value)} className="w-48 border-[#f5c16c]/20 bg-black/30 text-white placeholder:text-white/40" />
+            <Input placeholder="Exact Quest ID" value={questId} onChange={(e) => setQuestId(e.target.value)} className="w-48 border-[#f5c16c]/30" />
 
             <Select value={category} onValueChange={(v) => setCategory(v as Category)}>
-              <SelectTrigger className="w-40 border-[#f5c16c]/20 bg-black/30 text-white"><SelectValue placeholder="Category" /></SelectTrigger>
-              <SelectContent className="bg-[#1a0b08] border-[#f5c16c]/20">
+              <SelectTrigger className="w-40 border-[#f5c16c]/30"><SelectValue placeholder="Category" /></SelectTrigger>
+              <SelectContent className="bg-[#1a1410] border-[#f5c16c]/30">
                 <SelectItem value="all">All Categories</SelectItem>
                 <SelectItem value="ContentError">Content Error</SelectItem>
                 <SelectItem value="TechnicalIssue">Technical Issue</SelectItem>
@@ -244,23 +244,23 @@ export default function AdminFeedbackPage() {
               </SelectContent>
             </Select>
 
-            <div className="flex items-center gap-2 px-2 bg-black/30 rounded border border-[#f5c16c]/20 h-10">
-              <Checkbox id="unresolved" checked={unresolvedOnly} onCheckedChange={(v) => setUnresolvedOnly(!!v)} className="border-[#f5c16c] data-[state=checked]:bg-[#f5c16c]" />
+            <div className="flex items-center gap-2 px-2 bg-[#0a0506] rounded border border-[#f5c16c]/30 h-10">
+              <Checkbox id="unresolved" checked={unresolvedOnly} onCheckedChange={(v) => setUnresolvedOnly(!!v)} className="border-[#7289da] data-[state=checked]:bg-[#f5c16c]" />
               <label htmlFor="unresolved" className="text-sm text-white cursor-pointer select-none">Unresolved Only</label>
             </div>
 
-            <Button variant="outline" onClick={() => { setPage(1); fetchFeedback(); }} className="border-[#f5c16c]/30 text-[#f5c16c] hover:bg-[#f5c16c]/10">Refresh</Button>
+            <Button variant="outline" onClick={() => { setPage(1); fetchFeedback(); }} className="border-[#7289da]/50 text-[#f5c16c] hover:bg-[#f5c16c]/10">Refresh</Button>
           </CardContent>
         </Card>
 
-        <Card className="bg-[#1a0b08]/80 border-[#f5c16c]/20">
-          <CardHeader className="border-b border-[#f5c16c]/10"><CardTitle className="text-white">Feedback Entries</CardTitle></CardHeader>
+        <Card className="bg-[#1a1410] border-[#f5c16c]/30">
+          <CardHeader className="border-b border-[#f5c16c]/20"><CardTitle className="text-white">Feedback Entries</CardTitle></CardHeader>
           <CardContent className="pt-6">
             {loading && <div className="flex justify-center items-center h-32 text-[#f5c16c] gap-2"><Loader2 className="h-6 w-6 animate-spin" /> Loading...</div>}
             {!loading && (
               <Table>
                 <TableHeader>
-                  <TableRow className="border-[#f5c16c]/10">
+                  <TableRow className="border-[#f5c16c]/20">
                     <TableHead className="text-white/60">Date</TableHead>
                     <TableHead className="text-white/60">Subject</TableHead>
                     <TableHead className="text-white/60">Category</TableHead>
@@ -274,21 +274,21 @@ export default function AdminFeedbackPage() {
                   {filtered.length === 0 ? (
                     <TableRow><TableCell colSpan={7} className="text-center text-white/40 py-8">No feedback found matching filters.</TableCell></TableRow>
                   ) : filtered.map((it) => (
-                    <TableRow key={it.id} className="border-[#f5c16c]/10 hover:bg-[#f5c16c]/5 transition-colors">
+                    <TableRow key={it.id} className="border-[#f5c16c]/10 hover:bg-[#0a0506]/50 transition-colors">
                       <TableCell className="whitespace-nowrap text-xs text-white/50">{new Date(it.createdAt).toLocaleDateString()}<br />{new Date(it.createdAt).toLocaleTimeString()}</TableCell>
                       <TableCell className="text-xs">
                         {subjectMap[it.subjectId] ? (
-                          <div className="flex flex-col"><span className="font-medium text-[#f5c16c]">{subjectMap[it.subjectId].subjectCode}</span><span className="text-white/50 text-[10px]">{subjectMap[it.subjectId].subjectName}</span></div>
+                          <div className="flex flex-col"><span className="font-medium text-white">{subjectMap[it.subjectId].subjectCode}</span><span className="text-white/50 text-[10px]">{subjectMap[it.subjectId].subjectName}</span></div>
                         ) : <span className="font-mono text-[10px] text-white/40">{it.subjectId}</span>}
                       </TableCell>
                       <TableCell>
                         <span className={cn("px-2 py-1 rounded text-[10px] uppercase font-bold tracking-wider border",
-                          it.category === 'ContentError' ? "bg-red-500/20 text-red-400 border-red-500/30" :
-                          it.category === 'TechnicalIssue' ? "bg-orange-500/20 text-orange-400 border-orange-500/30" :
-                          "bg-[#f5c16c]/20 text-[#f5c16c] border-[#f5c16c]/30"
+                          it.category === 'ContentError' ? "bg-[#e07a5f]/10 text-[#e07a5f] border-[#e07a5f]/30" :
+                          it.category === 'TechnicalIssue' ? "bg-orange-50 text-orange-600 border-orange-200" :
+                          "bg-[#f5c16c]/10 text-[#f5c16c] border-[#7289da]/30"
                         )}>{it.category}</span>
                       </TableCell>
-                      <TableCell><div className="flex gap-0.5">{[...Array(5)].map((_, i) => <div key={i} className={cn("h-1.5 w-1.5 rounded-full", i < it.rating ? "bg-[#f5c16c]" : "bg-white/20")} />)}</div></TableCell>
+                      <TableCell><div className="flex gap-0.5">{[...Array(5)].map((_, i) => <div key={i} className={cn("h-1.5 w-1.5 rounded-full", i < it.rating ? "bg-[#f5c16c]" : "bg-[#beaca3]/40")} />)}</div></TableCell>
                       <TableCell className="text-sm text-white/80 leading-relaxed min-w-[250px]">
                         {it.comment}
                         <div className="mt-1 flex items-center gap-2">
@@ -299,9 +299,9 @@ export default function AdminFeedbackPage() {
                           </Button>
                         </div>
                       </TableCell>
-                      <TableCell><Input defaultValue={it.adminNotes ?? ''} onBlur={(e) => saveNotes(it.id, e.target.value)} placeholder="Add notes..." className="h-8 border-[#f5c16c]/20 bg-black/30 text-white text-xs focus:border-[#f5c16c] placeholder:text-white/40" /></TableCell>
+                      <TableCell><Input defaultValue={it.adminNotes ?? ''} onBlur={(e) => saveNotes(it.id, e.target.value)} placeholder="Add notes..." className="h-8 border-[#f5c16c]/30 text-xs focus:border-[#7289da]" /></TableCell>
                       <TableCell className="text-right">
-                        <Button size="sm" onClick={() => markResolved(it.id, !it.isResolved)} className={cn("h-8 text-xs border", it.isResolved ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/30" : "bg-black/30 text-white border-[#f5c16c]/20 hover:bg-[#f5c16c]/10")}>
+                        <Button size="sm" onClick={() => markResolved(it.id, !it.isResolved)} className={cn("h-8 text-xs border", it.isResolved ? "bg-emerald-50 text-emerald-600 border-emerald-200 hover:bg-emerald-100" : "bg-[#beaca3]/20 text-white border-[#f5c16c]/30 hover:bg-[#f5c16c]/30")}>
                           <CheckCircle2 className={cn("h-3 w-3 mr-1.5", it.isResolved && "fill-current")} /> {it.isResolved ? 'Resolved' : 'Mark Done'}
                         </Button>
                       </TableCell>
@@ -312,7 +312,7 @@ export default function AdminFeedbackPage() {
             )}
 
             {!loading && totalPages > 1 && (
-              <div className="flex items-center justify-end gap-4 mt-6 pt-4 border-t border-[#f5c16c]/10">
+              <div className="flex items-center justify-end gap-4 mt-6 pt-4 border-t border-[#f5c16c]/20">
                 <Button variant="ghost" size="sm" onClick={() => setPage(Math.max(1, page - 1))} disabled={page === 1} className="text-[#f5c16c] hover:bg-[#f5c16c]/10 disabled:opacity-30">Previous</Button>
                 <span className="text-xs text-white/50">Page {page} of {totalPages}</span>
                 <Button variant="ghost" size="sm" onClick={() => setPage(Math.min(totalPages, page + 1))} disabled={page === totalPages} className="text-[#f5c16c] hover:bg-[#f5c16c]/10 disabled:opacity-30">Next</Button>
@@ -323,7 +323,7 @@ export default function AdminFeedbackPage() {
 
         {/* Quest Step Content Dialog */}
         <Dialog open={contentDialogOpen} onOpenChange={setContentDialogOpen}>
-          <DialogContent className="max-w-4xl max-h-[90vh] bg-[#1a0b08] border-[#f5c16c]/20">
+          <DialogContent className="max-w-4xl max-h-[90vh] bg-[#1a1410] border-[#f5c16c]/30">
             <DialogHeader>
               <DialogTitle className="text-white flex items-center gap-2">
                 <Eye className="h-5 w-5 text-[#f5c16c]" />
@@ -345,9 +345,9 @@ export default function AdminFeedbackPage() {
               ) : stepContent?.activities ? (
                 <div className="space-y-4">
                   {stepContent.activities.map((activity, index) => (
-                    <div key={activity.activityId} className="border border-[#f5c16c]/20 rounded-lg overflow-hidden">
+                    <div key={activity.activityId} className="border border-[#f5c16c]/30 rounded-lg overflow-hidden">
                       {/* Activity Header */}
-                      <div className={cn("px-4 py-2 flex items-center gap-2 border-b border-[#f5c16c]/10", getActivityColor(activity.type))}>
+                      <div className={cn("px-4 py-2 flex items-center gap-2 border-b border-[#f5c16c]/20", getActivityColor(activity.type))}>
                         {getActivityIcon(activity.type)}
                         <span className="font-semibold text-sm">{activity.type}</span>
                         <span className="text-xs opacity-70">#{index + 1}</span>
@@ -357,7 +357,7 @@ export default function AdminFeedbackPage() {
                       </div>
                       
                       {/* Activity Content */}
-                      <div className="p-4 bg-black/30">
+                      <div className="p-4 bg-[#0a0506]/50">
                         {/* Topic if available */}
                         {activity.payload && 'topic' in activity.payload && (
                           <div className="mb-3">
@@ -373,7 +373,7 @@ export default function AdminFeedbackPage() {
                               Questions ({(activity.payload as any).questions.length})
                             </span>
                             {(activity.payload as any).questions.map((q: any, qIdx: number) => (
-                              <div key={qIdx} className="bg-black/20 border border-[#f5c16c]/10 rounded-lg p-3">
+                              <div key={qIdx} className="bg-[#1a1410] border border-[#f5c16c]/20 rounded-lg p-3">
                                 <p className="text-sm font-medium text-white mb-2">
                                   {qIdx + 1}. {q.question}
                                 </p>
@@ -384,8 +384,8 @@ export default function AdminFeedbackPage() {
                                       className={cn(
                                         "text-xs px-2 py-1 rounded",
                                         opt === q.correctAnswer 
-                                          ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30" 
-                                          : "bg-white/5 text-white/70"
+                                          ? "bg-emerald-50 text-emerald-700 border border-emerald-200" 
+                                          : "bg-[#0a0506] text-white/70"
                                       )}
                                     >
                                       {String.fromCharCode(65 + oIdx)}. {opt}
@@ -394,7 +394,7 @@ export default function AdminFeedbackPage() {
                                   ))}
                                 </div>
                                 {q.explanation && (
-                                  <div className="text-xs text-[#f5c16c] bg-[#f5c16c]/10 p-2 rounded border border-[#f5c16c]/20">
+                                  <div className="text-xs text-[#f5c16c] bg-[#f5c16c]/5 p-2 rounded border border-[#7289da]/20">
                                     <span className="font-semibold">Explanation:</span> {q.explanation}
                                   </div>
                                 )}
@@ -443,7 +443,7 @@ export default function AdminFeedbackPage() {
                         )}
                         
                         {/* Activity ID */}
-                        <div className="mt-3 pt-2 border-t border-[#f5c16c]/10">
+                        <div className="mt-3 pt-2 border-t border-[#f5c16c]/20">
                           <span className="text-[10px] font-mono text-white/30">ID: {activity.activityId}</span>
                         </div>
                       </div>
