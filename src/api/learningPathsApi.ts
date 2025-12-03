@@ -7,6 +7,10 @@ import {
 } from '@/types/learning-paths';
 
 const learningPathsApi = {
+  // =================================================================
+  // LEARNING PATHS (LearningPathsController)
+  // =================================================================
+
   /** GET /api/learning-paths/me */
   getMine: (): Promise<ApiResponse<LearningPathDto | null>> =>
     axiosClient.get<LearningPathDto | null>('/api/learning-paths/me').then(res => ({

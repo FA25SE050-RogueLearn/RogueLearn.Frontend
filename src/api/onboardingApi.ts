@@ -4,6 +4,10 @@ import { ApiResponse } from '../types/base/Api';
 import { AcademicRoute, CareerClass, CompleteOnboardingCommandRequest } from '../types/onboarding';
 
 const onboardingApi = {
+  // =================================================================
+  // ONBOARDING (OnboardingController)
+  // =================================================================
+
   /**
    * Fetches all available academic routes (curriculum programs).
    * Corresponds to GET /api/onboarding/routes
