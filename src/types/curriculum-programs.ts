@@ -94,6 +94,15 @@ export interface CurriculumAnalysisDto {
   missingContentSubjects: string[];
 }
 
+/** Subject linked to a program */
+export interface ProgramSubjectDto {
+  subjectId: string;
+  code: string;
+  name: string;
+  semester?: number | null;
+  credits?: number | null;
+}
+
 /** Combined program details with linked versions and analysis. */
 export interface CurriculumProgramDetailsResponse {
   id: string;
@@ -105,5 +114,6 @@ export interface CurriculumProgramDetailsResponse {
   durationYears?: number | null;
   createdAt: string;
   updatedAt: string;
-  analysis: CurriculumAnalysisDto;
+  analysis?: CurriculumAnalysisDto;
+  subjects?: ProgramSubjectDto[];
 }
