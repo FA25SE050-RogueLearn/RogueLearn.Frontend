@@ -16,9 +16,15 @@ interface FullUserInfoResponse {
 
 export async function DashboardLayout({ children }: { children: ReactNode }) {
   const supabase = await createClient();
-  const { data, error } = await supabase.auth.getUser();
+  
+  try {
+    const { data, error } = await supabase.auth.getUser();
 
-  if (error || !data?.user) {
+    if (error || !data?.user) {
+      redirect('/login');
+    }
+  } catch (authError) {
+    console.error('Auth error in DashboardLayout:', authError);
     redirect('/login');
   }
 
