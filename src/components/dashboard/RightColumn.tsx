@@ -201,7 +201,7 @@ export function RightColumn({ achievements, userSkills }: RightColumnProps) {
                       {achievement.name}
                     </h3>
                     <p className="line-clamp-1 text-xs text-[#f5c16c]/70">
-                      {achievement.description}
+                      {achievement.context}
                     </p>
                     <div className="mt-1 flex gap-2">
                       <span className="rounded bg-[#f5c16c]/10 px-2 py-0.5 text-[9px] text-[#f5c16c]/50">

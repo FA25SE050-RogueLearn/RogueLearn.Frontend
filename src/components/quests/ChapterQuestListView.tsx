@@ -179,7 +179,37 @@ export function ChapterQuestListView({ learningPath, chapter, onGenerateFirstQue
                             </Button>
                         </div>
                     ) : (
-                        quests.map((quest) => (
+                        quests.map((quest) => {
+                            const subjectCode = quest.subjectCode || quest.title.match(/^([A-Z]{2,4}\d{2,3}[a-z]?)/i)?.[1]?.toUpperCase();
+                            const subjectName = quest.title.includes(':') 
+                                ? quest.title.substring(quest.title.indexOf(':') + 1).trim().split('_')[0].trim()
+                                : quest.title;
+                            
+                            const getGradeColor = (grade: string | undefined | null) => {
+                                if (!grade || grade === 'N/A') return { bg: 'bg-slate-500/20', border: 'border-slate-500/40', text: 'text-slate-300', Icon: Minus };
+                                const score = parseFloat(grade);
+                                if (isNaN(score)) return { bg: 'bg-slate-500/20', border: 'border-slate-500/40', text: 'text-slate-300', Icon: Minus };
+                                if (score >= 8.5) return { bg: 'bg-emerald-500/20', border: 'border-emerald-500/40', text: 'text-emerald-300', Icon: TrendingUp };
+                                if (score >= 7.0) return { bg: 'bg-blue-500/20', border: 'border-blue-500/40', text: 'text-blue-300', Icon: TrendingUp };
+                                if (score >= 5.0) return { bg: 'bg-amber-500/20', border: 'border-amber-500/40', text: 'text-amber-300', Icon: Minus };
+                                return { bg: 'bg-red-500/20', border: 'border-red-500/40', text: 'text-red-300', Icon: TrendingDown };
+                            };
+                            
+                            const getStatusInfo = (status: string | undefined) => {
+                                switch (status) {
+                                    case 'Passed': return { label: 'Passed', bg: 'bg-emerald-500/15', border: 'border-emerald-500/30', text: 'text-emerald-400', Icon: CheckCircle };
+                                    case 'NotPassed': return { label: 'Failed', bg: 'bg-red-500/15', border: 'border-red-500/30', text: 'text-red-400', Icon: TrendingDown };
+                                    case 'Studying': return { label: 'Studying', bg: 'bg-violet-500/15', border: 'border-violet-500/30', text: 'text-violet-400', Icon: Clock };
+                                    default: return { label: 'Not Started', bg: 'bg-slate-500/15', border: 'border-slate-500/30', text: 'text-slate-400', Icon: BookOpen };
+                                }
+                            };
+                            
+                            const gradeInfo = getGradeColor(quest.subjectGrade);
+                            const statusInfo = getStatusInfo(quest.subjectStatus);
+                            const GradeIcon = gradeInfo.Icon;
+                            const StatusIcon = statusInfo.Icon;
+                            
+                            return (
                             <Card key={quest.id} className={`module-card relative overflow-hidden rounded-[28px] border transition-all duration-300 hover:border-[#f5c16c]/40 hover:shadow-[0_18px_45px_rgba(245,193,108,0.25)] ${quest.status === 'Completed' ? 'border-emerald-400/40 bg-emerald-500/10' : 'border-[#f5c16c]/20 bg-black/40'
                                 }`}>
                                 <div
@@ -193,15 +223,74 @@ export function ChapterQuestListView({ learningPath, chapter, onGenerateFirstQue
                                 <CardContent className="relative z-10 p-5">
                                     <div className="flex items-center justify-between gap-4">
                                         <div className="flex flex-1 items-start gap-4">
-                                            <div className="flex-1 space-y-2">
-                                                <h3 className="text-lg font-semibold text-white">{quest.title}</h3>
-                                                <DifficultyBadge
-                                                    difficulty={quest.expectedDifficulty}
-                                                    reason={quest.difficultyReason}
-                                                    subjectGrade={quest.subjectGrade}
-                                                    subjectStatus={quest.subjectStatus}
-                                                    size="sm"
-                                                />
+                                            <div className="flex-1 space-y-3">
+                                                {/* Subject Code + Name Row */}
+                                                <div className="flex items-center gap-3 flex-wrap">
+                                                    {subjectCode && (
+                                                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#f5c16c]/10 border border-[#f5c16c]/30 text-[#f5c16c] text-sm font-bold tracking-wide">
+                                                            <GraduationCap className="h-3.5 w-3.5" />
+                                                            {subjectCode}
+                                                        </span>
+                                                    )}
+                                                    <h3 className="text-lg font-semibold text-white">{subjectName}</h3>
+                                                </div>
+                                                
+                                                {/* Academic Info Row */}
+                                                <div className="flex items-center gap-2 flex-wrap">
+                                                    {/* Grade */}
+                                                    <TooltipProvider>
+                                                        <Tooltip delayDuration={200}>
+                                                            <TooltipTrigger asChild>
+                                                                <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg border ${gradeInfo.bg} ${gradeInfo.border}`}>
+                                                                    <GradeIcon className={`h-3.5 w-3.5 ${gradeInfo.text}`} />
+                                                                    <span className={`text-sm font-bold ${gradeInfo.text}`}>
+                                                                        {quest.subjectGrade || 'N/A'}
+                                                                    </span>
+                                                                </div>
+                                                            </TooltipTrigger>
+                                                            <TooltipContent side="top" className="bg-slate-900 border-slate-700">
+                                                                <p className="text-sm">
+                                                                    {quest.subjectGrade && quest.subjectGrade !== 'N/A'
+                                                                        ? `Your grade: ${quest.subjectGrade}/10`
+                                                                        : 'No grade recorded'}
+                                                                </p>
+                                                            </TooltipContent>
+                                                        </Tooltip>
+                                                    </TooltipProvider>
+                                                    
+                                                    {/* Status */}
+                                                    <TooltipProvider>
+                                                        <Tooltip delayDuration={200}>
+                                                            <TooltipTrigger asChild>
+                                                                <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg border ${statusInfo.bg} ${statusInfo.border}`}>
+                                                                    <StatusIcon className={`h-3.5 w-3.5 ${statusInfo.text}`} />
+                                                                    <span className={`text-xs font-medium ${statusInfo.text}`}>
+                                                                        {statusInfo.label}
+                                                                    </span>
+                                                                </div>
+                                                            </TooltipTrigger>
+                                                            <TooltipContent side="top" className="bg-slate-900 border-slate-700">
+                                                                <p className="text-sm">{quest.difficultyReason || 'Academic status'}</p>
+                                                            </TooltipContent>
+                                                        </Tooltip>
+                                                    </TooltipProvider>
+                                                    
+                                                    {/* Difficulty Badge */}
+                                                    <DifficultyBadge
+                                                        difficulty={quest.expectedDifficulty}
+                                                        reason={quest.difficultyReason}
+                                                        subjectGrade={quest.subjectGrade}
+                                                        subjectStatus={quest.subjectStatus}
+                                                        size="sm"
+                                                    />
+                                                    
+                                                    {/* Priority Badge */}
+                                                    {quest.isRecommended && (
+                                                        <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/20 px-2 py-0.5 text-[10px] font-medium text-amber-300 border border-amber-500/30 animate-pulse">
+                                                            <Sparkles className="h-3 w-3" /> Priority
+                                                        </span>
+                                                    )}
+                                                </div>
                                             </div>
                                         </div>
                                         <Button
@@ -222,7 +311,7 @@ export function ChapterQuestListView({ learningPath, chapter, onGenerateFirstQue
                                     </div>
                                 </CardContent>
                             </Card>
-                        ))
+                        );})
                     )}
 
                     {/* Boss Fight Option - Show when chapter is completed */}

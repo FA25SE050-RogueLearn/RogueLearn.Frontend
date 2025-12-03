@@ -92,10 +92,24 @@ export function CharacterCreationWizard({ onOnboardingComplete }: CharacterCreat
         careerRoadmapId: selectedClass.id
       });
 
-      // Step 2: Verify by checking the user profile
-      const profileResult = await profileApi.getMyProfile();
+      // Step 2: Verify by checking the user profile with retry logic
+      // The backend may need a moment to propagate the onboarding completion
+      const maxRetries = 3;
+      const retryDelay = 1000; // 1 second between retries
+      let profileResult = null;
+      
+      for (let attempt = 1; attempt <= maxRetries; attempt++) {
+        // Wait before checking (give backend time to update)
+        await new Promise(resolve => setTimeout(resolve, retryDelay));
+        
+        profileResult = await profileApi.getMyProfile({ forceRefresh: true });
+        
+        if (profileResult.isSuccess && profileResult.data?.onboardingCompleted) {
+          break; // Success - exit retry loop
+        }
+      }
 
-      if (profileResult.isSuccess && profileResult.data?.onboardingCompleted) {
+      if (profileResult?.isSuccess && profileResult.data?.onboardingCompleted) {
         // ✅ Profile confirms onboarding is complete
         setIsCompleted(true);
         onOnboardingComplete();
@@ -106,7 +120,7 @@ export function CharacterCreationWizard({ onOnboardingComplete }: CharacterCreat
           router.refresh();
         }, 1500);
       } else {
-        // ❌ Profile check failed - show error
+        // ❌ Profile check failed after retries - show error
         throw new Error("Failed to verify onboarding completion. Please try again.");
       }
 

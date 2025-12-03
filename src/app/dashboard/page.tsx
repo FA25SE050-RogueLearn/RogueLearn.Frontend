@@ -13,13 +13,27 @@ import { RightColumn } from "@/components/dashboard/RightColumn";
 export default async function DashboardPage({ searchParams }: { searchParams?: { [key: string]: string | string[] | undefined } }) {
   const supabase = await createClient();
 
-  const { data: { user } } = await supabase.auth.getUser();
+  let user = null;
+  let session = null;
 
-  if (!user) {
+  try {
+    const { data: userData, error: userError } = await supabase.auth.getUser();
+    if (userError) {
+      console.error('Auth getUser error:', userError.message);
+      redirect('/login');
+    }
+    user = userData?.user;
+
+    if (!user) {
+      redirect('/login');
+    }
+
+    const { data: sessionData } = await supabase.auth.getSession();
+    session = sessionData?.session;
+  } catch (authError) {
+    console.error('Auth error in dashboard:', authError);
     redirect('/login');
   }
-
-  const { data: { session } } = await supabase.auth.getSession();
 
   // JWT token logging only in development for debugging
   if (process.env.NODE_ENV === 'development' && session?.access_token) {

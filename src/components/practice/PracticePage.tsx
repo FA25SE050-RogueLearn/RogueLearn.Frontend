@@ -82,32 +82,23 @@ export default function PracticePage() {
   }
 
   return (
-    <div className="relative min-h-screen overflow-x-hidden p-6 pb-32">
-      {/* Background effects */}
-      <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden">
-        <div className="absolute -left-[30%] -top-[15%] h-[900px] w-[900px] rounded-full bg-[#d23187] opacity-[0.07] blur-[140px]" />
-        <div className="absolute -right-[25%] top-[30%] h-[750px] w-[750px] rounded-full bg-[#f5c16c] opacity-[0.06] blur-[130px]" />
-        <div className="absolute bottom-[-20%] left-[15%] h-[650px] w-[650px] rounded-full bg-[#d23187] opacity-[0.05] blur-[120px]" />
-      </div>
+    <div className="p-6 pb-32">
+      {currentView === 'problems' && (
+        <ProblemSelectionView
+          problems={problems}
+          onSelectProblem={handleSelectProblem}
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPageChange={setCurrentPage}
+        />
+      )}
 
-      <div className="relative z-10">
-        {currentView === 'problems' && (
-          <ProblemSelectionView
-            problems={problems}
-            onSelectProblem={handleSelectProblem}
-            currentPage={currentPage}
-            totalPages={totalPages}
-            onPageChange={setCurrentPage}
-          />
-        )}
-
-        {currentView === 'arena' && selectedProblem && (
-          <PracticeArenaView
-            problem={selectedProblem}
-            onBack={handleBackToProblems}
-          />
-        )}
-      </div>
+      {currentView === 'arena' && selectedProblem && (
+        <PracticeArenaView
+          problem={selectedProblem}
+          onBack={handleBackToProblems}
+        />
+      )}
     </div>
   );
 }

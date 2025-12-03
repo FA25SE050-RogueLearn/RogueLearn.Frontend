@@ -163,7 +163,7 @@ export default function PartyListClient({ onSelectParty }: PartyListClientProps)
                         setMyInvites(resInv.data ?? []);
                         setParties(resMine.data ?? []);
                       } catch (e: any) {
-                        toast.error(e?.message ?? "Failed to accept invitation");
+                        // toast.error(e?.message ?? "Failed to accept invitation");
                       }
                     }}
                     className="rounded-md bg-emerald-600 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-emerald-700"
@@ -179,7 +179,7 @@ export default function PartyListClient({ onSelectParty }: PartyListClientProps)
                         const resInv = await partiesApi.getMyPendingInvitations();
                         setMyInvites(resInv.data ?? []);
                       } catch (e: any) {
-                        toast.error(e?.message ?? "Failed to decline invitation");
+                        // toast.error(e?.message ?? "Failed to decline invitation");
                       }
                     }}
                     className="rounded-md bg-rose-600 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-rose-700"

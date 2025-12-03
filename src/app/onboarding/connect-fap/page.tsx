@@ -6,14 +6,15 @@ import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
-import { Loader2, AlertCircle, RefreshCw, GitBranch, Sparkles, CheckCircle2, Copy, ExternalLink, FileText, Map, Trophy, ChevronDown, ChevronUp } from 'lucide-react';
+import { Loader2, AlertCircle, RefreshCw, GitBranch, Sparkles, CheckCircle2, Copy, ExternalLink, FileText, Map, Trophy, ChevronDown, ChevronUp, Zap, Star, TrendingUp } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { UserProfileDto } from '@/types/user-profile';
 import profileApi, { invalidateMyProfileCache } from '@/api/profileApi';
 import { processAcademicRecord } from '@/api/usersApi';
 import { CharacterCreationWizard } from '@/components/features/character-creation/CharacterCreationWizard';
+import { XpAwardedSummary, SkillXpAward } from '@/types/student';
 
-type FlowStep = 'form' | 'processing' | 'complete';
+type FlowStep = 'form' | 'processing' | 'xp-summary' | 'complete';
 
 const HERO_CARD_CLASS = "relative overflow-hidden rounded-[28px] border border-[#f5c16c]/30 bg-gradient-to-br from-[#2d1810]/60 via-[#1a0a08]/80 to-black/90 shadow-2xl";
 const CARD_TEXTURE = {
@@ -33,6 +34,9 @@ export default function ConnectFapPage() {
   const [showCharacterWizard, setShowCharacterWizard] = useState(false);
   const [showInstructions, setShowInstructions] = useState(false);
   const [processingStep, setProcessingStep] = useState(0);
+  const [xpAwarded, setXpAwarded] = useState<XpAwardedSummary | null>(null);
+  const [calculatedGpa, setCalculatedGpa] = useState<number | null>(null);
+  const [subjectsProcessed, setSubjectsProcessed] = useState<number>(0);
 
   const isUpdateFlow = userProfile?.onboardingCompleted ?? false;
   const hasContent = htmlContent.trim().length > 0;
@@ -86,11 +90,21 @@ export default function ConnectFapPage() {
       await new Promise(r => setTimeout(r, 500));
       setProcessingStep(4);
 
-      setStep('complete');
-      setTimeout(() => {
-        router.push('/skills');
-        router.refresh();
-      }, 1500);
+      // Store processing results
+      setCalculatedGpa(recordResult.data.calculatedGpa ?? null);
+      setSubjectsProcessed(recordResult.data.subjectsProcessed);
+      
+      // Check if XP was awarded
+      if (recordResult.data.xpAwarded && recordResult.data.xpAwarded.totalXp > 0) {
+        setXpAwarded(recordResult.data.xpAwarded);
+        setStep('xp-summary');
+      } else {
+        setStep('complete');
+        setTimeout(() => {
+          router.push('/skills');
+          router.refresh();
+        }, 1500);
+      }
 
     } catch (err: any) {
       const errorMessage = (err.response?.data?.error?.message || err.message) ?? "An unexpected error occurred during processing.";
@@ -108,12 +122,38 @@ export default function ConnectFapPage() {
     await fetchData();
   };
 
+  const handleContinueFromXpSummary = () => {
+    setStep('complete');
+    setTimeout(() => {
+      router.push('/skills');
+      router.refresh();
+    }, 1500);
+  };
+
   const processingSteps = [
     { label: 'Reading academic data', icon: FileText },
     { label: 'Analyzing subjects & grades', icon: FileText },
-    { label: 'Building skill tree', icon: Map },
+    { label: 'Building skill tree & awarding XP', icon: Zap },
     { label: 'Creating your questline', icon: Trophy },
   ];
+
+  // Group XP awards by skill for display
+  const groupedXpAwards = xpAwarded?.skillAwards.reduce((acc, award) => {
+    const existing = acc.find(a => a.skillId === award.skillId);
+    if (existing) {
+      existing.totalXp += award.xpAwarded;
+      existing.sources.push({ subjectCode: award.sourceSubjectCode, xp: award.xpAwarded, grade: award.grade });
+    } else {
+      acc.push({
+        skillId: award.skillId,
+        skillName: award.skillName,
+        totalXp: award.xpAwarded,
+        newLevel: award.newLevel,
+        sources: [{ subjectCode: award.sourceSubjectCode, xp: award.xpAwarded, grade: award.grade }],
+      });
+    }
+    return acc;
+  }, [] as { skillId: string; skillName: string; totalXp: number; newLevel: number; sources: { subjectCode: string; xp: number; grade: string }[] }[]) || [];
 
   const renderContent = () => {
     if (isLoading) {
@@ -171,6 +211,25 @@ export default function ConnectFapPage() {
               />
             </div>
           </div>
+
+          {/* Warning: Onboarding not completed */}
+          {!userProfile?.routeId && (
+            <div className="flex items-center justify-between gap-3 rounded-xl border border-amber-500/30 bg-amber-500/10 p-4">
+              <div className="flex items-center gap-3">
+                <AlertCircle className="h-5 w-5 shrink-0 text-amber-400" />
+                <p className="text-amber-300 text-sm">
+                  Complete your character setup first to sync your transcript.
+                </p>
+              </div>
+              <Button
+                onClick={() => setShowCharacterWizard(true)}
+                size="sm"
+                className="shrink-0 bg-amber-500/20 text-amber-300 border border-amber-500/30 hover:bg-amber-500/30"
+              >
+                Setup Now
+              </Button>
+            </div>
+          )}
 
           {error && (
             <div className="flex items-center gap-3 rounded-xl border border-red-500/30 bg-red-500/10 p-4 text-red-300 text-sm">
@@ -252,6 +311,70 @@ export default function ConnectFapPage() {
                 <span className="text-sm font-medium uppercase tracking-[0.2em]">All Done!</span>
               </div>
               <p className="text-sm text-white/60">Redirecting to your skill tree...</p>
+            </div>
+          )}
+
+          {step === 'xp-summary' && xpAwarded && (
+            <div className="space-y-6 pt-4">
+              {/* Summary Header */}
+              <div className="text-center space-y-2">
+                <div className="inline-flex items-center gap-2 rounded-full bg-[#f5c16c]/20 border border-[#f5c16c]/40 px-4 py-2">
+                  <Zap className="h-5 w-5 text-[#f5c16c]" />
+                  <span className="text-lg font-bold text-[#f5c16c]">+{xpAwarded.totalXp.toLocaleString()} XP Earned!</span>
+                </div>
+                <p className="text-sm text-white/60">
+                  Based on your academic performance across {subjectsProcessed} subjects
+                </p>
+                {calculatedGpa && (
+                  <p className="text-xs text-white/50">
+                    Current GPA: <span className="text-[#f5c16c] font-semibold">{calculatedGpa.toFixed(2)}</span>
+                  </p>
+                )}
+              </div>
+
+              {/* Skills Summary */}
+              <div className="space-y-3 max-h-[300px] overflow-y-auto pr-2">
+                {groupedXpAwards.slice(0, 10).map((skill) => (
+                  <div
+                    key={skill.skillId}
+                    className="flex items-center justify-between gap-4 rounded-xl border border-[#f5c16c]/20 bg-black/30 p-4"
+                  >
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="font-semibold text-white truncate">{skill.skillName}</span>
+                        <span className="shrink-0 inline-flex items-center gap-1 rounded-full bg-violet-500/20 border border-violet-500/30 px-2 py-0.5 text-[10px] font-medium text-violet-300">
+                          <Star className="h-3 w-3" /> Lv.{skill.newLevel}
+                        </span>
+                      </div>
+                      <div className="flex flex-wrap gap-1 mt-1">
+                        {skill.sources.map((source, idx) => (
+                          <span key={idx} className="text-[10px] text-white/50 bg-white/5 px-1.5 py-0.5 rounded">
+                            {source.subjectCode} ({source.grade})
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <TrendingUp className="h-4 w-4 text-emerald-400" />
+                      <span className="text-sm font-bold text-emerald-400">+{skill.totalXp.toLocaleString()}</span>
+                    </div>
+                  </div>
+                ))}
+                {groupedXpAwards.length > 10 && (
+                  <p className="text-center text-xs text-white/40">
+                    ...and {groupedXpAwards.length - 10} more skills
+                  </p>
+                )}
+              </div>
+
+              {/* Continue Button */}
+              <Button
+                onClick={handleContinueFromXpSummary}
+                className="w-full h-14 rounded-2xl text-sm font-semibold uppercase tracking-[0.2em] bg-gradient-to-r from-[#d23187] via-[#f061a6] to-[#f5c16c] text-[#1a0b08] shadow-lg shadow-[#d23187]/30 hover:shadow-[#d23187]/50"
+              >
+                <Sparkles className="mr-2 h-5 w-5" />
+                Continue to Skill Tree
+              </Button>
             </div>
           )}
         </div>
