@@ -26,6 +26,7 @@ interface Problem {
   title: string;
   problem_statement: string;
   difficulty: number;
+  supported_languages?: string[];
 }
 
 interface CodeArenaViewProps {
@@ -249,32 +250,49 @@ export default function CodeArenaView({
             </DropdownMenu>
 
             {/* Language Dropdown */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="rounded-lg border-[#f5c16c]/30 bg-[#140707]/80 px-4 text-xs hover:bg-[#f5c16c]/10"
-                >
-                  Language: {language === 'python' ? 'Python' : language === 'go' ? 'Go' : language}
-                  <ChevronDown className="ml-2 h-3 w-3" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent className="w-40 bg-[#140707]/95 border-[#f5c16c]/30 backdrop-blur-xl">
-                <DropdownMenuItem
-                  onClick={() => setLanguage('python')}
-                  className="text-xs text-white cursor-pointer hover:bg-[#f5c16c]/10 focus:bg-[#f5c16c]/10"
-                >
-                  Python
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() => setLanguage('go')}
-                  className="text-xs text-white cursor-pointer hover:bg-[#f5c16c]/10 focus:bg-[#f5c16c]/10"
-                >
-                  Go
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            {(() => {
+              const selectedProblem = problems.find(p => p.id === selectedProblemId);
+              const supportedLanguages = selectedProblem?.supported_languages || ['Python', 'Golang'];
+              const languageDisplayMap: Record<string, string> = {
+                'python': 'Python',
+                'go': 'Golang',
+                'golang': 'Golang',
+                'javascript': 'Javascript',
+                'js': 'Javascript',
+              };
+              const languageCodeMap: Record<string, string> = {
+                'Python': 'python',
+                'Golang': 'go',
+                'Javascript': 'javascript',
+              };
+              const displayLanguage = languageDisplayMap[language.toLowerCase()] || language;
+              
+              return (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="rounded-lg border-[#f5c16c]/30 bg-[#140707]/80 px-4 text-xs hover:bg-[#f5c16c]/10"
+                    >
+                      Language: {displayLanguage}
+                      <ChevronDown className="ml-2 h-3 w-3" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent className="w-40 bg-[#140707]/95 border-[#f5c16c]/30 backdrop-blur-xl">
+                    {supportedLanguages.map((lang) => (
+                      <DropdownMenuItem
+                        key={lang}
+                        onClick={() => setLanguage(languageCodeMap[lang] || lang.toLowerCase())}
+                        className="text-xs text-white cursor-pointer hover:bg-[#f5c16c]/10 focus:bg-[#f5c16c]/10"
+                      >
+                        {lang}
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              );
+            })()}
           </div>
         </div>
       </div>

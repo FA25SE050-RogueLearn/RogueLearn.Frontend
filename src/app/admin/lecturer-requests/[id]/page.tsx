@@ -75,20 +75,20 @@ export default function AdminLecturerRequestDetailPage() {
     <AdminLayout>
       <div className="space-y-6">
         <div className="flex items-center gap-4">
-          <Button asChild variant="outline" size="sm" className="border-[#beaca3]/30 text-[#2c2f33] hover:bg-[#beaca3]/20">
+          <Button asChild variant="outline" size="sm" className="border-[#beaca3]/30 text-white hover:bg-[#beaca3]/20">
             <Link href="/admin/lecturer-requests" className="flex items-center gap-2">
               <ChevronLeft className="h-4 w-4" /> Back
             </Link>
           </Button>
           <div className="flex-1">
-            <h1 className="text-2xl font-bold text-[#2c2f33]">Request Detail</h1>
-            <p className="text-sm text-[#2c2f33]/60">Review submitted information and take action</p>
+            <h1 className="text-2xl font-bold text-white">Request Detail</h1>
+            <p className="text-sm text-white/60">Review submitted information and take action</p>
           </div>
         </div>
 
-        <Card className="bg-white border-[#beaca3]/30">
+        <Card className="bg-[#1a1410] border-[#f5c16c]/30">
           <CardHeader className="border-b border-[#beaca3]/20">
-            <CardTitle className="text-[#2c2f33]">Submitted Information</CardTitle>
+            <CardTitle className="text-white">Submitted Information</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4 pt-6">
             {loading && <div className="flex items-center gap-2 text-[#7289da]"><Loader2 className="h-4 w-4 animate-spin" /> Loading...</div>}
@@ -97,9 +97,9 @@ export default function AdminLecturerRequestDetailPage() {
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-semibold text-[#2c2f33]">{detail.email}</p>
-                    <p className="text-xs text-[#2c2f33]/50">Staff ID: {detail.staffId}</p>
-                    <p className="text-xs text-[#2c2f33]/50">User: {detail.authUserId}</p>
+                    <p className="text-sm font-semibold text-white">{detail.email}</p>
+                    <p className="text-xs text-white/50">Staff ID: {detail.staffId}</p>
+                    <p className="text-xs text-white/50">User: {detail.authUserId}</p>
                   </div>
                   <span className={`text-xs font-bold px-2 py-0.5 rounded uppercase border ${/^approved$/i.test(detail.status || '') ? 'text-emerald-600 bg-emerald-50 border-emerald-200' : /^(declined|rejected)$/i.test(detail.status || '') ? 'text-[#e07a5f] bg-[#e07a5f]/10 border-[#e07a5f]/30' : 'text-[#7289da] bg-[#7289da]/10 border-[#7289da]/30'}`}>
                     {/^declined$/i.test(detail.status || '') ? 'Rejected' : (detail.status || '')}
@@ -107,12 +107,12 @@ export default function AdminLecturerRequestDetailPage() {
                 </div>
                 {detail.screenshotUrl && (
                   <div className="rounded-lg border border-[#beaca3]/30 bg-[#f4f6f8] p-4">
-                    <p className="text-xs text-[#2c2f33]/50 mb-2">Screenshot</p>
+                    <p className="text-xs text-white/50 mb-2">Screenshot</p>
                     <img src={detail.screenshotUrl} alt="Proof screenshot" className="max-h-80 rounded" />
                   </div>
                 )}
                 <div className="space-y-2">
-                  <label className="text-sm text-[#2c2f33]/70" htmlFor="note">Note (optional)</label>
+                  <label className="text-sm text-white/70" htmlFor="note">Note (optional)</label>
                   <Textarea id="note" value={note} onChange={(e) => setNote(e.target.value)} disabled={/^(approved|declined|rejected)$/i.test(detail.status || '')} className="border-[#beaca3]/30 disabled:opacity-60" />
                 </div>
                 {/^(approved|declined|rejected)$/i.test(detail.status || '') ? null : (
@@ -127,10 +127,10 @@ export default function AdminLecturerRequestDetailPage() {
         </Card>
 
         <Dialog open={declineOpen} onOpenChange={setDeclineOpen}>
-          <DialogContent className="bg-white border-[#beaca3]/30 text-[#2c2f33] max-w-md">
+          <DialogContent className="bg-[#1a1410] border-[#f5c16c]/30 text-white max-w-md">
             <DialogHeader><DialogTitle>Reject Request</DialogTitle></DialogHeader>
             <div className="space-y-2">
-              <label htmlFor="declineReason" className="text-sm text-[#2c2f33]/70">Reason</label>
+              <label htmlFor="declineReason" className="text-sm text-white/70">Reason</label>
               <Input id="declineReason" value={declineReason} onChange={(e) => setDeclineReason(e.target.value)} placeholder="Reason is required" className="border-[#beaca3]/30" />
             </div>
             <DialogFooter>

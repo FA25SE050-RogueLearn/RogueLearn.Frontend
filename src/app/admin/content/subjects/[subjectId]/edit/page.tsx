@@ -96,7 +96,7 @@ export default function ProfessionalEditSubjectPage() {
                         </Card>
                     )}
 
-                    <Card className="bg-white border-[#beaca3]/30">
+                    <Card className="bg-[#1a1410] border-[#f5c16c]/30">
                         <CardContent className="pt-6">
                             <Accordion type="single" collapsible defaultValue="overview">
                                 <AccordionItem value="overview">

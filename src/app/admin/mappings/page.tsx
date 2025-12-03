@@ -28,7 +28,7 @@ const SubjectNode = ({ data }: { data: { label: string; code: string } }) => (
 const SkillNode = ({ data }: { data: { label: string; tier: number; onDelete: () => void } }) => {
     const tierConfig = {
         1: { color: "border-emerald-500 text-emerald-600 bg-emerald-50", icon: Circle },
-        2: { color: "border-[#7289da] text-[#7289da] bg-[#7289da]/10", icon: Zap },
+        2: { color: "border-[#7289da] text-[#f5c16c] bg-[#f5c16c]/10", icon: Zap },
         3: { color: "border-purple-500 text-purple-600 bg-purple-50", icon: Crown },
     }[data.tier as 1 | 2 | 3] || { color: "border-gray-400 text-gray-600 bg-gray-50", icon: Circle };
 
@@ -183,40 +183,40 @@ export default function CurriculumMapPage() {
         <AdminLayout>
             <div className="h-[calc(100vh-100px)] flex flex-col gap-6">
                 <div>
-                    <h1 className="text-2xl font-bold text-[#2c2f33] flex items-center gap-3">
-                        <BookOpen className="w-6 h-6 text-[#7289da]" />
+                    <h1 className="text-2xl font-bold text-white flex items-center gap-3">
+                        <BookOpen className="w-6 h-6 text-[#f5c16c]" />
                         Subject Skill Mappings
                     </h1>
-                    <p className="text-[#2c2f33]/60 mt-1">
+                    <p className="text-white/60 mt-1">
                         Visualize subject composition. Blue lines indicate skill prerequisites.
                     </p>
                 </div>
 
                 <div className="flex flex-1 gap-6 min-h-0">
                     {/* Left Column: Subjects List */}
-                    <Card className="w-1/4 bg-white border-[#beaca3]/30 flex flex-col min-h-0">
+                    <Card className="w-1/4 bg-[#1a1410] border-[#f5c16c]/30 flex flex-col min-h-0">
                         <CardHeader className="pb-3">
-                            <CardTitle className="text-lg text-[#2c2f33]">Subjects</CardTitle>
+                            <CardTitle className="text-lg text-white">Subjects</CardTitle>
                             <div className="relative mt-2">
-                                <Search className="absolute left-2 top-2.5 h-4 w-4 text-[#2c2f33]/40" />
-                                <Input placeholder="Search..." value={subjectSearch} onChange={e => setSubjectSearch(e.target.value)} className="pl-8 border-[#beaca3]/30 text-sm" />
+                                <Search className="absolute left-2 top-2.5 h-4 w-4 text-white/40" />
+                                <Input placeholder="Search..." value={subjectSearch} onChange={e => setSubjectSearch(e.target.value)} className="pl-8 border-[#f5c16c]/30 text-sm" />
                             </div>
                         </CardHeader>
                         <CardContent className="flex-1 overflow-y-auto pr-2 space-y-2">
                             {loadingSubjects ? (
-                                <div className="flex justify-center py-8"><Loader2 className="animate-spin text-[#7289da]" /></div>
+                                <div className="flex justify-center py-8"><Loader2 className="animate-spin text-[#f5c16c]" /></div>
                             ) : (
                                 filteredSubjects.map(subject => (
                                     <button key={subject.id} onClick={() => handleSelectSubject(subject)}
                                         className={`w-full text-left p-3 rounded-lg border transition-all flex items-center justify-between group
                                             ${selectedSubject?.id === subject.id
-                                                ? "bg-[#7289da]/10 border-[#7289da]/30 text-[#2c2f33]"
-                                                : "bg-[#f4f6f8] border-transparent hover:bg-[#beaca3]/20 text-[#2c2f33]/70 hover:text-[#2c2f33]"}`}>
+                                                ? "bg-[#f5c16c]/10 border-[#7289da]/30 text-white"
+                                                : "bg-[#0a0506] border-transparent hover:bg-[#f5c16c]/20 text-white/70 hover:text-white"}`}>
                                         <div className="truncate">
                                             <span className="font-mono text-xs opacity-70 mr-2">{subject.subjectCode}</span>
                                             <span className="font-medium text-sm">{subject.subjectName}</span>
                                         </div>
-                                        <LinkIcon className={`w-3 h-3 opacity-0 group-hover:opacity-50 transition-opacity ${selectedSubject?.id === subject.id ? 'opacity-100 text-[#7289da]' : ''}`} />
+                                        <LinkIcon className={`w-3 h-3 opacity-0 group-hover:opacity-50 transition-opacity ${selectedSubject?.id === subject.id ? 'opacity-100 text-[#f5c16c]' : ''}`} />
                                     </button>
                                 ))
                             )}
@@ -224,26 +224,26 @@ export default function CurriculumMapPage() {
                     </Card>
 
                     {/* Center: Graph Visualization */}
-                    <Card className="flex-1 bg-white border-[#beaca3]/30 flex flex-col min-h-0 relative overflow-hidden">
+                    <Card className="flex-1 bg-[#1a1410] border-[#f5c16c]/30 flex flex-col min-h-0 relative overflow-hidden">
                         {selectedSubject ? (
                             <>
                                 <ReactFlow nodes={nodes} edges={edges} nodeTypes={nodeTypes} fitView minZoom={0.2} maxZoom={2}>
                                     <Background color="#beaca3" gap={20} size={1} style={{ opacity: 0.1 }} />
-                                    <Controls className="bg-white border-[#beaca3]/30" />
+                                    <Controls className="bg-[#1a1410] border-[#f5c16c]/30" />
                                 </ReactFlow>
-                                <div className="absolute bottom-4 left-4 bg-white/90 backdrop-blur border border-[#beaca3]/30 p-3 rounded-lg text-xs space-y-2 shadow-sm">
-                                    <div className="font-bold text-[#2c2f33] mb-1">Legend</div>
+                                <div className="absolute bottom-4 left-4 bg-[#1a1410]/90 backdrop-blur border border-[#f5c16c]/30 p-3 rounded-lg text-xs space-y-2 shadow-sm">
+                                    <div className="font-bold text-white mb-1">Legend</div>
                                     <div className="flex items-center gap-2 text-emerald-600"><Circle className="w-3 h-3" /> Foundation</div>
-                                    <div className="flex items-center gap-2 text-[#7289da]"><Zap className="w-3 h-3" /> Intermediate</div>
+                                    <div className="flex items-center gap-2 text-[#f5c16c]"><Zap className="w-3 h-3" /> Intermediate</div>
                                     <div className="flex items-center gap-2 text-purple-600"><Crown className="w-3 h-3" /> Advanced</div>
                                     <div className="h-px bg-[#beaca3]/30 my-1" />
                                     <div className="flex items-center gap-2 text-[#beaca3]"><span className="w-4 h-0.5 bg-[#beaca3] border-dashed" /> Subject Link</div>
-                                    <div className="flex items-center gap-2 text-[#7289da]"><span className="w-4 h-0.5 bg-[#7289da]" /> Prerequisite</div>
+                                    <div className="flex items-center gap-2 text-[#f5c16c]"><span className="w-4 h-0.5 bg-[#f5c16c]" /> Prerequisite</div>
                                 </div>
                             </>
                         ) : (
-                            <div className="h-full flex flex-col items-center justify-center text-[#2c2f33]/40">
-                                <div className="bg-[#beaca3]/20 p-6 rounded-full mb-4 border border-[#beaca3]/30">
+                            <div className="h-full flex flex-col items-center justify-center text-white/40">
+                                <div className="bg-[#beaca3]/20 p-6 rounded-full mb-4 border border-[#f5c16c]/30">
                                     <BookOpen className="w-12 h-12 text-[#beaca3]" />
                                 </div>
                                 <p>Select a subject to view its skill constellation.</p>
@@ -252,22 +252,22 @@ export default function CurriculumMapPage() {
                     </Card>
 
                     {/* Right Column: Available Skills */}
-                    <Card className="w-1/4 bg-white border-[#beaca3]/30 flex flex-col min-h-0">
+                    <Card className="w-1/4 bg-[#1a1410] border-[#f5c16c]/30 flex flex-col min-h-0">
                         <CardHeader className="pb-3">
-                            <CardTitle className="text-sm font-bold text-[#7289da] uppercase tracking-wider flex items-center gap-2">
+                            <CardTitle className="text-sm font-bold text-[#f5c16c] uppercase tracking-wider flex items-center gap-2">
                                 <Plus className="w-4 h-4" /> Add Skills
                             </CardTitle>
-                            <Input placeholder="Filter skills..." value={skillSearch} onChange={e => setSkillSearch(e.target.value)} className="h-8 border-[#beaca3]/30 text-xs mt-2" />
+                            <Input placeholder="Filter skills..." value={skillSearch} onChange={e => setSkillSearch(e.target.value)} className="h-8 border-[#f5c16c]/30 text-xs mt-2" />
                         </CardHeader>
                         <CardContent className="flex-1 overflow-y-auto pr-2 space-y-1">
                             {availableSkills.slice(0, 50).map(skill => (
                                 <button key={skill.id} onClick={() => handleAddMapping(skill.id)} disabled={!selectedSubject}
-                                    className="w-full flex items-center justify-between p-2 rounded border border-transparent hover:bg-[#7289da]/10 hover:border-[#7289da]/20 transition-all text-left group disabled:opacity-50 disabled:cursor-not-allowed">
+                                    className="w-full flex items-center justify-between p-2 rounded border border-transparent hover:bg-[#f5c16c]/10 hover:border-[#7289da]/20 transition-all text-left group disabled:opacity-50 disabled:cursor-not-allowed">
                                     <div>
-                                        <div className="text-sm text-[#2c2f33]/70 group-hover:text-[#2c2f33]">{skill.name}</div>
-                                        <div className="text-[10px] text-[#2c2f33]/40">Tier {skill.tier} • {skill.domain}</div>
+                                        <div className="text-sm text-white/70 group-hover:text-white">{skill.name}</div>
+                                        <div className="text-[10px] text-white/40">Tier {skill.tier} • {skill.domain}</div>
                                     </div>
-                                    <Plus className="w-3 h-3 text-[#2c2f33]/30 group-hover:text-[#7289da]" />
+                                    <Plus className="w-3 h-3 text-white/30 group-hover:text-[#f5c16c]" />
                                 </button>
                             ))}
                         </CardContent>

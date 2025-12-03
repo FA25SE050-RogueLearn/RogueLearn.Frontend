@@ -11,12 +11,12 @@ export default function CreateProblemPage() {
     <AdminLayout>
       <div className="space-y-6">
         <div className="flex items-center gap-4">
-          <Button asChild variant="outline" size="sm" className="border-[#beaca3]/30 text-[#2c2f33] hover:bg-[#beaca3]/20">
+          <Button asChild variant="outline" size="sm" className="border-[#f5c16c]/30 text-white hover:bg-[#f5c16c]/10">
             <Link href="/admin/content/problems" className="flex items-center gap-2"><ChevronLeft className="h-4 w-4" /> Back to Problems</Link>
           </Button>
           <div className="flex-1">
-            <h1 className="text-2xl font-bold text-[#2c2f33]">Create New Problem</h1>
-            <p className="text-sm text-[#2c2f33]/60">Create a new coding problem</p>
+            <h1 className="text-2xl font-bold text-white">Create New Problem</h1>
+            <p className="text-sm text-white/60">Create a new coding problem</p>
           </div>
         </div>
         <CreateProblemForm />

@@ -139,22 +139,22 @@ export default function AdminUserRolesPage() {
   return (
     <AdminLayout>
       <div className="space-y-8">
-        <div className="flex flex-col md:flex-row justify-between items-end gap-4 border-b border-[#beaca3]/30 pb-6">
+        <div className="flex flex-col md:flex-row justify-between items-end gap-4 border-b border-[#f5c16c]/30 pb-6">
           <div>
-            <h1 className="text-3xl font-bold text-[#2c2f33] flex items-center gap-3">
-              <GraduationCap className="text-[#7289da]" size={32} />
+            <h1 className="text-3xl font-bold text-white flex items-center gap-3">
+              <GraduationCap className="text-[#f5c16c]" size={32} />
               User Roles Management
             </h1>
-            <p className="text-[#2c2f33]/60 mt-2 max-w-xl">Manage user roles. Revocation removes Verified Lecturer role.</p>
+            <p className="text-white/60 mt-2 max-w-xl">Manage user roles. Revocation removes Verified Lecturer role.</p>
           </div>
           <div className="flex gap-4 flex-wrap">
             {(rolesCatalog ?? []).map(rc => {
               const key = normalizeRole(rc.name || rc.id);
               const count = roleCounts[key] ?? 0;
               return (
-                <div key={rc.id} className="bg-white border border-[#beaca3]/30 rounded-lg px-4 py-2 text-center min-w-[120px] shadow-sm">
-                  <div className="text-2xl font-bold text-[#2c2f33]">{count}</div>
-                  <div className="text-[10px] text-[#2c2f33]/50 uppercase tracking-wider">{rc.name || rc.id}</div>
+                <div key={rc.id} className="bg-[#1a1410] border border-[#f5c16c]/30 rounded-lg px-4 py-2 text-center min-w-[120px] shadow-sm">
+                  <div className="text-2xl font-bold text-white">{count}</div>
+                  <div className="text-[10px] text-white/50 uppercase tracking-wider">{rc.name || rc.id}</div>
                 </div>
               );
             })}
@@ -162,23 +162,23 @@ export default function AdminUserRolesPage() {
         </div>
 
         <div className="space-y-6">
-          <div className="flex items-center gap-4 bg-[#f4f6f8] p-2 rounded-xl border border-[#beaca3]/30">
+          <div className="flex items-center gap-4 bg-[#0a0506] p-2 rounded-xl border border-[#f5c16c]/30">
             <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[#2c2f33]/40" size={18} />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-white/40" size={18} />
               <input
                 type="text"
                 placeholder="Search users by name or email..."
-                className="w-full bg-white border border-[#beaca3]/30 focus:border-[#7289da]/50 rounded-lg pl-10 pr-4 py-2.5 text-sm text-[#2c2f33] outline-none transition-all"
+                className="w-full bg-[#1a1410] border border-[#f5c16c]/30 focus:border-[#7289da]/50 rounded-lg pl-10 pr-4 py-2.5 text-sm text-white outline-none transition-all"
                 value={search}
                 onChange={e => setSearch(e.target.value)}
               />
             </div>
             <Tabs value={activeRole || (roleTabs[0]?.value ?? "")} onValueChange={setActiveRole} className="flex-1">
-              <TabsList className="bg-white border border-[#beaca3]/30 text-[#2c2f33]">
+              <TabsList className="bg-[#1a1410] border border-[#f5c16c]/30 text-white">
                 {roleTabs.map(tab => (
-                  <TabsTrigger key={tab.value} value={tab.value} className="gap-2 data-[state=active]:bg-[#7289da]/10 data-[state=active]:text-[#7289da]">
+                  <TabsTrigger key={tab.value} value={tab.value} className="gap-2 data-[state=active]:bg-[#f5c16c]/10 data-[state=active]:text-[#f5c16c]">
                     <span>{tab.label}</span>
-                    <span className="rounded-full bg-[#beaca3]/20 px-2 py-0.5 text-[10px] text-[#2c2f33]/70">{roleCounts[tab.value] ?? 0}</span>
+                    <span className="rounded-full bg-[#beaca3]/20 px-2 py-0.5 text-[10px] text-white/70">{roleCounts[tab.value] ?? 0}</span>
                   </TabsTrigger>
                 ))}
               </TabsList>
@@ -187,43 +187,43 @@ export default function AdminUserRolesPage() {
           </div>
 
           <div className="space-y-2">
-            <div className="grid grid-cols-12 px-6 py-2 text-xs font-bold text-[#2c2f33]/50 uppercase tracking-wider">
+            <div className="grid grid-cols-12 px-6 py-2 text-xs font-bold text-white/50 uppercase tracking-wider">
               <div className="col-span-4">User</div>
               <div className="col-span-6">Roles</div>
               <div className="col-span-1">Status</div>
               <div className="col-span-1 text-right">Actions</div>
             </div>
-            {loading && <div className="flex items-center gap-2 text-[#7289da] px-6 py-4"><Loader2 className="h-4 w-4 animate-spin" /> Loading...</div>}
+            {loading && <div className="flex items-center gap-2 text-[#f5c16c] px-6 py-4"><Loader2 className="h-4 w-4 animate-spin" /> Loading...</div>}
             {error && <div className="flex items-center gap-2 text-[#e07a5f] px-6 py-4">{error}</div>}
             {!loading && !error && pagedUsers.map(user => (
-              <div key={user.id} className="group grid grid-cols-12 items-center px-6 py-4 bg-white border border-[#beaca3]/30 rounded-xl hover:border-[#7289da]/30 transition-all shadow-sm">
+              <div key={user.id} className="group grid grid-cols-12 items-center px-6 py-4 bg-[#1a1410] border border-[#f5c16c]/30 rounded-xl hover:border-[#7289da]/30 transition-all shadow-sm">
                 <div className="col-span-4 flex items-center gap-4">
-                  <Avatar className="h-10 w-10 border border-[#beaca3]/30">
+                  <Avatar className="h-10 w-10 border border-[#f5c16c]/30">
                     <AvatarImage src={user.profileImageUrl ?? undefined} />
-                    <AvatarFallback className="bg-[#beaca3]/20 text-[#2c2f33]">{(user.username ?? 'U').slice(0,2).toUpperCase()}</AvatarFallback>
+                    <AvatarFallback className="bg-[#beaca3]/20 text-white">{(user.username ?? 'U').slice(0,2).toUpperCase()}</AvatarFallback>
                   </Avatar>
                   <div>
-                    <div className="text-[#2c2f33] font-bold text-sm flex items-center gap-2">
+                    <div className="text-white font-bold text-sm flex items-center gap-2">
                       {user.username}
-                      <ShieldAlert size={12} className="text-[#7289da]" />
+                      <ShieldAlert size={12} className="text-[#f5c16c]" />
                     </div>
-                    <div className="text-[#2c2f33]/50 text-xs">{user.email}</div>
+                    <div className="text-white/50 text-xs">{user.email}</div>
                   </div>
                 </div>
-                <div className="col-span-6 text-xs text-[#2c2f33]/70">
+                <div className="col-span-6 text-xs text-white/70">
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <button className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border border-[#beaca3]/30 bg-[#f4f6f8] text-[#2c2f33]/70 hover:bg-[#beaca3]/20 transition">
+                      <button className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border border-[#f5c16c]/30 bg-[#0a0506] text-white/70 hover:bg-[#f5c16c]/20 transition">
                         <span className="text-[11px] font-semibold uppercase tracking-wide">Roles</span>
-                        <span className="rounded-full bg-[#beaca3]/30 px-2 py-0.5 text-[10px] text-[#2c2f33]/70">{(user.roles ?? []).length}</span>
-                        <ChevronDown size={14} className="text-[#2c2f33]/40" />
+                        <span className="rounded-full bg-[#beaca3]/30 px-2 py-0.5 text-[10px] text-white/70">{(user.roles ?? []).length}</span>
+                        <ChevronDown size={14} className="text-white/40" />
                       </button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="start" className="min-w-[220px] bg-white border-[#beaca3]/30 text-[#2c2f33]">
+                    <DropdownMenuContent align="start" className="min-w-[220px] bg-[#1a1410] border-[#f5c16c]/30 text-white">
                       {(user.roles ?? []).length > 0 ? (
                         (user.roles ?? []).map((r, idx) => <DropdownMenuItem key={`${user.id}-${idx}`} className="text-xs">{r}</DropdownMenuItem>)
                       ) : (
-                        <DropdownMenuItem disabled className="text-xs text-[#2c2f33]/40">No roles</DropdownMenuItem>
+                        <DropdownMenuItem disabled className="text-xs text-white/40">No roles</DropdownMenuItem>
                       )}
                     </DropdownMenuContent>
                   </DropdownMenu>
@@ -247,10 +247,10 @@ export default function AdminUserRolesPage() {
             ))}
             {!loading && !error && filteredUsers.length > 0 && (
               <div className="px-6 py-3 flex items-center justify-between">
-                <div className="text-xs text-[#2c2f33]/60">Page {page} of {totalPages}</div>
+                <div className="text-xs text-white/60">Page {page} of {totalPages}</div>
                 <div className="flex gap-2">
-                  <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1} className="rounded bg-[#beaca3]/20 px-3 py-1.5 text-xs text-[#2c2f33] disabled:opacity-50 hover:bg-[#beaca3]/30">Prev</button>
-                  <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page >= totalPages} className="rounded bg-[#beaca3]/20 px-3 py-1.5 text-xs text-[#2c2f33] disabled:opacity-50 hover:bg-[#beaca3]/30">Next</button>
+                  <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1} className="rounded bg-[#beaca3]/20 px-3 py-1.5 text-xs text-white disabled:opacity-50 hover:bg-[#f5c16c]/30">Prev</button>
+                  <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page >= totalPages} className="rounded bg-[#beaca3]/20 px-3 py-1.5 text-xs text-white disabled:opacity-50 hover:bg-[#f5c16c]/30">Next</button>
                 </div>
               </div>
             )}
@@ -258,17 +258,17 @@ export default function AdminUserRolesPage() {
         </div>
 
         <Dialog open={isRevokeOpen} onOpenChange={setIsRevokeOpen}>
-          <DialogContent className="bg-white border-[#beaca3]/30 text-[#2c2f33] max-w-md">
+          <DialogContent className="bg-[#1a1410] border-[#f5c16c]/30 text-white max-w-md">
             <DialogHeader>
               <div className="mx-auto w-12 h-12 bg-[#e07a5f]/10 rounded-full flex items-center justify-center mb-4 border border-[#e07a5f]/20">
                 <AlertTriangle className="text-[#e07a5f]" size={24} />
               </div>
               <DialogTitle className="text-center text-xl">Revoke Lecturer Credentials?</DialogTitle>
-              <DialogDescription className="text-center text-[#2c2f33]/60 pt-2">
-                You are about to remove <span className="text-[#2c2f33] font-bold">{selectedUser?.username}</span> from the Verified Lecturer Registry.
-                <div className="mt-4 bg-[#f4f6f8] p-3 rounded-lg text-xs text-left border border-[#e07a5f]/20">
+              <DialogDescription className="text-center text-white/60 pt-2">
+                You are about to remove <span className="text-white font-bold">{selectedUser?.username}</span> from the Verified Lecturer Registry.
+                <div className="mt-4 bg-[#0a0506] p-3 rounded-lg text-xs text-left border border-[#e07a5f]/20">
                   <p className="font-bold text-[#e07a5f] mb-1">Impact:</p>
-                  <ul className="list-disc list-inside space-y-1 text-[#2c2f33]/60">
+                  <ul className="list-disc list-inside space-y-1 text-white/60">
                     <li>User loses access to Verified Lecturer status.</li>
                     <li>Max number of guild members will be reduced to 50.</li>
                     <li>If the guild has more than 50 members, max will be capped at current count.</li>
@@ -277,7 +277,7 @@ export default function AdminUserRolesPage() {
               </DialogDescription>
             </DialogHeader>
             <DialogFooter className="mt-6 gap-2 sm:gap-0">
-              <button onClick={() => setIsRevokeOpen(false)} className="px-4 py-2 bg-transparent hover:bg-[#beaca3]/20 text-[#2c2f33]/70 rounded-lg text-sm font-medium transition">Cancel</button>
+              <button onClick={() => setIsRevokeOpen(false)} className="px-4 py-2 bg-transparent hover:bg-[#f5c16c]/20 text-white/70 rounded-lg text-sm font-medium transition">Cancel</button>
               <button onClick={handleRevokeVerifiedLecturer} className="px-4 py-2 bg-[#e07a5f] hover:bg-[#d06a4f] text-white rounded-lg text-sm font-bold shadow transition flex items-center gap-2">
                 <Trash2 size={14} /> Confirm Revocation
               </button>

@@ -102,7 +102,7 @@ export default function SkillsManagementPage() {
     const getTierBadge = (tier: number) => {
         const styles = {
             1: "bg-emerald-50 text-emerald-700 border-emerald-200",
-            2: "bg-[#7289da]/10 text-[#7289da] border-[#7289da]/30",
+            2: "bg-[#f5c16c]/10 text-[#f5c16c] border-[#7289da]/30",
             3: "bg-purple-50 text-purple-700 border-purple-200",
         };
         const labels = { 1: "Foundation", 2: "Intermediate", 3: "Advanced" };
@@ -115,32 +115,32 @@ export default function SkillsManagementPage() {
                 {/* Header */}
                 <div className="flex justify-between items-center">
                     <div>
-                        <h1 className="text-2xl font-bold text-[#2c2f33]">Skills Management</h1>
-                        <p className="text-[#2c2f33]/60">Manage learning skills and their prerequisites</p>
+                        <h1 className="text-2xl font-bold text-white">Skills Management</h1>
+                        <p className="text-white/60">Manage learning skills and their prerequisites</p>
                     </div>
                     <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
                         <DialogTrigger asChild>
-                            <Button className="bg-[#7289da] hover:bg-[#7289da]/90 text-white">
+                            <Button className="bg-[#f5c16c] hover:bg-[#f5c16c]/90 text-white">
                                 <Plus className="w-4 h-4 mr-2" /> Create Skill
                             </Button>
                         </DialogTrigger>
-                        <DialogContent className="bg-white border-[#beaca3]/30">
+                        <DialogContent className="bg-[#1a1410] border-[#f5c16c]/30">
                             <DialogHeader>
-                                <DialogTitle className="text-[#2c2f33]">Create New Skill</DialogTitle>
+                                <DialogTitle className="text-white">Create New Skill</DialogTitle>
                             </DialogHeader>
                             <div className="space-y-4 py-4">
                                 <div className="space-y-2">
-                                    <Label className="text-[#2c2f33]/70">Name</Label>
-                                    <Input value={newSkill.name} onChange={e => setNewSkill({ ...newSkill, name: e.target.value })} placeholder="Enter skill name" className="border-[#beaca3]/30" />
+                                    <Label className="text-white/70">Name</Label>
+                                    <Input value={newSkill.name} onChange={e => setNewSkill({ ...newSkill, name: e.target.value })} placeholder="Enter skill name" className="border-[#f5c16c]/30" />
                                 </div>
                                 <div className="space-y-2">
-                                    <Label className="text-[#2c2f33]/70">Domain</Label>
-                                    <Input value={newSkill.domain} onChange={e => setNewSkill({ ...newSkill, domain: e.target.value })} placeholder="e.g., Programming, Database" className="border-[#beaca3]/30" />
+                                    <Label className="text-white/70">Domain</Label>
+                                    <Input value={newSkill.domain} onChange={e => setNewSkill({ ...newSkill, domain: e.target.value })} placeholder="e.g., Programming, Database" className="border-[#f5c16c]/30" />
                                 </div>
                                 <div className="space-y-2">
-                                    <Label className="text-[#2c2f33]/70">Tier</Label>
+                                    <Label className="text-white/70">Tier</Label>
                                     <Select value={newSkill.tier.toString()} onValueChange={v => setNewSkill({ ...newSkill, tier: parseInt(v) })}>
-                                        <SelectTrigger className="border-[#beaca3]/30"><SelectValue /></SelectTrigger>
+                                        <SelectTrigger className="border-[#f5c16c]/30"><SelectValue /></SelectTrigger>
                                         <SelectContent>
                                             <SelectItem value="1">1 - Foundation</SelectItem>
                                             <SelectItem value="2">2 - Intermediate</SelectItem>
@@ -149,13 +149,13 @@ export default function SkillsManagementPage() {
                                     </Select>
                                 </div>
                                 <div className="space-y-2">
-                                    <Label className="text-[#2c2f33]/70">Description</Label>
-                                    <Input value={newSkill.description} onChange={e => setNewSkill({ ...newSkill, description: e.target.value })} placeholder="Brief description" className="border-[#beaca3]/30" />
+                                    <Label className="text-white/70">Description</Label>
+                                    <Input value={newSkill.description} onChange={e => setNewSkill({ ...newSkill, description: e.target.value })} placeholder="Brief description" className="border-[#f5c16c]/30" />
                                 </div>
                             </div>
                             <DialogFooter>
-                                <Button variant="outline" onClick={() => setIsCreateOpen(false)} className="border-[#beaca3]/30">Cancel</Button>
-                                <Button onClick={handleCreateSkill} className="bg-[#7289da] hover:bg-[#7289da]/90 text-white">Create</Button>
+                                <Button variant="outline" onClick={() => setIsCreateOpen(false)} className="border-[#f5c16c]/30">Cancel</Button>
+                                <Button onClick={handleCreateSkill} className="bg-[#f5c16c] hover:bg-[#f5c16c]/90 text-white">Create</Button>
                             </DialogFooter>
                         </DialogContent>
                     </Dialog>
@@ -163,42 +163,42 @@ export default function SkillsManagementPage() {
 
                 {/* Search */}
                 <div className="relative max-w-md">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#2c2f33]/40" />
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/40" />
                     <Input 
                         placeholder="Search skills..." 
                         value={search} 
                         onChange={e => setSearch(e.target.value)} 
-                        className="pl-10 border-[#beaca3]/30"
+                        className="pl-10 border-[#f5c16c]/30"
                     />
                 </div>
 
                 {/* Skills Grid */}
                 {loading ? (
                     <div className="flex items-center justify-center py-12">
-                        <Loader2 className="h-8 w-8 animate-spin text-[#7289da]" />
+                        <Loader2 className="h-8 w-8 animate-spin text-[#f5c16c]" />
                     </div>
                 ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                         {filteredSkills.map(skill => {
                             const tier = getTierBadge(skill.tier);
                             return (
-                                <Card key={skill.id} className="bg-white border border-[#beaca3]/30 shadow-sm hover:shadow-md transition-shadow">
+                                <Card key={skill.id} className="bg-[#1a1410] border border-[#f5c16c]/30 shadow-sm hover:shadow-md transition-shadow">
                                     <CardHeader className="pb-2">
                                         <div className="flex justify-between items-start">
                                             <div className="flex-1">
-                                                <CardTitle className="text-base font-semibold text-[#2c2f33]">{skill.name}</CardTitle>
+                                                <CardTitle className="text-base font-semibold text-white">{skill.name}</CardTitle>
                                                 <div className="flex items-center gap-2 mt-1">
-                                                    <span className="text-xs text-[#2c2f33]/50">{skill.domain}</span>
+                                                    <span className="text-xs text-white/50">{skill.domain}</span>
                                                     <span className={`text-xs px-2 py-0.5 rounded-full border ${tier.style}`}>{tier.label}</span>
                                                 </div>
                                             </div>
-                                            <Button size="sm" variant="ghost" className="text-[#2c2f33]/40 hover:text-[#7289da] hover:bg-[#7289da]/10" onClick={() => openDependencyManager(skill)}>
+                                            <Button size="sm" variant="ghost" className="text-white/40 hover:text-[#f5c16c] hover:bg-[#f5c16c]/10" onClick={() => openDependencyManager(skill)}>
                                                 <LinkIcon className="w-4 h-4" />
                                             </Button>
                                         </div>
                                     </CardHeader>
                                     <CardContent>
-                                        <p className="text-sm text-[#2c2f33]/60 line-clamp-2">{skill.description || "No description"}</p>
+                                        <p className="text-sm text-white/60 line-clamp-2">{skill.description || "No description"}</p>
                                     </CardContent>
                                 </Card>
                             );
@@ -208,40 +208,40 @@ export default function SkillsManagementPage() {
 
                 {/* Dependency Manager Dialog */}
                 <Dialog open={!!selectedSkill} onOpenChange={(open) => !open && setSelectedSkill(null)}>
-                    <DialogContent className="bg-white border-[#beaca3]/30 max-w-2xl">
+                    <DialogContent className="bg-[#1a1410] border-[#f5c16c]/30 max-w-2xl">
                         <DialogHeader>
-                            <DialogTitle className="text-[#2c2f33]">
-                                Manage Dependencies: <span className="text-[#7289da]">{selectedSkill?.name}</span>
+                            <DialogTitle className="text-white">
+                                Manage Dependencies: <span className="text-[#f5c16c]">{selectedSkill?.name}</span>
                             </DialogTitle>
                         </DialogHeader>
                         <div className="grid grid-cols-2 gap-6 min-h-[300px]">
-                            <div className="border-r border-[#beaca3]/30 pr-4">
-                                <h4 className="text-sm font-semibold mb-3 text-[#2c2f33]/70">Current Prerequisites</h4>
+                            <div className="border-r border-[#f5c16c]/30 pr-4">
+                                <h4 className="text-sm font-semibold mb-3 text-white/70">Current Prerequisites</h4>
                                 {depLoading ? (
-                                    <Loader2 className="animate-spin text-[#7289da]" />
+                                    <Loader2 className="animate-spin text-[#f5c16c]" />
                                 ) : (
                                     <div className="space-y-2">
                                         {(Array.isArray(dependencies) ? dependencies : []).map(dep => (
-                                            <div key={dep.prerequisiteSkillId} className="flex justify-between items-center bg-[#f4f6f8] p-2.5 rounded-lg border border-[#beaca3]/20">
-                                                <span className="text-sm text-[#2c2f33]">{(Array.isArray(skills) ? skills : []).find(s => s.id === dep.prerequisiteSkillId)?.name || "Unknown Skill"}</span>
+                                            <div key={dep.prerequisiteSkillId} className="flex justify-between items-center bg-[#0a0506] p-2.5 rounded-lg border border-[#f5c16c]/20">
+                                                <span className="text-sm text-white">{(Array.isArray(skills) ? skills : []).find(s => s.id === dep.prerequisiteSkillId)?.name || "Unknown Skill"}</span>
                                                 <Button size="icon" variant="ghost" className="h-7 w-7 text-[#e07a5f] hover:bg-[#e07a5f]/10" onClick={() => removeDependency(dep.prerequisiteSkillId)}>
                                                     <Trash2 className="w-3.5 h-3.5" />
                                                 </Button>
                                             </div>
                                         ))}
                                         {(Array.isArray(dependencies) ? dependencies : []).length === 0 && (
-                                            <p className="text-sm text-[#2c2f33]/40">No prerequisites defined</p>
+                                            <p className="text-sm text-white/40">No prerequisites defined</p>
                                         )}
                                     </div>
                                 )}
                             </div>
                             <div>
-                                <h4 className="text-sm font-semibold mb-3 text-[#2c2f33]/70">Add Prerequisite</h4>
+                                <h4 className="text-sm font-semibold mb-3 text-white/70">Add Prerequisite</h4>
                                 <Input
                                     placeholder="Search skills..."
                                     value={prereqSearch}
                                     onChange={e => setPrereqSearch(e.target.value)}
-                                    className="mb-3 h-9 border-[#beaca3]/30"
+                                    className="mb-3 h-9 border-[#f5c16c]/30"
                                 />
                                 <div className="space-y-1 max-h-[250px] overflow-y-auto">
                                     {(Array.isArray(skills) ? skills : [])
@@ -251,11 +251,11 @@ export default function SkillsManagementPage() {
                                             <button
                                                 key={s.id}
                                                 onClick={() => addDependency(s.id)}
-                                                className="w-full text-left text-sm p-2.5 hover:bg-[#7289da]/10 rounded-lg flex items-center gap-2 transition-colors"
+                                                className="w-full text-left text-sm p-2.5 hover:bg-[#f5c16c]/10 rounded-lg flex items-center gap-2 transition-colors"
                                             >
-                                                <Plus className="w-3.5 h-3.5 text-[#7289da]" />
-                                                <span className="text-[#2c2f33]">{s.name}</span>
-                                                <span className="text-[#2c2f33]/40 text-xs">({s.domain})</span>
+                                                <Plus className="w-3.5 h-3.5 text-[#f5c16c]" />
+                                                <span className="text-white">{s.name}</span>
+                                                <span className="text-white/40 text-xs">({s.domain})</span>
                                             </button>
                                         ))
                                     }

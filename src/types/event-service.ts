@@ -7,6 +7,7 @@ export interface Problem {
   problem_statement: string;
   difficulty: number;
   tags?: Tag[];
+  supported_languages?: string[];
 }
 
 export interface ProblemDetails extends Problem {
@@ -299,4 +300,16 @@ export interface CreateProblemResponse {
   problem_id: string;
   title: string;
   validation_results: Record<string, ValidationResult>;
+}
+
+export interface UpdateProblemRequest {
+  title: string;
+  problem_statement: string;
+  difficulty: number;
+  tag_ids: string[];
+}
+
+export interface UpdateProblemResponse {
+  problem_id: string;
+  title: string;
 }
