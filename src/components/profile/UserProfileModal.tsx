@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import { LecturerVerificationPanel } from "@/components/profile/LecturerVerificationPanel";
 import { SocialScryingContent } from "@/components/profile/SocialScryingModal";
 import { LogOut, Sparkles, UploadCloud, User, Settings, Bell, Users, Shield, Mail, GraduationCap, Loader2 } from "lucide-react";
+import notificationsApi from "@/api/notificationsApi";
+import type { NotificationDto, NotificationType } from "@/types/notifications";
 import profileApi from "@/api/profileApi";
 import { updateMyProfile } from "@/api/usersApi";
 import type { UserProfileDto } from "@/types/user-profile";
@@ -47,7 +49,10 @@ export default function UserProfileModal({ open, onOpenChange, defaultTab = "pro
   const [historyFilter, setHistoryFilter] = useState<'all' | 'accepted' | 'declined'>('all');
   const [historyPage, setHistoryPage] = useState(1);
   const historyPageSize = 5;
-  const filteredHistory = useMemo(() => joinRequestsHistory.filter(r => historyFilter==='all' ? true : historyFilter==='accepted' ? r.status==='Accepted' : r.status==='Declined'), [joinRequestsHistory, historyFilter]);
+  const filteredHistory = useMemo(() => joinRequestsHistory
+    .filter(r => r.status !== 'Pending')
+    .filter(r => historyFilter==='all' ? true : historyFilter==='accepted' ? r.status==='Accepted' : r.status==='Declined')
+  , [joinRequestsHistory, historyFilter]);
   const historyPageCount = useMemo(() => Math.max(1, Math.ceil((filteredHistory.length || 0) / historyPageSize)), [filteredHistory.length]);
   const safeHistoryPage = useMemo(() => Math.min(Math.max(1, historyPage), historyPageCount), [historyPage, historyPageCount]);
   const pagedHistory = useMemo(() => {
@@ -55,6 +60,108 @@ export default function UserProfileModal({ open, onOpenChange, defaultTab = "pro
     const end = start + historyPageSize;
     return filteredHistory.slice(start, end);
   }, [filteredHistory, safeHistoryPage]);
+
+  const reloadJoinRequests = async () => {
+    try {
+      const res = await guildsApi.getMyJoinRequests(true);
+      setJoinRequests(res.isSuccess ? (res.data || []) : []);
+    } catch {}
+  };
+
+  const reloadJoinRequestsHistory = async () => {
+    try {
+      const res = await guildsApi.getMyJoinRequests(false);
+      setJoinRequestsHistory(res.isSuccess ? (res.data || []) : []);
+    } catch {}
+  };
+
+  // Notifications state
+  const [notifications, setNotifications] = useState<NotificationDto[]>([]);
+  const [loadingNotifications, setLoadingNotifications] = useState(false);
+  const [notificationsError, setNotificationsError] = useState<string | null>(null);
+  const [notifFilterType, setNotifFilterType] = useState<'all' | NotificationType>('all');
+  const [showUnreadOnly, setShowUnreadOnly] = useState(false);
+  const [bulkWorking, setBulkWorking] = useState(false);
+
+  const groupedNotifications = useMemo(() => {
+    const byType: Record<NotificationType, NotificationDto[]> = {
+      Achievement: [], QuestComplete: [], Party: [], Guild: [], FriendRequest: [], System: [], Reminder: [],
+    };
+    const items = notifications.filter(n => (showUnreadOnly ? !n.isRead : true)).filter(n => (notifFilterType === 'all' ? true : n.type === notifFilterType));
+    for (const n of items) byType[n.type]?.push(n);
+    return byType;
+  }, [notifications, notifFilterType, showUnreadOnly]);
+
+  const unreadCountLocal = useMemo(() => notifications.filter(n => !n.isRead).length, [notifications]);
+  const readCountLocal = useMemo(() => notifications.filter(n => n.isRead).length, [notifications]);
+
+  const markOneRead = async (id: string) => {
+    try {
+      await notificationsApi.markAsRead(id);
+      setNotifications(prev => prev.map(n => n.id === id ? { ...n, isRead: true, readAt: new Date().toISOString() } : n));
+      try { window.dispatchEvent(new Event('notifications:updated')); } catch {}
+    } catch (err: any) {
+      setNotificationsError(err?.normalized?.message || 'Failed to mark as read');
+    }
+  };
+
+  const deleteOne = async (id: string) => {
+    try {
+      await notificationsApi.deleteNotification(id);
+      setNotifications(prev => prev.filter(n => n.id !== id));
+      try { window.dispatchEvent(new Event('notifications:updated')); } catch {}
+    } catch (err: any) {
+      setNotificationsError(err?.normalized?.message || 'Failed to delete notification');
+    }
+  };
+
+  const markAllRead = async () => {
+    if (bulkWorking) return;
+    if (!notifications.some(n => !n.isRead)) return;
+    setBulkWorking(true);
+    try {
+      await notificationsApi.markAllRead();
+      const now = new Date().toISOString();
+      setNotifications(prev => prev.map(n => !n.isRead ? { ...n, isRead: true, readAt: now } : n));
+      try { window.dispatchEvent(new Event('notifications:updated')); } catch {}
+    } finally {
+      setBulkWorking(false);
+    }
+  };
+
+  const deleteAllRead = async () => {
+    if (bulkWorking) return;
+    const ids = notifications.filter(n => n.isRead).map(n => n.id);
+    if (ids.length === 0) return;
+    setBulkWorking(true);
+    try {
+      await notificationsApi.batchDelete(ids);
+      setNotifications(prev => prev.filter(n => !ids.includes(n.id)));
+      try { window.dispatchEvent(new Event('notifications:updated')); } catch {}
+    } catch (err: any) {
+      setNotificationsError(err?.normalized?.message || 'Failed to delete notifications');
+    } finally {
+      setBulkWorking(false);
+    }
+  };
+
+  useEffect(() => {
+    let mounted = true;
+    const loadNotifications = async () => {
+      setLoadingNotifications(true);
+      setNotificationsError(null);
+      try {
+        const res = await notificationsApi.getMyNotifications(100);
+        if (mounted && res.isSuccess) setNotifications(res.data || []);
+      } catch (err: any) {
+        if (mounted) setNotificationsError(err?.normalized?.message || 'Failed to load notifications');
+      } finally {
+        if (mounted) setLoadingNotifications(false);
+      }
+    };
+    if (open && activeTab === 'notifications') loadNotifications();
+    return () => { mounted = false; };
+  }, [open, activeTab]);
 
   useEffect(() => {
     let mounted = true;
@@ -322,9 +429,83 @@ export default function UserProfileModal({ open, onOpenChange, defaultTab = "pro
             {activeTab === "notifications" && (
               <div className="space-y-6">
                 <h2 className="text-2xl font-bold text-white">Notifications</h2>
-                <div className="relative overflow-hidden rounded-[20px] border border-[#f5c16c]/20 bg-linear-to-br from-[#1f0d09]/95 to-[#2a1510]/95 p-8 text-center">
-                  <div className="text-4xl opacity-30 mb-3">🔔</div>
-                  <p className="text-sm text-[#f5c16c]/70">Notification settings coming soon</p>
+                <div className="rounded-[20px] border border-[#f5c16c]/20 bg-linear-to-br from-[#1f0d09]/95 to-[#2a1510]/95 p-6">
+                  <div className="flex flex-wrap items-center gap-2 mb-4">
+                    {(['all','Achievement','QuestComplete','Party','Guild','FriendRequest','System','Reminder'] as const).map(t => (
+                      <button
+                        key={t}
+                        onClick={() => setNotifFilterType(t as any)}
+                        className={`px-3 py-1 rounded-full border ${notifFilterType===t ? 'border-[#f5c16c] bg-[#f5c16c]/15 text-[#f5c16c]' : 'border-[#f5c16c]/20 text-[#f5c16c]/70 hover:border-[#f5c16c]/40'}`}
+                      >
+                        {t === 'all' ? 'All' : t}
+                      </button>
+                    ))}
+                    <div className="ml-auto flex items-center gap-2">
+                      <label className="flex items-center gap-2 text-xs text-[#f5c16c]/70">
+                        <input type="checkbox" checked={showUnreadOnly} onChange={e => setShowUnreadOnly(e.target.checked)} />
+                        Unread only
+                      </label>
+                      <button
+                        onClick={markAllRead}
+                        disabled={bulkWorking || unreadCountLocal === 0}
+                        className={`text-xs px-3 py-1 rounded-lg ${unreadCountLocal===0 || bulkWorking ? 'border-[#f5c16c]/30 text-[#f5c16c]/50 cursor-not-allowed border' : 'bg-[#f5c16c] text-[#1a0b08] font-bold hover:opacity-90'}`}
+                      >
+                        Mark all read
+                      </button>
+                      <button
+                        onClick={deleteAllRead}
+                        disabled={bulkWorking || readCountLocal === 0}
+                        className={`text-xs px-3 py-1 rounded-lg ${readCountLocal===0 || bulkWorking ? 'border-[#f5c16c]/30 text-[#f5c16c]/50 cursor-not-allowed border' : 'border border-red-400 text-red-300 hover:bg-red-500/10'}`}
+                      >
+                        Delete all read
+                      </button>
+                    </div>
+                  </div>
+
+                  {notificationsError && (
+                    <div className="mb-3 text-red-400 text-sm">{notificationsError}</div>
+                  )}
+                  {loadingNotifications ? (
+                    <div className="flex items-center justify-center py-10 text-[#f5c16c]"><Loader2 className="size-4 animate-spin mr-2" /> Loading notifications...</div>
+                  ) : (
+                    <div className="space-y-6">
+                      {(['Achievement','QuestComplete','Party','Guild','FriendRequest','System','Reminder'] as NotificationType[]).map(t => {
+                        const items = groupedNotifications[t];
+                        if (!items || items.length === 0) return null;
+                        return (
+                          <div key={t}>
+                            <div className="flex items-center gap-2 mb-2">
+                              <Bell className="size-4 text-[#f5c16c]" />
+                              <h3 className="text-sm font-semibold text-white">{t} <span className="text-[#f5c16c]/50">({items.length})</span></h3>
+                            </div>
+                            <div className="space-y-2">
+                              {items.map(n => (
+                                <div key={n.id} className={`flex items-start justify-between gap-3 rounded-xl border ${n.isRead ? 'border-[#f5c16c]/10 bg-[#0b0504]/40' : 'border-[#f061a6]/30 bg-[#f061a6]/10'} p-3` }>
+                                  <div className="flex-1">
+                                    <div className="flex items-center gap-2">
+                                      {!n.isRead && <span className="inline-flex px-2 py-0.5 text-[10px] rounded-full bg-[#f061a6] text-[#1a0b08] font-bold">NEW</span>}
+                                      <p className="text-white font-medium">{n.title}</p>
+                                    </div>
+                                    <p className="text-sm text-white/80 mt-1">{n.message}</p>
+                                    <p className="text-[11px] text-[#f5c16c]/60 mt-1">{new Date(n.createdAt).toLocaleString()}</p>
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    {!n.isRead && (
+                                      <button onClick={() => markOneRead(n.id)} className="text-xs px-3 py-1 rounded-lg bg-[#f5c16c] text-[#1a0b08] font-bold hover:opacity-90">Mark Read</button>
+                                    )}
+                                    <button onClick={() => deleteOne(n.id)} className="text-xs px-3 py-1 rounded-lg border border-red-400 text-red-300 hover:bg-red-500/10">Delete</button>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        );
+                      })}
+                      {(['Achievement','QuestComplete','Party','Guild','FriendRequest','System','Reminder'] as NotificationType[]).every(t => (groupedNotifications[t]?.length || 0) === 0) && (
+                        <div className="text-center text-sm text-[#f5c16c]/70 py-10">No notifications</div>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
             )}
@@ -427,6 +608,8 @@ export default function UserProfileModal({ open, onOpenChange, defaultTab = "pro
                                   const res = await guildsApi.getMyPendingInvitations();
                                   setGuildInvites(res.data || []);
                                 } catch {}
+                                await reloadJoinRequests();
+                                await reloadJoinRequestsHistory();
                               }}
                               className="bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/30 text-emerald-400 px-4 py-2 text-xs rounded-lg font-semibold transition"
                             >
@@ -441,6 +624,8 @@ export default function UserProfileModal({ open, onOpenChange, defaultTab = "pro
                                   const res = await guildsApi.getMyPendingInvitations();
                                   setGuildInvites(res.data || []);
                                 } catch {}
+                                await reloadJoinRequests();
+                                await reloadJoinRequestsHistory();
                               }}
                               className="bg-rose-500/20 hover:bg-rose-500/30 border border-rose-500/30 text-rose-400 px-4 py-2 text-xs rounded-lg font-semibold transition"
                             >

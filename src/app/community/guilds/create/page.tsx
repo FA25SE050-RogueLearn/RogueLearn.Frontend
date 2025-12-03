@@ -72,7 +72,7 @@ export default function CreateGuildPage() {
       router.push(`/community/guilds/${data.guildId}`);
     } catch (err) {
       console.error(err);
-      toast.error("Failed to create guild.");
+      // toast.error("Failed to create guild.");
     } finally {
       setSubmitting(false);
     }

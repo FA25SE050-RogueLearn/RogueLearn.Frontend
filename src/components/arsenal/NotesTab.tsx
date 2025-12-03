@@ -713,6 +713,15 @@ export default function NotesTab() {
                             <DropdownMenuItem onClick={(e) => { e.stopPropagation(); deleteNote(note.id); }}>Delete</DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="h-8 w-8"
+                          onClick={(e) => { e.stopPropagation(); deleteNote(note.id); }}
+                          aria-label="Delete note"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
                         </div>
                     </CardHeader>
                     <CardContent className="relative z-10 flex min-h-0 flex-1 flex-col gap-3 p-4">
@@ -743,17 +752,19 @@ export default function NotesTab() {
               </div>
             ) : (
               <div className="rounded-xl border border-white/10 bg-black/20">
-                <div className="grid grid-cols-[minmax(200px,1fr)_240px_140px_140px] items-center border-b border-white/10 px-4 py-2 text-xs text-white/70">
+                <div className="grid grid-cols-[minmax(200px,1fr)_240px_100px_140px_140px_120px] items-center border-b border-white/10 px-4 py-2 text-xs text-white/70">
                   <div>Name</div>
                   <div>Tags</div>
+                  <div>Public</div>
                   <div className="text-right">Created</div>
                   <div className="text-right">Last Edited</div>
+                  <div className="text-right">Actions</div>
                 </div>
                 <div>
                   {pagedNotes.map((note) => (
                     <div
                       key={note.id}
-                      className="group grid grid-cols-[minmax(200px,1fr)_240px_140px_140px] items-center border-b border-white/5 px-4 text-sm hover:bg-white/5"
+                      className="group grid grid-cols-[minmax(200px,1fr)_240px_100px_140px_140px_120px] items-center border-b border-white/5 px-4 text-sm hover:bg-white/5"
                       draggable
                       onDragStart={(e) => onDragStartNote(e, note.id)}
                       onContextMenu={(e) => { e.preventDefault(); setMenuOpenId(note.id); }}
@@ -791,20 +802,34 @@ export default function NotesTab() {
                           <span className="text-xs text-foreground/50">No tags</span>
                         )}
                       </div>
+                      <div className="py-2">
+                        {note.isPublic ? (
+                          <span className="rounded-full border border-green-500/40 bg-green-500/15 px-2 py-0.5 text-xs text-green-300">Public</span>
+                        ) : (
+                          <span className="rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-xs text-white/70">Private</span>
+                        )}
+                      </div>
                       <div className="py-2 text-right text-foreground/60">{new Date(note.createdAt).toLocaleDateString()}</div>
-                      <div className="relative py-2 text-right text-foreground/60">
-                        {new Date(note.updatedAt).toLocaleDateString()}
-                        <div className="absolute inset-y-0 right-2 flex items-center">
-                          <DropdownMenu open={menuOpenId === note.id} onOpenChange={(v) => setMenuOpenId(v ? note.id : null)}>
-                            <DropdownMenuTrigger asChild>
-                              <span className="sr-only" />
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); startRenameNote(note); }}>Rename</DropdownMenuItem>
-                              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); deleteNote(note.id); }}>Delete</DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </div>
+                      <div className="py-2 text-right text-foreground/60">{new Date(note.updatedAt).toLocaleDateString()}</div>
+                      <div className="py-2 flex items-center justify-end gap-2">
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="h-8 w-8"
+                          onClick={(e) => { e.stopPropagation(); deleteNote(note.id); }}
+                          aria-label="Delete note"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                        <DropdownMenu open={menuOpenId === note.id} onOpenChange={(v) => setMenuOpenId(v ? note.id : null)}>
+                          <DropdownMenuTrigger asChild>
+                            <span className="sr-only" />
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); startRenameNote(note); }}>Rename</DropdownMenuItem>
+                            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); deleteNote(note.id); }}>Delete</DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </div>
                     </div>
                   ))}

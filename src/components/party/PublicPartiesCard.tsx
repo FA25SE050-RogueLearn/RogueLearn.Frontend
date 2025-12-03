@@ -112,7 +112,7 @@ export default function PublicPartiesCard({ onJoinedNavigate = true }: PublicPar
         window.location.href = `/parties/${partyIdToJoin}`;
       }
     } catch (e: any) {
-      toast.error(e?.message ?? "Failed to join party");
+      // toast.error(e?.message ?? "Failed to join party");
     } finally {
       setJoinBusyId(null);
     }
