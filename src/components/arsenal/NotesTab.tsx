@@ -109,6 +109,9 @@ export default function NotesTab() {
   const [noteEditTitle, setNoteEditTitle] = useState("");
   const [updatingNoteId, setUpdatingNoteId] = useState<string | null>(null);
   const [menuOpenId, setMenuOpenId] = useState<string | null>(null);
+  const [createOpen, setCreateOpen] = useState(false);
+  const [createName, setCreateName] = useState("");
+  const [creating, setCreating] = useState(false);
 
   useEffect(() => {
     const supabase = createClient();
@@ -407,9 +410,15 @@ export default function NotesTab() {
       e.target.value = "";
       return;
     }
+    const maxSize = 5 * 1024 * 1024;
+    if (file.size > maxSize) {
+      toast.error("File exceeds 5 MB");
+      e.target.value = "";
+      return;
+    }
     setUploading(true);
     try {
-      const res = await notesApi.createWithAiTagsFromUpload({ authUserId, fileContent: file, fileName: file.name, contentType: file.type, applySuggestions: true, maxTags: 8 });
+      const res = await notesApi.createWithAiTagsFromUpload({ authUserId, fileContent: file, fileName: file.name, contentType: file.type, applySuggestions: true, maxTags: 3 });
       if (res.isSuccess) {
         toast.success("Created note from upload");
         await fetchNotes();
@@ -421,18 +430,24 @@ export default function NotesTab() {
     }
   };
 
-  const createTagInline = async () => {
+  const submitCreateTag = async () => {
     if (!authUserId) return;
-    const name = typeof window !== "undefined" ? window.prompt("New tag name") : "";
-    const trimmed = (name ?? "").trim();
-    if (!trimmed) return;
+    const trimmed = createName.trim();
+    if (!trimmed) { toast.error("Tag name cannot be empty"); return; }
+    const exists = myTags.some((t) => t.name.toLowerCase() === trimmed.toLowerCase());
+    if (exists) { toast.error("Tag with this name already exists"); return; }
     try {
+      setCreating(true);
       const res = await tagsApi.create({ authUserId, name: trimmed });
       if (res.isSuccess) {
-        await fetchTags();
         toast.success("Tag created");
+        setCreateName("");
+        setCreateOpen(false);
+        await fetchTags();
       }
-    } catch {}
+    } finally {
+      setCreating(false);
+    }
   };
 
   const openNewNote = async () => {
@@ -551,6 +566,11 @@ export default function NotesTab() {
           toast.error(`Unsupported file type: ${file.name}`);
           continue;
         }
+        const maxSize = 5 * 1024 * 1024;
+        if (file.size > maxSize) {
+          toast.error(`File exceeds 5 MB: ${file.name}`);
+          continue;
+        }
         const res = await notesApi.createWithAiTagsFromUpload({ authUserId, fileContent: file, fileName: file.name, contentType: file.type, applySuggestions: true, maxTags: 8 });
         if (res.isSuccess) {
           toast.success(`Created note from ${file.name}`);
@@ -594,7 +614,7 @@ export default function NotesTab() {
               <span>Tags</span>
             </div>
             <div className="flex items-center gap-1">
-              <Button size="sm" variant="secondary" className="h-7 px-2" onClick={createTagInline}>
+              <Button size="sm" variant="secondary" className="h-7 px-2" onClick={() => setCreateOpen(true)}>
                 <Plus className="mr-1 h-3 w-3" />
                 Tag
               </Button>
@@ -662,6 +682,7 @@ export default function NotesTab() {
                     <div className="text-sm font-medium text-white">Create notes from files</div>
                     <div className="mt-1 text-xs text-foreground/70">Drag and drop documents to automatically create notes and apply AI-suggested tags.</div>
                     <div className="mt-1 text-xs text-foreground/60">Supported formats: .pdf, .doc, .docx, .ppt, .pptx</div>
+                    <div className="mt-1 text-xs text-foreground/60">Max size: 5 MB per file</div>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
@@ -857,6 +878,21 @@ export default function NotesTab() {
             <Button variant="destructive" onClick={() => confirmTagId && deleteTag(confirmTagId!)} disabled={deletingId === confirmTagId}>
               {deletingId === confirmTagId ? "Deleting..." : "Delete"}
             </Button>
+          </UIDialogFooter>
+        </DialogContent>
+      </Dialog>
+      <Dialog open={createOpen} onOpenChange={setCreateOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>New tag</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-2">
+            <Label className="text-xs">Name</Label>
+            <Input value={createName} onChange={(e) => setCreateName(e.target.value)} placeholder="Tag name" />
+          </div>
+          <UIDialogFooter>
+            <Button variant="secondary" onClick={() => { setCreateOpen(false); setCreateName(""); }}>Cancel</Button>
+            <Button onClick={submitCreateTag} disabled={creating}>{creating ? "Creating..." : "Create"}</Button>
           </UIDialogFooter>
         </DialogContent>
       </Dialog>
