@@ -145,7 +145,6 @@ export function MembersManagementCard({
                       </div>
                       <div className="text-xs text-white/50">
                         {m.email ? m.email + " • " : ""}Joined {joined}
-                        {typeof m.level === "number" ? ` • Lv ${m.level}` : ""}
                       </div>
                     </div>
                   </div>
@@ -176,7 +175,7 @@ export function MembersManagementCard({
                       <Button 
                         size="sm" 
                         variant="outline" 
-                        onClick={() => onRevokeRole(m.authUserId, m.role)}
+                        onClick={() => { onRevokeRole(m.authUserId, m.role); setRoleToAssignByMemberId((prev) => { const { [m.memberId]: _, ...rest } = prev; return rest; }); }}
                         className="border-[#f5c16c]/30 bg-transparent text-[#f5c16c] hover:bg-[#f5c16c]/10"
                       >
                         Revoke

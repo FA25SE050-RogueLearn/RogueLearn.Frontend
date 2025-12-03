@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import {
   LayoutGrid,
@@ -33,6 +33,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { createClient } from "@/utils/supabase/client";
+import notificationsApi from "@/api/notificationsApi";
 import UserProfileModal from "@/components/profile/UserProfileModal";
 import { usePageTransition } from "@/components/layout/PageTransition";
 
@@ -66,6 +67,27 @@ export function SidebarNav({ userProfile }: SidebarNavProps) {
   const { navigateTo } = usePageTransition();
   const [profileModalOpen, setProfileModalOpen] = useState(false);
   const [profileModalTab, setProfileModalTab] = useState<"profile" | "settings" | "verification">("profile");
+  const [unreadCount, setUnreadCount] = useState<number>(0);
+
+  const refreshUnreadCount = async () => {
+    try {
+      const res = await notificationsApi.getUnreadCount();
+      if (res.isSuccess && typeof res.data === "number") {
+        setUnreadCount(res.data);
+      }
+    } catch {}
+  };
+
+  // Initial fetch and respond to notification updates
+  // Refresh when modal opens/closes and on custom event from modal actions
+  useEffect(() => {
+    let mounted = true;
+    const load = async () => { await refreshUnreadCount(); };
+    load();
+    const handler = () => { if (mounted) refreshUnreadCount(); };
+    try { window.addEventListener("notifications:updated", handler as any); } catch {}
+    return () => { mounted = false; try { window.removeEventListener("notifications:updated", handler as any); } catch {} };
+  }, [profileModalOpen]);
 
   const handleSignOut = async () => {
     const supabase = createClient();
@@ -179,13 +201,23 @@ export function SidebarNav({ userProfile }: SidebarNavProps) {
       {/* Profile Section at Bottom */}
       <DropdownMenu>
         <DropdownMenuTrigger className="mb-4 flex flex-col items-center gap-1 p-3 hover:bg-[#f5c16c]/10 rounded-lg transition-colors">
-          <Avatar className="h-10 w-10 border border-[#f5c16c]/30">
-            <AvatarImage src={userProfile.profileImageUrl || undefined} />
-            <AvatarFallback className="bg-gradient-to-br from-[#f5c16c] to-[#d23187] text-white text-xs font-bold">
-              {userProfile.firstName?.[0]}
-              {userProfile.lastName?.[0]}
-            </AvatarFallback>
-          </Avatar>
+          <div className="relative">
+            <Avatar className="h-10 w-10 border border-[#f5c16c]/30">
+              <AvatarImage src={userProfile.profileImageUrl || undefined} />
+              <AvatarFallback className="bg-gradient-to-br from-[#f5c16c] to-[#d23187] text-white text-xs font-bold">
+                {userProfile.firstName?.[0]}
+                {userProfile.lastName?.[0]}
+              </AvatarFallback>
+            </Avatar>
+            {unreadCount > 0 && (
+              <span
+                aria-label={`You have ${unreadCount} unread notifications`}
+                className="absolute -top-2 left-1/2 translate-x-1/2 min-w-[18px] h-[18px] px-1 rounded-full bg-[#d23187] text-white text-[10px] leading-none font-bold flex items-center justify-center ring-2 ring-[#0c0308] shadow-[0_0_12px_rgba(210,49,135,0.5)]"
+              >
+                {unreadCount > 99 ? '99+' : unreadCount}
+              </span>
+            )}
+          </div>
           <span className="w-[60px] truncate text-center text-[10px] text-[#f5c16c]">
             {userProfile.username}
           </span>

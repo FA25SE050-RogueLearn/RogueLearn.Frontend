@@ -107,7 +107,7 @@ export default function PartyManagementClient() {
       setMyInvites(resInv.data ?? []);
       setParties(resMine.data ?? []);
     } catch (e: any) {
-      toast.error(e?.message ?? "Failed to accept invitation");
+      // toast.error(e?.message ?? "Failed to accept invitation");
     }
   };
 
@@ -119,7 +119,7 @@ export default function PartyManagementClient() {
       const resInv = await partiesApi.getMyPendingInvitations();
       setMyInvites(resInv.data ?? []);
     } catch (e: any) {
-      toast.error(e?.message ?? "Failed to decline invitation");
+      // toast.error(e?.message ?? "Failed to decline invitation");
     }
   };
 

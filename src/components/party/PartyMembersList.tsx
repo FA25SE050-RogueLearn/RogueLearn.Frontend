@@ -208,7 +208,9 @@ export default function PartyMembersList({ partyId, members, maxMembers, onRefre
           <Button onClick={async () => {
             const m = selectedMember; setRemoveOpen(false); if (!m) return; setBusyMemberId(m.id);
             try { await partiesApi.removeMember(partyId, m.id, {}); toast.success("Member removed"); await onRefresh?.(); } 
-            catch (e: any) { toast.error(e?.message ?? "Failed to remove member"); } 
+            catch (e: any) { 
+              // toast.error(e?.message ?? "Failed to remove member"); 
+            } 
             finally { setBusyMemberId(null); }
           }} className="bg-red-600 hover:bg-red-700">Remove</Button>
         </div>
@@ -227,7 +229,9 @@ export default function PartyMembersList({ partyId, members, maxMembers, onRefre
           <Button onClick={async () => {
             const m = selectedMember; setTransferOpen(false); if (!m) return; setBusyMemberId(m.id);
             try { await partiesApi.transferLeadership(partyId, { partyId, toUserId: m.authUserId }); toast.success("Leadership transferred"); await onRefresh?.(); } 
-            catch (e: any) { toast.error(e?.message ?? "Failed to transfer leadership"); } 
+            catch (e: any) { 
+              // toast.error(e?.message ?? "Failed to transfer leadership"); 
+            } 
             finally { setBusyMemberId(null); }
           }} className="bg-amber-500 hover:bg-amber-600 text-black">Transfer</Button>
         </div>
