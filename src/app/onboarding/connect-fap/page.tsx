@@ -212,6 +212,25 @@ export default function ConnectFapPage() {
             </div>
           </div>
 
+          {/* Warning: Onboarding not completed */}
+          {!userProfile?.routeId && (
+            <div className="flex items-center justify-between gap-3 rounded-xl border border-amber-500/30 bg-amber-500/10 p-4">
+              <div className="flex items-center gap-3">
+                <AlertCircle className="h-5 w-5 shrink-0 text-amber-400" />
+                <p className="text-amber-300 text-sm">
+                  Complete your character setup first to sync your transcript.
+                </p>
+              </div>
+              <Button
+                onClick={() => setShowCharacterWizard(true)}
+                size="sm"
+                className="shrink-0 bg-amber-500/20 text-amber-300 border border-amber-500/30 hover:bg-amber-500/30"
+              >
+                Setup Now
+              </Button>
+            </div>
+          )}
+
           {error && (
             <div className="flex items-center gap-3 rounded-xl border border-red-500/30 bg-red-500/10 p-4 text-red-300 text-sm">
               <AlertCircle className="h-5 w-5 shrink-0" />

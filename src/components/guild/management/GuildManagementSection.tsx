@@ -90,7 +90,7 @@ export function GuildManagementSection({ guildId, onLeftGuild }: GuildManagement
       reload();
     } catch (err: any) {
       console.error(err);
-      toast.error(err?.normalized?.message || err?.message || "Failed to approve.");
+      // toast.error("Failed to approve.");
     }
   };
 
@@ -101,7 +101,7 @@ export function GuildManagementSection({ guildId, onLeftGuild }: GuildManagement
       reload();
     } catch (err: any) {
       console.error(err);
-      toast.error(err?.normalized?.message || err?.message || "Failed to decline.");
+      // toast.error("Failed to decline.");
     }
   };
 
@@ -109,10 +109,11 @@ export function GuildManagementSection({ guildId, onLeftGuild }: GuildManagement
     if (!guildId) return;
     try {
       await guildsApi.removeMember(guildId, memberId, { reason: null });
-      reload();
-    } catch (err: any) {
+      setMembers((prev) => prev.filter((m) => m.memberId !== memberId));
+      toast.success("Member removed");
+    } catch (err) {
       console.error(err);
-      toast.error(err?.normalized?.message || err?.message || "Failed to remove member.");
+      // toast.error("Failed to remove member.");
     }
   };
 
@@ -120,10 +121,11 @@ export function GuildManagementSection({ guildId, onLeftGuild }: GuildManagement
     if (!guildId) return;
     try {
       await guildsApi.assignRole(guildId, authUserId, role);
-      reload();
-    } catch (err: any) {
+      setMembers((prev) => prev.map((m) => m.authUserId === authUserId ? { ...m, role } : m));
+      toast.success("Role assigned");
+    } catch (err) {
       console.error(err);
-      toast.error(err?.normalized?.message || err?.message || "Failed to assign role.");
+      // toast.error("Failed to assign role.");
     }
   };
 
@@ -131,10 +133,15 @@ export function GuildManagementSection({ guildId, onLeftGuild }: GuildManagement
     if (!guildId) return;
     try {
       await guildsApi.revokeRole(guildId, authUserId, role);
-      reload();
-    } catch (err: any) {
+      setMembers((prev) => prev.map((m) => {
+        if (m.authUserId !== authUserId) return m;
+        const nextRole: GuildRole = m.role === 'GuildMaster' ? 'Officer' : m.role === 'Officer' ? 'Veteran' : m.role === 'Veteran' ? 'Member' : 'Recruit';
+        return { ...m, role: nextRole };
+      }));
+      toast.success("Role revoked");
+    } catch (err) {
       console.error(err);
-      toast.error(err?.normalized?.message || err?.message || "Failed to revoke role.");
+      // toast.error("Failed to revoke role.");
     }
   };
 
@@ -146,7 +153,7 @@ export function GuildManagementSection({ guildId, onLeftGuild }: GuildManagement
       toast.success("Leadership transferred.");
     } catch (err: any) {
       console.error(err);
-      toast.error(err?.normalized?.message || err?.message || "Failed to transfer leadership.");
+      // toast.error("Failed to transfer leadership.");
     }
   };
 
@@ -157,7 +164,7 @@ export function GuildManagementSection({ guildId, onLeftGuild }: GuildManagement
       reload();
     } catch (err: any) {
       console.error(err);
-      toast.error(err?.normalized?.message || err?.message || "Failed to send invite.");
+      // toast.error("Failed to send invite.");
     }
   };
 
@@ -170,7 +177,7 @@ export function GuildManagementSection({ guildId, onLeftGuild }: GuildManagement
       toast.success("You have left the guild.");
     } catch (err: any) {
       console.error(err);
-      toast.error(err?.normalized?.message || err?.message || "Failed to leave guild.");
+      // toast.error("Failed to leave guild. You may need to transfer leadership first if you are the Guild Master.");
     }
   };
 
@@ -219,7 +226,7 @@ export function GuildManagementSection({ guildId, onLeftGuild }: GuildManagement
         onTransferLeadership={(toAuthUserId) => { setTransferTargetAuthId(toAuthUserId); setTransferOpen(true); }}
       />
 
-      <MembershipCard myRole={myRole} onLeave={() => setConfirmLeaveOpen(true)} showActions={myRole !== "GuildMaster"} />
+      <MembershipCard myRole={myRole} onLeave={() => setConfirmLeaveOpen(true)} />
 
       {/* Confirm Leave Guild */}
       <Dialog open={confirmLeaveOpen} onOpenChange={setConfirmLeaveOpen}>

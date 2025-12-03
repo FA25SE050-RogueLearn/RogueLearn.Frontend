@@ -55,6 +55,7 @@ const getStatusMessage = (status: number | undefined): string => {
     case 404: return 'Not Found';
     case 409: return 'Conflict - Resource already exists';
     case 422: return 'Validation Error';
+    case 415: return 'Unsupported Media Type';
     case 429: return 'Too Many Requests - Please try again later';
     case 500: return 'Server Error - Please try again later';
     case 502: return 'Bad Gateway';
@@ -95,6 +96,9 @@ axiosClient.interceptors.response.use(
       
       const is404 = status === 404;
       const is403 = status === 403;
+      const is422 = status === 422;
+      const is415 = status === 415;
+      const is429 = status === 429;
 
       // ⭐ Don't show toast for polling 404s - let caller decide
       if (!(isPollingEndpoint && is404)) {
@@ -114,6 +118,9 @@ axiosClient.interceptors.response.use(
       (error as any).isPollingEndpoint = isPollingEndpoint;
       (error as any).is404 = is404;
       (error as any).is403 = is403;
+      (error as any).is422 = is422;
+      (error as any).is415 = is415;
+      (error as any).is429 = is429;
     } else {
       // Network or unexpected error - only show if not a polling endpoint
       toast.error('Unexpected error', {

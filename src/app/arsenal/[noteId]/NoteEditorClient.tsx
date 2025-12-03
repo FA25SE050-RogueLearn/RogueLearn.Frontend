@@ -13,7 +13,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { createClient } from "@/utils/supabase/client";
-import { Loader2, BookOpen, ScrollText, Tag as TagIcon, Sparkles, Share2, Info, ArrowLeft } from "lucide-react";
+import { Loader2, BookOpen, ScrollText, Tag as TagIcon, Sparkles, Share2, Info, ArrowLeft, Trash2 } from "lucide-react";
 
 // BlockNote imports
 import { PartialBlock, insertOrUpdateBlock } from "@blocknote/core";
@@ -489,6 +489,25 @@ export default function NoteEditorClient({ noteId }: NoteEditorClientProps) {
                 </div>
               </DialogContent>
             </Dialog>
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={async () => {
+                if (!authUserId || !noteId) { toast.error("Not authenticated"); return; }
+                const ok = typeof window !== "undefined" ? window.confirm("Delete this note? This cannot be undone.") : true;
+                if (!ok) return;
+                try {
+                  await notesApi.remove({ id: noteId, authUserId });
+                  try { localStorage.removeItem(`noteDraft:${noteId}`); localStorage.removeItem(`notesQueue:${noteId}`); localStorage.removeItem(`noteMedia:${noteId}`); } catch {}
+                  toast.success("Note deleted");
+                  router.push("/arsenal");
+                } catch {
+                  toast.error("Failed to delete note");
+                }
+              }}
+            >
+              <Trash2 className="mr-1.5 h-4 w-4" />Delete
+            </Button>
             <button onClick={() => router.back()} className="rounded-lg border border-[#f5c16c]/30 bg-transparent px-4 py-2 text-sm text-[#f5c16c] transition-all hover:bg-[#f5c16c]/10">
               <ArrowLeft className="mr-1.5 inline h-4 w-4" />Back
             </button>

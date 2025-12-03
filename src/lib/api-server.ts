@@ -79,12 +79,42 @@ export async function createServerApiClients() {
 }
 
 /**
+ * Fetches user full info with retry logic for serverless environments
+ */
+async function fetchUserFullInfoWithRetry(maxRetries = 2): Promise<any> {
+    const { coreApiClient } = await createServerApiClients();
+    let lastError: Error | null = null;
+    
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+        try {
+            const res = await coreApiClient.get('/api/users/me/full', {
+                params: { 'page[size]': 20, 'page[number]': 1 }
+            });
+            return res.data;
+        } catch (error) {
+            lastError = error as Error;
+            console.warn(`API call attempt ${attempt}/${maxRetries} failed:`, 
+                error instanceof Error ? error.message : 'Unknown error');
+            
+            // Don't retry on auth errors (401, 403)
+            if (axios.isAxiosError(error) && error.response?.status && 
+                [401, 403].includes(error.response.status)) {
+                throw error;
+            }
+            
+            // Small delay before retry
+            if (attempt < maxRetries) {
+                await new Promise(resolve => setTimeout(resolve, 500));
+            }
+        }
+    }
+    
+    throw lastError || new Error('Failed to fetch user info after retries');
+}
+
+/**
  * Cached fetch for user full info - dedupes requests within same render
  */
 export const getCachedUserFullInfo = cache(async () => {
-    const { coreApiClient } = await createServerApiClients();
-    const res = await coreApiClient.get('/api/users/me/full', {
-        params: { 'page[size]': 20, 'page[number]': 1 }
-    });
-    return res.data;
+    return await fetchUserFullInfoWithRetry(2);
 });
