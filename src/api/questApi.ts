@@ -24,6 +24,35 @@ interface GenerateQuestStepsResponse {
 }
 
 /**
+ * Skill prerequisite info
+ */
+interface SkillPrerequisite {
+  skillId: string;
+  skillName: string;
+}
+
+/**
+ * Skill info returned from quest skills endpoint
+ */
+interface QuestSkillInfo {
+  skillId: string;
+  skillName: string;
+  domain: string;
+  relevanceWeight: number;
+  prerequisites: SkillPrerequisite[];
+}
+
+/**
+ * Response from GET /api/quests/{questId}/skills
+ */
+export interface GetQuestSkillsResponse {
+  questId: string;
+  subjectId: string;
+  subjectName: string;
+  skills: QuestSkillInfo[];
+}
+
+/**
  * Response from checking job status
  * Check this periodically to see if generation is complete
  */
@@ -370,6 +399,29 @@ const questApi = {
     };
   }
 },
+
+  // ========== QUEST SKILLS ==========
+
+  /**
+   * Gets the skills that will be developed by completing this quest.
+   * Corresponds to GET /api/quests/{questId}/skills
+   */
+  getQuestSkills: async (questId: string): Promise<ApiResponse<GetQuestSkillsResponse>> => {
+    try {
+      const res = await axiosClient.get<GetQuestSkillsResponse>(`/api/quests/${questId}/skills`);
+      return {
+        isSuccess: true as const,
+        data: res.data,
+      };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to fetch quest skills';
+      return {
+        isSuccess: false as const,
+        data: null,
+        message,
+      };
+    }
+  },
 };
 
 export default questApi;

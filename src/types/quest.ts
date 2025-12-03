@@ -32,6 +32,7 @@ export interface QuestSummary {
   sequenceOrder: number;
   learningPathId: string;
   chapterId: string;
+  subjectId?: string;              // Subject ID for fetching related skills
   isRecommended: boolean;
   recommendationReason?: string;  // "Passed", "Studying", "Failed", etc.
   // Difficulty indicator based on academic performance

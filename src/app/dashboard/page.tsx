@@ -19,7 +19,6 @@ export default async function DashboardPage({ searchParams }: { searchParams?: {
   try {
     const { data: userData, error: userError } = await supabase.auth.getUser();
     if (userError) {
-      console.error('Auth getUser error:', userError.message);
       redirect('/login');
     }
     user = userData?.user;
