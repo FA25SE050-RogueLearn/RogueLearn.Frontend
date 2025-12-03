@@ -17,12 +17,8 @@ export default async function DashboardPage({ searchParams }: { searchParams?: {
   let session = null;
 
   try {
-    const { data: userData, error: userError } = await supabase.auth.getUser();
-    if (userError) {
-      redirect('/login');
-    }
+    const { data: userData } = await supabase.auth.getUser();
     user = userData?.user;
-
     if (!user) {
       redirect('/login');
     }
@@ -30,7 +26,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: {
     const { data: sessionData } = await supabase.auth.getSession();
     session = sessionData?.session;
   } catch (authError) {
-    console.error('Auth error in dashboard:', authError);
+    console.warn('Auth check failed in dashboard:', authError);
     redirect('/login');
   }
 
