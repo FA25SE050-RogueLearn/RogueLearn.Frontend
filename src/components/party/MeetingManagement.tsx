@@ -340,30 +340,14 @@ export default function MeetingManagement({ partyId, variant = "full", showList 
           setPartyMembers(memRes.data ?? []);
         } catch (_) { }
       }
-      let recordResp: any = null;
-      try {
-        if (meeting?.meetingId) {
-          recordResp = await googleMeetApi.getConferenceRecord(token, meeting.meetingId as string);
-        }
-      } catch {
-        recordResp = null;
-      }
-      if (!recordResp) {
-        const updated: MeetingDto = { ...meeting, actualEndTime: new Date().toISOString(), status: MeetingStatus.EndedProcessing } as MeetingDto;
-        try { await meetingsApi.upsertMeeting(updated); } catch {}
-        const listRes = await meetingsApi.getPartyMeetings(partyId);
-        setPartyMeetings(listRes.data ?? []);
-        return;
-      }
-      const conferenceId: string = recordResp?.name?.split("/")?.pop?.() ?? recordResp?.conferenceId ?? recordResp?.id;
-      if (!conferenceId) {
-        const updated: MeetingDto = { ...meeting, actualEndTime: new Date().toISOString(), status: MeetingStatus.EndedProcessing } as MeetingDto;
-        try { await meetingsApi.upsertMeeting(updated); } catch {}
-        const listRes = await meetingsApi.getPartyMeetings(partyId);
-        setPartyMeetings(listRes.data ?? []);
-        return;
-      }
+      const confList = await googleMeetApi.listConferenceRecords(token, { pageSize: 10 });
+      const records: any[] = confList?.conferenceRecords ?? confList?.records ?? [];
+      if (!records || records.length === 0) throw new Error("No conference records found");
+      const latest = records[0];
+      const conferenceId: string = latest?.name?.split("/")?.pop?.() ?? latest?.conferenceId ?? latest?.id;
+      if (!conferenceId) throw new Error("Unable to determine conferenceId");
       const participantsRes = await googleMeetApi.listParticipants(token, conferenceId);
+      console.log("participantsRes", participantsRes);
       const participantsRaw: any[] = participantsRes?.participants ?? participantsRes?.items ?? [];
       const mapped: MeetingParticipantDto[] = [];
       for (const p of participantsRaw) {
@@ -378,17 +362,12 @@ export default function MeetingManagement({ partyId, variant = "full", showList 
         });
       }
       if (authUserId) {
-        const already = mapped.some((mp) => mp.roleInMeeting === "organizer");
-        let organizerUserId2: string | undefined = undefined;
-        try {
-          const prof = await usersApi.getUserProfileByAuthId(authUserId);
-          organizerUserId2 = (prof.data as any)?.id ?? undefined;
-        } catch {}
-        if (!already && organizerUserId2) {
+        const already = mapped.some((mp) => (mp.roleInMeeting ?? "").toLowerCase() === "organizer");
+        if (!already) {
           const organizerMember = partyMembers.find((m) => m.authUserId === authUserId);
           const organizerDisplayName = getMemberDisplayName(organizerMember);
           mapped.push({
-            userId: organizerUserId2,
+            userId: authUserId,
             roleInMeeting: "organizer",
             joinTime: meeting?.actualStartTime ?? null,
             leaveTime: new Date().toISOString(),
