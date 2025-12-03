@@ -88,9 +88,9 @@ export function GuildManagementSection({ guildId, onLeftGuild }: GuildManagement
     try {
       await guildsApi.approveJoinRequest(guildId, requestId);
       reload();
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      toast.error("Failed to approve.");
+      toast.error(err?.normalized?.message || err?.message || "Failed to approve.");
     }
   };
 
@@ -99,9 +99,9 @@ export function GuildManagementSection({ guildId, onLeftGuild }: GuildManagement
     try {
       await guildsApi.declineJoinRequest(guildId, requestId);
       reload();
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      toast.error("Failed to decline.");
+      toast.error(err?.normalized?.message || err?.message || "Failed to decline.");
     }
   };
 
@@ -110,9 +110,9 @@ export function GuildManagementSection({ guildId, onLeftGuild }: GuildManagement
     try {
       await guildsApi.removeMember(guildId, memberId, { reason: null });
       reload();
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      toast.error("Failed to remove member.");
+      toast.error(err?.normalized?.message || err?.message || "Failed to remove member.");
     }
   };
 
@@ -121,9 +121,9 @@ export function GuildManagementSection({ guildId, onLeftGuild }: GuildManagement
     try {
       await guildsApi.assignRole(guildId, authUserId, role);
       reload();
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      toast.error("Failed to assign role.");
+      toast.error(err?.normalized?.message || err?.message || "Failed to assign role.");
     }
   };
 
@@ -132,9 +132,9 @@ export function GuildManagementSection({ guildId, onLeftGuild }: GuildManagement
     try {
       await guildsApi.revokeRole(guildId, authUserId, role);
       reload();
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      toast.error("Failed to revoke role.");
+      toast.error(err?.normalized?.message || err?.message || "Failed to revoke role.");
     }
   };
 
@@ -144,9 +144,9 @@ export function GuildManagementSection({ guildId, onLeftGuild }: GuildManagement
       await guildsApi.transferLeadership(guildId, { toUserId: toAuthUserId });
       reload();
       toast.success("Leadership transferred.");
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      toast.error("Failed to transfer leadership.");
+      toast.error(err?.normalized?.message || err?.message || "Failed to transfer leadership.");
     }
   };
 
@@ -155,9 +155,9 @@ export function GuildManagementSection({ guildId, onLeftGuild }: GuildManagement
     try {
       await guildsApi.invite(guildId, { targets: [{ email }], message: null });
       reload();
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      toast.error("Failed to send invite.");
+      toast.error(err?.normalized?.message || err?.message || "Failed to send invite.");
     }
   };
 
@@ -168,9 +168,9 @@ export function GuildManagementSection({ guildId, onLeftGuild }: GuildManagement
       onLeftGuild?.();
       router.push("/community");
       toast.success("You have left the guild.");
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      toast.error("Failed to leave guild. You may need to transfer leadership first if you are the Guild Master.");
+      toast.error(err?.normalized?.message || err?.message || "Failed to leave guild.");
     }
   };
 

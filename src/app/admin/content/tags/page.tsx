@@ -33,10 +33,10 @@ export default function TagsPage() {
       if (response.success && response.data) {
         setTags(Array.isArray(response.data) ? response.data : []);
       } else {
-        toast.error("Failed to load tags");
+        toast.error(response.error?.message || "Failed to load tags");
       }
-    } catch {
-      toast.error("Error loading tags");
+    } catch (e: any) {
+      toast.error(e?.normalized?.message || e?.message || "Error loading tags");
     } finally {
       setLoading(false);
     }
@@ -59,8 +59,8 @@ export default function TagsPage() {
       } else {
         toast.error(response.error?.message || "Failed to create tag");
       }
-    } catch {
-      toast.error("Error creating tag");
+    } catch (e: any) {
+      toast.error(e?.normalized?.message || e?.message || "Error creating tag");
     } finally {
       setSubmitting(false);
     }
@@ -84,8 +84,8 @@ export default function TagsPage() {
       } else {
         toast.error(response.error?.message || "Failed to update tag");
       }
-    } catch {
-      toast.error("Error updating tag");
+    } catch (e: any) {
+      toast.error(e?.normalized?.message || e?.message || "Error updating tag");
     } finally {
       setSubmitting(false);
     }
@@ -105,8 +105,8 @@ export default function TagsPage() {
       } else {
         toast.error(response.error?.message || "Failed to delete tag");
       }
-    } catch {
-      toast.error("Error deleting tag");
+    } catch (e: any) {
+      toast.error(e?.normalized?.message || e?.message || "Error deleting tag");
     } finally {
       setSubmitting(false);
     }

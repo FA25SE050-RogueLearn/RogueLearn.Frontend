@@ -31,8 +31,8 @@ interface DisplayEvent {
 
 function EventCard({ event, type }: { event: DisplayEvent; type: string }) {
   const statusConfig = {
-    pending: { icon: AlertCircle, color: "text-amber-600", bg: "bg-amber-50" },
-    approved: { icon: CheckCircle, color: "text-emerald-600", bg: "bg-emerald-50" },
+    pending: { icon: AlertCircle, color: "text-amber-400", bg: "bg-amber-500/10" },
+    approved: { icon: CheckCircle, color: "text-emerald-400", bg: "bg-emerald-500/10" },
     rejected: { icon: XCircle, color: "text-[#e07a5f]", bg: "bg-[#e07a5f]/10" },
   };
 
@@ -173,14 +173,14 @@ export default function EventManagementPage() {
           </div>
         ) : (
           <Tabs defaultValue="pending" className="w-full">
-            <TabsList className="grid w-full max-w-md grid-cols-3 bg-[#beaca3]/20">
-              <TabsTrigger value="pending" className="data-[state=active]:bg-[#1a1410] data-[state=active]:text-white">
+            <TabsList className="grid w-full max-w-md grid-cols-3 bg-[#0a0506] border border-[#f5c16c]/20">
+              <TabsTrigger value="pending" className="text-white/60 data-[state=active]:bg-[#f5c16c]/20 data-[state=active]:text-[#f5c16c]">
                 Pending ({pendingEvents.length})
               </TabsTrigger>
-              <TabsTrigger value="approved" className="data-[state=active]:bg-[#1a1410] data-[state=active]:text-white">
+              <TabsTrigger value="approved" className="text-white/60 data-[state=active]:bg-[#f5c16c]/20 data-[state=active]:text-[#f5c16c]">
                 Approved ({approvedEvents.length})
               </TabsTrigger>
-              <TabsTrigger value="rejected" className="data-[state=active]:bg-[#1a1410] data-[state=active]:text-white">
+              <TabsTrigger value="rejected" className="text-white/60 data-[state=active]:bg-[#f5c16c]/20 data-[state=active]:text-[#f5c16c]">
                 Rejected ({rejectedEvents.length})
               </TabsTrigger>
             </TabsList>
@@ -189,7 +189,7 @@ export default function EventManagementPage() {
               {pendingEvents.length === 0 ? (
                 <Card className="bg-[#1a1410] border border-[#f5c16c]/30">
                   <CardContent className="py-12 text-center">
-                    <AlertCircle className="mx-auto h-12 w-12 text-[#beaca3]" />
+                    <AlertCircle className="mx-auto h-12 w-12 text-[#f5c16c]/40" />
                     <p className="mt-4 text-white/60">No pending event requests</p>
                   </CardContent>
                 </Card>
@@ -206,7 +206,7 @@ export default function EventManagementPage() {
               {approvedEvents.length === 0 ? (
                 <Card className="bg-[#1a1410] border border-[#f5c16c]/30">
                   <CardContent className="py-12 text-center">
-                    <CheckCircle className="mx-auto h-12 w-12 text-[#beaca3]" />
+                    <CheckCircle className="mx-auto h-12 w-12 text-[#f5c16c]/40" />
                     <p className="mt-4 text-white/60">No approved event requests</p>
                   </CardContent>
                 </Card>
@@ -223,7 +223,7 @@ export default function EventManagementPage() {
               {rejectedEvents.length === 0 ? (
                 <Card className="bg-[#1a1410] border border-[#f5c16c]/30">
                   <CardContent className="py-12 text-center">
-                    <XCircle className="mx-auto h-12 w-12 text-[#beaca3]" />
+                    <XCircle className="mx-auto h-12 w-12 text-[#f5c16c]/40" />
                     <p className="mt-4 text-white/60">No rejected event requests</p>
                   </CardContent>
                 </Card>

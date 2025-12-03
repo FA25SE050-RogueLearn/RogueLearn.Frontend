@@ -59,7 +59,7 @@ const getStatusMessage = (status: number | undefined): string => {
     case 500: return 'Server Error - Please try again later';
     case 502: return 'Bad Gateway';
     case 503: return 'Service Unavailable';
-    default: return 'Request failed';
+    default: return status ? `Error ${status}` : 'Network error - Please check your connection';
   }
 };
 

@@ -15,7 +15,8 @@ import {
   BookCopy,
   ScrollText,
   ChevronLeft,
-  MessageSquare
+  MessageSquare,
+  Trophy
 } from "lucide-react";
 
 const navItems = [
@@ -29,6 +30,7 @@ const navItems = [
   { href: "/admin/mappings", label: "Subject Mappings", icon: BookCopy },
   { href: "/admin/user-roles", label: "User Roles", icon: Shield },
   { href: "/admin/feedback", label: "Feedback", icon: MessageSquare },
+  { href: "/admin/achievements", label: "Achievements", icon: Trophy },
   { href: "/admin/settings", label: "Settings", icon: Settings },
 ];
 

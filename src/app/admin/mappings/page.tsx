@@ -135,7 +135,7 @@ export default function CurriculumMapPage() {
                 setSubjects(Array.isArray(items) ? items : []);
             }
             if (skillsRes.isSuccess && skillsRes.data) setAllSkills(Array.isArray(skillsRes.data?.skills) ? skillsRes.data.skills : []);
-        } catch (e) { toast.error("Failed to load initial catalog."); }
+        } catch (e: any) { toast.error(e?.normalized?.message || e?.message || "Failed to load initial catalog."); }
         finally { setLoadingSubjects(false); }
     };
 
@@ -145,7 +145,7 @@ export default function CurriculumMapPage() {
         try {
             const res = await adminManagementApi.getSubjectSkills(subject.id);
             setMappedSkills(res.isSuccess && res.data ? (Array.isArray(res.data) ? res.data : []) : []);
-        } catch { toast.error("Failed to load mappings."); setMappedSkills([]); }
+        } catch (e: any) { toast.error(e?.normalized?.message || e?.message || "Failed to load mappings."); setMappedSkills([]); }
         finally { setLoadingMappings(false); }
     };
 
@@ -156,7 +156,7 @@ export default function CurriculumMapPage() {
             toast.success("Skill mapped");
             const res = await adminManagementApi.getSubjectSkills(selectedSubject.id);
             if (res.isSuccess) setMappedSkills(Array.isArray(res.data) ? res.data : []);
-        } catch { toast.error("Failed to map skill"); }
+        } catch (e: any) { toast.error(e?.normalized?.message || e?.message || "Failed to map skill"); }
     };
 
     const handleRemoveMapping = async (skillId: string) => {
@@ -166,7 +166,7 @@ export default function CurriculumMapPage() {
             toast.success("Skill unmapped");
             const res = await adminManagementApi.getSubjectSkills(selectedSubject.id);
             if (res.isSuccess) setMappedSkills(Array.isArray(res.data) ? res.data : []);
-        } catch { toast.error("Failed to remove mapping"); }
+        } catch (e: any) { toast.error(e?.normalized?.message || e?.message || "Failed to remove mapping"); }
     };
 
     const filteredSubjects = (Array.isArray(subjects) ? subjects : []).filter(s =>

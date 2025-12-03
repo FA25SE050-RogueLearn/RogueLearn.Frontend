@@ -166,9 +166,9 @@ export default function GuildDetailPage() {
       });
       toast.info("Join request submitted.");
       setJoinMessage("");
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      toast.error("Failed to submit join request.");
+      toast.error(err?.normalized?.message || err?.message || "Failed to submit join request.");
     } finally {
       setSubmitting(false);
     }

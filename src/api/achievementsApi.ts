@@ -18,10 +18,10 @@ const achievementsApi = {
   /** GET /api/admin/achievements */
   getAll: (): Promise<ApiResponse<GetAllAchievementsResponse>> =>
     axiosClient
-      .get<AchievementDto[]>("/api/admin/achievements")
+      .get<GetAllAchievementsResponse>("/api/admin/achievements")
       .then((res) => ({
         isSuccess: true,
-        data: { achievements: res.data },
+        data: res.data,
       })),
 
   /** POST /api/admin/achievements */

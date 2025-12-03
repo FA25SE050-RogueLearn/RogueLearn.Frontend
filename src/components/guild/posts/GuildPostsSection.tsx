@@ -132,9 +132,9 @@ export function GuildPostsSection({ guildId }: GuildPostsSectionProps) {
       setCreatePreviewUrls([]);
       reload();
       setCreateOpen(false);
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      toast.error("Failed to create post.");
+      toast.error(err?.normalized?.message || err?.message || "Failed to create post.");
     } finally {
       setSubmitting(false);
     }
@@ -196,9 +196,9 @@ export function GuildPostsSection({ guildId }: GuildPostsSectionProps) {
       }
       cancelEdit();
       reload();
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      toast.error("Failed to edit post.");
+      toast.error(err?.normalized?.message || err?.message || "Failed to edit post.");
     }
   };
 
@@ -207,9 +207,9 @@ export function GuildPostsSection({ guildId }: GuildPostsSectionProps) {
     try {
       await guildPostsApi.remove({ guildId, postId });
       reload();
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      toast.error("Failed to delete post.");
+      toast.error(err?.normalized?.message || err?.message || "Failed to delete post.");
     }
   };
 
