@@ -416,7 +416,7 @@ export default function GuildDirectoryPage() {
                                         toast.info('Request to join submitted.');
                                       }
                                     } catch {
-                                      toast.error('Failed to apply to join.');
+                                      // toast.error('Failed to apply to join.');
                                     } finally {
                                       setJoiningGuildId(null);
                                     }
@@ -435,7 +435,7 @@ export default function GuildDirectoryPage() {
                                       await guildsApi.applyToJoin(guild.id, { message: null });
                                       toast.info('Request to join submitted.');
                                     } catch {
-                                      toast.error('Failed to submit request.');
+                                      // toast.error('Failed to submit request.');
                                     } finally {
                                       setJoiningGuildId(null);
                                     }

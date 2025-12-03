@@ -37,8 +37,8 @@ export default function ProblemBankPage() {
       if (response.success && response.data) {
         setProblems(Array.isArray(response.data) ? response.data : []);
         if (response.pagination) setTotalPages(response.pagination.total_pages || 1);
-      } else { toast.error("Failed to load problems"); }
-    } catch { toast.error("Error loading problems"); }
+      } else { toast.error(response.error?.message || "Failed to load problems"); }
+    } catch (e: any) { toast.error(e?.normalized?.message || e?.message || "Error loading problems"); }
     finally { setLoading(false); }
   };
 
@@ -52,8 +52,8 @@ export default function ProblemBankPage() {
     try {
       const response = await eventServiceApi.getProblemDetails(problem.id, firstLanguage as "Golang" | "Python" | "Javascript");
       if (response.success && response.data) setProblemDetails(response.data);
-      else toast.error("Failed to load problem details");
-    } catch { toast.error("Error loading problem details"); }
+      else toast.error(response.error?.message || "Failed to load problem details");
+    } catch (e: any) { toast.error(e?.normalized?.message || e?.message || "Error loading problem details"); }
     finally { setLoadingDetails(false); }
   };
 
@@ -65,8 +65,8 @@ export default function ProblemBankPage() {
     try {
       const response = await eventServiceApi.getProblemDetails(selectedProblem.id, language as "Golang" | "Python" | "Javascript");
       if (response.success && response.data) setProblemDetails(response.data);
-      else toast.error("Failed to load problem details");
-    } catch { toast.error("Error loading problem details"); }
+      else toast.error(response.error?.message || "Failed to load problem details");
+    } catch (e: any) { toast.error(e?.normalized?.message || e?.message || "Error loading problem details"); }
     finally { setLoadingDetails(false); }
   };
 

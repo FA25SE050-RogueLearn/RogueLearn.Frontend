@@ -549,9 +549,9 @@ export default function EventsSelectionView({
           ) : status.key === 'preparing' ? (
             <div className="space-y-2">
               <Button
-                onClick={() => router.push(`/code-battle/${event.ID}`)}
+                disabled
                 variant="outline"
-                className={`w-full ${compact ? 'px-3 py-1.5 text-[10px]' : 'px-5 py-2.5 text-xs'} font-semibold uppercase tracking-wider border-[#f5c16c]/40 bg-[#f5c16c]/10 text-[#f5c16c] hover:bg-[#f5c16c]/20`}
+                className={`w-full ${compact ? 'px-3 py-1.5 text-[10px]' : 'px-5 py-2.5 text-xs'} font-semibold uppercase tracking-wider border-[#f5c16c]/40 bg-[#f5c16c]/10 text-[#f5c16c] cursor-not-allowed opacity-70`}
               >
                 <Zap className={`mr-2 ${compact ? 'h-3 w-3' : 'h-3.5 w-3.5'} animate-pulse`} />
                 Starts in {countdowns[eventId] || '...'}

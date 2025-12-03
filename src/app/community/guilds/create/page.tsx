@@ -70,9 +70,9 @@ export default function CreateGuildPage() {
       });
       const data = res.data as CreateGuildResponse;
       router.push(`/community/guilds/${data.guildId}`);
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      toast.error("Failed to create guild.");
+      // toast.error("Failed to create guild.");
     } finally {
       setSubmitting(false);
     }

@@ -52,8 +52,8 @@ export default function ProgramsManagementPage() {
                 const subjectData = sRes.data.items;
                 setSubjects(Array.isArray(subjectData) ? subjectData : []);
             }
-        } catch {
-            toast.error("Failed to load initial data");
+        } catch (e: any) {
+            toast.error(e?.normalized?.message || e?.message || "Failed to load initial data");
         } finally {
             setLoading(false);
         }
@@ -67,8 +67,8 @@ export default function ProgramsManagementPage() {
             setIsCreateOpen(false);
             setNewProgram({ programName: "", programCode: "", degreeLevel: "Bachelor", totalCredits: 120, durationYears: 4 });
             loadData();
-        } catch {
-            toast.error("Failed to create program");
+        } catch (e: any) {
+            toast.error(e?.normalized?.message || e?.message || "Failed to create program");
         }
     };
 
@@ -81,8 +81,8 @@ export default function ProgramsManagementPage() {
                 setProgramSubjects([]);
                 toast.info("Subject list fetching requires backend update.");
             }
-        } catch {
-            toast.error("Failed to load program structure");
+        } catch (e: any) {
+            toast.error(e?.normalized?.message || e?.message || "Failed to load program structure");
         } finally {
             setStructLoading(false);
         }
@@ -94,8 +94,8 @@ export default function ProgramsManagementPage() {
             await adminManagementApi.addSubjectToProgram(selectedProgram.id, addSubjectId);
             toast.success("Subject added to program");
             openStructure(selectedProgram);
-        } catch {
-            toast.error("Failed to add subject");
+        } catch (e: any) {
+            toast.error(e?.normalized?.message || e?.message || "Failed to add subject");
         }
     };
 
@@ -105,8 +105,8 @@ export default function ProgramsManagementPage() {
             await adminManagementApi.removeSubjectFromProgram(selectedProgram.id, subjectId);
             toast.success("Subject removed");
             openStructure(selectedProgram);
-        } catch {
-            toast.error("Failed to remove");
+        } catch (e: any) {
+            toast.error(e?.normalized?.message || e?.message || "Failed to remove");
         }
     };
 

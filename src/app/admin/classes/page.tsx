@@ -46,8 +46,8 @@ export default function ClassesManagementPage() {
                 const subjectData = sRes.data.items;
                 setSubjects(Array.isArray(subjectData) ? subjectData : []);
             }
-        } catch {
-            toast.error("Failed to load initial data");
+        } catch (e: any) {
+            toast.error(e?.normalized?.message || e?.message || "Failed to load initial data");
         } finally {
             setLoading(false);
         }
@@ -63,8 +63,8 @@ export default function ClassesManagementPage() {
             } else {
                 setSpecSubjects([]);
             }
-        } catch {
-            toast.error("Failed to load specialization subjects");
+        } catch (e: any) {
+            toast.error(e?.normalized?.message || e?.message || "Failed to load specialization subjects");
             setSpecSubjects([]);
         } finally {
             setSpecLoading(false);
@@ -82,8 +82,8 @@ export default function ClassesManagementPage() {
             });
             toast.success("Subject added to curriculum");
             openSpecialization(selectedClass);
-        } catch {
-            toast.error("Failed to add subject");
+        } catch (e: any) {
+            toast.error(e?.normalized?.message || e?.message || "Failed to add subject");
         }
     };
 
@@ -93,8 +93,8 @@ export default function ClassesManagementPage() {
             await adminManagementApi.removeClassSpecialization(selectedClass.id, subjectId);
             toast.success("Subject removed");
             openSpecialization(selectedClass);
-        } catch {
-            toast.error("Failed to remove");
+        } catch (e: any) {
+            toast.error(e?.normalized?.message || e?.message || "Failed to remove");
         }
     };
 

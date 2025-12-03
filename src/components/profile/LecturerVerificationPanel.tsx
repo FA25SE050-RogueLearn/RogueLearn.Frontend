@@ -102,7 +102,7 @@ export function LecturerVerificationPanel() {
       }
     } catch (err: any) {
       const msg = err?.normalized?.message || "Failed to submit request";
-      toast.error(msg);
+      // toast.error(msg);
     } finally {
       setSubmitting(false);
     }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState, startTransition, type CSSProperties } from 'react';
+import { useRouter } from 'next/navigation';
 import { ArrowLeft, Trophy, Timer, ChevronDown, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -90,6 +91,7 @@ export default function CodeArenaView({
   selectedProblemId,
   onProblemChange,
 }: CodeArenaViewProps) {
+  const router = useRouter();
   const [leaderboardEntries, setLeaderboardEntries] = useState<LeaderboardEntry[]>([]);
   const [eventEnded, setEventEnded] = useState(false);
 
@@ -100,16 +102,20 @@ export default function CodeArenaView({
     setEventEnded(true);
 
     // Show notification
-    toast.error('Event has ended!', {
-      description: 'The code battle event has concluded. You will be redirected to the event selection.',
+    toast.success('Event has ended!', {
+      description: 'The code battle event has concluded. Redirecting to the leaderboard...',
       duration: 5000,
     });
 
-    // Kick user out after 3 seconds
+    // Redirect to the event results/leaderboard page after 3 seconds
     setTimeout(() => {
-      onBack();
+      if (eventId) {
+        router.push(`/code-battle/${eventId}/results`);
+      } else {
+        onBack();
+      }
     }, 3000);
-  }, [eventEnded, onBack]);
+  }, [eventEnded, eventId, router, onBack]);
 
   const updateLeaderboard = useCallback((incoming: LeaderboardEntry[]) => {
     startTransition(() => {
@@ -184,7 +190,7 @@ export default function CodeArenaView({
             </div>
             <h2 className="mb-3 text-2xl font-bold text-white">Event Has Ended!</h2>
             <p className="mb-6 text-sm text-[#f5c16c]/70">
-              The code battle event has concluded. Redirecting you to the event selection...
+              The code battle event has concluded. Redirecting you to the leaderboard...
             </p>
             <div className="flex justify-center">
               <div className="h-1 w-32 overflow-hidden rounded-full bg-[#f5c16c]/20">

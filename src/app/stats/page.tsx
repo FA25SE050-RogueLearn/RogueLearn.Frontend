@@ -222,7 +222,6 @@ export default async function StatsPage({
               {[
                 { label: 'Players', value: mostRecentMatch.totalPlayers },
                 { label: 'Questions', value: questionsCount },
-                { label: 'Duration', value: `${Math.max(1, Math.round((new Date(mostRecentMatch.endUtc).getTime() - new Date(mostRecentMatch.startUtc).getTime()) / 60000))} min` },
                 { label: 'Date', value: new Date(mostRecentMatch.endUtc).toLocaleDateString() },
               ].map((item, idx) => (
                 <div key={idx} style={{

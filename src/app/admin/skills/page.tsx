@@ -36,8 +36,8 @@ export default function SkillsManagementPage() {
             if (res.isSuccess && res.data) {
                 setSkills(res.data.skills || []);
             }
-        } catch (e) {
-            toast.error("Failed to load skills");
+        } catch (e: any) {
+            toast.error(e?.normalized?.message || e?.message || "Failed to load skills");
         } finally {
             setLoading(false);
         }
@@ -51,8 +51,8 @@ export default function SkillsManagementPage() {
             setIsCreateOpen(false);
             setNewSkill({ name: "", domain: "", tier: 1, description: "" });
             loadSkills();
-        } catch (e) {
-            toast.error("Failed to create skill");
+        } catch (e: any) {
+            toast.error(e?.normalized?.message || e?.message || "Failed to create skill");
         }
     };
 
@@ -64,8 +64,8 @@ export default function SkillsManagementPage() {
             if (res.isSuccess && res.data) {
                 setDependencies(res.data.dependencies || []);
             }
-        } catch {
-            toast.error("Could not load dependencies");
+        } catch (e: any) {
+            toast.error(e?.normalized?.message || e?.message || "Could not load dependencies");
         } finally {
             setDepLoading(false);
         }
@@ -81,8 +81,8 @@ export default function SkillsManagementPage() {
             });
             toast.success("Dependency linked");
             openDependencyManager(selectedSkill);
-        } catch {
-            toast.error("Failed to link dependency");
+        } catch (e: any) {
+            toast.error(e?.normalized?.message || e?.message || "Failed to link dependency");
         }
     };
 
@@ -92,8 +92,8 @@ export default function SkillsManagementPage() {
             await adminManagementApi.removeDependency(selectedSkill.id, prereqId);
             toast.success("Dependency removed");
             openDependencyManager(selectedSkill);
-        } catch {
-            toast.error("Failed to remove dependency");
+        } catch (e: any) {
+            toast.error(e?.normalized?.message || e?.message || "Failed to remove dependency");
         }
     }
 

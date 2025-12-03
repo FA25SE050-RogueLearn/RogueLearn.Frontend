@@ -61,7 +61,7 @@ const getStatusMessage = (status: number | undefined): string => {
     case 422: return 'Validation Error';
     case 429: return 'Too Many Requests - Please try again later';
     case 500: return 'Server Error - Please try again later';
-    default: return 'Request failed';
+    default: return status ? `Error ${status}` : 'Network error - Please check your connection';
   }
 };
 

@@ -166,9 +166,9 @@ export default function GuildDetailPage() {
       });
       toast.info("Join request submitted.");
       setJoinMessage("");
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      toast.error("Failed to submit join request.");
+      // toast.error("Failed to submit join request.");
     } finally {
       setSubmitting(false);
     }
@@ -393,7 +393,7 @@ export default function GuildDetailPage() {
                             setConfigOpen(false);
                             toast.success('Guild settings updated.');
                           } catch (err) {
-                            toast.error('Failed to update settings.');
+                            // toast.error('Failed to update settings.');
                           } finally {
                             setCfgSubmitting(false);
                           }
