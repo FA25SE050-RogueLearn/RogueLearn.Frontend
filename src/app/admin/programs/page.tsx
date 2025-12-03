@@ -112,9 +112,9 @@ export default function ProgramsManagementPage() {
 
     const getDegreeBadge = (level: string) => {
         const styles: Record<string, string> = {
-            Bachelor: "bg-[#7289da]/10 text-[#7289da] border-[#7289da]/30",
-            Master: "bg-purple-50 text-purple-700 border-purple-200",
-            Associate: "bg-emerald-50 text-emerald-700 border-emerald-200",
+            Bachelor: "bg-[#f5c16c]/20 text-[#f5c16c] border-[#f5c16c]/30",
+            Master: "bg-purple-500/20 text-purple-400 border-purple-500/30",
+            Associate: "bg-emerald-500/20 text-emerald-400 border-emerald-500/30",
         };
         return styles[level] || styles.Bachelor;
     };
@@ -125,33 +125,33 @@ export default function ProgramsManagementPage() {
                 {/* Header */}
                 <div className="flex justify-between items-center">
                     <div>
-                        <h1 className="text-2xl font-bold text-[#2c2f33]">Programs Management</h1>
-                        <p className="text-[#2c2f33]/60">Manage academic programs and their subjects</p>
+                        <h1 className="text-2xl font-bold text-white">Programs Management</h1>
+                        <p className="text-white/50">Manage academic programs and their subjects</p>
                     </div>
                     <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
                         <DialogTrigger asChild>
-                            <Button className="bg-[#7289da] hover:bg-[#7289da]/90 text-white">
+                            <Button className="bg-gradient-to-r from-[#f5c16c] to-[#d4a855] text-black font-semibold hover:from-[#d4a855] hover:to-[#f5c16c]">
                                 <Plus className="w-4 h-4 mr-2" /> Create Program
                             </Button>
                         </DialogTrigger>
-                        <DialogContent className="bg-white border-[#beaca3]/30">
+                        <DialogContent className="bg-[#1a0b08] border-[#f5c16c]/20">
                             <DialogHeader>
-                                <DialogTitle className="text-[#2c2f33]">Create New Program</DialogTitle>
+                                <DialogTitle className="text-white">Create New Program</DialogTitle>
                             </DialogHeader>
                             <div className="space-y-4 py-4">
                                 <div className="space-y-2">
-                                    <Label className="text-[#2c2f33]/70">Program Name</Label>
-                                    <Input value={newProgram.programName} onChange={e => setNewProgram({ ...newProgram, programName: e.target.value })} placeholder="Enter program name" className="border-[#beaca3]/30" />
+                                    <Label className="text-white/70">Program Name</Label>
+                                    <Input value={newProgram.programName} onChange={e => setNewProgram({ ...newProgram, programName: e.target.value })} placeholder="Enter program name" className="border-[#f5c16c]/20 bg-black/30 text-white placeholder:text-white/40" />
                                 </div>
                                 <div className="space-y-2">
-                                    <Label className="text-[#2c2f33]/70">Program Code</Label>
-                                    <Input value={newProgram.programCode} onChange={e => setNewProgram({ ...newProgram, programCode: e.target.value })} placeholder="e.g., SE, IS" className="border-[#beaca3]/30" />
+                                    <Label className="text-white/70">Program Code</Label>
+                                    <Input value={newProgram.programCode} onChange={e => setNewProgram({ ...newProgram, programCode: e.target.value })} placeholder="e.g., SE, IS" className="border-[#f5c16c]/20 bg-black/30 text-white placeholder:text-white/40" />
                                 </div>
                                 <div className="space-y-2">
-                                    <Label className="text-[#2c2f33]/70">Degree Level</Label>
+                                    <Label className="text-white/70">Degree Level</Label>
                                     <Select value={newProgram.degreeLevel} onValueChange={v => setNewProgram({ ...newProgram, degreeLevel: v as any })}>
-                                        <SelectTrigger className="border-[#beaca3]/30"><SelectValue /></SelectTrigger>
-                                        <SelectContent>
+                                        <SelectTrigger className="border-[#f5c16c]/20 bg-black/30 text-white"><SelectValue /></SelectTrigger>
+                                        <SelectContent className="bg-[#1a0b08] border-[#f5c16c]/20">
                                             <SelectItem value="Bachelor">Bachelor</SelectItem>
                                             <SelectItem value="Master">Master</SelectItem>
                                             <SelectItem value="Associate">Associate</SelectItem>
@@ -160,8 +160,8 @@ export default function ProgramsManagementPage() {
                                 </div>
                             </div>
                             <DialogFooter>
-                                <Button variant="outline" onClick={() => setIsCreateOpen(false)} className="border-[#beaca3]/30">Cancel</Button>
-                                <Button onClick={handleCreateProgram} className="bg-[#7289da] hover:bg-[#7289da]/90 text-white">Create</Button>
+                                <Button variant="outline" onClick={() => setIsCreateOpen(false)} className="border-[#f5c16c]/20 text-white hover:bg-[#f5c16c]/10">Cancel</Button>
+                                <Button onClick={handleCreateProgram} className="bg-gradient-to-r from-[#f5c16c] to-[#d4a855] text-black font-semibold hover:from-[#d4a855] hover:to-[#f5c16c]">Create</Button>
                             </DialogFooter>
                         </DialogContent>
                     </Dialog>
@@ -170,26 +170,26 @@ export default function ProgramsManagementPage() {
                 {/* Programs Grid */}
                 {loading ? (
                     <div className="flex items-center justify-center py-12">
-                        <Loader2 className="h-8 w-8 animate-spin text-[#7289da]" />
+                        <Loader2 className="h-8 w-8 animate-spin text-[#f5c16c]" />
                     </div>
                 ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                         {(Array.isArray(programs) ? programs : []).map(prog => (
-                            <Card key={prog.id} className="bg-white border border-[#beaca3]/30 shadow-sm hover:shadow-md transition-shadow">
+                            <Card key={prog.id} className="bg-[#1a0b08]/80 border border-[#f5c16c]/20 hover:border-[#f5c16c]/40 transition-all">
                                 <CardHeader className="pb-2">
                                     <div className="flex justify-between items-center">
-                                        <CardTitle className="text-base font-semibold text-[#2c2f33]">{prog.programCode}</CardTitle>
+                                        <CardTitle className="text-base font-semibold text-[#f5c16c]">{prog.programCode}</CardTitle>
                                         <span className={`text-xs px-2 py-0.5 rounded-full border ${getDegreeBadge(prog.degreeLevel)}`}>
                                             {prog.degreeLevel}
                                         </span>
                                     </div>
                                 </CardHeader>
                                 <CardContent>
-                                    <p className="text-sm font-medium text-[#2c2f33] mb-1">{prog.programName}</p>
-                                    <p className="text-sm text-[#2c2f33]/60 mb-4">{prog.description || "No description"}</p>
+                                    <p className="text-sm font-medium text-white mb-1">{prog.programName}</p>
+                                    <p className="text-sm text-white/50 mb-4">{prog.description || "No description"}</p>
                                     <Button
                                         variant="outline"
-                                        className="w-full border-[#7289da]/30 text-[#7289da] hover:bg-[#7289da]/10"
+                                        className="w-full border-[#f5c16c]/30 text-[#f5c16c] hover:bg-[#f5c16c]/10"
                                         onClick={() => openStructure(prog)}
                                     >
                                         <ScrollText className="w-4 h-4 mr-2" /> Manage Structure
@@ -202,26 +202,26 @@ export default function ProgramsManagementPage() {
 
                 {/* Structure Manager Dialog */}
                 <Dialog open={!!selectedProgram} onOpenChange={(o) => !o && setSelectedProgram(null)}>
-                    <DialogContent className="bg-white border-[#beaca3]/30 max-w-3xl">
+                    <DialogContent className="bg-[#1a0b08] border-[#f5c16c]/20 max-w-3xl">
                         <DialogHeader>
-                            <DialogTitle className="text-[#2c2f33]">
-                                Program Structure: <span className="text-[#7289da]">{selectedProgram?.programName}</span>
+                            <DialogTitle className="text-white">
+                                Program Structure: <span className="text-[#f5c16c]">{selectedProgram?.programName}</span>
                             </DialogTitle>
                         </DialogHeader>
 
-                        <div className="flex gap-4 items-end border-b border-[#beaca3]/20 pb-4 mb-4">
+                        <div className="flex gap-4 items-end border-b border-[#f5c16c]/10 pb-4 mb-4">
                             <div className="flex-1 space-y-2">
-                                <Label className="text-[#2c2f33]/70">Add Subject</Label>
+                                <Label className="text-white/70">Add Subject</Label>
                                 <Select onValueChange={setAddSubjectId}>
-                                    <SelectTrigger className="border-[#beaca3]/30"><SelectValue placeholder="Select Subject..." /></SelectTrigger>
-                                    <SelectContent>
+                                    <SelectTrigger className="border-[#f5c16c]/20 bg-black/30 text-white"><SelectValue placeholder="Select Subject..." /></SelectTrigger>
+                                    <SelectContent className="bg-[#1a0b08] border-[#f5c16c]/20">
                                         {(Array.isArray(subjects) ? subjects : []).map(s => (
                                             <SelectItem key={s.id} value={s.id}>{s.subjectCode} - {s.subjectName}</SelectItem>
                                         ))}
                                     </SelectContent>
                                 </Select>
                             </div>
-                            <Button onClick={handleAddSubject} className="bg-[#7289da] hover:bg-[#7289da]/90 text-white">
+                            <Button onClick={handleAddSubject} className="bg-gradient-to-r from-[#f5c16c] to-[#d4a855] text-black font-semibold hover:from-[#d4a855] hover:to-[#f5c16c]">
                                 <Plus className="w-4 h-4" />
                             </Button>
                         </div>
@@ -229,18 +229,18 @@ export default function ProgramsManagementPage() {
                         <div className="space-y-2 max-h-[400px] overflow-y-auto">
                             {structLoading ? (
                                 <div className="flex justify-center py-8">
-                                    <Loader2 className="animate-spin text-[#7289da]" />
+                                    <Loader2 className="animate-spin text-[#f5c16c]" />
                                 </div>
                             ) : (Array.isArray(programSubjects) ? programSubjects : []).length === 0 ? (
-                                <p className="text-center text-[#2c2f33]/40 py-8">No subjects in this program yet (or list unavailable).</p>
+                                <p className="text-center text-white/40 py-8">No subjects in this program yet (or list unavailable).</p>
                             ) : (
                                 (Array.isArray(programSubjects) ? programSubjects : []).map(sub => (
-                                    <div key={sub.id} className="flex justify-between items-center bg-[#f4f6f8] p-3 rounded-lg border border-[#beaca3]/20">
+                                    <div key={sub.id} className="flex justify-between items-center bg-black/30 p-3 rounded-lg border border-[#f5c16c]/20">
                                         <div className="flex items-center gap-3">
-                                            <span className="text-[#7289da] font-mono text-xs">{sub.subjectCode}</span>
-                                            <span className="text-sm text-[#2c2f33]">{sub.subjectName}</span>
+                                            <span className="text-[#f5c16c] font-mono text-xs">{sub.subjectCode}</span>
+                                            <span className="text-sm text-white">{sub.subjectName}</span>
                                         </div>
-                                        <Button size="icon" variant="ghost" className="h-7 w-7 text-[#e07a5f] hover:bg-[#e07a5f]/10" onClick={() => handleRemoveSubject(sub.id)}>
+                                        <Button size="icon" variant="ghost" className="h-7 w-7 text-red-400 hover:bg-red-500/10" onClick={() => handleRemoveSubject(sub.id)}>
                                             <Trash2 className="w-3.5 h-3.5" />
                                         </Button>
                                     </div>

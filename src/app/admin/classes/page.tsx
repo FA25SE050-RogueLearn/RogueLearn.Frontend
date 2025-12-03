@@ -103,32 +103,32 @@ export default function ClassesManagementPage() {
             <div className="space-y-6">
                 {/* Header */}
                 <div>
-                    <h1 className="text-2xl font-bold text-[#2c2f33]">Classes Management</h1>
-                    <p className="text-[#2c2f33]/60">Manage career classes and their curriculum paths</p>
+                    <h1 className="text-2xl font-bold text-white">Classes Management</h1>
+                    <p className="text-white/50">Manage career classes and their curriculum paths</p>
                 </div>
 
                 {/* Classes Grid */}
                 {loading ? (
                     <div className="flex items-center justify-center py-12">
-                        <Loader2 className="h-8 w-8 animate-spin text-[#7289da]" />
+                        <Loader2 className="h-8 w-8 animate-spin text-[#f5c16c]" />
                     </div>
                 ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                         {(Array.isArray(classList) ? classList : []).map(cls => (
-                            <Card key={cls.id} className="bg-white border border-[#beaca3]/30 shadow-sm hover:shadow-md transition-shadow">
+                            <Card key={cls.id} className="bg-[#1a0b08]/80 border border-[#f5c16c]/20 hover:border-[#f5c16c]/40 transition-all">
                                 <CardHeader className="pb-2">
                                     <div className="flex justify-between items-center">
-                                        <CardTitle className="text-base font-semibold text-[#2c2f33]">{cls.name}</CardTitle>
-                                        <span className={`text-xs px-2 py-0.5 rounded-full ${cls.isActive ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-[#beaca3]/20 text-[#2c2f33]/50 border border-[#beaca3]/30'}`}>
+                                        <CardTitle className="text-base font-semibold text-white">{cls.name}</CardTitle>
+                                        <span className={`text-xs px-2 py-0.5 rounded-full ${cls.isActive ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-white/10 text-white/50 border border-white/20'}`}>
                                             {cls.isActive ? 'Active' : 'Archived'}
                                         </span>
                                     </div>
                                 </CardHeader>
                                 <CardContent>
-                                    <p className="text-sm text-[#2c2f33]/60 mb-4">{cls.difficultyLevel}</p>
+                                    <p className="text-sm text-white/60 mb-4">{cls.difficultyLevel}</p>
                                     <Button
                                         variant="outline"
-                                        className="w-full border-[#7289da]/30 text-[#7289da] hover:bg-[#7289da]/10"
+                                        className="w-full border-[#f5c16c]/30 text-[#f5c16c] hover:bg-[#f5c16c]/10"
                                         onClick={() => openSpecialization(cls)}
                                     >
                                         <BookOpen className="w-4 h-4 mr-2" /> Manage Curriculum
@@ -141,19 +141,19 @@ export default function ClassesManagementPage() {
 
                 {/* Specialization Manager Dialog */}
                 <Dialog open={!!selectedClass} onOpenChange={(o) => !o && setSelectedClass(null)}>
-                    <DialogContent className="bg-white border-[#beaca3]/30 max-w-3xl">
+                    <DialogContent className="bg-[#1a0b08] border-[#f5c16c]/20 max-w-3xl">
                         <DialogHeader>
-                            <DialogTitle className="text-[#2c2f33]">
-                                Curriculum: <span className="text-[#7289da]">{selectedClass?.name}</span>
+                            <DialogTitle className="text-white">
+                                Curriculum: <span className="text-[#f5c16c]">{selectedClass?.name}</span>
                             </DialogTitle>
                         </DialogHeader>
 
-                        <div className="flex gap-4 items-end border-b border-[#beaca3]/20 pb-4 mb-4">
+                        <div className="flex gap-4 items-end border-b border-[#f5c16c]/10 pb-4 mb-4">
                             <div className="flex-1 space-y-2">
-                                <Label className="text-[#2c2f33]/70">Add Subject</Label>
+                                <Label className="text-white/70">Add Subject</Label>
                                 <Select onValueChange={setAddSpecId}>
-                                    <SelectTrigger className="border-[#beaca3]/30"><SelectValue placeholder="Select Subject..." /></SelectTrigger>
-                                    <SelectContent>
+                                    <SelectTrigger className="border-[#f5c16c]/20 bg-black/30 text-white"><SelectValue placeholder="Select Subject..." /></SelectTrigger>
+                                    <SelectContent className="bg-[#1a0b08] border-[#f5c16c]/20">
                                         {(Array.isArray(subjects) ? subjects : []).map(s => (
                                             <SelectItem key={s.id} value={s.id}>{s.subjectCode} - {s.subjectName}</SelectItem>
                                         ))}
@@ -161,10 +161,10 @@ export default function ClassesManagementPage() {
                                 </Select>
                             </div>
                             <div className="w-32 space-y-2">
-                                <Label className="text-[#2c2f33]/70">Semester</Label>
-                                <Input type="number" value={addSemester} onChange={e => setAddSemester(parseInt(e.target.value))} className="border-[#beaca3]/30" />
+                                <Label className="text-white/70">Semester</Label>
+                                <Input type="number" value={addSemester} onChange={e => setAddSemester(parseInt(e.target.value))} className="border-[#f5c16c]/20 bg-black/30 text-white" />
                             </div>
-                            <Button onClick={handleAddSpec} className="bg-[#7289da] hover:bg-[#7289da]/90 text-white">
+                            <Button onClick={handleAddSpec} className="bg-gradient-to-r from-[#f5c16c] to-[#d4a855] text-black font-semibold hover:from-[#d4a855] hover:to-[#f5c16c]">
                                 <Plus className="w-4 h-4" />
                             </Button>
                         </div>
@@ -172,13 +172,13 @@ export default function ClassesManagementPage() {
                         <div className="space-y-2 max-h-[400px] overflow-y-auto">
                             {specLoading ? (
                                 <div className="flex justify-center py-8">
-                                    <Loader2 className="animate-spin text-[#7289da]" />
+                                    <Loader2 className="animate-spin text-[#f5c16c]" />
                                 </div>
                             ) : (Array.isArray(specSubjects) ? specSubjects : []).length === 0 ? (
-                                <p className="text-center text-[#2c2f33]/40 py-8">No subjects assigned to this class yet.</p>
+                                <p className="text-center text-white/40 py-8">No subjects assigned to this class yet.</p>
                             ) : (
                                 <div className="space-y-2">
-                                    <div className="grid grid-cols-[1fr_100px_48px] items-center px-3 text-xs font-medium text-[#2c2f33]/50 uppercase tracking-wider">
+                                    <div className="grid grid-cols-[1fr_100px_48px] items-center px-3 text-xs font-medium text-white/50 uppercase tracking-wider">
                                         <div>Subject</div>
                                         <div className="text-right">Semester</div>
                                         <div className="text-right">Action</div>
@@ -189,14 +189,14 @@ export default function ClassesManagementPage() {
                                         .map(sub => {
                                             const displayCode = sub.subjectCode || sub.placeholderSubjectCode || 'N/A';
                                             return (
-                                                <div key={sub.id} className="grid grid-cols-[1fr_100px_48px] items-center bg-[#f4f6f8] p-3 rounded-lg border border-[#beaca3]/20">
+                                                <div key={sub.id} className="grid grid-cols-[1fr_100px_48px] items-center bg-black/30 p-3 rounded-lg border border-[#f5c16c]/20">
                                                     <div className="flex items-center gap-3">
-                                                        <span className="text-[#7289da] font-mono text-xs">{displayCode}</span>
-                                                        {sub.subjectName && <span className="text-sm text-[#2c2f33]">{sub.subjectName}</span>}
+                                                        <span className="text-[#f5c16c] font-mono text-xs">{displayCode}</span>
+                                                        {sub.subjectName && <span className="text-sm text-white">{sub.subjectName}</span>}
                                                     </div>
-                                                    <div className="text-sm text-[#2c2f33]/70 text-right">{sub.semester}</div>
+                                                    <div className="text-sm text-white/70 text-right">{sub.semester}</div>
                                                     <div className="flex justify-end">
-                                                        <Button size="icon" variant="ghost" className="h-7 w-7 text-[#e07a5f] hover:bg-[#e07a5f]/10" onClick={() => handleRemoveSpec(sub.subjectId)}>
+                                                        <Button size="icon" variant="ghost" className="h-7 w-7 text-red-400 hover:bg-red-500/10" onClick={() => handleRemoveSpec(sub.subjectId)}>
                                                             <Trash2 className="w-3.5 h-3.5" />
                                                         </Button>
                                                     </div>

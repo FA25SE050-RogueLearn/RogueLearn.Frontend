@@ -31,58 +31,58 @@ interface DisplayEvent {
 
 function EventCard({ event, type }: { event: DisplayEvent; type: string }) {
   const statusConfig = {
-    pending: { icon: AlertCircle, color: "text-amber-600", bg: "bg-amber-50" },
-    approved: { icon: CheckCircle, color: "text-emerald-600", bg: "bg-emerald-50" },
-    rejected: { icon: XCircle, color: "text-[#e07a5f]", bg: "bg-[#e07a5f]/10" },
+    pending: { icon: AlertCircle, color: "text-[#f5c16c]", bg: "bg-[#f5c16c]/20", border: "border-[#f5c16c]/30" },
+    approved: { icon: CheckCircle, color: "text-emerald-400", bg: "bg-emerald-500/20", border: "border-emerald-500/30" },
+    rejected: { icon: XCircle, color: "text-red-400", bg: "bg-red-500/20", border: "border-red-500/30" },
   };
 
   const config = statusConfig[event.status as keyof typeof statusConfig] || statusConfig.pending;
   const StatusIcon = config.icon;
 
   return (
-    <Card className="bg-white border border-[#beaca3]/30 shadow-sm hover:shadow-md transition-shadow">
+    <Card className="bg-[#1a0b08]/80 border border-[#f5c16c]/20 hover:border-[#f5c16c]/40 transition-all">
       <CardContent className="flex flex-col gap-4 p-5">
         <div className="flex items-start justify-between">
           <div className="flex-1">
             <div className="mb-2 flex items-center gap-2">
-              <div className={`rounded-md p-1.5 ${config.bg}`}>
+              <div className={`rounded-md p-1.5 ${config.bg} ${config.border} border`}>
                 <StatusIcon className={`h-4 w-4 ${config.color}`} />
               </div>
               <span className={`text-xs font-medium capitalize ${config.color}`}>
                 {event.status}
               </span>
             </div>
-            <h3 className="text-base font-semibold text-[#2c2f33]">{event.title}</h3>
-            <p className="text-sm text-[#2c2f33]/60">{event.guild}</p>
+            <h3 className="text-base font-semibold text-white">{event.title}</h3>
+            <p className="text-sm text-white/60">{event.guild}</p>
           </div>
         </div>
 
-        <div className="grid grid-cols-3 gap-3 rounded-lg bg-[#f4f6f8] border border-[#beaca3]/20 p-3">
+        <div className="grid grid-cols-3 gap-3 rounded-lg bg-black/30 border border-[#f5c16c]/10 p-3">
           <div className="space-y-1">
-            <div className="flex items-center gap-1.5 text-[#2c2f33]/50">
+            <div className="flex items-center gap-1.5 text-white/50">
               <Users className="h-3.5 w-3.5" />
               <span className="text-xs">Guilds</span>
             </div>
-            <p className="text-sm font-semibold text-[#2c2f33]">{event.participants}</p>
+            <p className="text-sm font-semibold text-white">{event.participants}</p>
           </div>
           <div className="space-y-1">
-            <div className="flex items-center gap-1.5 text-[#2c2f33]/50">
+            <div className="flex items-center gap-1.5 text-white/50">
               <Calendar className="h-3.5 w-3.5" />
               <span className="text-xs">Start</span>
             </div>
-            <p className="text-sm font-semibold text-[#2c2f33]">{event.startDate || 'N/A'}</p>
+            <p className="text-sm font-semibold text-white">{event.startDate || 'N/A'}</p>
           </div>
           <div className="space-y-1">
-            <div className="flex items-center gap-1.5 text-[#2c2f33]/50">
+            <div className="flex items-center gap-1.5 text-white/50">
               <Clock className="h-3.5 w-3.5" />
               <span className="text-xs">End</span>
             </div>
-            <p className="text-sm font-semibold text-[#2c2f33]">{event.endDate || 'N/A'}</p>
+            <p className="text-sm font-semibold text-white">{event.endDate || 'N/A'}</p>
           </div>
         </div>
 
         {type === "pending" && (
-          <Button asChild className="w-full bg-[#7289da] hover:bg-[#7289da]/90 text-white">
+          <Button asChild className="w-full bg-gradient-to-r from-[#f5c16c] to-[#d4a855] text-black font-semibold hover:from-[#d4a855] hover:to-[#f5c16c]">
             <Link href={`/admin/events/${event.id}`} className="flex items-center justify-center gap-2">
               Review Request
               <ArrowRight className="h-4 w-4" />
@@ -146,19 +146,19 @@ export default function EventManagementPage() {
       <div className="space-y-6">
         {/* Header */}
         <div>
-          <h1 className="text-2xl font-bold text-[#2c2f33]">Event Requests</h1>
-          <p className="text-[#2c2f33]/60">Review and manage event requests from guilds</p>
+          <h1 className="text-2xl font-bold text-white">Event Requests</h1>
+          <p className="text-white/50">Review and manage event requests from guilds</p>
         </div>
 
         {/* Error Message */}
         {error && (
-          <Card className="bg-[#e07a5f]/10 border border-[#e07a5f]/30">
+          <Card className="bg-red-500/10 border border-red-500/30">
             <CardContent className="p-4">
-              <div className="flex items-center gap-2 text-[#e07a5f]">
+              <div className="flex items-center gap-2 text-red-400">
                 <XCircle className="h-5 w-5" />
                 <p className="text-sm">{error}</p>
               </div>
-              <Button onClick={fetchEventRequests} variant="outline" size="sm" className="mt-3 border-[#e07a5f]/30 text-[#e07a5f] hover:bg-[#e07a5f]/10">
+              <Button onClick={fetchEventRequests} variant="outline" size="sm" className="mt-3 border-red-500/30 text-red-400 hover:bg-red-500/10">
                 Retry
               </Button>
             </CardContent>
@@ -168,29 +168,29 @@ export default function EventManagementPage() {
         {/* Loading State */}
         {loading ? (
           <div className="flex items-center justify-center py-12">
-            <Loader2 className="h-8 w-8 animate-spin text-[#7289da]" />
-            <span className="ml-3 text-[#2c2f33]/60">Loading event requests...</span>
+            <Loader2 className="h-8 w-8 animate-spin text-[#f5c16c]" />
+            <span className="ml-3 text-white/60">Loading event requests...</span>
           </div>
         ) : (
           <Tabs defaultValue="pending" className="w-full">
-            <TabsList className="grid w-full max-w-md grid-cols-3 bg-[#beaca3]/20">
-              <TabsTrigger value="pending" className="data-[state=active]:bg-white data-[state=active]:text-[#2c2f33]">
+            <TabsList className="grid w-full max-w-md grid-cols-3 bg-black/40 border border-[#f5c16c]/20">
+              <TabsTrigger value="pending" className="data-[state=active]:bg-[#f5c16c]/20 data-[state=active]:text-[#f5c16c] text-white/60">
                 Pending ({pendingEvents.length})
               </TabsTrigger>
-              <TabsTrigger value="approved" className="data-[state=active]:bg-white data-[state=active]:text-[#2c2f33]">
+              <TabsTrigger value="approved" className="data-[state=active]:bg-emerald-500/20 data-[state=active]:text-emerald-400 text-white/60">
                 Approved ({approvedEvents.length})
               </TabsTrigger>
-              <TabsTrigger value="rejected" className="data-[state=active]:bg-white data-[state=active]:text-[#2c2f33]">
+              <TabsTrigger value="rejected" className="data-[state=active]:bg-red-500/20 data-[state=active]:text-red-400 text-white/60">
                 Rejected ({rejectedEvents.length})
               </TabsTrigger>
             </TabsList>
 
             <TabsContent value="pending" className="mt-4 space-y-4">
               {pendingEvents.length === 0 ? (
-                <Card className="bg-white border border-[#beaca3]/30">
+                <Card className="bg-[#1a0b08]/80 border border-[#f5c16c]/20">
                   <CardContent className="py-12 text-center">
-                    <AlertCircle className="mx-auto h-12 w-12 text-[#beaca3]" />
-                    <p className="mt-4 text-[#2c2f33]/60">No pending event requests</p>
+                    <AlertCircle className="mx-auto h-12 w-12 text-[#f5c16c]/50" />
+                    <p className="mt-4 text-white/50">No pending event requests</p>
                   </CardContent>
                 </Card>
               ) : (
@@ -204,10 +204,10 @@ export default function EventManagementPage() {
 
             <TabsContent value="approved" className="mt-4 space-y-4">
               {approvedEvents.length === 0 ? (
-                <Card className="bg-white border border-[#beaca3]/30">
+                <Card className="bg-[#1a0b08]/80 border border-[#f5c16c]/20">
                   <CardContent className="py-12 text-center">
-                    <CheckCircle className="mx-auto h-12 w-12 text-[#beaca3]" />
-                    <p className="mt-4 text-[#2c2f33]/60">No approved event requests</p>
+                    <CheckCircle className="mx-auto h-12 w-12 text-emerald-500/50" />
+                    <p className="mt-4 text-white/50">No approved event requests</p>
                   </CardContent>
                 </Card>
               ) : (
@@ -221,10 +221,10 @@ export default function EventManagementPage() {
 
             <TabsContent value="rejected" className="mt-4 space-y-4">
               {rejectedEvents.length === 0 ? (
-                <Card className="bg-white border border-[#beaca3]/30">
+                <Card className="bg-[#1a0b08]/80 border border-[#f5c16c]/20">
                   <CardContent className="py-12 text-center">
-                    <XCircle className="mx-auto h-12 w-12 text-[#beaca3]" />
-                    <p className="mt-4 text-[#2c2f33]/60">No rejected event requests</p>
+                    <XCircle className="mx-auto h-12 w-12 text-red-500/50" />
+                    <p className="mt-4 text-white/50">No rejected event requests</p>
                   </CardContent>
                 </Card>
               ) : (

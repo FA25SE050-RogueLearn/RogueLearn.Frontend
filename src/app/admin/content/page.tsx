@@ -39,8 +39,8 @@ export default function ContentManagementPage() {
       <div className="space-y-6">
         {/* Header */}
         <div>
-          <h1 className="text-2xl font-bold text-[#2c2f33]">Content Management</h1>
-          <p className="text-[#2c2f33]/60">Manage curriculum, subjects, and coding challenges</p>
+          <h1 className="text-2xl font-bold text-white">Content Management</h1>
+          <p className="text-white/50">Manage curriculum, subjects, and coding challenges</p>
         </div>
 
         {/* Content Modules */}
@@ -49,16 +49,16 @@ export default function ContentManagementPage() {
             const Icon = module.icon;
 
             return (
-              <Card key={module.id} className="bg-white border border-[#beaca3]/30 shadow-sm hover:shadow-md transition-shadow">
+              <Card key={module.id} className="bg-[#1a0b08]/80 border border-[#f5c16c]/20 hover:border-[#f5c16c]/40 transition-all">
                 <CardHeader>
-                  <div className="rounded-lg bg-[#7289da]/10 p-3 w-fit">
-                    <Icon className="h-6 w-6 text-[#7289da]" />
+                  <div className="rounded-lg bg-[#f5c16c]/20 p-3 w-fit">
+                    <Icon className="h-6 w-6 text-[#f5c16c]" />
                   </div>
-                  <CardTitle className="mt-4 text-lg font-semibold text-[#2c2f33]">{module.title}</CardTitle>
-                  <p className="text-sm text-[#2c2f33]/60">{module.description}</p>
+                  <CardTitle className="mt-4 text-lg font-semibold text-white">{module.title}</CardTitle>
+                  <p className="text-sm text-white/60">{module.description}</p>
                 </CardHeader>
                 <CardContent>
-                  <Button asChild className="w-full bg-[#7289da] hover:bg-[#7289da]/90 text-white">
+                  <Button asChild className="w-full bg-gradient-to-r from-[#f5c16c] to-[#d4a855] text-black font-semibold hover:from-[#d4a855] hover:to-[#f5c16c]">
                     <Link href={module.href} className="flex items-center justify-center gap-2">
                       Manage
                       <ArrowRight className="h-4 w-4" />

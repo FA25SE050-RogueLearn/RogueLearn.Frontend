@@ -56,52 +56,52 @@ export default function AdminLecturerRequestsPage() {
   return (
     <AdminLayout>
       <div className="space-y-8">
-        <div className="p-6 rounded-lg border border-[#beaca3]/30 bg-white">
-          <h1 className="text-3xl font-bold tracking-tight text-[#2c2f33]">Lecturer Verification Requests</h1>
-          <p className="text-[#2c2f33]/60 mt-2">Review, approve, or decline lecturer verification submissions</p>
+        <div className="p-6 rounded-lg border border-[#f5c16c]/20 bg-[#1a0b08]/80">
+          <h1 className="text-3xl font-bold tracking-tight text-white">Lecturer Verification Requests</h1>
+          <p className="text-white/50 mt-2">Review, approve, or decline lecturer verification submissions</p>
         </div>
 
-        <Card className="bg-white border-[#beaca3]/30">
-          <CardHeader className="border-b border-[#beaca3]/20">
+        <Card className="bg-[#1a0b08]/80 border-[#f5c16c]/20">
+          <CardHeader className="border-b border-[#f5c16c]/10">
             <div className="flex items-center gap-3">
-              <Input placeholder="Search by email or user id" value={search} onChange={(e) => setSearch(e.target.value)} className="flex-1 border-[#beaca3]/30" />
+              <Input placeholder="Search by email or user id" value={search} onChange={(e) => setSearch(e.target.value)} className="flex-1 border-[#f5c16c]/20 bg-black/30 text-white placeholder:text-white/40" />
               <Select value={status} onValueChange={setStatus}>
-                <SelectTrigger className="w-48 border-[#beaca3]/30"><SelectValue placeholder="All statuses" /></SelectTrigger>
-                <SelectContent className="bg-white border-[#beaca3]/30">
+                <SelectTrigger className="w-48 border-[#f5c16c]/20 bg-black/30 text-white"><SelectValue placeholder="All statuses" /></SelectTrigger>
+                <SelectContent className="bg-[#1a0b08] border-[#f5c16c]/20">
                   <SelectItem value="all">All</SelectItem>
                   <SelectItem value="Pending">Pending</SelectItem>
                   <SelectItem value="Approved">Approved</SelectItem>
                   <SelectItem value="Rejected">Rejected</SelectItem>
                 </SelectContent>
               </Select>
-              <Button variant="outline" onClick={fetchList} className="border-[#7289da]/50 text-[#7289da] hover:bg-[#7289da]/10">Refresh</Button>
+              <Button variant="outline" onClick={fetchList} className="border-[#f5c16c]/30 text-[#f5c16c] hover:bg-[#f5c16c]/10">Refresh</Button>
             </div>
           </CardHeader>
           <CardContent className="space-y-3 pt-6">
-            {loading && <div className="flex items-center gap-2 text-[#7289da]"><Loader2 className="h-4 w-4 animate-spin" /> Loading...</div>}
-            {error && <div className="flex items-center gap-2 text-[#e07a5f]"><AlertCircle className="h-4 w-4" /> {error}</div>}
-            {!loading && !error && items.length === 0 && <p className="text-center text-[#2c2f33]/40">No requests found.</p>}
+            {loading && <div className="flex items-center gap-2 text-[#f5c16c]"><Loader2 className="h-4 w-4 animate-spin" /> Loading...</div>}
+            {error && <div className="flex items-center gap-2 text-red-400"><AlertCircle className="h-4 w-4" /> {error}</div>}
+            {!loading && !error && items.length === 0 && <p className="text-center text-white/40">No requests found.</p>}
             {!loading && !error && items.length > 0 && (
               <div className="space-y-3">
                 {pagedItems.map((it) => (
-                  <div key={it.id} className="flex items-center justify-between rounded-lg border border-[#beaca3]/30 bg-[#f4f6f8] p-4">
+                  <div key={it.id} className="flex items-center justify-between rounded-lg border border-[#f5c16c]/20 bg-black/30 p-4">
                     <div>
-                      <p className="text-sm font-semibold text-[#2c2f33]">{it.email}</p>
-                      <p className="text-xs text-[#2c2f33]/50">User: {it.userId} • Staff ID: {it.staffId}</p>
+                      <p className="text-sm font-semibold text-white">{it.email}</p>
+                      <p className="text-xs text-white/50">User: {it.userId} • Staff ID: {it.staffId}</p>
                     </div>
                     <div className="flex items-center gap-3">
-                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-widest border ${it.status === 'Approved' ? 'text-emerald-600 bg-emerald-50 border-emerald-200' : it.status === 'Rejected' ? 'text-[#e07a5f] bg-[#e07a5f]/10 border-[#e07a5f]/30' : 'text-[#7289da] bg-[#7289da]/10 border-[#7289da]/30'}`}>{it.status}</span>
-                      <Button asChild size="sm" className="bg-[#7289da] hover:bg-[#7289da]/90 text-white">
+                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-widest border ${it.status === 'Approved' ? 'text-emerald-400 bg-emerald-500/20 border-emerald-500/30' : it.status === 'Rejected' ? 'text-red-400 bg-red-500/20 border-red-500/30' : 'text-[#f5c16c] bg-[#f5c16c]/20 border-[#f5c16c]/30'}`}>{it.status}</span>
+                      <Button asChild size="sm" className="bg-gradient-to-r from-[#f5c16c] to-[#d4a855] text-black font-semibold hover:from-[#d4a855] hover:to-[#f5c16c]">
                         <Link href={`/admin/lecturer-requests/${it.id}`}>Open</Link>
                       </Button>
                     </div>
                   </div>
                 ))}
                 <div className="flex items-center justify-between pt-2">
-                  <div className="text-xs text-[#2c2f33]/60">Page {page} of {totalPages}</div>
+                  <div className="text-xs text-white/50">Page {page} of {totalPages}</div>
                   <div className="flex gap-2">
-                    <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1} className="rounded bg-[#beaca3]/20 px-3 py-1.5 text-xs text-[#2c2f33] border border-[#beaca3]/30 disabled:opacity-50 hover:bg-[#beaca3]/30">Prev</button>
-                    <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page >= totalPages} className="rounded bg-[#beaca3]/20 px-3 py-1.5 text-xs text-[#2c2f33] border border-[#beaca3]/30 disabled:opacity-50 hover:bg-[#beaca3]/30">Next</button>
+                    <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1} className="rounded bg-black/30 px-3 py-1.5 text-xs text-white border border-[#f5c16c]/20 disabled:opacity-50 hover:bg-[#f5c16c]/10">Prev</button>
+                    <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page >= totalPages} className="rounded bg-black/30 px-3 py-1.5 text-xs text-white border border-[#f5c16c]/20 disabled:opacity-50 hover:bg-[#f5c16c]/10">Next</button>
                   </div>
                 </div>
               </div>

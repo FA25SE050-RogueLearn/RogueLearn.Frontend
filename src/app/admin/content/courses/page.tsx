@@ -85,25 +85,25 @@ export default function CourseDataPage() {
     <AdminLayout>
       <div className="space-y-6">
         <div className="flex items-center gap-4">
-          <Button asChild variant="outline" size="sm" className="border-[#beaca3]/30 text-[#2c2f33] hover:bg-[#beaca3]/20">
+          <Button asChild variant="outline" size="sm" className="border-[#f5c16c]/30 text-[#f5c16c] hover:bg-[#f5c16c]/10">
             <Link href="/admin/content" className="flex items-center gap-2"><ChevronLeft className="h-4 w-4" /> Back</Link>
           </Button>
           <div className="flex-1">
-            <h1 className="text-2xl font-bold text-[#2c2f33]">Curriculum Import</h1>
-            <p className="text-sm text-[#2c2f33]/60">Curriculum & Subject Importer</p>
+            <h1 className="text-2xl font-bold text-white">Curriculum Import</h1>
+            <p className="text-sm text-white/50">Curriculum & Subject Importer</p>
           </div>
         </div>
 
-        <Card className="bg-white border-[#beaca3]/30">
-          <CardHeader className="border-b border-[#beaca3]/20"><CardTitle className="text-[#2c2f33]">Import New Data</CardTitle></CardHeader>
+        <Card className="bg-[#1a0b08]/80 border-[#f5c16c]/20">
+          <CardHeader className="border-b border-[#f5c16c]/10"><CardTitle className="text-white">Import New Data</CardTitle></CardHeader>
           <CardContent className="space-y-4 pt-6">
             <div>
-              <Label htmlFor="rawText" className="text-sm text-[#2c2f33]/70">Paste Raw Text Content</Label>
-              <Textarea id="rawText" value={rawText} onChange={(e) => setRawText(e.target.value)} placeholder="Paste the raw HTML or text from FLM or a single subject document here..." className="mt-2 h-40 border-[#beaca3]/30" />
+              <Label htmlFor="rawText" className="text-sm text-white/70">Paste Raw Text Content</Label>
+              <Textarea id="rawText" value={rawText} onChange={(e) => setRawText(e.target.value)} placeholder="Paste the raw HTML or text from FLM or a single subject document here..." className="mt-2 h-40 border-[#f5c16c]/20 bg-black/30 text-white placeholder:text-white/40" />
             </div>
             <div className="flex gap-4 items-end">
               <div className="w-32">
-                <Label htmlFor="semester" className="text-sm text-[#2c2f33]/70">Semester (Optional)</Label>
+                <Label htmlFor="semester" className="text-sm text-white/70">Semester (Optional)</Label>
                 <Input 
                   id="semester" 
                   type="number" 
@@ -112,42 +112,42 @@ export default function CourseDataPage() {
                   value={semester} 
                   onChange={(e) => setSemester(e.target.value)} 
                   placeholder="e.g., 1" 
-                  className="mt-2 border-[#beaca3]/30" 
+                  className="mt-2 border-[#f5c16c]/20 bg-black/30 text-white placeholder:text-white/40" 
                 />
               </div>
-              <p className="text-xs text-[#2c2f33]/50 pb-2">Only used when importing a single subject</p>
+              <p className="text-xs text-white/50 pb-2">Only used when importing a single subject</p>
             </div>
-            {importStatus && <p className="text-emerald-600">{importStatus}</p>}
-            {importError && <p className="text-[#e07a5f]">{importError}</p>}
+            {importStatus && <p className="text-emerald-400">{importStatus}</p>}
+            {importError && <p className="text-red-400">{importError}</p>}
             <div className="flex gap-4">
-              <Button onClick={handleImportCurriculum} disabled={!rawText || !!importStatus} className="bg-[#7289da] hover:bg-[#7289da]/90 text-white">
+              <Button onClick={handleImportCurriculum} disabled={!rawText || !!importStatus} className="bg-gradient-to-r from-[#f5c16c] to-[#d4a855] text-black font-semibold hover:from-[#d4a855] hover:to-[#f5c16c]">
                 <UploadCloud className="mr-2 h-4 w-4" /> Import Full Curriculum
               </Button>
-              <Button onClick={handleImportSubject} disabled={!rawText || !!importStatus} variant="outline" className="border-[#7289da]/30 text-[#7289da] hover:bg-[#7289da]/10">
+              <Button onClick={handleImportSubject} disabled={!rawText || !!importStatus} variant="outline" className="border-[#f5c16c]/30 text-[#f5c16c] hover:bg-[#f5c16c]/10">
                 <UploadCloud className="mr-2 h-4 w-4" /> Import Single Subject
               </Button>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="bg-white border-[#beaca3]/30">
-          <CardHeader className="border-b border-[#beaca3]/20 flex flex-row items-center justify-between">
-            <CardTitle className="text-[#2c2f33]">Existing Catalog</CardTitle>
-            <Button onClick={fetchPrograms} size="sm" variant="outline" className="border-[#7289da]/30 text-[#7289da] hover:bg-[#7289da]/10"><RefreshCw className="mr-2 h-4 w-4" /> Refresh</Button>
+        <Card className="bg-[#1a0b08]/80 border-[#f5c16c]/20">
+          <CardHeader className="border-b border-[#f5c16c]/10 flex flex-row items-center justify-between">
+            <CardTitle className="text-white">Existing Catalog</CardTitle>
+            <Button onClick={fetchPrograms} size="sm" variant="outline" className="border-[#f5c16c]/30 text-[#f5c16c] hover:bg-[#f5c16c]/10"><RefreshCw className="mr-2 h-4 w-4" /> Refresh</Button>
           </CardHeader>
           <CardContent className="space-y-3 pt-6">
-            {isLoading ? <p className="text-center text-[#2c2f33]/40">Loading catalog...</p> :
+            {isLoading ? <p className="text-center text-white/40">Loading catalog...</p> :
             courseData.length > 0 ? courseData.map((course) => (
-              <div key={course.id} className="flex items-center justify-between rounded-lg border border-[#beaca3]/30 bg-[#f4f6f8] p-4">
+              <div key={course.id} className="flex items-center justify-between rounded-lg border border-[#f5c16c]/20 bg-black/30 p-4">
                 <div className="flex-1">
-                  <h3 className="text-sm font-semibold text-[#2c2f33]">{course.programCode} - {course.programName}</h3>
-                  <p className="text-xs text-[#2c2f33]/50">Version {course.version} • Updated {course.updated}</p>
+                  <h3 className="text-sm font-semibold text-white">{course.programCode} - {course.programName}</h3>
+                  <p className="text-xs text-white/50">Version {course.version} • Updated {course.updated}</p>
                 </div>
                 <div className="flex items-center gap-3">
-                  {course.status === "update-available" ? <AlertCircle className="h-5 w-5 text-[#7289da]" /> : <CheckCircle className="h-5 w-5 text-emerald-500" />}
+                  {course.status === "update-available" ? <AlertCircle className="h-5 w-5 text-[#f5c16c]" /> : <CheckCircle className="h-5 w-5 text-emerald-400" />}
                 </div>
               </div>
-            )) : <p className="text-center text-[#2c2f33]/40">No curriculum programs have been imported yet.</p>}
+            )) : <p className="text-center text-white/40">No curriculum programs have been imported yet.</p>}
           </CardContent>
         </Card>
       </div>
