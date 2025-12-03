@@ -23,14 +23,9 @@ export interface FapSubjectData {
 /**
  * Represents the response from the command that processes the academic record,
  * syncs the gradebook, and initiates the learning path generation.
+ * Note: Primary type is in student.ts - this is kept for backward compatibility.
  */
-export interface ProcessAcademicRecordResponse {
-  isSuccess: boolean;
-  message: string;
-  learningPathId: string; // Guid of the generated or updated learning path
-  subjectsProcessed: number;
-  calculatedGpa: number;
-}
+export type { ProcessAcademicRecordResponse } from './student';
 
 /**
  * Represents the user's progress for a specific quest, including the status of each step.

@@ -11,6 +11,25 @@ export interface ProcessAcademicRecordCommandRequest {
   curriculumProgramId: string;
 }
 
+/** Individual skill XP award details. */
+export interface SkillXpAward {
+  skillId: string;
+  skillName: string;
+  xpAwarded: number;
+  newTotalXp: number;
+  newLevel: number;
+  sourceSubjectCode: string;
+  grade: string;
+  tierDescription: string;
+}
+
+/** XP awards summary from academic record processing. */
+export interface XpAwardedSummary {
+  totalXp: number;
+  skillsAffected: number;
+  skillAwards: SkillXpAward[];
+}
+
 /** Response payload summarizing processing outcomes. */
 export interface ProcessAcademicRecordResponse {
   isSuccess: boolean;
@@ -18,6 +37,7 @@ export interface ProcessAcademicRecordResponse {
   learningPathId: string;
   subjectsProcessed: number;
   calculatedGpa?: number | null;
+  xpAwarded?: XpAwardedSummary | null;
 }
 
 /** Response from initializing skills based on the curriculum. */
