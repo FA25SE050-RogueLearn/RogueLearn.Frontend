@@ -279,6 +279,12 @@ export default function GuildMeetingsSection({ guildId }: Props) {
     return email || undefined;
   }
 
+  function getParticipantName(participant: any): string {
+    if (participant?.signedinUser) return participant.signedinUser.displayName as string;
+    if (participant?.anonymousUser) return `${participant.anonymousUser.displayName} (Guest)`;
+    return "Unknown User";
+  }
+
   async function handleEndMeetingFor(meeting: MeetingDto) {
     setError(null);
     setEnding(true);
@@ -355,37 +361,111 @@ export default function GuildMeetingsSection({ guildId }: Props) {
       }
       const records: any[] = confList?.conferenceRecords ?? confList?.records ?? [];
       if (!records || records.length === 0) throw new Error("No conference records found");
-      const latest = records[0];
-      const conferenceId: string = latest?.name?.split("/")?.pop?.() ?? latest?.conferenceId ?? latest?.id;
-      if (!conferenceId) throw new Error("Unable to determine conferenceId");
-      let participantsRes: any;
-      try {
-        participantsRes = await googleMeetApi.listParticipants(token, conferenceId);
-      } catch (e: any) {
-        if (isUnauthorized(e)) {
+      let expectedSpace = (meeting?.spaceName ?? "").trim();
+      let expectedResourceName: string | null = null;
+      if (!expectedSpace) {
+        const link = meeting?.meetingLink ?? "";
+        const codeMatch = link.match(/[a-z0-9]+-[a-z0-9]+-[a-z0-9]+/i);
+        const code = codeMatch?.[0] ?? null;
+        if (code) {
           try {
-            const refreshed = await refreshAccessToken();
-            token = refreshed;
-            setActiveToken(refreshed);
-            try { sessionStorage.setItem(`guildMeetingToken:${guildId}`, refreshed); } catch (_) {}
-            participantsRes = await googleMeetApi.listParticipants(token, conferenceId);
-          } catch {
-            try {
-              const newToken = await requestToken(requiredBothScopes);
-              token = newToken;
-              setActiveToken(newToken);
-              try { sessionStorage.setItem(`guildMeetingToken:${guildId}`, newToken); } catch (_) {}
-              participantsRes = await googleMeetApi.listParticipants(token, conferenceId);
-            } catch (reqErr: any) {
-              setNeedsAuth(true);
-              throw new Error("Authorization required to access Google Meet. Click Authorize and retry.");
+            const space = await googleMeetApi.getSpace(token, code);
+            expectedResourceName = space?.name ?? null; // spaces/{space}
+            expectedSpace = (expectedResourceName ?? "").split("/").pop() ?? "";
+          } catch (e: any) {
+            if (isUnauthorized(e)) {
+              try {
+                const refreshed = await refreshAccessToken();
+                token = refreshed;
+                setActiveToken(refreshed);
+                try { sessionStorage.setItem(`guildMeetingToken:${guildId}`, refreshed); } catch (_) {}
+                const space = await googleMeetApi.getSpace(token, code);
+                expectedResourceName = space?.name ?? null;
+                expectedSpace = (expectedResourceName ?? "").split("/").pop() ?? "";
+              } catch {
+                try {
+                  const gisToken = await requestToken(requiredBothScopes);
+                  token = gisToken;
+                  setActiveToken(gisToken);
+                  try { sessionStorage.setItem(`guildMeetingToken:${guildId}`, gisToken); } catch (_) {}
+                  const space = await googleMeetApi.getSpace(token, code);
+                  expectedResourceName = space?.name ?? null;
+                  expectedSpace = (expectedResourceName ?? "").split("/").pop() ?? "";
+                } catch (reqErr: any) {
+                  setNeedsAuth(true);
+                  throw new Error("Authorization required to access Google Meet. Click Authorize and retry.");
+                }
+              }
             }
           }
-        } else {
-          throw e;
         }
       }
-      const participantsRaw: any[] = participantsRes?.participants ?? participantsRes?.items ?? [];
+      let matchedConferenceId: string | null = null;
+      let matchedSpaceResource: string | null = null;
+      const candidates = records.slice(0, 3);
+      for (const r of candidates) {
+        const rid = r?.name?.split("/")?.pop?.() ?? r?.conferenceId ?? r?.id;
+        if (!rid) continue;
+        let rec: any;
+        try {
+          rec = await googleMeetApi.getConferenceRecord(token, rid);
+        } catch (e: any) {
+          if (isUnauthorized(e)) {
+            try {
+              const refreshed = await refreshAccessToken();
+              token = refreshed;
+              setActiveToken(refreshed);
+              try { sessionStorage.setItem(`guildMeetingToken:${guildId}`, refreshed); } catch (_) {}
+              rec = await googleMeetApi.getConferenceRecord(token, rid);
+            } catch {
+              try {
+                const newToken = await requestToken(requiredBothScopes);
+                token = newToken;
+                setActiveToken(newToken);
+                try { sessionStorage.setItem(`guildMeetingToken:${guildId}`, newToken); } catch (_) {}
+                rec = await googleMeetApi.getConferenceRecord(token, rid);
+              } catch {}
+            }
+          }
+        }
+        const spaceName = (rec?.space ?? "").split("/").pop();
+        if (spaceName && expectedSpace && spaceName === expectedSpace) {
+          matchedConferenceId = rec?.name?.split("/")?.pop?.() ?? rid;
+          matchedSpaceResource = rec?.space ?? null; // full resource name
+          break;
+        }
+      }
+      let participantsRaw: any[] = [];
+      if (matchedConferenceId) {
+        let participantsRes: any;
+        try {
+          participantsRes = await googleMeetApi.listParticipants(token, matchedConferenceId);
+        } catch (e: any) {
+          if (isUnauthorized(e)) {
+            try {
+              const refreshed = await refreshAccessToken();
+              token = refreshed;
+              setActiveToken(refreshed);
+              try { sessionStorage.setItem(`guildMeetingToken:${guildId}`, refreshed); } catch (_) {}
+              participantsRes = await googleMeetApi.listParticipants(token, matchedConferenceId);
+            } catch {
+              try {
+                const newToken = await requestToken(requiredBothScopes);
+                token = newToken;
+                setActiveToken(newToken);
+                try { sessionStorage.setItem(`guildMeetingToken:${guildId}`, newToken); } catch (_) {}
+                participantsRes = await googleMeetApi.listParticipants(token, matchedConferenceId);
+              } catch (reqErr: any) {
+                setNeedsAuth(true);
+                throw new Error("Authorization required to access Google Meet. Click Authorize and retry.");
+              }
+            }
+          } else {
+            throw e;
+          }
+        }
+        participantsRaw = participantsRes?.participants ?? participantsRes?.items ?? [];
+      }
       const mapped: MeetingParticipantDto[] = [];
       for (const p of participantsRaw) {
         mapped.push({
@@ -394,7 +474,7 @@ export default function GuildMeetingsSection({ guildId }: Props) {
           joinTime: p?.earliestStartTime ?? p?.joinTime ?? null,
           leaveTime: p?.endTime ?? p?.leaveTime ?? null,
           type: p?.type ?? p?.participantType ?? undefined,
-          displayName: p?.signedinUser?.displayName ?? p?.displayName ?? "Unknown",
+          displayName: getParticipantName(p),
           meetingId: meeting?.meetingId,
         });
       }
@@ -431,12 +511,9 @@ export default function GuildMeetingsSection({ guildId }: Props) {
       setDetailsById((prev) => ({ ...prev, [meetingId]: detailsRes.data ?? null }));
       setExpandedId(meetingId);
       try {
-        if (!spaceName && latest?.name) {
-          const record = await googleMeetApi.getConferenceRecord(token, latest.name);
-          spaceName = record?.space ?? spaceName ?? null;
-        }
-        if (spaceName) {
-          await googleMeetApi.endActiveConference(token, spaceName);
+        const endResource = matchedSpaceResource ?? expectedResourceName ?? spaceName;
+        if (endResource) {
+          await googleMeetApi.endActiveConference(token, endResource);
         }
       } catch (e: any) {
         if (isUnauthorized(e)) {
@@ -445,26 +522,16 @@ export default function GuildMeetingsSection({ guildId }: Props) {
             token = refreshed;
             setActiveToken(refreshed);
             try { sessionStorage.setItem(`guildMeetingToken:${guildId}`, refreshed); } catch (_) {}
-            if (!spaceName && latest?.name) {
-              const record = await googleMeetApi.getConferenceRecord(token, latest.name);
-              spaceName = record?.space ?? spaceName ?? null;
-            }
-            if (spaceName) {
-              await googleMeetApi.endActiveConference(token, spaceName);
-            }
+            const endResource = matchedSpaceResource ?? expectedResourceName ?? spaceName;
+            if (endResource) await googleMeetApi.endActiveConference(token, endResource);
           } catch {
             try {
               const newToken = await requestToken(requiredBothScopes);
               token = newToken;
               setActiveToken(newToken);
               try { sessionStorage.setItem(`guildMeetingToken:${guildId}`, newToken); } catch (_) {}
-              if (!spaceName && latest?.name) {
-                const record = await googleMeetApi.getConferenceRecord(token, latest.name);
-                spaceName = record?.space ?? spaceName ?? null;
-              }
-              if (spaceName) {
-                await googleMeetApi.endActiveConference(token, spaceName);
-              }
+              const endResource = matchedSpaceResource ?? expectedResourceName ?? spaceName;
+              if (endResource) await googleMeetApi.endActiveConference(token, endResource);
             } catch (reqErr: any) {
               setNeedsAuth(true);
             }
