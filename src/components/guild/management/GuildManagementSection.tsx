@@ -151,6 +151,7 @@ export function GuildManagementSection({ guildId, onLeftGuild }: GuildManagement
       await guildsApi.transferLeadership(guildId, { toUserId: toAuthUserId });
       reload();
       toast.success("Leadership transferred.");
+      try { router.refresh(); } catch { try { window.location.reload(); } catch {} }
     } catch (err: any) {
       console.error(err);
       // toast.error("Failed to transfer leadership.");
