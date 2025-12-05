@@ -1,7 +1,7 @@
 // roguelearn-web/src/components/quests/QuestlineView.tsx
 "use client";
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import gsap from 'gsap';
 import { Progress } from '@/components/ui/progress';
 import {
@@ -10,13 +10,9 @@ import {
   Map,
   ArrowLeft
 } from 'lucide-react';
-import Link from 'next/link';
-import { LearningPath, QuestSummary } from '@/types/quest';
+import { LearningPath } from '@/types/quest';
 import { usePageTransition } from '@/components/layout/PageTransition';
-import { useQuestGeneration } from '@/hooks/useQuestGeneration';
-import QuestGenerationModal from '@/components/quests/QuestGenerationModal';
 import QuestCard from '@/components/quests/QuestCard';
-import questApi from '@/api/questApi';
 
 interface QuestlineViewProps {
   learningPath: LearningPath;
@@ -24,17 +20,9 @@ interface QuestlineViewProps {
 
 export default function QuestlineView({ learningPath }: QuestlineViewProps) {
   const { navigateTo } = usePageTransition();
-  const { startGeneration } = useQuestGeneration();
 
   const headerRef = useRef<HTMLDivElement>(null);
   const timelineRef = useRef<HTMLDivElement>(null);
-
-  // Generation Modal State
-  const [showGenerationModal, setShowGenerationModal] = useState(false);
-  const [generatingJobId, setGeneratingJobId] = useState<string | null>(null);
-  const [generatingQuestTitle, setGeneratingQuestTitle] = useState('');
-  const [targetQuestUrl, setTargetQuestUrl] = useState<string>('');
-  const [generatingQuestId, setGeneratingQuestId] = useState<string | null>(null);
 
   useEffect(() => {
     const ctx = gsap.context(() => {
@@ -58,7 +46,6 @@ export default function QuestlineView({ learningPath }: QuestlineViewProps) {
       }
     });
 
-    // Auto-scroll to active chapter on mount
     if (timelineRef.current) {
       setTimeout(() => {
         const activeChapter = timelineRef.current?.querySelector('[data-active="true"]');
@@ -71,60 +58,6 @@ export default function QuestlineView({ learningPath }: QuestlineViewProps) {
     return () => ctx.revert();
   }, [learningPath.id]);
 
-  const waitForQuestSteps = async (questId: string) => {
-    for (let i = 0; i < 20; i++) {
-      const res = await questApi.getQuestDetails(questId);
-      if (res.isSuccess && res.data?.steps && res.data.steps.length > 0) return true;
-      await new Promise(r => setTimeout(r, 800));
-    }
-    return false;
-  };
-
-  const handleQuestComplete = async () => {
-    const questId = generatingQuestId;
-    setShowGenerationModal(false);
-    setGeneratingJobId(null);
-    setGeneratingQuestTitle('');
-    setGeneratingQuestId(null);
-    if (questId) {
-      await waitForQuestSteps(questId);
-    }
-    navigateTo(targetQuestUrl);
-  };
-
-  const handleStartQuest = async (quest: QuestSummary, chapterId: string) => {
-    const questUrl = `/quests/${learningPath.id}/${chapterId}/${quest.id}`;
-    setGeneratingQuestId(quest.id);
-    setGeneratingQuestTitle(quest.title);
-    setTargetQuestUrl(questUrl);
-
-    try {
-      // 1. Check if steps exist
-      const detailsResponse = await questApi.getQuestDetails(quest.id);
-
-      if (detailsResponse.isSuccess && detailsResponse.data?.steps && detailsResponse.data.steps.length > 0) {
-        navigateTo(questUrl);
-        setGeneratingQuestId(null);
-        return;
-      }
-
-      // 2. Start generation if needed
-      const jobId = await startGeneration(quest.id);
-      if (!jobId) {
-        alert('Failed to start quest generation.');
-        setGeneratingQuestId(null);
-        return;
-      }
-
-      setGeneratingJobId(jobId);
-      setShowGenerationModal(true);
-    } catch (error) {
-      console.error('Error starting quest:', error);
-      setGeneratingQuestId(null);
-    }
-  };
-
-  // Determine global progress
   const totalQuests = learningPath.chapters.reduce((acc, ch) => acc + ch.quests.length, 0);
   const completedQuestsCount = learningPath.chapters.reduce(
     (acc, ch) => acc + ch.quests.filter(q => q.status === 'Completed').length,
@@ -132,7 +65,6 @@ export default function QuestlineView({ learningPath }: QuestlineViewProps) {
   );
   const overallProgress = totalQuests > 0 ? (completedQuestsCount / totalQuests) * 100 : 0;
 
-  // Helper to determine active chapter index for scrolling
   const activeChapterIndex = learningPath.chapters.findIndex(ch =>
     ch.status === 'InProgress' || ch.status === 'NotStarted'
   );
@@ -185,12 +117,10 @@ export default function QuestlineView({ learningPath }: QuestlineViewProps) {
 
       {/* Timeline Layout */}
       <div ref={timelineRef} className="relative pl-4 md:pl-8">
-        {/* Vertical Line */}
         <div className="absolute top-4 bottom-0 left-4 md:left-8 w-0.5 bg-gradient-to-b from-[#f5c16c]/50 via-[#f5c16c]/20 to-transparent" />
 
         <div className="space-y-16">
           {learningPath.chapters.map((chapter, index) => {
-            // Always false in free mode
             const isLockedChapter = false;
             const isActiveChapter = index === targetChapterIndex;
             const chapterProgress = chapter.quests.length > 0
@@ -199,7 +129,7 @@ export default function QuestlineView({ learningPath }: QuestlineViewProps) {
 
             return (
               <div
-                key={chapter.id}
+                key={`semester-${chapter.sequence}`}
                 className={`chapter-section relative pl-12 md:pl-16 transition-opacity duration-500 ${isLockedChapter ? 'opacity-50 grayscale-[0.5]' : 'opacity-100'}`}
                 data-active={isActiveChapter}
               >
@@ -242,8 +172,8 @@ export default function QuestlineView({ learningPath }: QuestlineViewProps) {
                       quest={quest}
                       chapterSequence={chapter.sequence}
                       isLocked={false}
-                      isGenerating={generatingQuestId === quest.id}
-                      onStartQuest={() => handleStartQuest(quest, chapter.id)}
+                      isGenerating={false}
+                      onStartQuest={() => navigateTo(`/quests/${quest.id}`)}
                     />
                   ))}
                 </div>
@@ -252,19 +182,6 @@ export default function QuestlineView({ learningPath }: QuestlineViewProps) {
           })}
         </div>
       </div>
-
-      <QuestGenerationModal
-        isOpen={showGenerationModal}
-        jobId={generatingJobId}
-        questTitle={generatingQuestTitle}
-        onClose={() => {
-          setShowGenerationModal(false);
-          setGeneratingJobId(null);
-          setGeneratingQuestTitle('');
-          setGeneratingQuestId(null);
-        }}
-        onComplete={handleQuestComplete}
-      />
     </div>
   );
 }

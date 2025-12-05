@@ -43,8 +43,11 @@ export const QuizActivityContent = ({
     const totalQuestions = questions.length;
 
     // ========== CALCULATIONS ==========
+    // Note: API uses 'answer' field, but we also support 'correctAnswer' for backward compatibility
+    const getCorrectAnswer = (q: any): string => q.answer || q.correctAnswer || '';
+    
     const calculateCorrectCount = (): number => {
-        return questions.filter((q, i) => selectedAnswers[i] === q.correctAnswer).length;
+        return questions.filter((q, i) => selectedAnswers[i] === getCorrectAnswer(q)).length;
     };
 
     const correctCount = calculateCorrectCount();
@@ -260,7 +263,8 @@ export const QuizActivityContent = ({
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
                         {questions.map((q, i) => {
                             const selectedAnswer = selectedAnswers[i];
-                            const isCorrect = selectedAnswer === q.correctAnswer;
+                            const correctAnswer = getCorrectAnswer(q);
+                            const isCorrect = selectedAnswer === correctAnswer;
 
                             return (
                                 <div key={i} className={`p-3 rounded-lg border ${
@@ -285,7 +289,7 @@ export const QuizActivityContent = ({
                                         )}
                                         <p className="text-xs">
                                             <span className="text-emerald-400">Correct:</span>{' '}
-                                            <span className="text-white/70">{q.correctAnswer}</span>
+                                            <span className="text-white/70">{correctAnswer}</span>
                                         </p>
                                         {q.explanation && (
                                             <p className="text-xs text-white/50 mt-1">

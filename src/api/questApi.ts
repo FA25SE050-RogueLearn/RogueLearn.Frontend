@@ -43,6 +43,16 @@ interface QuestSkillInfo {
 }
 
 /**
+ * Response from POST /api/quests/{questId}/start
+ */
+export interface StartQuestResponse {
+  attemptId: string;
+  status: string;
+  assignedDifficulty: string;
+  isNew: boolean;
+}
+
+/**
  * Response from GET /api/quests/{questId}/skills
  */
 export interface GetQuestSkillsResponse {
@@ -223,6 +233,20 @@ const questApi = {
         isPollingEndpoint,            // ⭐ NEW
       } as const);
     }),
+
+  /**
+   * Explicitly starts a quest for the user.
+   * Creates UserQuestAttempt and assigns difficulty track.
+   * Idempotent: returns existing attempt info if already started.
+   * POST /api/quests/{questId}/start
+   */
+  startQuest: (questId: string): Promise<ApiResponse<StartQuestResponse>> =>
+    axiosClient
+      .post<StartQuestResponse>(`/api/quests/${questId}/start`)
+      .then(res => ({
+        isSuccess: true,
+        data: res.data,
+      })),
 
   /**
    * ⭐ UPDATED: Marks a specific activity within a weekly step as complete.

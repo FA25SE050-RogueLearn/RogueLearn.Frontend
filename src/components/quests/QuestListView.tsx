@@ -1,7 +1,7 @@
 // roguelearn-web/src/components/quests/QuestListView.tsx
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import gsap from 'gsap';
 import { Card, CardContent } from '@/components/ui/card';
 import {
@@ -13,10 +13,7 @@ import {
   Target,
 } from 'lucide-react';
 import { QuestSummary } from '@/types/quest';
-import questApi from '@/api/questApi';
 import { usePageTransition } from '@/components/layout/PageTransition';
-import { useQuestGeneration } from '@/hooks/useQuestGeneration';
-import QuestGenerationModal from '@/components/quests/QuestGenerationModal';
 import DifficultyBadge from '@/components/quests/DifficultyBadge';
 
 interface QuestListViewProps {
@@ -37,21 +34,12 @@ export default function QuestListView({
   userStats
 }: QuestListViewProps) {
   const { navigateTo } = usePageTransition();
-  const { startGeneration } = useQuestGeneration();
 
   const headerRef = useRef<HTMLDivElement | null>(null);
   const activeQuestsRef = useRef<HTMLDivElement | null>(null);
   const completedQuestsRef = useRef<HTMLDivElement | null>(null);
   const availableQuestsRef = useRef<HTMLDivElement | null>(null);
-  const [generatingQuestId, setGeneratingQuestId] = useState<string | null>(null);
 
-  // Modal state
-  const [showGenerationModal, setShowGenerationModal] = useState(false);
-  const [generatingJobId, setGeneratingJobId] = useState<string | null>(null);
-  const [generatingQuestTitle, setGeneratingQuestTitle] = useState('');
-  const [targetQuestUrl, setTargetQuestUrl] = useState<string>('');
-
-  // In free mode, all not started quests are available.
   const availableQuests = notStartedQuests;
 
   useEffect(() => {
@@ -78,87 +66,17 @@ export default function QuestListView({
     return () => ctx.revert();
   }, [availableQuests]);
 
-  // Handle quest completion from modal
-  const waitForQuestSteps = async (questId: string) => {
-    for (let i = 0; i < 20; i++) {
-      const res = await questApi.getQuestDetails(questId);
-      if (res.isSuccess && res.data?.steps && res.data.steps.length > 0) return true;
-      await new Promise(r => setTimeout(r, 800));
-    }
-    return false;
-  };
-
-  const handleQuestComplete = async () => {
-    const questId = generatingQuestId;
-    setShowGenerationModal(false);
-    setGeneratingJobId(null);
-    setGeneratingQuestTitle('');
-    setGeneratingQuestId(null);
-    if (questId) {
-      await waitForQuestSteps(questId);
-    }
-    navigateTo(targetQuestUrl);
-  };
-
-  const handleStartQuest = async (event: React.MouseEvent, quest: QuestSummary) => {
-    event.preventDefault();
-    event.stopPropagation();
-
-    const questUrl = `/quests/${quest.learningPathId}/${quest.chapterId}/${quest.id}`;
-    setGeneratingQuestId(quest.id);
-    setGeneratingQuestTitle(quest.title);
-    setTargetQuestUrl(questUrl);
-
-    try {
-      console.log(`🔍 Checking if quest steps already exist for: ${quest.title}`);
-
-      // ========== STEP 1: CHECK IF STEPS ALREADY EXIST ==========
-      const detailsResponse = await questApi.getQuestDetails(quest.id);
-
-      if (detailsResponse.isSuccess && detailsResponse.data?.steps && detailsResponse.data.steps.length > 0) {
-        console.log(`✅ Quest steps for ${quest.title} already exist. Navigating directly.`);
-        navigateTo(questUrl);
-        setGeneratingQuestId(null);
-        return;
-      }
-
-      console.log(`🚀 Quest steps for ${quest.title} not found. Starting background generation...`);
-
-      // ========== STEP 2: START BACKGROUND GENERATION ==========
-      const jobId = await startGeneration(quest.id);
-
-      if (!jobId) {
-        console.error('❌ Failed to start generation');
-        alert('Failed to start quest generation. Please try again.');
-        setGeneratingQuestId(null);
-        return;
-      }
-
-      console.log(`📡 Background job started with ID: ${jobId}`);
-
-      // Show modal and let IT handle all polling
-      setGeneratingJobId(jobId);
-      setShowGenerationModal(true);
-
-    } catch (error: any) {
-      console.error('❌ Error starting quest:', error);
-      alert('An error occurred while starting the quest. Please try again.');
-      setGeneratingQuestId(null);
-      setShowGenerationModal(false);
-    }
+  const handleStartQuest = (quest: QuestSummary) => {
+    navigateTo(`/quests/${quest.id}`);
   };
 
   const QuestCard = ({ quest, isLocked = false }: { quest: QuestSummary; isLocked?: boolean }) => (
     <button
-      onClick={(e) => {
-        if (isLocked) {
-          e.preventDefault();
-          return;
-        }
-        handleStartQuest(e, quest);
+      onClick={() => {
+        if (isLocked) return;
+        handleStartQuest(quest);
       }}
-      className={`quest-card group relative block w-full text-left transition ${isLocked ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'
-        }`}
+      className={`quest-card group relative block w-full text-left transition ${isLocked ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'}`}
     >
       <Card
         className={`relative overflow-hidden rounded-[28px] border bg-gradient-to-br from-[#2d1810] via-[#1a0a08] to-[#0a0506] shadow-[0_20px_50px_rgba(4,0,14,0.65)] transition-all duration-300 group-hover:-translate-y-1 group-hover:shadow-[0_28px_65px_rgba(245,193,108,0.25)] ${quest.status === 'InProgress'
@@ -220,17 +138,8 @@ export default function QuestListView({
             <div
               className="w-full h-10 flex items-center justify-center bg-gradient-to-r from-[#f5c16c] to-[#d4a855] text-black font-semibold rounded-full hover:shadow-lg hover:shadow-[#f5c16c]/50 transition-all duration-300"
             >
-              {generatingQuestId === quest.id ? (
-                <>
-                  <Sparkles className="mr-2 h-4 w-4" />
-                  <span>Forging...</span>
-                </>
-              ) : (
-                <>
-                  <Sparkles className="mr-2 h-4 w-4" />
-                  <span>{quest.status === 'InProgress' ? 'Continue Quest' : 'Start Quest'}</span>
-                </>
-              )}
+              <Sparkles className="mr-2 h-4 w-4" />
+              <span>{quest.status === 'InProgress' ? 'Continue Quest' : 'Start Quest'}</span>
             </div>
           )}
 
@@ -385,19 +294,6 @@ export default function QuestListView({
           </div>
         </div>
       )}
-
-      <QuestGenerationModal
-        isOpen={showGenerationModal}
-        jobId={generatingJobId}
-        questTitle={generatingQuestTitle}
-        onClose={() => {
-          setShowGenerationModal(false);
-          setGeneratingJobId(null);
-          setGeneratingQuestTitle('');
-          setGeneratingQuestId(null);
-        }}
-        onComplete={handleQuestComplete}
-      />
     </div>
   );
 }

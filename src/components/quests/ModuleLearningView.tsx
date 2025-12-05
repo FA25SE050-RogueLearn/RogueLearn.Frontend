@@ -124,20 +124,23 @@ const KnowledgeCheckActivityContent = ({ payload }: { payload: KnowledgeCheckAct
         return { options: ['Option A', 'Option B', 'Option C', 'Option D'], correct: 'Option A' };
     };
 
-    const baseQuestions: KnowledgeCheckQuestion[] = payload.questions ||
-        (payload.question ? [{
-            question: payload.question,
-            options: payload.options || [],
-            correctAnswer: payload.correctAnswer || '',
-            explanation: payload.explanation || ''
-        }] : []);
+    // Helper to get correct answer (API uses 'answer', but we support 'correctAnswer' for backward compat)
+    const getAnswer = (q: any): string => q.answer || q.correctAnswer || '';
 
-    const questions: KnowledgeCheckQuestion[] = baseQuestions.map(q => {
+    const baseQuestions = payload.questions || [];
+
+    // Normalize questions to have consistent structure
+    const questions = baseQuestions.map(q => {
         const hasOptions = Array.isArray(q.options) && q.options.length > 0;
         const d = deriveDefault(q.question);
         const opts = hasOptions ? q.options : d.options;
-        const correct = q.correctAnswer && q.correctAnswer.length > 0 ? q.correctAnswer : d.correct;
-        return { ...q, options: opts, correctAnswer: correct, explanation: q.explanation || '' };
+        const correct = getAnswer(q) || d.correct;
+        return { 
+            question: q.question,
+            options: opts, 
+            answer: correct,  // Normalize to 'answer' field
+            explanation: q.explanation || '' 
+        };
     });
 
     const handleSelect = (qIndex: number, option: string) => {
@@ -149,7 +152,7 @@ const KnowledgeCheckActivityContent = ({ payload }: { payload: KnowledgeCheckAct
         setSubmitted(true);
     };
 
-    const correctCount = questions.filter((q, i) => selectedAnswers[i] === q.correctAnswer).length;
+    const correctCount = questions.filter((q, i) => selectedAnswers[i] === q.answer).length;
 
     return (
         <Card className="relative overflow-hidden bg-black/40 border-[#f5c16c]/20">
@@ -181,7 +184,7 @@ const KnowledgeCheckActivityContent = ({ payload }: { payload: KnowledgeCheckAct
                             <div className="flex flex-col gap-2">
                                 {q.options.map(opt => {
                                     const isSelected = selectedAnswer === opt;
-                                    const isCorrect = q.correctAnswer === opt;
+                                    const isCorrect = q.answer === opt;
 
                                     let buttonClass = "justify-start border-white/20 hover:bg-white/10 text-white";
                                     if (submitted) {
@@ -303,9 +306,7 @@ interface ModuleLearningViewProps {
     weeklyStep: QuestStep;
     questId: string;
     questName?: string;
-    learningPathId: string;
     learningPathName?: string;
-    chapterId: string;
     chapterName?: string;
     totalWeeks: number;
 }
@@ -333,9 +334,7 @@ export function ModuleLearningView({
     weeklyStep,
     questId,
     questName,
-    learningPathId,
     learningPathName,
-    chapterId,
     chapterName,
     totalWeeks
 }: ModuleLearningViewProps) {
@@ -371,7 +370,6 @@ export function ModuleLearningView({
                 setIsLoadingProgress(true);
                 const response = await questApi.getCompletedActivities(questId, weeklyStep.id);
 
-                // ✅ Check if the request was successful
                 if (response.isSuccess && response.data) {
                     // Extract completed activity IDs
                     const completed = response.data.activities
@@ -383,13 +381,17 @@ export function ModuleLearningView({
 
                     console.log(`✅ Loaded progress: ${completed.length}/${response.data.totalCount} activities completed`);
                 } else {
-                    // Handle error response
-                    console.error("Failed to fetch progress:", response.message);
-                    toast.error("Failed to load your progress. Please refresh the page.");
+                    // 404/403 means no progress yet - this is normal for first-time users
+                    // Backend will lazy-create the attempt when user completes their first activity
+                    console.log("No progress found - user hasn't started this quest yet");
+                    setCompletedActivities([]);
+                    setStepProgress(null);
                 }
             } catch (error) {
+                // Network or unexpected errors - still don't block the user
                 console.error("Failed to fetch progress:", error);
-                toast.error("There was an error loading your progress. Please try again.");
+                setCompletedActivities([]);
+                setStepProgress(null);
             } finally {
                 setIsLoadingProgress(false);
             }
@@ -453,23 +455,41 @@ export function ModuleLearningView({
         }
 
         setIsCompleting(true);
-        try {
-            await questApi.updateActivityProgress(questId, weeklyStep.id, currentActivity.activityId, 'Completed');
-            setCompletedActivities(prev => [...prev, currentActivity.activityId]);
-            setQuizPassedState(null); // Reset for next activity
+        
+        // Retry logic for transient errors (e.g., lazy creation race condition)
+        const maxRetries = 2;
+        let lastError: any = null;
+        
+        for (let attempt = 0; attempt <= maxRetries; attempt++) {
+            try {
+                await questApi.updateActivityProgress(questId, weeklyStep.id, currentActivity.activityId, 'Completed');
+                setCompletedActivities(prev => [...prev, currentActivity.activityId]);
+                setQuizPassedState(null); // Reset for next activity
 
-            // Auto-advance to next activity if not last
-            if (!isLastActivity) {
-                setTimeout(() => {
-                    handleNextActivity();
-                }, 500);
+                // Auto-advance to next activity if not last
+                if (!isLastActivity) {
+                    setTimeout(() => {
+                        handleNextActivity();
+                    }, 500);
+                }
+                
+                setIsCompleting(false);
+                return; // Success - exit the function
+            } catch (error) {
+                lastError = error;
+                console.error(`Attempt ${attempt + 1} failed:`, error);
+                
+                // Wait before retry (exponential backoff)
+                if (attempt < maxRetries) {
+                    await new Promise(resolve => setTimeout(resolve, 500 * (attempt + 1)));
+                }
             }
-        } catch (error) {
-            console.error("Failed to mark activity as complete:", error);
-            toast.error("There was an error saving your progress. Please try again.");
-        } finally {
-            setIsCompleting(false);
         }
+        
+        // All retries failed
+        console.error("Failed to mark activity as complete after retries:", lastError);
+        toast.error("There was an error saving your progress. Please try again.");
+        setIsCompleting(false);
     };
 
     /**
@@ -576,15 +596,17 @@ export function ModuleLearningView({
                 {/* Breadcrumb and Title */}
                 <div className="flex-1">
                     <div className="flex items-center gap-2 text-sm text-white/60 mb-2">
-                        <Link href={`/quests/${learningPathId}`} className="hover:text-[#f5c16c]">
+                        <Link href="/quests" className="hover:text-[#f5c16c]">
                             {learningPathName || 'Questline'}
                         </Link>
+                        {chapterName && (
+                            <>
+                                <span>/</span>
+                                <span className="text-white/40">{chapterName}</span>
+                            </>
+                        )}
                         <span>/</span>
-                        <Link href={`/quests/${learningPathId}/${chapterId}`} className="hover:text-[#f5c16c]">
-                            {chapterName || 'Chapter'}
-                        </Link>
-                        <span>/</span>
-                        <Link href={`/quests/${learningPathId}/${chapterId}/${questId}`} className="hover:text-[#f5c16c]">
+                        <Link href={`/quests/${questId}`} className="hover:text-[#f5c16c]">
                             {questName || 'Quest'}
                         </Link>
                     </div>
@@ -725,7 +747,7 @@ export function ModuleLearningView({
                                     size="lg"
                                     className="bg-gradient-to-r from-[#f5c16c] to-[#d4a855] text-black font-semibold hover:from-[#d4a855] hover:to-[#f5c16c]"
                                 >
-                                    <Link href={`/quests/${learningPathId}/${chapterId}/${questId}/week/${weeklyStep.stepNumber + 1}`}>
+                                    <Link href={`/quests/${questId}/week/${weeklyStep.stepNumber + 1}`}>
                                         Next Week <ArrowRight className="w-5 h-5 ml-2" />
                                     </Link>
                                 </Button>

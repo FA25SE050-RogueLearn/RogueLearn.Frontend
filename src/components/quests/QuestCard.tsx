@@ -167,6 +167,7 @@ export function QuestCard({
   const [skillsData, setSkillsData] = useState<GetQuestSkillsResponse | null>(null);
   const [loadingSkills, setLoadingSkills] = useState(false);
   const [skillsLoaded, setSkillsLoaded] = useState(false);
+  const [isStarting, setIsStarting] = useState(false); // New local state for button
 
   const subjectCode = quest.subjectCode || extractSubjectCode(quest.title);
   const subjectName = extractSubjectName(quest.title);
@@ -189,6 +190,27 @@ export function QuestCard({
     } finally {
       setLoadingSkills(false);
       setSkillsLoaded(true);
+    }
+  };
+
+  // Wrapper for start action to call API
+  const handleStartClick = async () => {
+    if (isStarting || isLocked || isGenerating) return;
+
+    setIsStarting(true);
+    try {
+      // Only call start endpoint if quest hasn't started
+      if (quest.status === 'NotStarted') {
+        await questApi.startQuest(quest.id);
+      }
+      // Proceed to navigation regardless (it handles the redirect)
+      onStartQuest();
+    } catch (error) {
+      console.error("Failed to start quest:", error);
+      // Navigate anyway - maybe user can retry inside
+      onStartQuest();
+    } finally {
+      setIsStarting(false);
     }
   };
 
@@ -301,8 +323,8 @@ export function QuestCard({
                   <span className="text-xs font-medium text-violet-300">Skills</span>
                 </button>
               </PopoverTrigger>
-              <PopoverContent 
-                side="top" 
+              <PopoverContent
+                side="top"
                 align="start"
                 className="w-80 p-0 bg-slate-900/95 border-slate-700 backdrop-blur-sm"
               >
@@ -372,17 +394,25 @@ export function QuestCard({
             </Button>
           ) : (
             <Button
-              onClick={onStartQuest}
-              disabled={isGenerating}
+              onClick={handleStartClick}
+              disabled={isGenerating || isStarting}
               className={`w-full justify-between group-hover:pl-6 transition-all duration-300
                 ${quest.status === 'Completed'
                   ? 'bg-white/5 hover:bg-white/10 text-white border border-white/10'
                   : 'bg-gradient-to-r from-[#f5c16c] to-[#d4a855] text-black font-semibold hover:shadow-lg'}`}
             >
-              {isGenerating ? 'Forging...' :
-                quest.status === 'Completed' ? 'Review Quest' :
-                  quest.status === 'InProgress' ? 'Continue' : 'Start Quest'}
-              <ChevronRight className="h-4 w-4 opacity-60 group-hover:translate-x-1 transition-transform" />
+              {isGenerating || isStarting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  {isGenerating ? 'Forging...' : 'Starting...'}
+                </>
+              ) : (
+                <>
+                  {quest.status === 'Completed' ? 'Review Quest' :
+                    quest.status === 'InProgress' ? 'Continue' : 'Start Quest'}
+                  <ChevronRight className="h-4 w-4 opacity-60 group-hover:translate-x-1 transition-transform" />
+                </>
+              )}
             </Button>
           )}
         </div>
