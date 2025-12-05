@@ -80,6 +80,8 @@ export default function MeetingManagement({ partyId, variant = "full", showList 
   const [page, setPage] = useState(1);
   const pageSize = 5;
 
+  
+
   const reloadMeetings = useCallback(async () => {
     setLoadingMeetings(true);
     try {
@@ -127,6 +129,16 @@ export default function MeetingManagement({ partyId, variant = "full", showList 
     if (full) return full;
     const email = (m.email ?? "").trim();
     return email || undefined;
+  }
+
+  function getParticipantName(participant: any): string {
+    if (participant?.signedinUser) {
+      return participant.signedinUser.displayName as string;
+    }
+    if (participant?.anonymousUser) {
+      return `${participant.anonymousUser.displayName} (Guest)`;
+    }
+    return "Unknown User";
   }
 
   useEffect(() => {
@@ -343,12 +355,57 @@ export default function MeetingManagement({ partyId, variant = "full", showList 
       const confList = await googleMeetApi.listConferenceRecords(token, { pageSize: 10 });
       const records: any[] = confList?.conferenceRecords ?? confList?.records ?? [];
       if (!records || records.length === 0) throw new Error("No conference records found");
-      const latest = records[0];
-      const conferenceId: string = latest?.name?.split("/")?.pop?.() ?? latest?.conferenceId ?? latest?.id;
-      if (!conferenceId) throw new Error("Unable to determine conferenceId");
-      const participantsRes = await googleMeetApi.listParticipants(token, conferenceId);
-      console.log("participantsRes", participantsRes);
-      const participantsRaw: any[] = participantsRes?.participants ?? participantsRes?.items ?? [];
+      let expectedSpace = (meeting?.spaceName ?? "").trim();
+      if (!expectedSpace) {
+        try {
+          const link = meeting?.meetingLink ?? null;
+          const codeMatch = link ? link.match(/meet\.google\.com\/(?:lookup\/)?([a-z0-9\-]+)/i) : null;
+          const code = codeMatch?.[1] ?? null;
+          if (code) {
+            const space = await googleMeetApi.getSpace(token, code);
+            const name = space?.name ?? "";
+            expectedSpace = name?.split("/")?.pop?.() ?? expectedSpace;
+          }
+        } catch (_) { }
+      }
+      let matchedConferenceId: string | null = null;
+      const candidates = records.slice(0, 3);
+      for (const r of candidates) {
+        const rid = r?.name?.split("/")?.pop?.() ?? r?.conferenceId ?? r?.id;
+        if (!rid) continue;
+        let rec: any;
+        try {
+          rec = await googleMeetApi.getConferenceRecord(token, rid);
+        } catch (e: any) {
+          if (isUnauthorized(e)) {
+            try {
+              const refreshed = await refreshAccessToken();
+              const newToken = refreshed;
+              setActiveToken(newToken);
+              try { sessionStorage.setItem(`meetingToken:${partyId}`, newToken); } catch (_) {}
+              rec = await googleMeetApi.getConferenceRecord(newToken, rid);
+            } catch {
+              try {
+                const gisToken = await requestToken(requiredBothScopes);
+                const newToken = gisToken;
+                setActiveToken(newToken);
+                try { sessionStorage.setItem(`meetingToken:${partyId}`, newToken); } catch (_) {}
+                rec = await googleMeetApi.getConferenceRecord(newToken, rid);
+              } catch { }
+            }
+          }
+        }
+        const spaceName = (rec?.space ?? "").split("/").pop();
+        if (spaceName && expectedSpace && spaceName === expectedSpace) {
+          matchedConferenceId = rec?.name?.split("/")?.pop?.() ?? rid;
+          break;
+        }
+      }
+      let participantsRaw: any[] = [];
+      if (matchedConferenceId) {
+        const participantsRes = await googleMeetApi.listParticipants(token, matchedConferenceId);
+        participantsRaw = participantsRes?.participants ?? participantsRes?.items ?? [];
+      }
       const mapped: MeetingParticipantDto[] = [];
       for (const p of participantsRaw) {
         mapped.push({
@@ -357,7 +414,7 @@ export default function MeetingManagement({ partyId, variant = "full", showList 
           joinTime: p?.earliestStartTime ?? p?.joinTime ?? null,
           leaveTime: p?.endTime ?? p?.leaveTime ?? null,
           type: p?.type ?? p?.participantType ?? undefined,
-          displayName: p?.signedinUser?.displayName ?? p?.displayName ?? "Unknown",
+          displayName: getParticipantName(p),
           meetingId: meeting?.meetingId,
         });
       }
@@ -545,6 +602,7 @@ export default function MeetingManagement({ partyId, variant = "full", showList 
     }
   }
 
+
   async function loadDetailsIfNeeded(meetingId: string) {
     if (!meetingId) return;
     if (detailsById[meetingId] || detailsLoading[meetingId]) return;
@@ -659,6 +717,13 @@ export default function MeetingManagement({ partyId, variant = "full", showList 
                 <div className="h-5 w-5 animate-spin rounded-full border-2 border-white/30 border-t-[#f5c16c]" />
               </div>
             )}
+            <button
+              onClick={() => { setExpandedId(""); reloadMeetings(); }}
+              disabled={loadingMeetings}
+              className="rounded border border-white/20 bg-transparent px-3 py-1.5 text-xs font-medium text-white hover:bg-white/10 disabled:opacity-50"
+            >
+              Refresh
+            </button>
             {needsAuth && (
               <button
                 onClick={handleAuthorize}

@@ -228,7 +228,7 @@ export default function PartyMembersList({ partyId, members, maxMembers, onRefre
           <Button variant="outline" onClick={() => setTransferOpen(false)} className="border-[#2D2842] text-gray-300">Cancel</Button>
           <Button onClick={async () => {
             const m = selectedMember; setTransferOpen(false); if (!m) return; setBusyMemberId(m.id);
-            try { await partiesApi.transferLeadership(partyId, { partyId, toUserId: m.authUserId }); toast.success("Leadership transferred"); await onRefresh?.(); } 
+            try { await partiesApi.transferLeadership(partyId, { partyId, toUserId: m.authUserId }); toast.success("Leadership transferred"); await onRefresh?.(); try { window.location.reload(); } catch {} } 
             catch (e: any) { 
               // toast.error(e?.message ?? "Failed to transfer leadership"); 
             } 
