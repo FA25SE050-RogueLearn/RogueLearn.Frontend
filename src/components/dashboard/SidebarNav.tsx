@@ -107,7 +107,7 @@ export function SidebarNav({ isCollapsed = false, onNavigate }: SidebarNavProps)
       <div className="relative z-10 flex flex-col gap-8">
         <div className="flex flex-col items-center text-center">
           <div
-            className="mb-4 h-20 w-20 rounded-full border border-[#f5c16c]/50 bg-[url('https://images.unsplash.com/photo-1582719471209-8a1c875b9fff?auto=format&fit=crop&w=400&q=80')] bg-cover bg-center shadow-[0_10px_30px_rgba(210,49,135,0.35)]"
+            className="mb-4 h-20 w-20 rounded-full border border-[#f5c16c]/50 bg-[#2a1a3a] bg-cover bg-center shadow-[0_10px_30px_rgba(210,49,135,0.35)]"
           />
           <div className="space-y-1">
             <p className="text-xs uppercase tracking-[0.35em] text-[#f5c16c]/70">Guild Codex</p>

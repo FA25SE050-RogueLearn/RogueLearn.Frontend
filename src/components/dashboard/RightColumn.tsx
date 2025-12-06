@@ -3,6 +3,7 @@
 import { useState, useRef } from "react";
 import { Trophy, Zap, ExternalLink, X, Calendar, Award } from "lucide-react";
 import { formatDistanceToNow, format } from "date-fns";
+import { safeDate } from "@/utils/time";
 import Link from "next/link";
 import Image from "next/image";
 import { motion, useMotionValue, useSpring } from "motion/react";
@@ -135,7 +136,7 @@ export function RightColumn({ achievements, userSkills }: RightColumnProps) {
               <div className="flex items-center justify-center gap-6 pt-2">
                 <div className="flex items-center gap-2 text-xs text-[#f5c16c]/60">
                   <Calendar className="h-4 w-4" />
-                  <span>{format(new Date(selectedAchievement.earnedAt), "MMM d, yyyy")}</span>
+                  <span>{safeDate(selectedAchievement.earnedAt) ? format(safeDate(selectedAchievement.earnedAt)!, "MMM d, yyyy") : "Unknown"}</span>
                 </div>
                 <div className="h-4 w-px bg-[#f5c16c]/20" />
                 <div className="rounded-full border border-[#d23187]/30 bg-[#d23187]/10 px-3 py-1 text-xs text-[#d23187]">
@@ -208,9 +209,7 @@ export function RightColumn({ achievements, userSkills }: RightColumnProps) {
                         {achievement.sourceService}
                       </span>
                       <span className="text-[9px] text-[#f5c16c]/50">
-                        {formatDistanceToNow(new Date(achievement.earnedAt), {
-                          addSuffix: true,
-                        })}
+                        {safeDate(achievement.earnedAt) ? formatDistanceToNow(safeDate(achievement.earnedAt)!, { addSuffix: true }) : "Recently"}
                       </span>
                     </div>
                   </div>

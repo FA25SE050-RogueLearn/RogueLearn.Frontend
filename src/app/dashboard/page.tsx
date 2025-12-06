@@ -99,7 +99,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: {
               <div className="flex items-center gap-4">
                 <div 
                   className="h-16 w-16 rounded-full border-2 border-[#f5c16c]/50 bg-cover bg-center shadow-[0_0_20px_rgba(210,49,135,0.3)]" 
-                  style={{ backgroundImage: `url('${fullInfo?.profile.profileImageUrl || 'https://images.unsplash.com/photo-1582719471209-8a1c875b9fff?auto=format&fit=crop&w=400&q=80'}')` }} 
+                  style={{ backgroundImage: fullInfo?.profile.profileImageUrl ? `url('${fullInfo.profile.profileImageUrl}')` : 'none', backgroundColor: '#2a1a3a' }} 
                 />
                 <div>
                   <h1 className="text-xl font-bold text-white">

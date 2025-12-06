@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { Calendar, Users, Trophy, ArrowRight, Clock } from "lucide-react";
 import { formatDistanceToNow, format } from "date-fns";
+import { safeDate } from "@/utils/time";
 import { useRouter } from "next/navigation";
 import type { Event } from "@/types/event-service";
 import eventServiceApi from "@/api/eventServiceApi";
@@ -113,7 +114,7 @@ export function FeaturedEventsSection() {
                 <div className="flex items-center gap-2">
                   <Calendar className="h-4 w-4" />
                   <span>
-                    Ends {formatDistanceToNow(new Date(featuredEvent.end_date), { addSuffix: true })}
+                    Ends {safeDate(featuredEvent.end_date) ? formatDistanceToNow(safeDate(featuredEvent.end_date)!, { addSuffix: true }) : "TBD"}
                   </span>
                 </div>
               </div>
@@ -175,7 +176,7 @@ export function FeaturedEventsSection() {
                   <div className="flex items-center gap-2">
                     <Clock className="h-3 w-3" />
                     <span>
-                      Ends {format(new Date(event.end_date), "MMM d, yyyy")}
+                      Ends {safeDate(event.end_date) ? format(safeDate(event.end_date)!, "MMM d, yyyy") : "TBD"}
                     </span>
                   </div>
                 </div>
