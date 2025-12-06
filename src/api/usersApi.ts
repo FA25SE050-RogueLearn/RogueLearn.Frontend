@@ -152,7 +152,7 @@ export const updateMyProfile = async (
     formData.append('profileImage', profileImage);
   }
 
-  return axiosClient.patch<void>('/api/users/me', formData, {
+  return axiosClient.put<void>('/api/users/me', formData, {
     headers: {
       'Content-Type': 'multipart/form-data',
     },

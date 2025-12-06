@@ -14,7 +14,7 @@ export async function GET(request: Request) {
       const supabase = await createClient()
       let query = supabase
         .from('match_results')
-        .select('id, created_at, total_players, match_data, user_id')
+        .select('id, match_id, created_at, total_players, match_data, user_id')
         .order('created_at', { ascending: false })
         .limit(limit)
       if (userIdFilter) {
@@ -25,7 +25,7 @@ export async function GET(request: Request) {
         const matches = rows.map((r: any) => {
           let md: any = null
           try { md = typeof r.match_data === 'string' ? JSON.parse(r.match_data) : r.match_data } catch { md = null }
-          const matchId = md?.matchId || r.id
+          const matchId = md?.matchId || r.match_id || r.id
           const result = md?.result || 'unknown'
           const endUtc = md?.timestamp || r.created_at || new Date().toISOString()
           const questionsFromData = Array.isArray(md?.questions) ? md.questions : []

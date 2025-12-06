@@ -1,13 +1,13 @@
 // roguelearn-web/src/components/quests/QuestCard.tsx
 "use client";
 
+import { useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import {
   BookOpen,
   CheckCircle,
   Lock,
-  Trophy,
   ChevronRight,
   Sparkles,
   GraduationCap,
@@ -15,6 +15,8 @@ import {
   TrendingDown,
   Minus,
   Clock,
+  Zap,
+  Loader2,
 } from 'lucide-react';
 import { QuestSummary } from '@/types/quest';
 import DifficultyBadge from './DifficultyBadge';
@@ -24,6 +26,12 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import questApi, { GetQuestSkillsResponse } from '@/api/questApi';
 
 interface QuestCardProps {
   quest: QuestSummary;
@@ -156,6 +164,11 @@ export function QuestCard({
   isGenerating = false,
   onStartQuest,
 }: QuestCardProps) {
+  const [skillsData, setSkillsData] = useState<GetQuestSkillsResponse | null>(null);
+  const [loadingSkills, setLoadingSkills] = useState(false);
+  const [skillsLoaded, setSkillsLoaded] = useState(false);
+  const [isStarting, setIsStarting] = useState(false); // New local state for button
+
   const subjectCode = quest.subjectCode || extractSubjectCode(quest.title);
   const subjectName = extractSubjectName(quest.title);
   const gradeInfo = getGradeColor(quest.subjectGrade);
@@ -163,6 +176,43 @@ export function QuestCard({
   const isQuestActive = quest.status === 'InProgress';
   const GradeIcon = gradeInfo.icon;
   const StatusIcon = statusInfo.icon;
+
+  const handleLoadSkills = async () => {
+    if (skillsLoaded) return;
+    setLoadingSkills(true);
+    try {
+      const res = await questApi.getQuestSkills(quest.id);
+      if (res.isSuccess && res.data) {
+        setSkillsData(res.data);
+      }
+    } catch {
+      // Silently fail
+    } finally {
+      setLoadingSkills(false);
+      setSkillsLoaded(true);
+    }
+  };
+
+  // Wrapper for start action to call API
+  const handleStartClick = async () => {
+    if (isStarting || isLocked || isGenerating) return;
+
+    setIsStarting(true);
+    try {
+      // Only call start endpoint if quest hasn't started
+      if (quest.status === 'NotStarted') {
+        await questApi.startQuest(quest.id);
+      }
+      // Proceed to navigation regardless (it handles the redirect)
+      onStartQuest();
+    } catch (error) {
+      console.error("Failed to start quest:", error);
+      // Navigate anyway - maybe user can retry inside
+      onStartQuest();
+    } finally {
+      setIsStarting(false);
+    }
+  };
 
   return (
     <Card
@@ -261,6 +311,78 @@ export function QuestCard({
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
+
+            {/* Skills Popover */}
+            <Popover>
+              <PopoverTrigger asChild>
+                <button
+                  onClick={handleLoadSkills}
+                  className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border bg-violet-500/20 border-violet-500/40 hover:bg-violet-500/30 transition-colors"
+                >
+                  <Zap className="h-3.5 w-3.5 text-violet-300" />
+                  <span className="text-xs font-medium text-violet-300">Skills</span>
+                </button>
+              </PopoverTrigger>
+              <PopoverContent
+                side="top"
+                align="start"
+                className="w-80 p-0 bg-slate-900/95 border-slate-700 backdrop-blur-sm"
+              >
+                <div className="p-3 border-b border-slate-700/50">
+                  <h4 className="text-sm font-semibold text-white flex items-center gap-2">
+                    <Zap className="h-4 w-4 text-violet-400" />
+                    Quest Skills
+                  </h4>
+                  {skillsData?.subjectName && (
+                    <p className="text-[10px] text-white/50 mt-0.5">
+                      {skillsData.subjectName}
+                    </p>
+                  )}
+                </div>
+                <div className="p-2 max-h-60 overflow-y-auto">
+                  {loadingSkills ? (
+                    <div className="flex items-center justify-center py-4">
+                      <Loader2 className="h-5 w-5 animate-spin text-violet-400" />
+                    </div>
+                  ) : skillsData && skillsData.skills.length > 0 ? (
+                    <div className="space-y-2">
+                      {skillsData.skills.map((skill) => (
+                        <div
+                          key={skill.skillId}
+                          className="p-2 rounded-lg bg-white/5 hover:bg-white/10 transition-colors"
+                        >
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm text-white font-medium">{skill.skillName}</span>
+                            <span className="text-[10px] px-1.5 py-0.5 rounded bg-violet-500/20 text-violet-300 border border-violet-500/30">
+                              {Math.round(skill.relevanceWeight * 100)}%
+                            </span>
+                          </div>
+                          {skill.domain && (
+                            <span className="text-[10px] text-white/40">{skill.domain}</span>
+                          )}
+                          {skill.prerequisites.length > 0 && (
+                            <div className="mt-1 flex flex-wrap gap-1">
+                              {skill.prerequisites.map((prereq) => (
+                                <span
+                                  key={prereq.skillId}
+                                  className="text-[9px] px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-300/70 border border-amber-500/20"
+                                >
+                                  Requires: {prereq.skillName}
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-center text-sm text-white/50 py-4">
+                      No skills mapped yet
+                    </p>
+                  )}
+                </div>
+              </PopoverContent>
+            </Popover>
           </div>
         )}
 
@@ -272,17 +394,25 @@ export function QuestCard({
             </Button>
           ) : (
             <Button
-              onClick={onStartQuest}
-              disabled={isGenerating}
+              onClick={handleStartClick}
+              disabled={isGenerating || isStarting}
               className={`w-full justify-between group-hover:pl-6 transition-all duration-300
                 ${quest.status === 'Completed'
                   ? 'bg-white/5 hover:bg-white/10 text-white border border-white/10'
                   : 'bg-gradient-to-r from-[#f5c16c] to-[#d4a855] text-black font-semibold hover:shadow-lg'}`}
             >
-              {isGenerating ? 'Forging...' :
-                quest.status === 'Completed' ? 'Review Quest' :
-                  quest.status === 'InProgress' ? 'Continue' : 'Start Quest'}
-              <ChevronRight className="h-4 w-4 opacity-60 group-hover:translate-x-1 transition-transform" />
+              {isGenerating || isStarting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  {isGenerating ? 'Forging...' : 'Starting...'}
+                </>
+              ) : (
+                <>
+                  {quest.status === 'Completed' ? 'Review Quest' :
+                    quest.status === 'InProgress' ? 'Continue' : 'Start Quest'}
+                  <ChevronRight className="h-4 w-4 opacity-60 group-hover:translate-x-1 transition-transform" />
+                </>
+              )}
             </Button>
           )}
         </div>

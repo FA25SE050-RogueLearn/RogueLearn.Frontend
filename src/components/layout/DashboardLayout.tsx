@@ -23,8 +23,7 @@ export async function DashboardLayout({ children }: { children: ReactNode }) {
     if (error || !data?.user) {
       redirect('/login');
     }
-  } catch (authError) {
-    console.error('Auth error in DashboardLayout:', authError);
+  } catch {
     redirect('/login');
   }
 

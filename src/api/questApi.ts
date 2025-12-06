@@ -24,6 +24,45 @@ interface GenerateQuestStepsResponse {
 }
 
 /**
+ * Skill prerequisite info
+ */
+interface SkillPrerequisite {
+  skillId: string;
+  skillName: string;
+}
+
+/**
+ * Skill info returned from quest skills endpoint
+ */
+interface QuestSkillInfo {
+  skillId: string;
+  skillName: string;
+  domain: string;
+  relevanceWeight: number;
+  prerequisites: SkillPrerequisite[];
+}
+
+/**
+ * Response from POST /api/quests/{questId}/start
+ */
+export interface StartQuestResponse {
+  attemptId: string;
+  status: string;
+  assignedDifficulty: string;
+  isNew: boolean;
+}
+
+/**
+ * Response from GET /api/quests/{questId}/skills
+ */
+export interface GetQuestSkillsResponse {
+  questId: string;
+  subjectId: string;
+  subjectName: string;
+  skills: QuestSkillInfo[];
+}
+
+/**
  * Response from checking job status
  * Check this periodically to see if generation is complete
  */
@@ -194,6 +233,20 @@ const questApi = {
         isPollingEndpoint,            // ⭐ NEW
       } as const);
     }),
+
+  /**
+   * Explicitly starts a quest for the user.
+   * Creates UserQuestAttempt and assigns difficulty track.
+   * Idempotent: returns existing attempt info if already started.
+   * POST /api/quests/{questId}/start
+   */
+  startQuest: (questId: string): Promise<ApiResponse<StartQuestResponse>> =>
+    axiosClient
+      .post<StartQuestResponse>(`/api/quests/${questId}/start`)
+      .then(res => ({
+        isSuccess: true,
+        data: res.data,
+      })),
 
   /**
    * ⭐ UPDATED: Marks a specific activity within a weekly step as complete.
@@ -370,6 +423,29 @@ const questApi = {
     };
   }
 },
+
+  // ========== QUEST SKILLS ==========
+
+  /**
+   * Gets the skills that will be developed by completing this quest.
+   * Corresponds to GET /api/quests/{questId}/skills
+   */
+  getQuestSkills: async (questId: string): Promise<ApiResponse<GetQuestSkillsResponse>> => {
+    try {
+      const res = await axiosClient.get<GetQuestSkillsResponse>(`/api/quests/${questId}/skills`);
+      return {
+        isSuccess: true as const,
+        data: res.data,
+      };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to fetch quest skills';
+      return {
+        isSuccess: false as const,
+        data: null,
+        message,
+      };
+    }
+  },
 };
 
 export default questApi;

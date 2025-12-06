@@ -11,11 +11,9 @@ import {
   BrainCircuit,
   Code,
   CheckCircle2,
-  ChevronDown,
   List
 } from 'lucide-react';
 import Link from 'next/link';
-import questApi from '@/api/questApi';
 import { cn } from '@/lib/utils';
 import WeeklyProgressCard from './WeeklyProgressCard';
 import {
@@ -35,13 +33,11 @@ interface QuestDetailViewProps {
     questStatus: 'NotStarted' | 'InProgress' | 'Completed';
     stepStatuses: Record<string, 'Completed' | 'InProgress' | 'NotStarted'>;
   };
-  learningPathId: string;
+  questId: string;
   learningPathName: string;
-  chapterId: string;
   chapterName: string;
 }
 
-// Helper to extract displayable info from an activity
 const getActivityDisplayInfo = (activity: Activity) => {
   let icon = BookOpen;
   let label = 'Activity';
@@ -76,23 +72,24 @@ const getActivityDisplayInfo = (activity: Activity) => {
 export default function QuestDetailView({
   questDetails,
   questProgress,
-  learningPathId,
+  questId,
   learningPathName,
-  chapterId,
   chapterName,
 }: QuestDetailViewProps) {
   const router = useRouter();
   const [feedbackOpen, setFeedbackOpen] = useState(false);
   const [feedbackStep, setFeedbackStep] = useState<{ id: string; stepNumber: number } | null>(null);
-  // Build a map of stepId → stepNumber for reference
+
   const stepIdToNumberMap = new Map<string, number>();
   questDetails.steps.forEach(step => {
     stepIdToNumberMap.set(step.id, step.stepNumber);
   });
 
-  // Find completed step numbers from the API response
+  // Handle null/undefined stepStatuses gracefully
+  const stepStatuses = questProgress.stepStatuses || {};
+  
   const completedStepNumbers = new Set<number>();
-  Object.entries(questProgress.stepStatuses).forEach(([stepId, status]) => {
+  Object.entries(stepStatuses).forEach(([stepId, status]) => {
     if (status === 'Completed') {
       const stepNumber = stepIdToNumberMap.get(stepId);
       if (stepNumber !== undefined) {
@@ -101,7 +98,6 @@ export default function QuestDetailView({
     }
   });
 
-  // Function to determine if a step is locked
   const isStepLocked = (stepNumber: number): boolean => {
     if (stepNumber === 1) return false;
     return !completedStepNumbers.has(stepNumber - 1);
@@ -127,17 +123,16 @@ export default function QuestDetailView({
               <span className="text-[#f5c16c]">Quest</span>
               <span className="text-white/30">/</span>
               <span className="text-white/70">{learningPathName}</span>
-              <span className="text-white/30">/</span>
-              <span className="text-white/70">{chapterName}</span>
+              {chapterName && (
+                <>
+                  <span className="text-white/30">/</span>
+                  <span className="text-white/70">{chapterName}</span>
+                </>
+              )}
             </div>
-            <div className="flex gap-2">
-              <Button asChild variant="outline">
-                <Link href={`/quests/${learningPathId}/${chapterId}`}>Back to Chapter</Link>
-              </Button>
-              <Button asChild variant="ghost">
-                <Link href={`/quests/${learningPathId}`}>Back to Questline</Link>
-              </Button>
-            </div>
+            <Button asChild variant="outline">
+              <Link href="/quests">Back to Quests</Link>
+            </Button>
           </div>
 
           <div>
@@ -198,13 +193,11 @@ export default function QuestDetailView({
 
         <div className="space-y-4">
           {questDetails.steps.map((step) => {
-            const stepStatus = questProgress.stepStatuses[step.id];
+            const stepStatus = stepStatuses[step.id];
             const locked = isStepLocked(step.stepNumber);
             const activities = step.content?.activities || [];
             const totalActivities = activities.length;
 
-            // If we had granular activity status from backend, we would map it here.
-            // For now, we rely on step status. If step is complete, all are complete.
             const completedActivities = stepStatus === 'Completed'
               ? Array.from({ length: totalActivities }, (_, i) => `${i}`)
               : [];
@@ -218,7 +211,6 @@ export default function QuestDetailView({
                 )}
               >
                 <div className="flex flex-col gap-2">
-                  {/* Header Row: Progress Bar + Button */}
                   <div className="flex items-center gap-3">
                     <div className="flex-1">
                       <WeeklyProgressCard
@@ -231,16 +223,9 @@ export default function QuestDetailView({
                     <Button
                       disabled={locked}
                       size="sm"
-                      onClick={async () => {
+                      onClick={() => {
                         if (locked) return;
-                        const path = `/quests/${learningPathId}/${chapterId}/${questDetails.id}/week/${step.stepNumber}`;
-                        for (let i = 0; i < 20; i++) {
-                          const res = await questApi.getQuestDetails(questDetails.id);
-                          const exists = res.isSuccess && !!res.data?.steps?.find(s => s.stepNumber === step.stepNumber);
-                          if (exists) break;
-                          await new Promise(r => setTimeout(r, 800));
-                        }
-                        router.push(path);
+                        router.push(`/quests/${questId}/week/${step.stepNumber}`);
                       }}
                       className={cn(
                         'whitespace-nowrap shrink-0 h-16 px-6 rounded-lg font-semibold transition-all duration-300',
@@ -274,7 +259,6 @@ export default function QuestDetailView({
                     </Button>
                   </div>
 
-                  {/* Expandable Activities List */}
                   {!locked && activities.length > 0 && (
                     <Accordion type="single" collapsible className="w-full border border-white/10 rounded-lg bg-black/20">
                       <AccordionItem value="activities" className="border-none">
@@ -288,7 +272,7 @@ export default function QuestDetailView({
                           <div className="space-y-2">
                             {activities.map((activity, idx) => {
                               const { Icon, title } = getActivityDisplayInfo(activity);
-                              const isCompleted = stepStatus === 'Completed'; // Simple logic for now
+                              const isCompleted = stepStatus === 'Completed';
 
                               return (
                                 <div
@@ -326,7 +310,6 @@ export default function QuestDetailView({
                   )}
                 </div>
 
-                {/* Locked message */}
                 {locked && (
                   <p className="text-xs text-white/40 ml-4 mt-2 flex items-center gap-2">
                     <Lock className="w-3 h-3" />

@@ -66,22 +66,24 @@ function ReviewQuizContent() {
         let questionPack = null
         try {
           const supabase = createClient()
-          const { data: matchData, error } = await supabase
+          const { data: matchRow, error } = await supabase
             .from('match_results')
-            .select('match_data')
-            .eq('id', matchId)
-            .single()
+            .select('match_data, match_id, id')
+            .or(`match_id.eq.${matchId},id.eq.${matchId}`)
+            .maybeSingle()
 
-          if (!error && matchData) {
-            const parsedData = typeof matchData.match_data === 'string'
-              ? JSON.parse(matchData.match_data)
-              : matchData.match_data
+          if (error) {
+            console.log('[ReviewQuiz] Could not fetch match data from match_results:', error)
+          }
+
+          if (matchRow?.match_data) {
+            const parsedData = typeof matchRow.match_data === 'string'
+              ? JSON.parse(matchRow.match_data)
+              : matchRow.match_data
 
             // The question pack might be in match_data.questionPack or match_data.questions
             questionPack = parsedData?.questionPack || { questions: parsedData?.questions }
             console.log('[ReviewQuiz] Question pack from match_results:', questionPack)
-          } else {
-            console.log('[ReviewQuiz] Could not fetch match data from match_results:', error)
           }
         } catch (err) {
           console.log('[ReviewQuiz] Error fetching match data from Supabase:', err)

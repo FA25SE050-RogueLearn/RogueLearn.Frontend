@@ -33,6 +33,7 @@ export default function PartyDetailPageClient({ partyId }: { partyId: string }) 
   const [isSavingSettings, setIsSavingSettings] = useState(false);
   const [settingsError, setSettingsError] = useState<string | null>(null);
   const [refreshAt, setRefreshAt] = useState<number>(0);
+  const [meetingRefreshAt, setMeetingRefreshAt] = useState<number>(0);
   const router = useRouter();
   const { role, refresh: refreshRole } = usePartyRole(partyId);
   const [members, setMembers] = useState<PartyMemberDto[]>([]);
@@ -323,7 +324,7 @@ export default function PartyDetailPageClient({ partyId }: { partyId: string }) 
               </RoleGate>
             </div>
             <div className="rounded-xl border border-white/10 bg-black/30 p-4">
-              <MeetingManagement partyId={party.id} variant="compact" />
+              <MeetingManagement partyId={party.id} variant="compact" refreshAt={meetingRefreshAt} />
             </div>
           </div>
 
@@ -482,7 +483,7 @@ export default function PartyDetailPageClient({ partyId }: { partyId: string }) 
             />
             <div className="relative">
               <div className="mb-3 text-sm font-semibold text-[#f5c16c]">Schedule New Sprint</div>
-              <MeetingManagement partyId={party.id} variant="full" showList={false} />
+              <MeetingManagement partyId={party.id} variant="full" showList={false} onCreated={() => { setShowScheduleModal(false); setMeetingRefreshAt((v) => v + 1); }} />
               <div className="mt-4 flex justify-end">
                 <button className="rounded-lg border border-[#f5c16c]/20 bg-black/40 px-4 py-2 text-sm text-white/80" onClick={() => setShowScheduleModal(false)}>Close</button>
               </div>

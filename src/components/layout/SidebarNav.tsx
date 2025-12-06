@@ -16,6 +16,7 @@ import {
   Settings,
   User,
   GraduationCap,
+  Swords,
 } from "lucide-react";
 import Image from "next/image";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -50,6 +51,7 @@ const primaryNavItems = [
   { title: "Sanctum", url: "/dashboard", icon: LayoutGrid },
   { title: "Quests", url: "/quests", icon: ScrollText },
   { title: "Battle", url: "/code-battle", icon: Sword },
+  { title: "Boss Fight", url: "/boss-fight", icon: Swords },
   { title: "Community", url: "/community", icon: Users },
 ];
 

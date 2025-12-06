@@ -33,6 +33,7 @@ export interface QuestSummaryDto {
   sequenceOrder: number;
   learningPathId: string;
   chapterId: string;
+  subjectId?: string;              // Subject ID for fetching related skills
   // Difficulty indicator based on academic performance
   subjectCode?: string;
   subjectGrade?: string;           // e.g., "8.5" or null

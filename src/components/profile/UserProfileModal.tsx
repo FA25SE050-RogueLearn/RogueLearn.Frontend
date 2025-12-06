@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
 import { LecturerVerificationPanel } from "@/components/profile/LecturerVerificationPanel";
 import { SocialScryingContent } from "@/components/profile/SocialScryingModal";
 import { LogOut, Sparkles, UploadCloud, User, Settings, Bell, Users, Shield, Mail, GraduationCap, Loader2 } from "lucide-react";
@@ -33,6 +33,7 @@ export default function UserProfileModal({ open, onOpenChange, defaultTab = "pro
   const [profileImageFile, setProfileImageFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [dragActive, setDragActive] = useState(false);
+  const router = useRouter();
   const [joinRequests, setJoinRequests] = useState<GuildJoinRequestDto[]>([]);
   const [loadingJoinRequests, setLoadingJoinRequests] = useState(false);
   const [joinRequestsError, setJoinRequestsError] = useState<string | null>(null);
@@ -414,7 +415,7 @@ export default function UserProfileModal({ open, onOpenChange, defaultTab = "pro
                     </div>
                     <div className="flex gap-3 pt-2">
                       <button 
-                        onClick={async () => { setSaving(true); try { await updateMyProfile({ firstName, lastName, bio }, profileImageFile || undefined); const res = await profileApi.getMyProfile(); if (res.isSuccess) setProfile(res.data || null); } finally { setSaving(false); } }} 
+                        onClick={async () => { setSaving(true); try { await updateMyProfile({ firstName, lastName, bio }, profileImageFile || undefined); const res = await profileApi.getMyProfile(); if (res.isSuccess) setProfile(res.data || null); router.refresh(); } finally { setSaving(false); } }} 
                         disabled={saving} 
                         className="bg-linear-to-r from-[#d23187] via-[#f061a6] to-[#f5c16c] hover:opacity-90 text-[#1a0b08] font-bold px-6 py-3 rounded-xl flex items-center justify-center gap-2 transition shadow-[0_0_20px_rgba(210,49,135,0.3)] disabled:opacity-50"
                       >

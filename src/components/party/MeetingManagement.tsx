@@ -1,9 +1,10 @@
 "use client";
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { FileText } from "lucide-react";
 import { useGoogleMeet, MeetScopes } from "@/hooks/useGoogleMeet";
 import googleMeetApi from "@/api/googleMeetApi";
 import meetingsApi from "@/api/meetingsApi";
+import * as usersApi from "@/api/usersApi";
 import partiesApi from "@/api/partiesApi";
 import type { PartyMemberDto } from "@/types/parties";
 import {
@@ -28,6 +29,8 @@ interface Props {
   partyId: string;
   variant?: "full" | "compact";
   showList?: boolean;
+  onCreated?: () => void;
+  refreshAt?: number;
 }
 
 type CreateState = {
@@ -37,7 +40,7 @@ type CreateState = {
   spaceName?: string;
 };
 
-export default function MeetingManagement({ partyId, variant = "full", showList = true }: Props) {
+export default function MeetingManagement({ partyId, variant = "full", showList = true, onCreated, refreshAt }: Props) {
   const { getAccessToken, requestToken, refreshAccessToken } = useGoogleMeet();
   const [authUserId, setAuthUserId] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
@@ -77,14 +80,26 @@ export default function MeetingManagement({ partyId, variant = "full", showList 
   const [page, setPage] = useState(1);
   const pageSize = 5;
 
+  
+
+  const reloadMeetings = useCallback(async () => {
+    setLoadingMeetings(true);
+    try {
+      const res = await meetingsApi.getPartyMeetings(partyId);
+      setPartyMeetings(res.data ?? []);
+      const active = detectActiveMeeting(res.data ?? []);
+      setActiveMeeting(active ? { meeting: active, google: null } : { meeting: null, google: null });
+    } catch {}
+    finally {
+      setLoadingMeetings(false);
+    }
+  }, [partyId]);
+
   const sortedMeetings = useMemo(() => {
     return [...partyMeetings].sort((a, b) => {
-      const sa = (a.spaceName ?? "").toLowerCase();
-      const sb = (b.spaceName ?? "").toLowerCase();
-      if (sa && sb) return sa.localeCompare(sb);
-      if (sa) return -1;
-      if (sb) return 1;
-      return (a.title ?? "").toLowerCase().localeCompare((b.title ?? "").toLowerCase());
+      const ta = new Date(a.scheduledStartTime || a.actualStartTime || 0).getTime();
+      const tb = new Date(b.scheduledStartTime || b.actualStartTime || 0).getTime();
+      return tb - ta;
     });
   }, [partyMeetings]);
 
@@ -116,6 +131,16 @@ export default function MeetingManagement({ partyId, variant = "full", showList 
     return email || undefined;
   }
 
+  function getParticipantName(participant: any): string {
+    if (participant?.signedinUser) {
+      return participant.signedinUser.displayName as string;
+    }
+    if (participant?.anonymousUser) {
+      return `${participant.anonymousUser.displayName} (Guest)`;
+    }
+    return "Unknown User";
+  }
+
   useEffect(() => {
     const supabase = createClient();
     supabase.auth
@@ -132,40 +157,19 @@ export default function MeetingManagement({ partyId, variant = "full", showList 
   }, [partyId]);
 
   useEffect(() => {
-    // Load meetings for this party
     let mounted = true;
-    const load = async () => {
-      setLoadingMeetings(true);
+    const init = async () => {
+      await reloadMeetings();
       try {
-        const res = await meetingsApi.getPartyMeetings(partyId);
-        if (!mounted) return;
-        setPartyMeetings(res.data ?? []);
-        const active = detectActiveMeeting(res.data ?? []);
-        if (active) {
-          setActiveMeeting({ meeting: active, google: null });
-        } else {
-          setActiveMeeting({ meeting: null, google: null });
-        }
-        // Also load party members for participant mapping
-        try {
-          const memRes = await partiesApi.getMembers(partyId);
-          if (!mounted) return;
-          setPartyMembers(memRes.data ?? []);
-        } catch (memErr) {
-          console.warn("[Party] failed to load members:", memErr);
-        }
-      } catch (e: any) {
-        // Silent fail for list
-      } finally {
-        if (!mounted) return;
-        setLoadingMeetings(false);
+        const memRes = await partiesApi.getMembers(partyId);
+        if (mounted) setPartyMembers(memRes.data ?? []);
+      } catch (memErr) {
+        console.warn("[Party] failed to load members:", memErr);
       }
     };
-    load();
-    return () => {
-      mounted = false;
-    };
-  }, [partyId]);
+    init();
+    return () => { mounted = false; };
+  }, [partyId, reloadMeetings, refreshAt]);
 
   const requiredCreateScopes: MeetScopes[] = [
     "https://www.googleapis.com/auth/meetings.space.created",
@@ -281,7 +285,7 @@ export default function MeetingManagement({ partyId, variant = "full", showList 
       }
       // 3) Upsert meeting metadata to backend
       const payload: MeetingDto = {
-        organizerId: authUserId,
+        organizerId: authUserId as string,
         partyId,
         title: createState.title,
         scheduledStartTime: createState.start,
@@ -302,10 +306,25 @@ export default function MeetingManagement({ partyId, variant = "full", showList 
           meetingUri: created.meetingUri ?? null,
         },
       });
-      // Reload list
+      // Optimistically add new meeting to the list for instant feedback
+      setPartyMeetings((prev) => {
+        const id = (saved?.meetingId ?? payload.meetingId) as string | undefined;
+        const filtered = id ? prev.filter(m => m.meetingId !== id) : prev;
+        return [saved ?? payload, ...filtered];
+      });
+      // Reload from server to reconcile with backend state
       const listRes = await meetingsApi.getPartyMeetings(partyId);
       setPartyMeetings(listRes.data ?? []);
+      try { setTimeout(() => { reloadMeetings(); }, 500); } catch {}
       setNeedsAuth(false);
+      setCreateState((prev) => {
+        const now = new Date();
+        const in30 = new Date(now.getTime() + 30 * 60 * 1000);
+        return { title: "Study Sprint", start: now.toISOString(), end: in30.toISOString(), spaceName: "" };
+      });
+      if (typeof onCreated === "function") {
+        try { onCreated(); } catch {}
+      }
     } catch (e: any) {
       setError(e?.message ?? "Failed to create meeting");
     } finally {
@@ -336,11 +355,57 @@ export default function MeetingManagement({ partyId, variant = "full", showList 
       const confList = await googleMeetApi.listConferenceRecords(token, { pageSize: 10 });
       const records: any[] = confList?.conferenceRecords ?? confList?.records ?? [];
       if (!records || records.length === 0) throw new Error("No conference records found");
-      const latest = records[0];
-      const conferenceId: string = latest?.name?.split("/")?.pop?.() ?? latest?.conferenceId ?? latest?.id;
-      if (!conferenceId) throw new Error("Unable to determine conferenceId");
-      const participantsRes = await googleMeetApi.listParticipants(token, conferenceId);
-      const participantsRaw: any[] = participantsRes?.participants ?? participantsRes?.items ?? [];
+      let expectedSpace = (meeting?.spaceName ?? "").trim();
+      if (!expectedSpace) {
+        try {
+          const link = meeting?.meetingLink ?? null;
+          const codeMatch = link ? link.match(/meet\.google\.com\/(?:lookup\/)?([a-z0-9\-]+)/i) : null;
+          const code = codeMatch?.[1] ?? null;
+          if (code) {
+            const space = await googleMeetApi.getSpace(token, code);
+            const name = space?.name ?? "";
+            expectedSpace = name?.split("/")?.pop?.() ?? expectedSpace;
+          }
+        } catch (_) { }
+      }
+      let matchedConferenceId: string | null = null;
+      const candidates = records.slice(0, 3);
+      for (const r of candidates) {
+        const rid = r?.name?.split("/")?.pop?.() ?? r?.conferenceId ?? r?.id;
+        if (!rid) continue;
+        let rec: any;
+        try {
+          rec = await googleMeetApi.getConferenceRecord(token, rid);
+        } catch (e: any) {
+          if (isUnauthorized(e)) {
+            try {
+              const refreshed = await refreshAccessToken();
+              const newToken = refreshed;
+              setActiveToken(newToken);
+              try { sessionStorage.setItem(`meetingToken:${partyId}`, newToken); } catch (_) {}
+              rec = await googleMeetApi.getConferenceRecord(newToken, rid);
+            } catch {
+              try {
+                const gisToken = await requestToken(requiredBothScopes);
+                const newToken = gisToken;
+                setActiveToken(newToken);
+                try { sessionStorage.setItem(`meetingToken:${partyId}`, newToken); } catch (_) {}
+                rec = await googleMeetApi.getConferenceRecord(newToken, rid);
+              } catch { }
+            }
+          }
+        }
+        const spaceName = (rec?.space ?? "").split("/").pop();
+        if (spaceName && expectedSpace && spaceName === expectedSpace) {
+          matchedConferenceId = rec?.name?.split("/")?.pop?.() ?? rid;
+          break;
+        }
+      }
+      let participantsRaw: any[] = [];
+      if (matchedConferenceId) {
+        const participantsRes = await googleMeetApi.listParticipants(token, matchedConferenceId);
+        participantsRaw = participantsRes?.participants ?? participantsRes?.items ?? [];
+      }
       const mapped: MeetingParticipantDto[] = [];
       for (const p of participantsRaw) {
         mapped.push({
@@ -349,12 +414,12 @@ export default function MeetingManagement({ partyId, variant = "full", showList 
           joinTime: p?.earliestStartTime ?? p?.joinTime ?? null,
           leaveTime: p?.endTime ?? p?.leaveTime ?? null,
           type: p?.type ?? p?.participantType ?? undefined,
-          displayName: p?.signedinUser?.displayName ?? p?.displayName ?? "Unknown",
+          displayName: getParticipantName(p),
           meetingId: meeting?.meetingId,
         });
       }
       if (authUserId) {
-        const already = mapped.some((mp) => mp.userId === authUserId);
+        const already = mapped.some((mp) => (mp.roleInMeeting ?? "").toLowerCase() === "organizer");
         if (!already) {
           const organizerMember = partyMembers.find((m) => m.authUserId === authUserId);
           const organizerDisplayName = getMemberDisplayName(organizerMember);
@@ -537,6 +602,7 @@ export default function MeetingManagement({ partyId, variant = "full", showList 
     }
   }
 
+
   async function loadDetailsIfNeeded(meetingId: string) {
     if (!meetingId) return;
     if (detailsById[meetingId] || detailsLoading[meetingId]) return;
@@ -614,9 +680,17 @@ export default function MeetingManagement({ partyId, variant = "full", showList 
             <button
               onClick={handleCreateMeeting}
               disabled={creating}
+              aria-busy={creating}
               className="rounded bg-fuchsia-600 px-4 py-2 text-xs font-medium text-white disabled:opacity-50"
             >
-              {creating ? "Creating..." : "Create Meeting"}
+              {creating ? (
+                <span className="flex items-center gap-2">
+                  <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                  Creating...
+                </span>
+              ) : (
+                "Create Meeting"
+              )}
             </button>
             {needsAuth && (
               <button
@@ -643,6 +717,13 @@ export default function MeetingManagement({ partyId, variant = "full", showList 
                 <div className="h-5 w-5 animate-spin rounded-full border-2 border-white/30 border-t-[#f5c16c]" />
               </div>
             )}
+            <button
+              onClick={() => { setExpandedId(""); reloadMeetings(); }}
+              disabled={loadingMeetings}
+              className="rounded border border-white/20 bg-transparent px-3 py-1.5 text-xs font-medium text-white hover:bg-white/10 disabled:opacity-50"
+            >
+              Refresh
+            </button>
             {needsAuth && (
               <button
                 onClick={handleAuthorize}
@@ -816,21 +897,32 @@ export default function MeetingManagement({ partyId, variant = "full", showList 
                           <div className="my-2 border-t border-white/10" />
                           <div className="text-xs text-white/70">Organizer</div>
                           <ul className="grid grid-cols-1 gap-2 md:grid-cols-2">
-                            {details.participants?.filter((p) => (p.roleInMeeting ?? "").toLowerCase() === "organizer").map((p, idx) => (
-                              <li
-                                key={(p.userId ?? String(idx)) + (p.joinTime ?? "")}
-                                className="rounded border border-white/10 bg-white/5 p-2"
-                              >
-                                <div className="text-xs text-white">
-                                  {p.displayName ?? p.userId}
-                                  <span className="ml-2 text-white/60">{p.roleInMeeting ?? "organizer"}</span>
-                                </div>
-                                <div className="text-[11px] text-white/60">
-                                  {p.joinTime ? formatBangkok(p.joinTime, { includeSeconds: false, separator: " " }) : ""}
-                                  {p.leaveTime ? ` → ${formatBangkok(p.leaveTime, { includeSeconds: false, separator: " " })}` : ""}
-                                </div>
-                              </li>
-                            ))}
+                            {(() => {
+                              const orgs = (details.participants ?? []).filter((p) => (p.roleInMeeting ?? "").toLowerCase() === "organizer");
+                              if (orgs.length > 0) return orgs.map((p, idx) => (
+                                <li key={(p.userId ?? String(idx)) + (p.joinTime ?? "")} className="rounded border border-white/10 bg-white/5 p-2">
+                                  <div className="text-xs text-white">
+                                    {p.displayName ?? p.userId}
+                                    <span className="ml-2 text-white/60">{p.roleInMeeting ?? "organizer"}</span>
+                                  </div>
+                                  <div className="text-[11px] text-white/60">
+                                    {p.joinTime ? formatBangkok(p.joinTime, { includeSeconds: false, separator: " " }) : ""}
+                                    {p.leaveTime ? ` → ${formatBangkok(p.leaveTime, { includeSeconds: false, separator: " " })}` : ""}
+                                  </div>
+                                </li>
+                              ));
+                              const organizerAuthId = details.meeting?.organizerId ?? "";
+                              const organizerMember = partyMembers.find((m) => m.authUserId === organizerAuthId) ?? null;
+                              const organizerName = getMemberDisplayName(organizerMember) ?? organizerAuthId;
+                              return [
+                                <li key={organizerAuthId} className="rounded border border-white/10 bg-white/5 p-2">
+                                  <div className="text-xs text-white">
+                                    {organizerName}
+                                    <span className="ml-2 text-white/60">organizer</span>
+                                  </div>
+                                </li>
+                              ];
+                            })()}
                           </ul>
                           <div className="text-xs text-white/70">Summary</div>
                           <div className="whitespace-pre-wrap rounded border border-white/10 bg-white/5 p-3 text-xs text-white/80">
