@@ -47,6 +47,7 @@ export function SidebarNav({ isCollapsed = false, onNavigate }: SidebarNavProps)
 
   const navLinkProps = (href: string) => ({
     href,
+    prefetch: true,
     onClick: () => {
       if (onNavigate) {
         onNavigate();
