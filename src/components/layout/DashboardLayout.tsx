@@ -1,41 +1,8 @@
 // roguelearn-web/src/components/layout/DashboardLayout.tsx
 import { DashboardFrame } from "@/components/layout/DashboardFrame";
-import { createClient } from "@/utils/supabase/server";
-import { redirect } from "next/navigation";
 import { ReactNode } from "react";
-import { getCachedUserFullInfo } from "@/lib/api-server";
 
-interface FullUserInfoResponse {
-  profile: {
-    username: string;
-    firstName: string;
-    lastName: string;
-    profileImageUrl: string | null;
-  };
-}
-
-export async function DashboardLayout({ children }: { children: ReactNode }) {
-  const supabase = await createClient();
-  
-  try {
-    const { data, error } = await supabase.auth.getUser();
-
-    if (error || !data?.user) {
-      redirect('/login');
-    }
-  } catch {
-    redirect('/login');
-  }
-
-  // Fetch user profile for sidebar (uses cached version to avoid duplicate API calls)
-  let userProfile = null;
-  try {
-    const fullInfo = await getCachedUserFullInfo();
-    userProfile = fullInfo?.profile;
-  } catch (err) {
-    console.error('Failed to fetch user profile:', err);
-  }
-
+export function DashboardLayout({ children }: { children: ReactNode }) {
   return (
     <div className="relative min-h-screen w-full bg-[#08040a] text-foreground">
       <div className="pointer-events-none fixed inset-0">
@@ -57,7 +24,7 @@ export async function DashboardLayout({ children }: { children: ReactNode }) {
       </div>
 
       <div className="relative z-10">
-        <DashboardFrame userProfile={userProfile || undefined}>{children}</DashboardFrame>
+        <DashboardFrame>{children}</DashboardFrame>
       </div>
     </div>
   );

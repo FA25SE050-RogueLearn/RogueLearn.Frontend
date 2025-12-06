@@ -62,6 +62,7 @@ export default function QuickIntro({ onComplete }: QuickIntroProps) {
         muted
         playsInline
         preload="auto"
+        suppressHydrationWarning
       >
         <source src="/Scene-1.mp4" type="video/mp4" />
       </video>

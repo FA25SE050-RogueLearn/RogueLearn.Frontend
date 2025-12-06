@@ -193,7 +193,7 @@ export default function PartyStashDetailPage() {
   
 
   return (
-    <DashboardFrame userProfile={userProfile}>
+    <DashboardFrame>
       <div className="mx-auto max-w-4xl space-y-6 p-6">
       {/* Header with RPG styling */}
       <div className="relative overflow-hidden rounded-[28px] border border-[#f5c16c]/30 bg-linear-to-br from-[#2d1810] via-[#1a0a08] to-black p-6 shadow-xl">
