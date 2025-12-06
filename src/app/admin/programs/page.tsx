@@ -78,8 +78,19 @@ export default function ProgramsManagementPage() {
         try {
             const res = await curriculumProgramsApi.getDetails(prog.id);
             if (res.isSuccess && res.data) {
-                setProgramSubjects([]);
-                toast.info("Subject list fetching requires backend update.");
+                // Subjects are nested inside curriculumVersions
+                const activeVersion = (res.data as any).curriculumVersions?.find((v: any) => v.isActive) 
+                    || (res.data as any).curriculumVersions?.[0];
+                const versionSubjects = activeVersion?.subjects || [];
+                const subjectList = versionSubjects.map((ps: any) => ({
+                    id: ps.subjectId,
+                    subjectCode: ps.subjectCode || '',
+                    subjectName: ps.subjectName || '',
+                    credits: ps.credits || 0,
+                    description: ps.description || '',
+                    semesterNumber: ps.termNumber,
+                } as Subject));
+                setProgramSubjects(subjectList);
             }
         } catch (e: any) {
             toast.error(e?.normalized?.message || e?.message || "Failed to load program structure");
