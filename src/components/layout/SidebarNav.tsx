@@ -16,7 +16,7 @@ import {
   Settings,
   User,
   GraduationCap,
-  Swords,
+  Skull,
 } from "lucide-react";
 import Image from "next/image";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -50,8 +50,8 @@ interface SidebarNavProps {
 const primaryNavItems = [
   { title: "Sanctum", url: "/dashboard", icon: LayoutGrid },
   { title: "Quests", url: "/quests", icon: ScrollText },
-  { title: "Battle", url: "/code-battle", icon: Sword },
-  { title: "Boss Fight", url: "/boss-fight", icon: Swords },
+  { title: "Code Battle", url: "/code-battle", icon: Sword },
+  { title: "Boss Fight", url: "/boss-fight", icon: Skull },
   { title: "Community", url: "/community", icon: Users },
 ];
 
@@ -59,7 +59,7 @@ const secondaryNavItems = [
   { title: "Skills", url: "/skills", icon: Network },
   { title: "Arsenal", url: "/arsenal", icon: Archive },
   { title: "Party", url: "/parties", icon: Users },
-  { title: "Adventure", url: "/game", icon: Compass },
+  // { title: "Adventure", url: "/game", icon: Compass },
   { title: "Admin", url: "/admin", icon: Shield },
 ];
 

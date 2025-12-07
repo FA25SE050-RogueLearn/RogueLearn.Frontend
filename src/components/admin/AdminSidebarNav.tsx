@@ -7,7 +7,6 @@ import {
   LayoutDashboard,
   Calendar,
   Library,
-  Settings,
   Shield,
   Scroll,
   Network,
@@ -31,7 +30,6 @@ const navItems = [
   { href: "/admin/user-roles", label: "User Roles", icon: Shield },
   { href: "/admin/feedback", label: "Feedback", icon: MessageSquare },
   { href: "/admin/achievements", label: "Achievements", icon: Trophy },
-  { href: "/admin/settings", label: "Settings", icon: Settings },
 ];
 
 export function AdminSidebarNav() {
