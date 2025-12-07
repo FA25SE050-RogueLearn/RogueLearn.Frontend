@@ -1,10 +1,9 @@
 "use client";
 import React, { useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
 import partiesApi from "@/api/partiesApi";
 import { PartyStashItemDto } from "@/types/parties";
 import Link from "next/link";
-import { FileText, Plus, Search, RefreshCw, Pencil, Trash2, Eye, X, FolderOpen, Clock, ArrowLeft } from "lucide-react";
+import { FileText, Plus, Search, RefreshCw, Pencil, Trash2, Eye, X, Clock } from "lucide-react";
 import { usePartyRole } from "@/hooks/usePartyRole";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -35,7 +34,6 @@ function extractPlainText(blocks?: Record<string, unknown>[]) {
 }
 
 export default function PartyStash({ partyId }: { partyId: string }) {
-  const router = useRouter();
   const [items, setItems] = useState<PartyStashItemDto[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -191,26 +189,18 @@ export default function PartyStash({ partyId }: { partyId: string }) {
 
   if (roleLoading || loading) {
     return (
-      <div className="space-y-6">
-        <div className="rounded-2xl border border-white/10 p-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <Skeleton className="h-10 w-10 rounded-lg bg-white/5" />
-              <Skeleton className="h-12 w-12 rounded-xl bg-white/5" />
-              <div className="space-y-2">
-                <Skeleton className="h-6 w-32 bg-white/5" />
-                <Skeleton className="h-4 w-24 bg-white/5" />
-              </div>
-            </div>
-            <Skeleton className="h-10 w-32 rounded-lg bg-white/5" />
-          </div>
+      <div className="space-y-4">
+        <div className="flex items-center gap-2">
+          <Skeleton className="h-10 flex-1 rounded-lg bg-white/5" />
+          <Skeleton className="h-10 w-10 rounded-lg bg-white/5" />
+          <Skeleton className="h-10 w-16 rounded-lg bg-white/5" />
         </div>
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {[1, 2, 3].map((i) => (
-            <div key={i} className="rounded-xl border border-white/10 bg-white/[0.02] p-4">
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+          {[1, 2].map((i) => (
+            <div key={i} className="rounded-xl border border-white/10 p-4">
               <Skeleton className="mb-3 h-5 w-3/4 bg-white/5" />
               <Skeleton className="mb-2 h-4 w-full bg-white/5" />
-              <Skeleton className="h-4 w-2/3 bg-white/5" />
+              <Skeleton className="h-8 w-full bg-white/5" />
             </div>
           ))}
         </div>
@@ -219,55 +209,33 @@ export default function PartyStash({ partyId }: { partyId: string }) {
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="rounded-2xl border border-white/10 p-6">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-center gap-4">
-            <button
-              onClick={() => router.back()}
-              className="flex h-10 w-10 items-center justify-center rounded-lg border border-white/10 text-white/60 transition-colors hover:bg-white/5 hover:text-white"
-              title="Go back"
-            >
-              <ArrowLeft className="h-5 w-5" />
-            </button>
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl border border-[#f5c16c]/30 bg-[#f5c16c]/10">
-              <FolderOpen className="h-6 w-6 text-[#f5c16c]" />
-            </div>
-            <div>
-              <h1 className="text-xl font-semibold text-white">Party Stash</h1>
-              <p className="text-sm text-white/50">{items.length} resource{items.length !== 1 ? 's' : ''}</p>
-            </div>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-2">
-            <div className="relative flex-1 sm:flex-none">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/30" />
-              <input
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search..."
-                className="w-full rounded-lg border border-white/10 bg-white/5 py-2 pl-9 pr-3 text-sm text-white placeholder:text-white/30 focus:border-[#f5c16c]/50 focus:outline-none sm:w-48"
-              />
-            </div>
-            <button
-              onClick={load}
-              className="flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white/70 transition-colors hover:bg-white/10 hover:text-white"
-            >
-              <RefreshCw className="h-4 w-4" />
-              <span className="hidden sm:inline">Refresh</span>
-            </button>
-            {role && (
-              <button
-                onClick={() => setShowAdd(true)}
-                className="flex items-center gap-1.5 rounded-lg bg-[#f5c16c] px-4 py-2 text-sm font-medium text-black transition-colors hover:bg-[#f5c16c]/90"
-              >
-                <Plus className="h-4 w-4" />
-                Add Resource
-              </button>
-            )}
-          </div>
+    <div className="space-y-4">
+      {/* Actions Bar */}
+      <div className="flex flex-wrap items-center gap-2">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/30" />
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search resources..."
+            className="w-full rounded-lg border border-white/10 bg-white/5 py-2 pl-9 pr-3 text-sm text-white placeholder:text-white/30 focus:border-[#f5c16c]/50 focus:outline-none"
+          />
         </div>
+        <button
+          onClick={load}
+          className="flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white/70 transition-colors hover:bg-white/10 hover:text-white"
+        >
+          <RefreshCw className="h-4 w-4" />
+        </button>
+        {role && (
+          <button
+            onClick={() => setShowAdd(true)}
+            className="flex items-center gap-1.5 rounded-lg bg-[#f5c16c] px-3 py-2 text-sm font-medium text-black transition-colors hover:bg-[#f5c16c]/90"
+          >
+            <Plus className="h-4 w-4" />
+            Add
+          </button>
+        )}
       </div>
 
       {error && (
@@ -296,7 +264,7 @@ export default function PartyStash({ partyId }: { partyId: string }) {
         </div>
       ) : (
         <>
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
             {paged.map((item) => (
               <div
                 key={item.id}
