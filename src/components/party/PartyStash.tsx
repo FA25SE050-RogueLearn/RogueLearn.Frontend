@@ -3,7 +3,8 @@ import React, { useEffect, useMemo, useState } from "react";
 import partiesApi from "@/api/partiesApi";
 import { PartyStashItemDto } from "@/types/parties";
 import Link from "next/link";
-import { FileText, Plus, Search, RefreshCw, Pencil, Trash2, Eye, X, Clock } from "lucide-react";
+import { FileText, Plus, Search, RefreshCw, Pencil, Trash2, Eye, X, Clock, Users, ArrowLeft } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { usePartyRole } from "@/hooks/usePartyRole";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -34,6 +35,7 @@ function extractPlainText(blocks?: Record<string, unknown>[]) {
 }
 
 export default function PartyStash({ partyId }: { partyId: string }) {
+  const router = useRouter();
   const [items, setItems] = useState<PartyStashItemDto[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -47,6 +49,7 @@ export default function PartyStash({ partyId }: { partyId: string }) {
   const pageSize = 6;
 
   const { role, loading: roleLoading } = usePartyRole(partyId);
+  const accessDenied = !roleLoading && role === null;
 
   // Management state
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -204,6 +207,29 @@ export default function PartyStash({ partyId }: { partyId: string }) {
             </div>
           ))}
         </div>
+      </div>
+    );
+  }
+
+  if (accessDenied) {
+    return (
+      <div className="flex flex-col items-center justify-center py-32 gap-6">
+        <div className="rounded-full bg-rose-500/10 p-6">
+          <Users className="h-12 w-12 text-rose-400" />
+        </div>
+        <div className="text-center space-y-2">
+          <h2 className="text-xl font-semibold text-white">Access Denied</h2>
+          <p className="text-sm text-white/60 max-w-md">
+            You are not a member of this party. Only party members can access the party stash.
+          </p>
+        </div>
+        <button
+          onClick={() => router.push("/parties")}
+          className="flex items-center gap-2 rounded-lg bg-gradient-to-r from-[#f5c16c] to-[#d4a855] px-6 py-3 text-sm font-medium text-black"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Back to Parties
+        </button>
       </div>
     );
   }
