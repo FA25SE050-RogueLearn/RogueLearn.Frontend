@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { LecturerVerificationPanel } from "@/components/profile/LecturerVerificationPanel";
 import { SocialScryingContent } from "@/components/profile/SocialScryingModal";
-import { LogOut, Sparkles, UploadCloud, User, Settings, Bell, Users, Shield, Mail, GraduationCap, Loader2 } from "lucide-react";
+import { LogOut, Sparkles, UploadCloud, User, Settings, Bell, Users, Shield, Mail, GraduationCap, Loader2, ExternalLink, Map } from "lucide-react";
 import notificationsApi from "@/api/notificationsApi";
 import type { NotificationDto, NotificationType } from "@/types/notifications";
 import profileApi from "@/api/profileApi";
@@ -374,6 +374,31 @@ export default function UserProfileModal({ open, onOpenChange, defaultTab = "pro
             {activeTab === "settings" && (
               <div className="space-y-6">
                 <h2 className="text-2xl font-bold text-white">Settings</h2>
+
+                {/* Academic Settings Helper */}
+                <div className="relative overflow-hidden rounded-[16px] border border-[#7289da]/30 bg-gradient-to-br from-[#7289da]/10 to-[#5865f2]/5 p-4">
+                  <div className="flex items-center gap-4">
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-[#7289da]/30 bg-[#7289da]/20">
+                      <Map className="h-4 w-4 text-[#7289da]" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-xs text-white/80">
+                        <span className="font-semibold text-[#7289da]">Need to change your Academic Path?</span>{" "}
+                        Update your curriculum program or career class on the full profile page.
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => {
+                        onOpenChange(false);
+                        router.push("/profile");
+                      }}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[#7289da]/40 bg-[#7289da]/20 text-[#7289da] text-xs font-semibold hover:bg-[#7289da]/30 transition-colors shrink-0"
+                    >
+                      <ExternalLink className="h-3 w-3" />
+                      Full Profile
+                    </button>
+                  </div>
+                </div>
                 
                 <div className="relative overflow-hidden rounded-[20px] border border-[#f5c16c]/20 bg-linear-to-br from-[#1f0d09]/95 to-[#2a1510]/95 p-6">
                   <div className="pointer-events-none absolute -right-10 -top-10 h-32 w-32 rounded-full bg-[#d23187]/10 blur-3xl" />

@@ -2,28 +2,20 @@ import { AdminLayout } from "@/components/layout/AdminLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { 
-  BookOpen, 
   Database, 
-  FileText,
   ArrowRight,
-  Tag
+  Tag,
+  ScrollText
 } from "lucide-react";
 import Link from "next/link";
 
 const contentModules = [
   {
-    id: "course-data",
-    title: "Curriculum Import",
-    description: "Import and sync FAP/FLM course data and syllabi",
-    icon: BookOpen,
-    href: "/admin/content/courses"
-  },
-  {
-    id: "subjects",
-    title: "Subject Catalog",
-    description: "Manage all subjects and their syllabus content",
-    icon: FileText,
-    href: "/admin/content/subjects"
+    id: "curriculum",
+    title: "Curriculum",
+    description: "Manage academic programs and import curriculum data",
+    icon: ScrollText,
+    href: "/admin/programs"
   },
   {
     id: "problem-bank",
@@ -47,12 +39,12 @@ export default function ContentManagementPage() {
       <div className="space-y-6">
         {/* Header */}
         <div>
-          <h1 className="text-2xl font-bold text-[#f5c16c]">Content Management</h1>
-          <p className="text-white/60">Manage curriculum, subjects, and coding challenges</p>
+          <h1 className="text-2xl font-bold text-white">Content Vault</h1>
+          <p className="text-white/60">Manage curriculum, coding challenges, and problem categorization</p>
         </div>
 
         {/* Content Modules */}
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {contentModules.map((module) => {
             const Icon = module.icon;
 

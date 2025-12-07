@@ -146,6 +146,12 @@ export const updateMyProfile = async (
   if (request.preferencesJson !== undefined) {
     formData.append('preferencesJson', request.preferencesJson || '');
   }
+  if (request.routeId !== undefined) {
+    formData.append('routeId', request.routeId || '');
+  }
+  if (request.classId !== undefined) {
+    formData.append('classId', request.classId || '');
+  }
 
   // Add profile image if provided
   if (profileImage) {
