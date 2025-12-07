@@ -4,6 +4,16 @@ export type FormatOptions = {
   locale?: string
 }
 
+export function isValidDate(date: unknown): date is Date {
+  return date instanceof Date && !isNaN(date.getTime())
+}
+
+export function safeDate(input: unknown): Date | null {
+  if (!input) return null
+  const d = typeof input === 'string' || typeof input === 'number' ? new Date(input) : input as Date
+  return isValidDate(d) ? d : null
+}
+
 function getParts(input: Date | string | number, timeZone: string, locale?: string) {
   const dt = typeof input === "string" || typeof input === "number" ? new Date(input) : input
   const fmt = new Intl.DateTimeFormat(locale ?? "en-US", {

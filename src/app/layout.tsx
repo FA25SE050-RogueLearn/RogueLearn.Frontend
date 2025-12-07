@@ -8,6 +8,7 @@ import { Toaster } from "@/components/ui/sonner";
 import { ThemeProvider } from "next-themes";
 import { ReactNode } from "react";
 import { TransitionProvider } from "@/components/layout/TransitionProvider";
+import { QueryProvider } from "@/lib/query-client";
 
 const fontHeading = Lora({
   subsets: ["latin"],
@@ -45,10 +46,12 @@ export default function RootLayout({
         suppressHydrationWarning={true}
       >
         <Script src="https://accounts.google.com/gsi/client" strategy="afterInteractive" />
-        <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
-          <TransitionProvider>{children}</TransitionProvider>
-          <Toaster richColors position="top-right" />
-        </ThemeProvider>
+        <QueryProvider>
+          <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
+            <TransitionProvider>{children}</TransitionProvider>
+            <Toaster richColors position="top-right" />
+          </ThemeProvider>
+        </QueryProvider>
       </body>
     </html>
   );

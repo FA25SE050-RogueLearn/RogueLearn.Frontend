@@ -16,7 +16,7 @@ import {
   Settings,
   User,
   GraduationCap,
-  Swords,
+  Skull,
 } from "lucide-react";
 import Image from "next/image";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -39,19 +39,19 @@ import UserProfileModal from "@/components/profile/UserProfileModal";
 import { usePageTransition } from "@/components/layout/PageTransition";
 
 interface SidebarNavProps {
-  userProfile: {
-    username: string;
-    firstName: string;
-    lastName: string;
-    profileImageUrl: string | null;
+  userProfile?: {
+    username?: string | null;
+    firstName?: string | null;
+    lastName?: string | null;
+    profileImageUrl?: string | null;
   };
 }
 
 const primaryNavItems = [
   { title: "Sanctum", url: "/dashboard", icon: LayoutGrid },
   { title: "Quests", url: "/quests", icon: ScrollText },
-  { title: "Battle", url: "/code-battle", icon: Sword },
-  { title: "Boss Fight", url: "/boss-fight", icon: Swords },
+  { title: "Code Battle", url: "/code-battle", icon: Sword },
+  { title: "Boss Fight", url: "/boss-fight", icon: Skull },
   { title: "Community", url: "/community", icon: Users },
 ];
 
@@ -59,7 +59,7 @@ const secondaryNavItems = [
   { title: "Skills", url: "/skills", icon: Network },
   { title: "Arsenal", url: "/arsenal", icon: Archive },
   { title: "Party", url: "/parties", icon: Users },
-  { title: "Adventure", url: "/game", icon: Compass },
+  // { title: "Adventure", url: "/game", icon: Compass },
   { title: "Admin", url: "/admin", icon: Shield },
 ];
 
@@ -205,10 +205,10 @@ export function SidebarNav({ userProfile }: SidebarNavProps) {
         <DropdownMenuTrigger className="mb-4 flex flex-col items-center gap-1 p-3 hover:bg-[#f5c16c]/10 rounded-lg transition-colors">
           <div className="relative">
             <Avatar className="h-10 w-10 border border-[#f5c16c]/30">
-              <AvatarImage src={userProfile.profileImageUrl || undefined} />
+              <AvatarImage src={userProfile?.profileImageUrl || undefined} />
               <AvatarFallback className="bg-gradient-to-br from-[#f5c16c] to-[#d23187] text-white text-xs font-bold">
-                {userProfile.firstName?.[0]}
-                {userProfile.lastName?.[0]}
+                {userProfile?.firstName?.[0] || 'R'}
+                {userProfile?.lastName?.[0] || 'L'}
               </AvatarFallback>
             </Avatar>
             {unreadCount > 0 && (
@@ -221,7 +221,7 @@ export function SidebarNav({ userProfile }: SidebarNavProps) {
             )}
           </div>
           <span className="w-[60px] truncate text-center text-[10px] text-[#f5c16c]">
-            {userProfile.username}
+            {userProfile?.username || 'User'}
           </span>
         </DropdownMenuTrigger>
         <DropdownMenuContent
@@ -230,9 +230,9 @@ export function SidebarNav({ userProfile }: SidebarNavProps) {
         >
           <div className="px-2 py-1.5">
             <p className="text-sm font-medium text-[#f5c16c]">
-              {userProfile.firstName} {userProfile.lastName}
+              {userProfile?.firstName || ''} {userProfile?.lastName || ''}
             </p>
-            <p className="text-xs text-[#f5c16c]/60">@{userProfile.username}</p>
+            <p className="text-xs text-[#f5c16c]/60">@{userProfile?.username || 'user'}</p>
           </div>
           <DropdownMenuSeparator className="bg-[#f5c16c]/20" />
           <DropdownMenuItem

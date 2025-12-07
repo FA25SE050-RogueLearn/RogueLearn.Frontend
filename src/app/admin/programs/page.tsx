@@ -175,9 +175,9 @@ export default function ProgramsManagementPage() {
         setImportError(null);
         try {
             const semesterValue = importSemester.trim() ? parseInt(importSemester, 10) : undefined;
-            await curriculumImportApi.importSubjectFromText({ 
-                rawText, 
-                semester: semesterValue 
+            await curriculumImportApi.importSubjectFromText({
+                rawText,
+                semester: semesterValue
             });
             setImportStatus("Import successful! Refreshing catalog...");
             setRawText("");
@@ -200,7 +200,7 @@ export default function ProgramsManagementPage() {
             const supabase = createClient();
             const { data: { session } } = await supabase.auth.getSession();
             const token = session?.access_token;
-            
+
             if (!token) throw new Error("Not authenticated");
 
             const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || ''}/api/admin/programs/${prog.id}/subjects`, {
@@ -290,60 +290,60 @@ export default function ProgramsManagementPage() {
 
                         {/* Programs Grid */}
                         {loading ? (
-                    <div className="flex items-center justify-center py-12">
-                        <Loader2 className="h-8 w-8 animate-spin text-[#f5c16c]" />
-                    </div>
-                ) : programs.length === 0 ? (
-                    <div className="text-center py-12">
-                        <p className="text-white/50">No programs found. Create your first program to get started.</p>
-                    </div>
-                ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        {programs.map(prog => (
-                            <Card key={prog.id} className="bg-[#1a1410] border border-[#f5c16c]/30 shadow-sm hover:shadow-md transition-shadow">
-                                <CardHeader className="pb-2">
-                                    <div className="flex justify-between items-start">
-                                        <div className="flex-1">
-                                            <CardTitle className="text-base font-semibold text-white">{prog.programCode}</CardTitle>
-                                            <span className={`inline-block mt-1 text-xs px-2 py-0.5 rounded-full border ${getDegreeBadge(prog.degreeLevel)}`}>
-                                                {prog.degreeLevel}
-                                            </span>
-                                        </div>
-                                        <DropdownMenu>
-                                            <DropdownMenuTrigger asChild>
-                                                <Button variant="ghost" size="icon" className="h-8 w-8 text-white/60 hover:text-white hover:bg-white/10">
-                                                    <MoreVertical className="h-4 w-4" />
-                                                </Button>
-                                            </DropdownMenuTrigger>
-                                            <DropdownMenuContent align="end" className="bg-[#1a1410] border-[#f5c16c]/30">
-                                                <DropdownMenuItem onClick={() => openEditDialog(prog)} className="text-white hover:bg-[#f5c16c]/10 cursor-pointer">
-                                                    <Pencil className="w-4 h-4 mr-2" /> Edit
-                                                </DropdownMenuItem>
-                                                <DropdownMenuItem onClick={() => setDeleteTarget(prog)} className="text-red-400 hover:bg-red-500/10 cursor-pointer">
-                                                    <Trash2 className="w-4 h-4 mr-2" /> Delete
-                                                </DropdownMenuItem>
-                                            </DropdownMenuContent>
-                                        </DropdownMenu>
-                                    </div>
-                                </CardHeader>
-                                <CardContent>
-                                    <p className="text-sm font-medium text-white mb-1">{prog.programName}</p>
-                                    <p className="text-sm text-white/60 mb-2 line-clamp-2">{prog.description || "No description"}</p>
-                                    <div className="flex gap-4 text-xs text-white/50 mb-4">
-                                        <span>{prog.totalCredits || 0} credits</span>
-                                        <span>{prog.durationYears || 0} years</span>
-                                    </div>
-                                    <Button
-                                        variant="outline"
-                                        className="w-full border-[#7289da]/30 text-[#f5c16c] hover:bg-[#f5c16c]/10"
-                                        onClick={() => openStructure(prog)}
-                                    >
-                                        <ScrollText className="w-4 h-4 mr-2" /> Manage Subjects
-                                    </Button>
-                                </CardContent>
-                            </Card>
-                        ))}
-                    </div>
+                            <div className="flex items-center justify-center py-12">
+                                <Loader2 className="h-8 w-8 animate-spin text-[#f5c16c]" />
+                            </div>
+                        ) : programs.length === 0 ? (
+                            <div className="text-center py-12">
+                                <p className="text-white/50">No programs found. Create your first program to get started.</p>
+                            </div>
+                        ) : (
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                {programs.map(prog => (
+                                    <Card key={prog.id} className="bg-[#1a1410] border border-[#f5c16c]/30 shadow-sm hover:shadow-md transition-shadow">
+                                        <CardHeader className="pb-2">
+                                            <div className="flex justify-between items-start">
+                                                <div className="flex-1">
+                                                    <CardTitle className="text-base font-semibold text-white">{prog.programCode}</CardTitle>
+                                                    <span className={`inline-block mt-1 text-xs px-2 py-0.5 rounded-full border ${getDegreeBadge(prog.degreeLevel)}`}>
+                                                        {prog.degreeLevel}
+                                                    </span>
+                                                </div>
+                                                <DropdownMenu>
+                                                    <DropdownMenuTrigger asChild>
+                                                        <Button variant="ghost" size="icon" className="h-8 w-8 text-white/60 hover:text-white hover:bg-white/10">
+                                                            <MoreVertical className="h-4 w-4" />
+                                                        </Button>
+                                                    </DropdownMenuTrigger>
+                                                    <DropdownMenuContent align="end" className="bg-[#1a1410] border-[#f5c16c]/30">
+                                                        <DropdownMenuItem onClick={() => openEditDialog(prog)} className="text-white hover:bg-[#f5c16c]/10 cursor-pointer">
+                                                            <Pencil className="w-4 h-4 mr-2" /> Edit
+                                                        </DropdownMenuItem>
+                                                        <DropdownMenuItem onClick={() => setDeleteTarget(prog)} className="text-red-400 hover:bg-red-500/10 cursor-pointer">
+                                                            <Trash2 className="w-4 h-4 mr-2" /> Delete
+                                                        </DropdownMenuItem>
+                                                    </DropdownMenuContent>
+                                                </DropdownMenu>
+                                            </div>
+                                        </CardHeader>
+                                        <CardContent>
+                                            <p className="text-sm font-medium text-white mb-1">{prog.programName}</p>
+                                            <p className="text-sm text-white/60 mb-2 line-clamp-2">{prog.description || "No description"}</p>
+                                            <div className="flex gap-4 text-xs text-white/50 mb-4">
+                                                <span>{prog.totalCredits || 0} credits</span>
+                                                <span>{prog.durationYears || 0} years</span>
+                                            </div>
+                                            <Button
+                                                variant="outline"
+                                                className="w-full border-[#7289da]/30 text-[#f5c16c] hover:bg-[#f5c16c]/10"
+                                                onClick={() => openStructure(prog)}
+                                            >
+                                                <ScrollText className="w-4 h-4 mr-2" /> Manage Subjects
+                                            </Button>
+                                        </CardContent>
+                                    </Card>
+                                ))}
+                            </div>
                         )}
                     </TabsContent>
 
@@ -356,26 +356,26 @@ export default function ProgramsManagementPage() {
                             <CardContent className="space-y-4 pt-6">
                                 <div>
                                     <Label htmlFor="rawText" className="text-sm text-white/70">Paste Raw Text Content</Label>
-                                    <Textarea 
-                                        id="rawText" 
-                                        value={rawText} 
-                                        onChange={(e) => setRawText(e.target.value)} 
-                                        placeholder="Paste the raw HTML or text from FLM or a single subject document here..." 
-                                        className="mt-2 h-40 bg-[#0a0506] border-[#f5c16c]/20 text-white placeholder:text-white/40" 
+                                    <Textarea
+                                        id="rawText"
+                                        value={rawText}
+                                        onChange={(e) => setRawText(e.target.value)}
+                                        placeholder="Paste the raw HTML or text from FLM or a single subject document here..."
+                                        className="mt-2 h-40 bg-[#0a0506] border-[#f5c16c]/20 text-white placeholder:text-white/40"
                                     />
                                 </div>
                                 <div className="flex gap-4 items-end">
                                     <div className="w-32">
                                         <Label htmlFor="semester" className="text-sm text-white/70">Semester (Optional)</Label>
-                                        <Input 
-                                            id="semester" 
-                                            type="number" 
-                                            min="1" 
-                                            max="10" 
-                                            value={importSemester} 
-                                            onChange={(e) => setImportSemester(e.target.value)} 
-                                            placeholder="e.g., 1" 
-                                            className="mt-2 bg-[#0a0506] border-[#f5c16c]/20 text-white placeholder:text-white/40" 
+                                        <Input
+                                            id="semester"
+                                            type="number"
+                                            min="1"
+                                            max="10"
+                                            value={importSemester}
+                                            onChange={(e) => setImportSemester(e.target.value)}
+                                            placeholder="e.g., 1"
+                                            className="mt-2 bg-[#0a0506] border-[#f5c16c]/20 text-white placeholder:text-white/40"
                                         />
                                     </div>
                                     <p className="text-xs text-white/50 pb-2">Only used when importing a single subject</p>
@@ -393,17 +393,17 @@ export default function ProgramsManagementPage() {
                                     </div>
                                 )}
                                 <div className="flex gap-4">
-                                    <Button 
-                                        onClick={handleImportCurriculum} 
-                                        disabled={!rawText || !!importStatus} 
+                                    <Button
+                                        onClick={handleImportCurriculum}
+                                        disabled={!rawText || !!importStatus}
                                         className="bg-[#f5c16c] hover:bg-[#f5c16c]/90 text-black font-semibold"
                                     >
                                         <UploadCloud className="mr-2 h-4 w-4" /> Import Full Curriculum
                                     </Button>
-                                    <Button 
-                                        onClick={handleImportSubject} 
-                                        disabled={!rawText || !!importStatus} 
-                                        variant="outline" 
+                                    <Button
+                                        onClick={handleImportSubject}
+                                        disabled={!rawText || !!importStatus}
+                                        variant="outline"
                                         className="border-[#f5c16c]/30 text-white hover:bg-[#f5c16c]/10"
                                     >
                                         <UploadCloud className="mr-2 h-4 w-4" /> Import Single Subject
@@ -455,11 +455,11 @@ export default function ProgramsManagementPage() {
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-2">
                                     <Label className="text-white/70">Program Code *</Label>
-                                    <Input 
-                                        value={formData.programCode} 
-                                        onChange={e => setFormData({ ...formData, programCode: e.target.value })} 
-                                        placeholder="e.g., SE, IS" 
-                                        className="border-[#f5c16c]/30 bg-[#0a0506]" 
+                                    <Input
+                                        value={formData.programCode}
+                                        onChange={e => setFormData({ ...formData, programCode: e.target.value })}
+                                        placeholder="e.g., SE, IS"
+                                        className="border-[#f5c16c]/30 bg-[#0a0506]"
                                     />
                                 </div>
                                 <div className="space-y-2">
@@ -477,39 +477,39 @@ export default function ProgramsManagementPage() {
                             </div>
                             <div className="space-y-2">
                                 <Label className="text-white/70">Program Name *</Label>
-                                <Input 
-                                    value={formData.programName} 
-                                    onChange={e => setFormData({ ...formData, programName: e.target.value })} 
-                                    placeholder="e.g., Software Engineering" 
-                                    className="border-[#f5c16c]/30 bg-[#0a0506]" 
+                                <Input
+                                    value={formData.programName}
+                                    onChange={e => setFormData({ ...formData, programName: e.target.value })}
+                                    placeholder="e.g., Software Engineering"
+                                    className="border-[#f5c16c]/30 bg-[#0a0506]"
                                 />
                             </div>
                             <div className="space-y-2">
                                 <Label className="text-white/70">Description</Label>
-                                <Textarea 
-                                    value={formData.description} 
-                                    onChange={e => setFormData({ ...formData, description: e.target.value })} 
-                                    placeholder="Brief description of the program..." 
-                                    className="border-[#f5c16c]/30 bg-[#0a0506] min-h-[80px] resize-none" 
+                                <Textarea
+                                    value={formData.description}
+                                    onChange={e => setFormData({ ...formData, description: e.target.value })}
+                                    placeholder="Brief description of the program..."
+                                    className="border-[#f5c16c]/30 bg-[#0a0506] min-h-[80px] resize-none"
                                 />
                             </div>
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-2">
                                     <Label className="text-white/70">Total Credits</Label>
-                                    <Input 
-                                        type="number" 
-                                        value={formData.totalCredits} 
-                                        onChange={e => setFormData({ ...formData, totalCredits: parseInt(e.target.value) || 0 })} 
-                                        className="border-[#f5c16c]/30 bg-[#0a0506]" 
+                                    <Input
+                                        type="number"
+                                        value={formData.totalCredits}
+                                        onChange={e => setFormData({ ...formData, totalCredits: parseInt(e.target.value) || 0 })}
+                                        className="border-[#f5c16c]/30 bg-[#0a0506]"
                                     />
                                 </div>
                                 <div className="space-y-2">
                                     <Label className="text-white/70">Duration (Years)</Label>
-                                    <Input 
-                                        type="number" 
-                                        value={formData.durationYears} 
-                                        onChange={e => setFormData({ ...formData, durationYears: parseInt(e.target.value) || 0 })} 
-                                        className="border-[#f5c16c]/30 bg-[#0a0506]" 
+                                    <Input
+                                        type="number"
+                                        value={formData.durationYears}
+                                        onChange={e => setFormData({ ...formData, durationYears: parseInt(e.target.value) || 0 })}
+                                        className="border-[#f5c16c]/30 bg-[#0a0506]"
                                     />
                                 </div>
                             </div>
@@ -531,7 +531,7 @@ export default function ProgramsManagementPage() {
                         <DialogHeader>
                             <DialogTitle className="text-white">Delete Program</DialogTitle>
                             <DialogDescription className="text-white/60">
-                                Are you sure you want to delete <span className="text-[#f5c16c] font-semibold">{deleteTarget?.programName}</span>? 
+                                Are you sure you want to delete <span className="text-[#f5c16c] font-semibold">{deleteTarget?.programName}</span>?
                                 This action cannot be undone and will remove all associated subject mappings.
                             </DialogDescription>
                         </DialogHeader>
@@ -539,8 +539,8 @@ export default function ProgramsManagementPage() {
                             <Button variant="outline" onClick={() => setDeleteTarget(null)} className="border-[#f5c16c]/30 text-white/70 hover:text-white">
                                 Cancel
                             </Button>
-                            <Button 
-                                onClick={handleDeleteProgram} 
+                            <Button
+                                onClick={handleDeleteProgram}
                                 disabled={deleting}
                                 className="bg-red-500 hover:bg-red-600 text-white"
                             >

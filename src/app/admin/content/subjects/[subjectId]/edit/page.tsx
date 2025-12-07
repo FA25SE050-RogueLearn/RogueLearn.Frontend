@@ -60,6 +60,8 @@ export default function ProfessionalEditSubjectPage() {
                     <div className="flex flex-col items-center gap-4">
                         <Loader2 className="h-12 w-12 animate-spin text-[#f5c16c]" />
                         <p className="text-white/60">Loading subject content...</p>
+                        <Loader2 className="h-12 w-12 animate-spin text-[#f5c16c]" />
+                        <p className="text-white/60">Loading subject content...</p>
                     </div>
                 </div>
             </AdminLayout>
@@ -81,22 +83,22 @@ export default function ProfessionalEditSubjectPage() {
                     </div>
 
                     {error && (
-                        <Card className="border-[#e07a5f]/30 bg-[#e07a5f]/10">
-                            <CardContent className="pt-6 flex items-center gap-3 text-[#e07a5f]">
+                        <Card className="border-red-500/30 bg-red-500/10">
+                            <CardContent className="pt-6 flex items-center gap-3 text-red-400">
                                 <AlertCircle className="h-5 w-5 flex-shrink-0" /><p>{error}</p>
                             </CardContent>
                         </Card>
                     )}
 
                     {success && (
-                        <Card className="border-emerald-200 bg-emerald-50">
-                            <CardContent className="pt-6 flex items-center gap-3 text-emerald-600">
+                        <Card className="border-emerald-500/30 bg-emerald-500/10">
+                            <CardContent className="pt-6 flex items-center gap-3 text-emerald-400">
                                 <CheckCircle className="h-5 w-5 flex-shrink-0" /><p>Syllabus saved successfully!</p>
                             </CardContent>
                         </Card>
                     )}
 
-                    <Card className="bg-[#1a1410] border-[#f5c16c]/30">
+                    <Card className="bg-[#1a0b08]/80 border-[#f5c16c]/20">
                         <CardContent className="pt-6">
                             <Accordion type="single" collapsible defaultValue="overview">
                                 <AccordionItem value="overview">
