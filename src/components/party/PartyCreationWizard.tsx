@@ -177,10 +177,10 @@ export default function PartyCreationWizard({ open, onClose, onCreated }: PartyC
               <label className="text-sm font-medium text-[#f5c16c]">Max Members</label>
               <input
                 type="number"
-                min={2}
-                max={50}
+                min={1}
+                max={8}
                 value={maxMembers}
-                onChange={e => setMaxMembers(Number(e.target.value) || 2)}
+                onChange={e => setMaxMembers(Math.min(8, Math.max(1, Number(e.target.value) || 1)))}
                 className="w-24 rounded-lg border border-[#f5c16c]/20 bg-black/40 px-3 py-2 text-sm text-white focus:border-[#f5c16c] focus:outline-none focus:ring-2 focus:ring-[#f5c16c]/30"
               />
             </div>
