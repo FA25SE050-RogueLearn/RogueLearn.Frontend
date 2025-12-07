@@ -8,7 +8,7 @@ import dynamic from "next/dynamic";
 import { PartialBlock } from "@blocknote/core";
 import { Input } from "@/components/ui/input";
 import { getMyContext } from "@/api/usersApi";
-import { FileText, ArrowLeft, Tag } from "lucide-react";
+import { FileText, ArrowLeft, Tag, Users } from "lucide-react";
 import { DashboardFrame } from "@/components/layout/DashboardFrame";
 import * as Y from "yjs";
 import YPartyKitProvider from "y-partykit/provider";
@@ -30,6 +30,8 @@ export default function PartyStashDetailPage() {
 
   const [item, setItem] = useState<PartyStashItemDto | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [accessDenied, setAccessDenied] = useState(false);
+  const [membershipChecked, setMembershipChecked] = useState(false);
 
   const [title, setTitle] = useState("");
   const [status, setStatus] = useState<EditorStatus>("loading");
@@ -159,15 +161,32 @@ export default function PartyStashDetailPage() {
         setCursorColor(nameToColor(String(dn)));
         if (!mounted || !authId) {
           setCanEdit(false);
+          setAccessDenied(true);
+          setMembershipChecked(true);
+          return;
+        }
+        // Check if user is a member of the party
+        const membersRes = await partiesApi.getMembers(partyId);
+        const members = membersRes.data ?? [];
+        const isMember = members.some(
+          (m) => m.authUserId === authId && m.status === "Active"
+        );
+        if (!isMember) {
+          setAccessDenied(true);
+          setCanEdit(false);
+          setMembershipChecked(true);
           return;
         }
         const rolesRes = await partiesApi.getMemberRoles(partyId, authId);
         const roles = rolesRes.data ?? [];
         const allowed = roles.includes("Leader") || roles.includes("Member");
         setCanEdit(allowed);
+        setMembershipChecked(true);
       } catch {
         if (!mounted) return;
         setCanEdit(false);
+        setAccessDenied(true);
+        setMembershipChecked(true);
       }
     })();
     return () => {
@@ -191,7 +210,30 @@ export default function PartyStashDetailPage() {
     };
   }, [provider]);
 
-  
+  if (accessDenied && membershipChecked) {
+    return (
+      <DashboardFrame>
+        <div className="flex flex-col items-center justify-center py-32 gap-6">
+          <div className="rounded-full bg-rose-500/10 p-6">
+            <Users className="h-12 w-12 text-rose-400" />
+          </div>
+          <div className="text-center space-y-2">
+            <h2 className="text-xl font-semibold text-white">Access Denied</h2>
+            <p className="text-sm text-white/60 max-w-md">
+              You are not a member of this party. Only party members can access this page.
+            </p>
+          </div>
+          <button
+            onClick={() => router.push("/parties")}
+            className="flex items-center gap-2 rounded-lg bg-gradient-to-r from-[#f5c16c] to-[#d4a855] px-6 py-3 text-sm font-medium text-black"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Back to Parties
+          </button>
+        </div>
+      </DashboardFrame>
+    );
+  }
 
   return (
     <DashboardFrame>

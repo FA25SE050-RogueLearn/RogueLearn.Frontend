@@ -54,6 +54,7 @@ export default function GuildMeetingsSection({ guildId }: Props) {
       end: in30.toISOString(),
     };
   });
+  const [dateError, setDateError] = useState<string | null>(null);
 
   const [activeMeeting, setActiveMeeting] = useState<{
     meeting: MeetingDto | null;
@@ -719,7 +720,22 @@ export default function GuildMeetingsSection({ guildId }: Props) {
                     const [y, m, day] = d.split("-").map((n) => parseInt(n, 10));
                     const [h, min] = t.split(":").map((n) => parseInt(n, 10));
                     const ms = Date.UTC(y, m - 1, day, h - 7, min);
-                    setCreateState((s) => ({ ...s, start: new Date(ms).toISOString() }));
+                    const dt = new Date(ms);
+                    const now = new Date();
+                    if (dt < now) {
+                      setDateError("Start time cannot be in the past");
+                      return;
+                    }
+                    setDateError(null);
+                    const newStart = dt.toISOString();
+                    setCreateState((s) => {
+                      const currentEnd = new Date(s.end);
+                      if (currentEnd <= dt) {
+                        const newEnd = new Date(dt.getTime() + 30 * 60 * 1000);
+                        return { ...s, start: newStart, end: newEnd.toISOString() };
+                      }
+                      return { ...s, start: newStart };
+                    });
                   }}
                   className="w-full rounded-lg border border-[#f5c16c]/20 bg-black/40 p-2.5 text-sm text-white focus:border-[#f5c16c]/50 focus:outline-none focus:ring-2 focus:ring-[#f5c16c]/20"
                 />
@@ -734,17 +750,27 @@ export default function GuildMeetingsSection({ guildId }: Props) {
                     const [y, m, day] = d.split("-").map((n) => parseInt(n, 10));
                     const [h, min] = t.split(":").map((n) => parseInt(n, 10));
                     const ms = Date.UTC(y, m - 1, day, h - 7, min);
-                    setCreateState((s) => ({ ...s, end: new Date(ms).toISOString() }));
+                    const dt = new Date(ms);
+                    const startDt = new Date(createState.start);
+                    if (dt <= startDt) {
+                      setDateError("End time must be after start time");
+                      return;
+                    }
+                    setDateError(null);
+                    setCreateState((s) => ({ ...s, end: dt.toISOString() }));
                   }}
                   className="w-full rounded-lg border border-[#f5c16c]/20 bg-black/40 p-2.5 text-sm text-white focus:border-[#f5c16c]/50 focus:outline-none focus:ring-2 focus:ring-[#f5c16c]/20"
                 />
               </div>
             </div>
             
+            {dateError && (
+              <div className="mt-2 text-xs text-red-400">{dateError}</div>
+            )}
             <div className="mt-4 flex items-center gap-3">
               <button
                 onClick={handleCreateMeeting}
-                disabled={creating}
+                disabled={creating || !!dateError}
                 className="flex items-center gap-2 rounded-lg bg-linear-to-r from-[#f5c16c] to-[#d4a855] px-4 py-2.5 text-sm font-medium text-black transition-all hover:from-[#d4a855] hover:to-[#f5c16c] disabled:opacity-50"
               >
                 <Play className="h-4 w-4" />

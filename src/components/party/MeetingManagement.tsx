@@ -59,6 +59,7 @@ export default function MeetingManagement({ partyId, variant = "full", showList 
       spaceName: "",
     };
   });
+  const [dateError, setDateError] = useState<string | null>(null);
 
   // Active meeting state for the current session
   const [activeMeeting, setActiveMeeting] = useState<{
@@ -652,10 +653,22 @@ export default function MeetingManagement({ partyId, variant = "full", showList 
                 value={datetimeLocalBangkok(createState.start)}
                 onChange={(e) => {
                   const dt = new Date(e.target.value);
-                  setCreateState((s) => ({
-                    ...s,
-                    start: new Date(dt).toISOString(),
-                  }));
+                  const now = new Date();
+                  if (dt < now) {
+                    setDateError("Start time cannot be in the past");
+                    return;
+                  }
+                  setDateError(null);
+                  const newStart = dt.toISOString();
+                  setCreateState((s) => {
+                    // If end is before or equal to new start, adjust end to 30 mins after start
+                    const currentEnd = new Date(s.end);
+                    if (currentEnd <= dt) {
+                      const newEnd = new Date(dt.getTime() + 30 * 60 * 1000);
+                      return { ...s, start: newStart, end: newEnd.toISOString() };
+                    }
+                    return { ...s, start: newStart };
+                  });
                 }}
                 className="w-full rounded border border-white/20 bg-white/10 p-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-fuchsia-500"
               />
@@ -667,19 +680,28 @@ export default function MeetingManagement({ partyId, variant = "full", showList 
                 value={datetimeLocalBangkok(createState.end)}
                 onChange={(e) => {
                   const dt = new Date(e.target.value);
+                  const startDt = new Date(createState.start);
+                  if (dt <= startDt) {
+                    setDateError("End time must be after start time");
+                    return;
+                  }
+                  setDateError(null);
                   setCreateState((s) => ({
                     ...s,
-                    end: new Date(dt).toISOString(),
+                    end: dt.toISOString(),
                   }));
                 }}
                 className="w-full rounded border border-white/20 bg-white/10 p-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-fuchsia-500"
               />
             </div>
           </div>
+          {dateError && (
+            <div className="mt-2 text-xs text-red-400">{dateError}</div>
+          )}
           <div className="mt-3 flex items-center gap-3">
             <button
               onClick={handleCreateMeeting}
-              disabled={creating}
+              disabled={creating || !!dateError}
               aria-busy={creating}
               className="rounded bg-fuchsia-600 px-4 py-2 text-xs font-medium text-white disabled:opacity-50"
             >

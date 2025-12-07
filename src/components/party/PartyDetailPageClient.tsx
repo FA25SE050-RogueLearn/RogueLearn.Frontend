@@ -20,6 +20,7 @@ export default function PartyDetailPageClient({ partyId }: { partyId: string }) 
   const [party, setParty] = useState<PartyDto | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [accessDenied, setAccessDenied] = useState(false);
   const [showScheduleModal, setShowScheduleModal] = useState(false);
   const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
   const [isLeaving, setIsLeaving] = useState(false);
@@ -35,7 +36,7 @@ export default function PartyDetailPageClient({ partyId }: { partyId: string }) 
   const [refreshAt, setRefreshAt] = useState<number>(0);
   const [meetingRefreshAt, setMeetingRefreshAt] = useState<number>(0);
   const router = useRouter();
-  const { role, refresh: refreshRole } = usePartyRole(partyId);
+  const { role, loading: roleLoading, refresh: refreshRole } = usePartyRole(partyId);
   const [members, setMembers] = useState<PartyMemberDto[]>([]);
   const [invites, setInvites] = useState<PartyInvitationDto[]>([]);
   const [stashCount, setStashCount] = useState<number>(0);
@@ -86,9 +87,20 @@ export default function PartyDetailPageClient({ partyId }: { partyId: string }) 
           partiesApi.getPendingInvitations(partyId),
         ]);
         if (!mounted) return;
-        setMembers(memRes.data ?? []);
+        const membersList = memRes.data ?? [];
+        setMembers(membersList);
         setStashCount((stashRes.data ?? []).length);
         setInvites(invRes.data ?? []);
+
+        // Check if current user is a member of this party
+        if (authUserId && membersList.length > 0) {
+          const isMember = membersList.some(
+            (m) => m.authUserId === authUserId && m.status === "Active"
+          );
+          if (!isMember) {
+            setAccessDenied(true);
+          }
+        }
       } catch {
         if (!mounted) return;
         setMembers([]);
@@ -96,9 +108,11 @@ export default function PartyDetailPageClient({ partyId }: { partyId: string }) 
         setInvites([]);
       }
     };
-    loadSideData();
+    if (authUserId) {
+      loadSideData();
+    }
     return () => { mounted = false; };
-  }, [partyId, refreshAt]);
+  }, [partyId, refreshAt, authUserId]);
 
   useEffect(() => {
     let mounted = true;
@@ -179,10 +193,34 @@ export default function PartyDetailPageClient({ partyId }: { partyId: string }) 
     }
   };
 
-  if (loading || role === null || !party) {
+  if (loading || roleLoading || !party) {
     return (
       <div className="flex items-center justify-center py-32">
         <div className="h-6 w-6 animate-spin rounded-full border-2 border-white/30 border-t-[#f5c16c]" />
+      </div>
+    );
+  }
+
+  // Check access after loading is complete - if role is null, user is not a member
+  if (accessDenied || role === null) {
+    return (
+      <div className="flex flex-col items-center justify-center py-32 gap-6">
+        <div className="rounded-full bg-rose-500/10 p-6">
+          <Users className="h-12 w-12 text-rose-400" />
+        </div>
+        <div className="text-center space-y-2">
+          <h2 className="text-xl font-semibold text-white">Access Denied</h2>
+          <p className="text-sm text-white/60 max-w-md">
+            You are not a member of this party. Only party members can access this page.
+          </p>
+        </div>
+        <button
+          onClick={() => router.push("/parties")}
+          className="flex items-center gap-2 rounded-lg bg-gradient-to-r from-[#f5c16c] to-[#d4a855] px-6 py-3 text-sm font-medium text-black"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Back to Parties
+        </button>
       </div>
     );
   }
