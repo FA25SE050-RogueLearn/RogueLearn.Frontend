@@ -12,10 +12,12 @@ import {
   ArrowLeft,
   Loader2,
   Medal,
-  Star
+  Star,
+  Code2
 } from "lucide-react";
 import eventServiceApi from "@/api/eventServiceApi";
-import type { Event, Leaderboard, LeaderboardEntry } from "@/types/event-service";
+import type { Event, Leaderboard, LeaderboardEntry, Problem } from "@/types/event-service";
+import Link from "next/link";
 import type { CSSProperties } from "react";
 
 interface EventResultsContentProps {
@@ -34,6 +36,7 @@ export default function EventResultsContent({ eventId }: EventResultsContentProp
   const [event, setEvent] = useState<Event | null>(null);
   const [userLeaderboard, setUserLeaderboard] = useState<Leaderboard | null>(null);
   const [guildLeaderboard, setGuildLeaderboard] = useState<Leaderboard | null>(null);
+  const [problems, setProblems] = useState<Problem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -62,6 +65,12 @@ export default function EventResultsContent({ eventId }: EventResultsContentProp
       const guildResponse = await eventServiceApi.getEventLeaderboards(eventId, 'guild');
       if (guildResponse.success && guildResponse.data) {
         setGuildLeaderboard(guildResponse.data);
+      }
+
+      // Fetch event problems
+      const problemsResponse = await eventServiceApi.getEventProblems(eventId);
+      if (problemsResponse.success && problemsResponse.data) {
+        setProblems(problemsResponse.data);
       }
 
     } catch (err) {
@@ -344,6 +353,59 @@ export default function EventResultsContent({ eventId }: EventResultsContentProp
           </CardContent>
         </Card>
       </div>
+
+      {/* Event Problems Summary */}
+      <Card className={SECTION_CARD_CLASS}>
+        <div aria-hidden="true" className="absolute inset-0" style={CARD_TEXTURE} />
+        <div aria-hidden="true" className="absolute inset-0 bg-gradient-to-br from-[#d23187]/5 via-transparent to-[#f5c16c]/10" />
+
+        <CardContent className="relative p-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className="rounded-full bg-[#f5c16c]/20 p-3">
+                <Code2 className="h-6 w-6 text-[#f5c16c]" />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-white">Event Problems</h3>
+                <p className="text-sm text-[#f9d9eb]/60">
+                  {problems.length} challenge{problems.length !== 1 ? 's' : ''} in this event
+                </p>
+              </div>
+            </div>
+
+            <Button
+              onClick={() => router.push(`/code-battle/${eventId}/problems`)}
+              className="bg-[#f5c16c] text-black hover:bg-[#f5c16c]/90"
+            >
+              View All Problems
+            </Button>
+          </div>
+
+          {/* Quick Stats */}
+          {problems.length > 0 && (
+            <div className="mt-6 grid grid-cols-3 gap-4">
+              <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-4 text-center">
+                <p className="text-2xl font-bold text-emerald-400">
+                  {problems.filter(p => p.difficulty === 1).length}
+                </p>
+                <p className="text-xs text-emerald-400/70">Easy</p>
+              </div>
+              <div className="rounded-xl border border-yellow-500/20 bg-yellow-500/5 p-4 text-center">
+                <p className="text-2xl font-bold text-yellow-400">
+                  {problems.filter(p => p.difficulty === 2).length}
+                </p>
+                <p className="text-xs text-yellow-400/70">Medium</p>
+              </div>
+              <div className="rounded-xl border border-red-500/20 bg-red-500/5 p-4 text-center">
+                <p className="text-2xl font-bold text-red-400">
+                  {problems.filter(p => p.difficulty === 3).length}
+                </p>
+                <p className="text-xs text-red-400/70">Hard</p>
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }
