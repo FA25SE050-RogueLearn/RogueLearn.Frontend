@@ -5,7 +5,8 @@ import {
   Database, 
   ArrowRight,
   Tag,
-  ScrollText
+  ScrollText,
+  Sparkles
 } from "lucide-react";
 import Link from "next/link";
 
@@ -16,6 +17,13 @@ const contentModules = [
     description: "Manage academic programs and import curriculum data",
     icon: ScrollText,
     href: "/admin/programs"
+  },
+  {
+    id: "quests",
+    title: "Quests",
+    description: "Generate and manage AI-powered learning quests",
+    icon: Sparkles,
+    href: "/admin/quests"
   },
   {
     id: "problem-bank",
@@ -44,7 +52,7 @@ export default function ContentManagementPage() {
         </div>
 
         {/* Content Modules */}
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           {contentModules.map((module) => {
             const Icon = module.icon;
 

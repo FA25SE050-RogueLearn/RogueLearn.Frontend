@@ -53,10 +53,15 @@ const subjectsApi = {
   /**
    * POST /api/admin/subjects/import-from-text
    * Imports a single subject's syllabus content from raw text.
+   * @param rawText - The raw syllabus text to parse
+   * @param semester - Optional semester override (if not provided, AI will extract from text)
    */
-  importFromText: (rawText: string): Promise<ApiResponse<ImportSubjectFromTextCommandResponse>> => {
+  importFromText: (rawText: string, semester?: number): Promise<ApiResponse<ImportSubjectFromTextCommandResponse>> => {
     const formData = new FormData();
     formData.append('rawText', rawText);
+    if (semester !== undefined) {
+      formData.append('semester', semester.toString());
+    }
     return axiosClient.post<ImportSubjectFromTextCommandResponse>('/api/admin/subjects/import-from-text', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
     }).then(res => ({

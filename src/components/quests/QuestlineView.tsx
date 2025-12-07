@@ -13,6 +13,7 @@ import {
 import { LearningPath } from '@/types/quest';
 import { usePageTransition } from '@/components/layout/PageTransition';
 import QuestCard from '@/components/quests/QuestCard';
+import { AcademicSyncBanner } from '@/components/quests/AcademicSyncBanner';
 
 interface QuestlineViewProps {
   learningPath: LearningPath;
@@ -70,6 +71,11 @@ export default function QuestlineView({ learningPath }: QuestlineViewProps) {
   );
   const targetChapterIndex = activeChapterIndex === -1 ? learningPath.chapters.length - 1 : activeChapterIndex;
 
+  // Check if user has synced any academic records (has grades)
+  const hasAnyGrades = learningPath.chapters.some(ch => 
+    ch.quests.some(q => q.subjectGrade && q.subjectGrade.trim() !== '')
+  );
+
   return (
     <div className="flex flex-col gap-10 pb-24">
       {/* Header */}
@@ -114,6 +120,9 @@ export default function QuestlineView({ learningPath }: QuestlineViewProps) {
           </div>
         </div>
       </header>
+
+      {/* Academic Sync Banner - Show if user hasn't synced FAP records */}
+      <AcademicSyncBanner hasAnyGrades={hasAnyGrades} />
 
       {/* Timeline Layout */}
       <div ref={timelineRef} className="relative pl-4 md:pl-8">

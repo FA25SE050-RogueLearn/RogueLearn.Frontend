@@ -7,6 +7,7 @@ import { redirect } from 'next/navigation';
 import { Trophy } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
+import { IncompleteSetupView } from '@/components/quests/IncompleteSetupView';
 
 export default async function QuestsPage() {
   const { coreApiClient } = await createServerApiClients();
@@ -22,6 +23,7 @@ export default async function QuestsPage() {
     console.error("Failed to fetch learning path:", error);
   }
 
+  // No learning path at all (API error)
   if (!learningPath) {
     return (
       <DashboardLayout>
@@ -39,6 +41,21 @@ export default async function QuestsPage() {
             </Link>
           </Button>
         </div>
+      </DashboardLayout>
+    );
+  }
+
+  // Learning path exists but has no chapters (incomplete setup - missing routeId or classId)
+  const hasNoChapters = !learningPath.chapters || learningPath.chapters.length === 0;
+  const isUnassignedPath = learningPath.name === "Unassigned Path" || learningPath.name === "Empty Curriculum";
+  
+  if (hasNoChapters || isUnassignedPath) {
+    return (
+      <DashboardLayout>
+        <IncompleteSetupView 
+          pathName={learningPath.name}
+          pathDescription={learningPath.description}
+        />
       </DashboardLayout>
     );
   }

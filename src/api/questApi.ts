@@ -99,6 +99,68 @@ interface AdminStepFeedbackItem {
   createdAt: string;
 }
 
+// ========== ADMIN QUEST MANAGEMENT TYPES ==========
+
+/**
+ * Quest summary for admin listing
+ */
+export interface AdminQuestListItem {
+  id: string;
+  title: string;
+  subjectId: string;
+  subjectCode: string;
+  subjectName: string;
+  stepsCount: number;
+  stepsGenerated: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/**
+ * Paginated response for admin quest list
+ */
+export interface AdminQuestListResponse {
+  items: AdminQuestListItem[];
+  totalCount: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+}
+
+/**
+ * Admin quest step DTO with full content
+ */
+export interface AdminQuestStepDto {
+  id: string;
+  stepNumber: number;
+  moduleNumber: number;
+  title: string;
+  description: string;
+  experiencePoints: number;
+  difficultyVariant: 'Standard' | 'Supportive' | 'Challenging';
+  content: any;
+  createdAt: string;
+}
+
+/**
+ * Admin quest details with 3-way difficulty split
+ */
+export interface AdminQuestDetailsDto {
+  id: string;
+  title: string;
+  description: string;
+  questType: string;
+  difficultyLevel: string;
+  status: string;
+  isActive: boolean;
+  subjectCode?: string;
+  subjectName?: string;
+  // Grouped steps for 3-track visualization
+  standardSteps: AdminQuestStepDto[];
+  supportiveSteps: AdminQuestStepDto[];
+  challengingSteps: AdminQuestStepDto[];
+}
+
 
 /**
  * API service for handling quest-specific interactions.
@@ -172,7 +234,7 @@ const questApi = {
       } as const)),
 
   /**
-   * ⭐ NEW: Checks the status of a quest step generation job.
+   * ⭐ UPDATED: Checks the status of a quest step generation job.
    * Call this repeatedly (every 1-2 seconds) to check if generation is complete.
    * 
    * Returns:
@@ -180,10 +242,10 @@ const questApi = {
    * - status: "Succeeded" (complete - fetch quest details)
    * - status: "Failed" (failed - show error)
    * 
-   * Corresponds to GET /api/quests/generation-status/{jobId}
+   * Corresponds to GET /api/admin/quests/generation-status/{jobId}
    */
   checkGenerationStatus: (jobId: string): Promise<ApiResponse<JobStatusResponse>> =>
-  axiosClient.get<JobStatusResponse>(`/api/quests/generation-status/${jobId}`)
+  axiosClient.get<JobStatusResponse>(`/api/admin/quests/generation-status/${jobId}`)
     .then(res => ({
       data: res.data,
       isSuccess: true,
@@ -206,14 +268,14 @@ const questApi = {
     }),
 
   /**
-   * ⭐ NEW: Gets real-time progress of quest generation job.
+   * ⭐ UPDATED: Gets real-time progress of quest generation job.
    * Called by the modal to display live progress updates.
    * Returns current step, total steps, percentage, and message.
    * 
-   * Corresponds to GET /api/quests/generation-progress/{jobId}
+   * Corresponds to GET /api/admin/quests/generation-progress/{jobId}
    */
  getGenerationProgress: (jobId: string): Promise<ApiResponse<QuestGenerationProgressResponse>> =>
-  axiosClient.get<QuestGenerationProgressResponse>(`/api/quests/generation-progress/${jobId}`)
+  axiosClient.get<QuestGenerationProgressResponse>(`/api/admin/quests/generation-progress/${jobId}`)
     .then(res => ({
       data: res.data,
       isSuccess: true,
@@ -439,6 +501,136 @@ const questApi = {
       };
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to fetch quest skills';
+      return {
+        isSuccess: false as const,
+        data: null,
+        message,
+      };
+    }
+  },
+
+  // ========== ADMIN QUEST MANAGEMENT ==========
+
+  /**
+   * Gets a paginated list of all quests for admin management.
+   * Corresponds to GET /api/admin/quests
+   */
+  adminListQuests: async (params?: {
+    page?: number;
+    pageSize?: number;
+    search?: string;
+    subjectId?: string;
+    stepsGenerated?: boolean;
+  }): Promise<ApiResponse<AdminQuestListResponse>> => {
+    try {
+      const res = await axiosClient.get<AdminQuestListResponse>('/api/admin/quests', { params });
+      return {
+        isSuccess: true as const,
+        data: res.data,
+      };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to fetch quests';
+      return {
+        isSuccess: false as const,
+        data: null,
+        message,
+      };
+    }
+  },
+
+  /**
+   * Gets detailed quest information for admin including all steps grouped by difficulty.
+   * Returns 3-way split: standardSteps, supportiveSteps, challengingSteps
+   * Corresponds to GET /api/admin/quests/{questId}
+   */
+  adminGetQuestDetails: async (questId: string): Promise<ApiResponse<AdminQuestDetailsDto>> => {
+    try {
+      const res = await axiosClient.get<AdminQuestDetailsDto>(`/api/admin/quests/${questId}`);
+      const data = res.data;
+      
+      // Parse content strings in each track if needed
+      const parseSteps = (steps: AdminQuestStepDto[]) => 
+        steps.map(step => ({
+          ...step,
+          content: typeof step.content === 'string' 
+            ? JSON.parse(step.content) 
+            : step.content
+        }));
+      
+      if (data.standardSteps) data.standardSteps = parseSteps(data.standardSteps);
+      if (data.supportiveSteps) data.supportiveSteps = parseSteps(data.supportiveSteps);
+      if (data.challengingSteps) data.challengingSteps = parseSteps(data.challengingSteps);
+      
+      return {
+        isSuccess: true as const,
+        data,
+      };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to fetch quest details';
+      return {
+        isSuccess: false as const,
+        data: null,
+        message,
+      };
+    }
+  },
+
+  /**
+   * Triggers quest step generation for admin.
+   * Same as generateQuestSteps but explicitly for admin use.
+   * Corresponds to POST /api/admin/quests/{questId}/generate-steps
+   */
+  adminGenerateQuestSteps: async (questId: string): Promise<ApiResponse<GenerateQuestStepsResponse>> => {
+    try {
+      const res = await axiosClient.post<GenerateQuestStepsResponse>(`/api/admin/quests/${questId}/generate-steps`);
+      return {
+        isSuccess: true as const,
+        data: res.data,
+      };
+    } catch (error: any) {
+      const message = error.response?.data?.message || error.message || 'Failed to start generation';
+      return {
+        isSuccess: false as const,
+        data: null,
+        message,
+      };
+    }
+  },
+
+  /**
+   * Regenerates quest steps (deletes existing and creates new).
+   * Corresponds to POST /api/admin/quests/{questId}/regenerate-steps
+   */
+  adminRegenerateQuestSteps: async (questId: string): Promise<ApiResponse<GenerateQuestStepsResponse>> => {
+    try {
+      const res = await axiosClient.post<GenerateQuestStepsResponse>(`/api/admin/quests/${questId}/regenerate-steps`);
+      return {
+        isSuccess: true as const,
+        data: res.data,
+      };
+    } catch (error: any) {
+      const message = error.response?.data?.message || error.message || 'Failed to start regeneration';
+      return {
+        isSuccess: false as const,
+        data: null,
+        message,
+      };
+    }
+  },
+
+  /**
+   * Deletes all steps for a quest.
+   * Corresponds to DELETE /api/admin/quests/{questId}/steps
+   */
+  adminDeleteQuestSteps: async (questId: string): Promise<ApiResponse<void>> => {
+    try {
+      await axiosClient.delete(`/api/admin/quests/${questId}/steps`);
+      return {
+        isSuccess: true as const,
+        data: undefined,
+      };
+    } catch (error: any) {
+      const message = error.response?.data?.message || error.message || 'Failed to delete steps';
       return {
         isSuccess: false as const,
         data: null,
