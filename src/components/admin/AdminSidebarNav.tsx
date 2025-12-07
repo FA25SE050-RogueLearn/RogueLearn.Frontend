@@ -13,21 +13,21 @@ import {
   Network,
   GraduationCap,
   BookCopy,
-  ScrollText,
   ChevronLeft,
   MessageSquare,
-  Trophy
+  Trophy,
+  BookOpen
 } from "lucide-react";
 
 const navItems = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
   { href: "/admin/events", label: "Event Requests", icon: Calendar },
-  { href: "/admin/content", label: "Content", icon: Library },
-  { href: "/admin/lecturer-requests", label: "Lecturer Requests", icon: Scroll },
-  { href: "/admin/programs", label: "Programs", icon: ScrollText },
+  { href: "/admin/content", label: "Content Vault", icon: Library },
+  { href: "/admin/subjects", label: "Subjects", icon: BookOpen },
   { href: "/admin/classes", label: "Classes", icon: GraduationCap },
   { href: "/admin/skills", label: "Skills", icon: Network },
   { href: "/admin/mappings", label: "Subject Mappings", icon: BookCopy },
+  { href: "/admin/lecturer-requests", label: "Lecturer Requests", icon: Scroll },
   { href: "/admin/user-roles", label: "User Roles", icon: Shield },
   { href: "/admin/feedback", label: "Feedback", icon: MessageSquare },
   { href: "/admin/achievements", label: "Achievements", icon: Trophy },

@@ -33,6 +33,8 @@ export interface UpdateMyProfileCommand {
   profileImageUrl?: string | null;
   bio?: string | null;
   preferencesJson?: string | null;
+  routeId?: string | null; // To change Curriculum Program
+  classId?: string | null; // To change Specialization Class
 }
 
 // Admin-related types

@@ -58,8 +58,8 @@ export default function ProfessionalEditSubjectPage() {
             <AdminLayout>
                 <div className="flex items-center justify-center min-h-screen">
                     <div className="flex flex-col items-center gap-4">
-                        <Loader2 className="h-12 w-12 animate-spin text-[#7289da]" />
-                        <p className="text-[#2c2f33]/60">Loading subject content...</p>
+                        <Loader2 className="h-12 w-12 animate-spin text-[#f5c16c]" />
+                        <p className="text-white/60">Loading subject content...</p>
                     </div>
                 </div>
             </AdminLayout>
@@ -71,12 +71,12 @@ export default function ProfessionalEditSubjectPage() {
             <FormProvider {...form}>
                 <form onSubmit={form.handleSubmit(handleSave)} className="space-y-6">
                     <div className="flex items-center gap-4">
-                        <Button asChild variant="outline" size="sm" className="border-[#beaca3]/30 text-[#2c2f33] hover:bg-[#beaca3]/20">
-                            <Link href="/admin/content/subjects" className="flex items-center gap-2"><ChevronLeft className="h-4 w-4" /> Back</Link>
+                        <Button asChild variant="outline" size="sm" className="border-[#f5c16c]/30 text-white hover:bg-[#f5c16c]/10">
+                            <Link href="/admin/subjects" className="flex items-center gap-2"><ChevronLeft className="h-4 w-4" /> Back</Link>
                         </Button>
                         <div className="flex-1">
-                            <h1 className="text-3xl font-bold text-[#2c2f33]">Edit Course Syllabus</h1>
-                            <p className="text-sm text-[#2c2f33]/60">Update course information, learning outcomes, sessions, and assessments</p>
+                            <h1 className="text-3xl font-bold text-white">Edit Course Syllabus</h1>
+                            <p className="text-sm text-white/60">Update course information, learning outcomes, sessions, and assessments</p>
                         </div>
                     </div>
 
@@ -100,27 +100,27 @@ export default function ProfessionalEditSubjectPage() {
                         <CardContent className="pt-6">
                             <Accordion type="single" collapsible defaultValue="overview">
                                 <AccordionItem value="overview">
-                                    <AccordionTrigger className="text-[#2c2f33] hover:text-[#7289da]"><span className="flex items-center gap-2">Course Overview</span></AccordionTrigger>
+                                    <AccordionTrigger className="text-white hover:text-[#f5c16c]"><span className="flex items-center gap-2">Course Overview</span></AccordionTrigger>
                                     <AccordionContent className="pt-6 pb-6"><CourseOverviewSection form={form} /></AccordionContent>
                                 </AccordionItem>
 
                                 <AccordionItem value="outcomes">
-                                    <AccordionTrigger className="text-[#2c2f33] hover:text-[#7289da]"><span className="flex items-center gap-2">Learning Outcomes</span></AccordionTrigger>
+                                    <AccordionTrigger className="text-white hover:text-[#f5c16c]"><span className="flex items-center gap-2">Learning Outcomes</span></AccordionTrigger>
                                     <AccordionContent className="pt-6 pb-6"><LearningOutcomesSection form={form} /></AccordionContent>
                                 </AccordionItem>
 
                                 <AccordionItem value="sessions">
-                                    <AccordionTrigger className="text-[#2c2f33] hover:text-[#7289da]"><span className="flex items-center gap-2">Session Schedule</span></AccordionTrigger>
+                                    <AccordionTrigger className="text-white hover:text-[#f5c16c]"><span className="flex items-center gap-2">Session Schedule</span></AccordionTrigger>
                                     <AccordionContent className="pt-6 pb-6"><SessionScheduleSection form={form} /></AccordionContent>
                                 </AccordionItem>
 
                                 <AccordionItem value="questions">
-                                    <AccordionTrigger className="text-[#2c2f33] hover:text-[#7289da]"><span className="flex items-center gap-2">Discussion Questions</span></AccordionTrigger>
+                                    <AccordionTrigger className="text-white hover:text-[#f5c16c]"><span className="flex items-center gap-2">Discussion Questions</span></AccordionTrigger>
                                     <AccordionContent className="pt-6 pb-6"><ConstructiveQuestionsSection form={form} /></AccordionContent>
                                 </AccordionItem>
 
                                 <AccordionItem value="assessments">
-                                    <AccordionTrigger className="text-[#2c2f33] hover:text-[#7289da]"><span className="flex items-center gap-2">Assessments</span></AccordionTrigger>
+                                    <AccordionTrigger className="text-white hover:text-[#f5c16c]"><span className="flex items-center gap-2">Assessments</span></AccordionTrigger>
                                     <AccordionContent className="pt-6 pb-6"><AssessmentsSection form={form} /></AccordionContent>
                                 </AccordionItem>
                             </Accordion>
@@ -128,7 +128,7 @@ export default function ProfessionalEditSubjectPage() {
                     </Card>
 
                     <div className="flex justify-end gap-3">
-                        <Button type="submit" disabled={isSaving || !form.formState.isValid} className="bg-[#7289da] hover:bg-[#7289da]/90 text-white px-6">
+                        <Button type="submit" disabled={isSaving || !form.formState.isValid} className="bg-[#f5c16c] hover:bg-[#f5c16c]/90 text-black font-semibold px-6">
                             {isSaving ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Saving...</> : <><Save className="mr-2 h-4 w-4" /> Save Syllabus</>}
                         </Button>
                     </div>

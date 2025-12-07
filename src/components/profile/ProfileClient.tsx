@@ -1,7 +1,7 @@
 // src/components/profile/ProfileClient.tsx
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -14,9 +14,21 @@ import {
     Flame,
     Sparkles,
     Save,
+    GraduationCap,
+    Map
 } from "lucide-react";
 import Link from "next/link";
 import { updateMyProfile, getMyContext } from "@/api/usersApi";
+import onboardingApi from "@/api/onboardingApi";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
+import { createClient } from "@/utils/supabase/client";
+import { AcademicRoute, CareerClass } from "@/types/onboarding";
 
 interface UserProfile {
     id: string;
@@ -32,6 +44,8 @@ interface UserProfile {
     roles: string[];
     createdAt: string;
     skills: string[];
+    routeId?: string;
+    classId?: string;
 }
 
 interface ProfileClientProps {
@@ -50,6 +64,34 @@ export function ProfileClient({ initialProfile }: ProfileClientProps) {
     const [firstName, setFirstName] = useState(profile?.firstName || "");
     const [lastName, setLastName] = useState(profile?.lastName || "");
     const [bio, setBio] = useState(profile?.bio || "");
+    
+    // Academic states
+    const [routes, setRoutes] = useState<AcademicRoute[]>([]);
+    const [classes, setClasses] = useState<CareerClass[]>([]);
+    const [selectedRoute, setSelectedRoute] = useState(profile?.routeId || "");
+    const [selectedClass, setSelectedClass] = useState(profile?.classId || "");
+
+    // Fetch options for dropdowns
+    useEffect(() => {
+        const fetchOptions = async () => {
+            try {
+                const [routesRes, classesRes] = await Promise.all([
+                    onboardingApi.getRoutes(),
+                    onboardingApi.getClasses()
+                ]);
+
+                if (routesRes.isSuccess && routesRes.data) {
+                    setRoutes(routesRes.data);
+                }
+                if (classesRes.isSuccess && classesRes.data) {
+                    setClasses(classesRes.data);
+                }
+            } catch (error) {
+                console.error("Failed to fetch academic options", error);
+            }
+        };
+        fetchOptions();
+    }, []);
 
     const handleSaveProfile = async () => {
         setIsSaving(true);
@@ -57,10 +99,13 @@ export function ProfileClient({ initialProfile }: ProfileClientProps) {
         setSuccessMessage("");
 
         try {
+            // Update profile including academic path (routeId = program, classId = specialization)
             await updateMyProfile({
                 firstName,
                 lastName,
                 bio,
+                routeId: selectedRoute || undefined,
+                classId: selectedClass || undefined,
             });
 
             // Fetch updated profile after save
@@ -85,7 +130,8 @@ export function ProfileClient({ initialProfile }: ProfileClientProps) {
     const handleLogout = async () => {
         if (confirm("Are you sure you want to sign out?")) {
             try {
-                localStorage.removeItem("authToken");
+                const supabase = createClient();
+                await supabase.auth.signOut();
                 router.push("/login");
             } catch (error) {
                 setErrorMessage("Logout failed");
@@ -98,6 +144,8 @@ export function ProfileClient({ initialProfile }: ProfileClientProps) {
             setFirstName(profile.firstName);
             setLastName(profile.lastName);
             setBio(profile.bio);
+            setSelectedRoute(profile.routeId || "");
+            setSelectedClass(profile.classId || "");
             setIsEditing(false);
         }
     };
@@ -115,7 +163,7 @@ export function ProfileClient({ initialProfile }: ProfileClientProps) {
         );
     }
 
-    const avatarInitials = `${profile.firstName[0]}${profile.lastName[0]}`.toUpperCase();
+    const avatarInitials = `${profile.firstName?.[0] || profile.username?.[0] || "?"}${profile.lastName?.[0] || ""}`.toUpperCase();
     const memberSince = new Date(profile.createdAt).toLocaleDateString(
         "en-US",
         {
@@ -200,7 +248,7 @@ export function ProfileClient({ initialProfile }: ProfileClientProps) {
                             <div className="grid grid-cols-2 gap-3">
                                 <div className="p-3 rounded-lg bg-[#f5c16c]/10 border border-[#f5c16c]/40 text-center">
                                     <div className="text-xl font-bold text-[#f5c16c]">
-                                        {profile.level}
+                                        {profile.level ?? 0}
                                     </div>
                                     <div className="text-xs text-white/50 mt-1 uppercase tracking-wider">
                                         Level
@@ -208,7 +256,7 @@ export function ProfileClient({ initialProfile }: ProfileClientProps) {
                                 </div>
                                 <div className="p-3 rounded-lg bg-[#f5c16c]/10 border border-[#f5c16c]/40 text-center">
                                     <div className="text-xl font-bold text-[#f5c16c]">
-                                        {profile.experiencePoints.toLocaleString()}
+                                        {(profile.experiencePoints ?? 0).toLocaleString()}
                                     </div>
                                     <div className="text-xs text-white/50 mt-1 uppercase tracking-wider">
                                         XP
@@ -216,7 +264,7 @@ export function ProfileClient({ initialProfile }: ProfileClientProps) {
                                 </div>
                                 <div className="p-3 rounded-lg bg-[#f5c16c]/10 border border-[#f5c16c]/40 text-center">
                                     <div className="text-xl font-bold text-[#f5c16c]">
-                                        {profile.totalQuests}
+                                        {profile.totalQuests ?? 0}
                                     </div>
                                     <div className="text-xs text-white/50 mt-1 uppercase tracking-wider">
                                         Quests
@@ -224,7 +272,7 @@ export function ProfileClient({ initialProfile }: ProfileClientProps) {
                                 </div>
                                 <div className="p-3 rounded-lg bg-[#f5c16c]/10 border border-[#f5c16c]/40 text-center">
                                     <div className="text-xl font-bold text-[#f5c16c]">
-                                        {profile.achievements}
+                                        {profile.achievements ?? 0}
                                     </div>
                                     <div className="text-xs text-white/50 mt-1 uppercase tracking-wider">
                                         Achievements
@@ -270,6 +318,52 @@ export function ProfileClient({ initialProfile }: ProfileClientProps) {
                                         disabled={!isEditing}
                                         className="w-full px-3 py-2 rounded-lg bg-[#1a0a08] border border-[#f5c16c]/20 text-white placeholder-white/30 disabled:opacity-50 focus:outline-none focus:border-[#f5c16c] focus:shadow-lg focus:shadow-[#f5c16c]/20"
                                     />
+                                </div>
+                            </div>
+
+                             {/* Academic Settings - Only editable */}
+                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+                                <div>
+                                    <label className="block text-xs uppercase tracking-widest font-semibold text-[#f5c16c] mb-2 flex items-center gap-2">
+                                        <Map className="w-3 h-3" /> Academic Route
+                                    </label>
+                                    <Select 
+                                        disabled={!isEditing} 
+                                        value={selectedRoute} 
+                                        onValueChange={setSelectedRoute}
+                                    >
+                                        <SelectTrigger className="w-full bg-[#1a0a08] border border-[#f5c16c]/20 text-white h-[42px]">
+                                            <SelectValue placeholder="Select Route..." />
+                                        </SelectTrigger>
+                                        <SelectContent className="bg-[#1a0a08] border-[#f5c16c]/20 text-white">
+                                            {routes.map((r) => (
+                                                <SelectItem key={r.id} value={r.id}>
+                                                    {r.programCode} - {r.programName}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <div>
+                                    <label className="block text-xs uppercase tracking-widest font-semibold text-[#f5c16c] mb-2 flex items-center gap-2">
+                                        <GraduationCap className="w-3 h-3" /> Career Class
+                                    </label>
+                                    <Select 
+                                        disabled={!isEditing} 
+                                        value={selectedClass} 
+                                        onValueChange={setSelectedClass}
+                                    >
+                                        <SelectTrigger className="w-full bg-[#1a0a08] border border-[#f5c16c]/20 text-white h-[42px]">
+                                            <SelectValue placeholder="Select Class..." />
+                                        </SelectTrigger>
+                                        <SelectContent className="bg-[#1a0a08] border-[#f5c16c]/20 text-white">
+                                            {classes.map((c) => (
+                                                <SelectItem key={c.id} value={c.id}>
+                                                    {c.name}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
                                 </div>
                             </div>
 

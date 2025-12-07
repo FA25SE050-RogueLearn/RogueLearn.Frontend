@@ -153,7 +153,7 @@ export default function ClassesManagementPage() {
                                 <Label className="text-white/70">Add Subject</Label>
                                 <Select onValueChange={setAddSpecId}>
                                     <SelectTrigger className="border-[#f5c16c]/30"><SelectValue placeholder="Select Subject..." /></SelectTrigger>
-                                    <SelectContent>
+                                    <SelectContent className="max-h-[300px] overflow-y-auto">
                                         {(Array.isArray(subjects) ? subjects : []).map(s => (
                                             <SelectItem key={s.id} value={s.id}>{s.subjectCode} - {s.subjectName}</SelectItem>
                                         ))}
