@@ -89,6 +89,8 @@ export default function ProgramsManagementPage() {
                     credits: ps.credits || 0,
                     description: ps.description || '',
                     semesterNumber: ps.termNumber,
+                    createdAt: ps.createdAt || new Date().toISOString(),
+                    updatedAt: ps.updatedAt || new Date().toISOString(),
                 } as Subject));
                 setProgramSubjects(subjectList);
             }
