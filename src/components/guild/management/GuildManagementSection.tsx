@@ -60,7 +60,7 @@ export function GuildManagementSection({ guildId, onLeftGuild }: GuildManagement
         } else {
           setJoinRequests([]);
         }
-        if (role === "GuildMaster" || role === "Officer") {
+        if (role === "GuildMaster") {
           try {
             const invRes = await guildsApi.getInvitations(guildId);
             setInvitations(invRes.data ?? []);
@@ -129,22 +129,6 @@ export function GuildManagementSection({ guildId, onLeftGuild }: GuildManagement
     }
   };
 
-  const revokeRole = async (authUserId: string, role: GuildRole) => {
-    if (!guildId) return;
-    try {
-      await guildsApi.revokeRole(guildId, authUserId, role);
-      setMembers((prev) => prev.map((m) => {
-        if (m.authUserId !== authUserId) return m;
-        const nextRole: GuildRole = m.role === 'GuildMaster' ? 'Officer' : m.role === 'Officer' ? 'Veteran' : m.role === 'Veteran' ? 'Member' : 'Recruit';
-        return { ...m, role: nextRole };
-      }));
-      toast.success("Role revoked");
-    } catch (err) {
-      console.error(err);
-      // toast.error("Failed to revoke role.");
-    }
-  };
-
   const transferLeadership = async (toAuthUserId: string) => {
     if (!guildId) return;
     try {
@@ -186,7 +170,7 @@ export function GuildManagementSection({ guildId, onLeftGuild }: GuildManagement
 
   // All members can access this section; components below enforce role-specific actions.
 
-  const isPrivileged = myRole === "GuildMaster" || myRole === "Officer";
+  const isPrivileged = myRole === "GuildMaster";
 
   return (
     <div className="flex flex-col gap-6">
@@ -221,8 +205,6 @@ export function GuildManagementSection({ guildId, onLeftGuild }: GuildManagement
         error={error}
         members={members}
         myRole={myRole}
-        onAssignRole={(authUserId, role) => assignRoleWithRole(authUserId, role)}
-        onRevokeRole={revokeRole}
         onRemoveMember={removeMember}
         onTransferLeadership={(toAuthUserId) => { setTransferTargetAuthId(toAuthUserId); setTransferOpen(true); }}
       />

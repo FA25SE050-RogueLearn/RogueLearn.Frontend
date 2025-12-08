@@ -5,7 +5,7 @@
  */
 
 /** Allowed guild member roles. */
-export type GuildRole = 'GuildMaster' | 'Officer' | 'Veteran' | 'Member' | 'Recruit';
+export type GuildRole = 'GuildMaster' | 'Member';
 /** Member lifecycle status within a guild. */
 export type MemberStatus = 'Active' | 'Inactive' | 'Suspended' | 'Left';
 /** Status of a guild invitation. */
