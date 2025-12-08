@@ -686,7 +686,7 @@ export default function GuildMeetingsSection({ guildId }: Props) {
         )}
       </div>
 
-      {(myRole === "GuildMaster" || myRole === "Officer") && (
+      {myRole === "GuildMaster" && (
         <div className={MEETING_CARD_CLASS}>
           {/* Texture overlay */}
           <div className="pointer-events-none absolute inset-0" style={CARD_TEXTURE} />
@@ -776,7 +776,7 @@ export default function GuildMeetingsSection({ guildId }: Props) {
                 <Play className="h-4 w-4" />
                 {creating ? "Creating..." : "Create Meeting"}
               </button>
-              {needsAuth && (myRole === "GuildMaster" || myRole === "Officer") && (
+              {needsAuth && (myRole === "GuildMaster") && (
                 <button
                   onClick={handleAuthorize}
                   className="rounded bg-linear-to-r from-[#f5c16c] to-[#d4a855] px-3 py-2 text-xs font-medium text-black"
@@ -796,7 +796,7 @@ export default function GuildMeetingsSection({ guildId }: Props) {
           <h5 className="text-xs font-semibold">Meetings</h5>
           <div className="flex items-center gap-2">
             {loadingMeetings && <span className="text-xs text-white/60">Loading...</span>}
-            {needsAuth && (myRole === "GuildMaster" || myRole === "Officer") && (
+            {needsAuth && (myRole === "GuildMaster") && (
               <button
                 onClick={handleAuthorize}
                 className="rounded bg-linear-to-r from-[#f5c16c] to-[#d4a855] px-3 py-1.5 text-xs font-medium text-black"
@@ -844,7 +844,7 @@ export default function GuildMeetingsSection({ guildId }: Props) {
                           const start = new Date(m.scheduledStartTime).getTime();
                           const end = new Date(m.scheduledEndTime).getTime();
                           const within = now >= start && now <= end;
-                          const restrictRole = myRole === "Recruit" || myRole === "Member" || myRole === "Veteran";
+                          const restrictRole = myRole === "Member";
                           const disableJoin = restrictRole && !within;
                           const cls = disableJoin
                             ? "rounded border border-white/20 bg-transparent px-3 py-1.5 text-xs font-medium text-white opacity-50 cursor-not-allowed"
@@ -873,7 +873,7 @@ export default function GuildMeetingsSection({ guildId }: Props) {
                             </TooltipProvider>
                           );
                         })()}
-                        {(myRole === "GuildMaster" || myRole === "Officer" || authUserId === m.organizerId) && (
+                        {(myRole === "GuildMaster" || authUserId === m.organizerId) && (
                           <>
                           {m.status === MeetingStatus.Active && (
                             <button

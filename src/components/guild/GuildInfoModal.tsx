@@ -22,7 +22,7 @@ function RoleBadge({ role }: { role: GuildRole | null }) {
 
 export default function GuildInfoModal({ open, onClose, guildId }: Props) {
   const { roles } = useGuildRoles(guildId ?? "");
-  const myRole: GuildRole | null = roles.length > 0 ? (roles.includes("GuildMaster") ? "GuildMaster" : roles.includes("Officer") ? "Officer" : roles.includes("Veteran") ? "Veteran" : roles.includes("Member") ? "Member" : roles.includes("Recruit") ? "Recruit" : null) : null;
+  const myRole: GuildRole | null = roles.length > 0 ? (roles.includes("GuildMaster") ? "GuildMaster" : roles.includes("Member") ? "Member" : null) : null;
   if (!open) return null;
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm">
@@ -51,9 +51,9 @@ export default function GuildInfoModal({ open, onClose, guildId }: Props) {
               <ul className="space-y-2 text-base text-white/90">
                 <li className="flex items-start gap-2"><Settings className="mt-0.5 h-4 w-4 text-white/60" /><span>Configure guild <span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">settings</span>: name, description, privacy, max members.</span></li>
                 <li className="flex items-start gap-2"><UserPlus className="mt-0.5 h-4 w-4 text-white/60" /><span>Invite members and approve/decline <span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">join requests</span>.</span></li>
-                <li className="flex items-start gap-2"><ShieldCheck className="mt-0.5 h-4 w-4 text-white/60" /><span>Manage membership: <span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">transfer leadership</span>, assign/revoke <span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">roles</span>, remove members.</span></li>
+                <li className="flex items-start gap-2"><ShieldCheck className="mt-0.5 h-4 w-4 text-white/60" /><span>Manage membership: <span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">transfer leadership</span>, remove members.</span></li>
                 <li className="flex items-start gap-2"><CalendarDays className="mt-0.5 h-4 w-4 text-white/60" /><span><span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">Meetings</span>: create, end, and sync <span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">transcripts</span> from <span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">Google Meet</span>.</span></li>
-                <li className="flex items-start gap-2"><FileText className="mt-0.5 h-4 w-4 text-white/60" /><span>Guild <span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">posts</span>: share announcements and discussions.</span></li>
+                <li className="flex items-start gap-2"><FileText className="mt-0.5 h-4 w-4 text-white/60" /><span>Guild <span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">posts</span>: members can comment and like; post management is reserved for Guild Master.</span></li>
                 <li className="flex items-start gap-2"><LogOut className="mt-0.5 h-4 w-4 text-white/60" /><span><span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">Leave guild</span>; <span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">Guild Masters</span> must transfer leadership first or the next highest member will be the leader.</span></li>
               </ul>
             </section>
@@ -66,27 +66,10 @@ export default function GuildInfoModal({ open, onClose, guildId }: Props) {
                     <li>Configure <span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">settings</span></li>
                     <li>Invite <span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">members</span></li>
                     <li>Approve/decline <span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">join requests</span></li>
-                    <li>Assign/revoke <span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">roles</span></li>
                     <li>Remove <span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">members</span></li>
                     <li>Transfer <span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">leadership</span></li>
                     <li>Create/end <span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">meetings</span>; sync <span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">transcripts</span></li>
-                    <li>Authorize <span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">Google Meet</span> access</li>
-                  </ul>
-                </div>
-                <div>
-                  <div className="mb-1 text-lg font-semibold text-[#f5c16c]">Officer</div>
-                  <ul className="space-y-1">
-                    <li>Invite <span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">members</span></li>
-                    <li>Remove non-officer <span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">members</span></li>
-                    <li>Create/end <span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">meetings</span>; sync <span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">transcripts</span></li>
-                    <li>Authorize <span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">Google Meet</span> access</li>
-                  </ul>
-                </div>
-                <div>
-                  <div className="mb-1 text-lg font-semibold text-[#f5c16c]">Veteran</div>
-                  <ul className="space-y-1">
-                    <li>Participate in <span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">posts</span> and <span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">meetings</span></li>
-                    <li>View meeting details and <span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">transcripts</span></li>
+                    <li>Manage <span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">posts</span>: create, edit, delete, pin, lock, announcements</li>
                   </ul>
                 </div>
                 <div>
@@ -94,12 +77,7 @@ export default function GuildInfoModal({ open, onClose, guildId }: Props) {
                   <ul className="space-y-1">
                     <li>View <span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">posts</span> and <span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">meetings</span></li>
                     <li><span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">Join</span> meetings via link</li>
-                  </ul>
-                </div>
-                <div>
-                  <div className="mb-1 text-lg font-semibold text-[#f5c16c]">Recruit</div>
-                  <ul className="space-y-1">
-                    <li>Limited access; can view public <span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">posts</span></li>
+                    <li>Comment and like <span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">posts</span></li>
                   </ul>
                 </div>
               </div>

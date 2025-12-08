@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Heart, MessageSquare, Edit, Trash2, Save, X, Lock } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import guildPostsApi from "@/api/guildPostsApi";
 import guildsApi from "@/api/guildsApi";
 import profileApi from "@/api/profileApi";
@@ -265,7 +266,24 @@ export function PostDetailView({ guildId, postId }: Props) {
                 return (
                   <div key={c.id} data-comment-id={c.id} role="listitem" className="rounded border border-white/10 bg-white/5 p-3">
                     <div className="flex items-center justify-between">
-                      <div className="text-xs text-white/60">{new Date(c.createdAt).toLocaleString()}</div>
+                      <div className="flex items-center gap-2">
+                        {(() => {
+                          const display = (c.authorUsername ?? "").trim();
+                          const initials = ((display.match(/\b\w/g) || []).slice(0, 2).join("") || display.charAt(0)).toUpperCase();
+                          return (
+                            <Avatar className="h-8 w-8 rounded-lg border border-[#f5c16c]/30">
+                              <AvatarImage src={c.authorProfileImageUrl ?? undefined} alt={display} />
+                              <AvatarFallback className="rounded-lg bg-gradient-to-br from-[#d23187] to-[#f5c16c] text-white text-xs font-bold">
+                                {initials}
+                              </AvatarFallback>
+                            </Avatar>
+                          );
+                        })()}
+                        <div className="flex flex-col leading-tight">
+                          <span className="text-sm font-medium text-white">{(c.authorUsername ?? "").trim()}</span>
+                          <span className="text-xs text-white/60">{new Date(c.createdAt).toLocaleString()}</span>
+                        </div>
+                      </div>
                       {canEdit && !isDeleted && (
                         <div className="flex items-center gap-2">
                           {editingId === c.id ? (

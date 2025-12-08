@@ -3,22 +3,13 @@ import { useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { Shield, Search, UserMinus, Crown } from "lucide-react";
+import { Shield, Search, UserMinus, Crown, MoreHorizontal } from "lucide-react";
 import type { GuildMemberDto, GuildRole } from "@/types/guilds";
 
 const ROLE_OPTIONS: GuildRole[] = [
-  "Officer",
-  "Veteran",
   "Member",
-  "Recruit",
 ];
 
 const CARD_TEXTURE = {
@@ -35,8 +26,6 @@ interface MembersManagementCardProps {
   error: string | null;
   members: GuildMemberDto[];
   myRole: GuildRole | null;
-  onAssignRole: (authUserId: string, role: GuildRole) => void;
-  onRevokeRole: (authUserId: string, role: GuildRole) => void;
   onRemoveMember: (memberId: string) => void;
   onTransferLeadership?: (toAuthUserId: string) => void;
 }
@@ -46,13 +35,10 @@ export function MembersManagementCard({
   error,
   members,
   myRole,
-  onAssignRole,
-  onRevokeRole,
   onRemoveMember,
   onTransferLeadership,
 }: MembersManagementCardProps) {
   const [memberSearch, setMemberSearch] = useState<string>("");
-  const [roleToAssignByMemberId, setRoleToAssignByMemberId] = useState<Record<string, GuildRole>>({});
   const [page, setPage] = useState<number>(1);
   const pageSize = 10;
 
@@ -150,81 +136,23 @@ export function MembersManagementCard({
                   </div>
                   {myRole === "GuildMaster" && m.role !== "GuildMaster" && (
                     <div className="flex items-center gap-2">
-                      <Select
-                        value={roleToAssignByMemberId[m.memberId] ?? m.role}
-                        onValueChange={(v) => {
-                          setRoleToAssignByMemberId((prev) => ({ ...prev, [m.memberId]: v as GuildRole }));
-                          onAssignRole(m.authUserId, v as GuildRole);
-                        }}
-                      >
-                        <SelectTrigger className="w-[140px] border-[#f5c16c]/30 bg-black/40 text-white focus:border-[#f5c16c]/50 focus:ring-[#f5c16c]/30">
-                          <SelectValue placeholder="Role" />
-                        </SelectTrigger>
-                        <SelectContent className="border-[#f5c16c]/30 bg-[#1a0a08]">
-                          {ROLE_OPTIONS.map((r) => (
-                            <SelectItem 
-                              key={r} 
-                              value={r}
-                              className="text-white hover:bg-[#f5c16c]/10 focus:bg-[#f5c16c]/10"
-                            >
-                              {r}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <Button 
-                        size="sm" 
-                        variant="outline" 
-                        onClick={() => { onRevokeRole(m.authUserId, m.role); setRoleToAssignByMemberId((prev) => { const { [m.memberId]: _, ...rest } = prev; return rest; }); }}
-                        className="border-[#f5c16c]/30 bg-transparent text-[#f5c16c] hover:bg-[#f5c16c]/10"
-                      >
-                        Revoke
-                      </Button>
-                      <Button 
-                        size="sm" 
-                        variant="destructive" 
-                        onClick={() => onRemoveMember(m.memberId)}
-                        className="bg-rose-600 hover:bg-rose-700"
-                      >
-                        <UserMinus className="mr-1.5 h-3.5 w-3.5" />
-                        Remove
-                      </Button>
-                      {onTransferLeadership && (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => onTransferLeadership?.(m.authUserId)}
-                          className="border-amber-400/40 bg-amber-400/10 text-amber-300 hover:bg-amber-400/20"
-                          title="Transfer leadership to this member"
-                        >
-                          <Crown className="mr-1.5 h-3.5 w-3.5" />
-                          Transfer Lead
-                        </Button>
-                      )}
-                    </div>
-                  )}
-                  {myRole === "Officer" && m.role !== "GuildMaster" && m.role !== "Officer" && (
-                    <div className="flex items-center gap-2">
-                      <Select
-                        value={roleToAssignByMemberId[m.memberId] ?? (["Veteran", "Member", "Recruit"].includes(m.role) ? m.role : "Recruit")}
-                        onValueChange={(v) => {
-                          setRoleToAssignByMemberId((prev) => ({ ...prev, [m.memberId]: v as GuildRole }));
-                          onAssignRole(m.authUserId, v as GuildRole);
-                        }}
-                      >
-                        <SelectTrigger className="w-[160px]">
-                          <SelectValue placeholder="Role" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {["Veteran", "Member", "Recruit"].map((r) => (
-                            <SelectItem key={r} value={r as GuildRole}>
-                              {r}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      
-                      <Button size="sm" variant="destructive" onClick={() => onRemoveMember(m.memberId)}>Remove</Button>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button size="icon" variant="ghost" className="h-8 w-8 text-white/80">
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent className="bg-[#1a0a08] border-[#f5c16c]/20">
+                          {onTransferLeadership && (
+                            <DropdownMenuItem onClick={() => onTransferLeadership?.(m.authUserId)} className="text-white/80">
+                              <Crown className="h-4 w-4" /> Transfer Leadership
+                            </DropdownMenuItem>
+                          )}
+                          <DropdownMenuItem onClick={() => onRemoveMember(m.memberId)} className="text-white/80">
+                            <UserMinus className="h-4 w-4" /> Remove Member
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </div>
                   )}
                 </div>

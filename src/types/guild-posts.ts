@@ -150,6 +150,9 @@ export interface GuildPostCommentDto {
   postId: string;
   parentCommentId?: string | null;
   authorId: string;
+  authorUsername?: string | null;
+  authorEmail?: string | null;
+  authorProfileImageUrl?: string | null;
   content: string;
   createdAt: string;
   updatedAt: string;

@@ -214,7 +214,8 @@ export function GuildPostsSection({ guildId }: GuildPostsSectionProps) {
   };
 
   const isMember = myRole !== null;
-  const canInteract = !!myRole && myRole !== "Member" && myRole !== "Recruit";
+  const canManagePosts = myRole === "GuildMaster";
+  const canInteract = !!myRole;
 
   const toggleExpand = async (post: GuildPostDto) => {
     const id = post.id;
@@ -385,7 +386,7 @@ export function GuildPostsSection({ guildId }: GuildPostsSectionProps) {
 
   return (
     <div className="w-full space-y-6">
-      {myRole && myRole !== "Member" && myRole !== "Recruit" ? (
+      {canManagePosts ? (
         <div className="flex justify-end">
           <Dialog open={createOpen} onOpenChange={setCreateOpen}>
             <DialogTrigger asChild>
@@ -459,9 +460,9 @@ export function GuildPostsSection({ guildId }: GuildPostsSectionProps) {
           </CardHeader>
           <CardContent className="relative space-y-3 pt-6">
             {myRole === null ? (
-              <p className="text-sm text-white/60">You must be a guild member to create posts.</p>
+              <p className="text-sm text-white/60">You must be a guild member to interact with posts.</p>
             ) : (
-              <p className="text-sm text-white/60">Members can view posts but cannot create or manage posts.</p>
+              <p className="text-sm text-white/60">Members can comment and like posts; post management is reserved for the Guild Master.</p>
             )}
           </CardContent>
         </Card>
@@ -527,7 +528,7 @@ export function GuildPostsSection({ guildId }: GuildPostsSectionProps) {
                         <MessageSquare className="mr-1.5 h-3.5 w-3.5" />
                         {expandedPostId === post.id ? "Hide" : "Comments"}
                       </Button>
-                      {myRole && (myRole === "GuildMaster" || myRole === "Officer") ? (
+                      {canManagePosts ? (
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
                             <Button size="icon" variant="ghost" className="h-8 w-8 text-white/80">
@@ -672,7 +673,7 @@ export function GuildPostsSection({ guildId }: GuildPostsSectionProps) {
                     </>
                   ) : (
                     <>
-                      {myRole && myRole !== "Member" && myRole !== "Recruit" ? (
+                      {canManagePosts ? (
                         <>
                           <Button 
                             size="sm" 
@@ -744,13 +745,24 @@ export function GuildPostsSection({ guildId }: GuildPostsSectionProps) {
                         ) : (
                           (commentsMap[post.id] ?? []).filter((c) => !c.parentCommentId).map((c) => {
                             const canEdit = !!myAuthUserId && c.authorId === myAuthUserId;
-                            const canDelete = canEdit || (myRole === "GuildMaster" || myRole === "Officer");
+                            const canDelete = canEdit || canManagePosts;
                             const isDeleted = !!c.isDeleted;
                             const children = (commentsMap[post.id] ?? []).filter((cc) => cc.parentCommentId === c.id);
+                            const display = (c.authorUsername ?? "").trim() || (c.authorEmail ?? "").trim() || c.authorId;
+                            const initials = ((display.match(/\b\w/g) || []).slice(0, 2).join("") || display.charAt(0)).toUpperCase();
                             return (
                               <div key={c.id} className="rounded border border-white/10 bg-white/5 p-3">
                                 <div className="flex items-center justify-between">
-                                  <div className="text-xs text-white/60">{new Date(c.createdAt).toLocaleString()}</div>
+                                  <div className="flex items-center gap-2">
+                                    <Avatar className="h-8 w-8 rounded-lg border border-[#f5c16c]/30">
+                                      <AvatarImage src={c.authorProfileImageUrl ?? undefined} alt={display} />
+                                      <AvatarFallback className="rounded-lg bg-gradient-to-br from-[#d23187] to-[#f5c16c] text-white text-xs font-bold">{initials}</AvatarFallback>
+                                    </Avatar>
+                                    <div className="flex flex-col leading-tight">
+                                      <span className="text-sm font-medium text-white">{display}</span>
+                                      <span className="text-xs text-white/60">{new Date(c.createdAt).toLocaleString()}</span>
+                                    </div>
+                                  </div>
                                   {!isDeleted && (
                                     <div className="flex items-center gap-2">
                                       <Button size="sm" variant="outline" onClick={() => setCommentLikedMap((prev) => ({ ...prev, [c.id]: !prev[c.id] }))} className="border-[#f5c16c]/30 bg-transparent text-[#f5c16c] hover:bg-[#f5c16c]/10">
@@ -787,15 +799,32 @@ export function GuildPostsSection({ guildId }: GuildPostsSectionProps) {
                                   <p className="mt-2 text-sm text-white/80 whitespace-pre-wrap">{c.content}</p>
                                 )}
                                 <div className="mt-3 space-y-2 ml-4 border-l-2 border-white/10 pl-3">
-                                  {children.map((child) => (
+                          {children.map((child) => (
                                     <div key={child.id} className="rounded border border-white/10 bg-white/5 p-2">
                                       <div className="flex items-center justify-between">
-                                        <div className="text-xs text-white/60">{new Date(child.createdAt).toLocaleString()}</div>
+                                        <div className="flex items-center gap-2">
+                                          {(() => {
+                                            const childDisplay = (child.authorUsername ?? "").trim() || (child.authorEmail ?? "").trim() || child.authorId;
+                                            const childInitials = ((childDisplay.match(/\b\w/g) || []).slice(0, 2).join("") || childDisplay.charAt(0)).toUpperCase();
+                                            return (
+                                              <>
+                                                <Avatar className="h-7 w-7 rounded-lg border border-[#f5c16c]/30">
+                                                  <AvatarImage src={child.authorProfileImageUrl ?? undefined} alt={childDisplay} />
+                                                  <AvatarFallback className="rounded-lg bg-gradient-to-br from-[#d23187] to-[#f5c16c] text-white text-[10px] font-bold">{childInitials}</AvatarFallback>
+                                                </Avatar>
+                                                <div className="flex flex-col leading-tight">
+                                                  <span className="text-xs font-medium text-white">{childDisplay}</span>
+                                                  <span className="text-[10px] text-white/60">{new Date(child.createdAt).toLocaleString()}</span>
+                                                </div>
+                                              </>
+                                            );
+                                          })()}
+                                        </div>
                                         <div className="flex items-center gap-2">
                                           <Button size="sm" variant="outline" onClick={() => setCommentLikedMap((prev) => ({ ...prev, [child.id]: !prev[child.id] }))} className="border-[#f5c16c]/30 bg-transparent text-[#f5c16c] hover:bg-[#f5c16c]/10">
                                             <Heart className="mr-1.5 h-3.5 w-3.5" /> {(commentLikeCountMap[child.id] ?? 0) + (commentLikedMap[child.id] ? 1 : 0)}
                                           </Button>
-                                          {((!!myAuthUserId && child.authorId === myAuthUserId) || (myRole === "GuildMaster" || myRole === "Officer")) && (
+                                          {((!!myAuthUserId && child.authorId === myAuthUserId) || canManagePosts) && (
                                             <Button size="sm" variant="destructive" onClick={async () => { try { await guildPostsApi.deleteComment(guildId, post.id, child.id); const res = await guildPostsApi.getComments(guildId, post.id, { page: 1, size: 50, sort: "asc" }); setCommentsMap((prev) => ({ ...prev, [post.id]: res.data ?? [] })); setPosts((prev) => prev.map((p) => (p.id === post.id ? { ...p, commentCount: (res.data ?? []).length } : p))); } catch {} }} className="bg-rose-600 hover:bg-rose-700">
                                               <Trash2 className="mr-1.5 h-3.5 w-3.5" /> Delete
                                             </Button>

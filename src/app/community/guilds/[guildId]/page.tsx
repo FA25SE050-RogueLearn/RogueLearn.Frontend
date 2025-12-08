@@ -113,7 +113,7 @@ export default function GuildDetailPage() {
           ? window.location.hash.replace(/^#/, "")
           : "";
       const isMemberNow = !!guild && !!members.find((m) => m.authUserId === myAuthUserId);
-      const canSeeMeetingsNow = isMemberNow && myRole !== "Recruit";
+      const canSeeMeetingsNow = isMemberNow;
       if (hash === "home" || hash === "posts" || hash === "rankings") {
         setActiveTab(hash);
       } else if (hash === "meetings") {
@@ -128,8 +128,8 @@ export default function GuildDetailPage() {
   }, [myRole, guild, members, myAuthUserId]);
 
   const isMember = !!guild && !!members.find((m) => m.authUserId === myAuthUserId);
-  const canSeeMeetings = isMember && myRole !== "Recruit";
-  const canManage = isMember && (myRole === "GuildMaster" || myRole === "Officer");
+  const canSeeMeetings = isMember;
+  const canManage = isMember && (myRole === "GuildMaster");
 
   const displayName = (m?: GuildMemberDto | null): string | undefined => {
     if (!m) return undefined;
