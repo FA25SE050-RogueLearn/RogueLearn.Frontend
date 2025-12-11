@@ -203,10 +203,19 @@ export function CreateEventRequestCard({ guildId, onRequestCreated }: CreateEven
       toast.error("End date must be after start date");
       return;
     }
-    if (maxGuilds < 2) {
-      toast.error("At least 2 guilds are required");
+    
+    // Validate max guilds (3-100)
+    if (maxGuilds < 3 || maxGuilds > 100) {
+      toast.error("Max guilds must be between 3 and 100");
       return;
     }
+    
+    // Validate max players per guild (1-10)
+    if (maxPlayersPerGuild < 1 || maxPlayersPerGuild > 10) {
+      toast.error("Max players per guild must be between 1 and 10");
+      return;
+    }
+    
     if (topics.length === 0) {
       toast.error("At least one topic is required");
       return;
@@ -214,6 +223,28 @@ export function CreateEventRequestCard({ guildId, onRequestCreated }: CreateEven
     if (topics.some(t => !t.trim())) {
       toast.error("All topics must be selected");
       return;
+    }
+
+    // Validate total questions across all difficulties (must be at least 3)
+    const totalQuestions = distributions.reduce((sum, dist) => sum + dist.number_of_problems, 0);
+    if (totalQuestions < 3) {
+      toast.error("Total questions must be at least 3", {
+        description: "Please add more problems across all difficulty levels."
+      });
+      return;
+    }
+
+    // Validate score range (1-1000 per problem)
+    for (const dist of distributions) {
+      if (dist.number_of_problems > 0) {
+        if (dist.score < 1 || dist.score > 1000) {
+          const diffLabel = dist.difficulty === 1 ? 'Easy' : dist.difficulty === 2 ? 'Medium' : 'Hard';
+          toast.error("Score must be between 1 and 1000", {
+            description: `${diffLabel} difficulty: Score per problem must be between 1 and 1000.`
+          });
+          return;
+        }
+      }
     }
 
     // Validate problem distribution against available problems
@@ -417,11 +448,16 @@ export function CreateEventRequestCard({ guildId, onRequestCreated }: CreateEven
               <Input
                 id="maxGuilds"
                 type="number"
-                min="2"
+                min="3"
+                max="100"
                 value={maxGuilds}
-                onChange={(e) => setMaxGuilds(parseInt(e.target.value))}
+                onChange={(e) => {
+                  const val = parseInt(e.target.value) || 3;
+                  setMaxGuilds(Math.min(100, Math.max(3, val)));
+                }}
                 className="border-[#f5c16c]/20 bg-black/40 text-white focus:border-[#f5c16c]/50 focus:ring-[#f5c16c]/30"
               />
+              <p className="text-xs text-[#f5c16c]/50">Range: 3-100 guilds</p>
             </div>
 
             <div className="space-y-2">
@@ -430,10 +466,15 @@ export function CreateEventRequestCard({ guildId, onRequestCreated }: CreateEven
                 id="maxPlayers"
                 type="number"
                 min="1"
+                max="10"
                 value={maxPlayersPerGuild}
-                onChange={(e) => setMaxPlayersPerGuild(parseInt(e.target.value))}
+                onChange={(e) => {
+                  const val = parseInt(e.target.value) || 1;
+                  setMaxPlayersPerGuild(Math.min(10, Math.max(1, val)));
+                }}
                 className="border-[#f5c16c]/20 bg-black/40 text-white focus:border-[#f5c16c]/50 focus:ring-[#f5c16c]/30"
               />
+              <p className="text-xs text-[#f5c16c]/50">Range: 1-10 players</p>
             </div>
           </div>
         </div>
@@ -538,12 +579,24 @@ export function CreateEventRequestCard({ guildId, onRequestCreated }: CreateEven
             )}
 
             <div className="space-y-2">
-              <Label className="text-[#f5c16c]/80">Difficulty Distribution *</Label>
+              <div className="flex items-center justify-between">
+                <Label className="text-[#f5c16c]/80">Difficulty Distribution *</Label>
+                {(() => {
+                  const totalQuestions = distributions.reduce((sum, dist) => sum + dist.number_of_problems, 0);
+                  const isValid = totalQuestions >= 3;
+                  return (
+                    <span className={`text-xs font-semibold ${isValid ? 'text-emerald-400' : 'text-rose-400'}`}>
+                      Total: {totalQuestions} {isValid ? '✓' : '(min: 3)'}
+                    </span>
+                  );
+                })()}
+              </div>
               <div className="grid gap-3">
                 {distributions.map((dist) => {
                   const difficultyLabel = dist.difficulty === 1 ? 'Easy' : dist.difficulty === 2 ? 'Medium' : 'Hard';
                   const maxAvailable = getMaxProblemsForDifficulty(dist.difficulty);
                   const hasExceeded = dist.number_of_problems > maxAvailable;
+                  const scoreOutOfRange = dist.number_of_problems > 0 && (dist.score < 1 || dist.score > 1000);
 
                   return (
                     <div key={dist.difficulty} className="grid grid-cols-3 gap-3 rounded-lg border border-[#f5c16c]/20 bg-black/20 p-3">
@@ -579,15 +632,29 @@ export function CreateEventRequestCard({ guildId, onRequestCreated }: CreateEven
                         )}
                       </div>
                       <div className="space-y-1">
-                        <Label className="text-xs text-[#f5c16c]/70">Score Each</Label>
+                        <Label className="text-xs text-[#f5c16c]/70">
+                          Score Each
+                          <span className="ml-1 text-[10px] text-[#f5c16c]/50">(1-1000)</span>
+                        </Label>
                         <Input
                           type="number"
-                          min="0"
+                          min="1"
+                          max="1000"
                           step="50"
                           value={dist.score}
-                          onChange={(e) => handleScoreChange(dist.difficulty, parseInt(e.target.value) || 0)}
-                          className="border-[#f5c16c]/20 bg-black/40 text-white focus:border-[#f5c16c]/50 focus:ring-[#f5c16c]/30"
+                          onChange={(e) => {
+                            const val = parseInt(e.target.value) || 1;
+                            handleScoreChange(dist.difficulty, Math.min(1000, Math.max(1, val)));
+                          }}
+                          className={`border-[#f5c16c]/20 bg-black/40 text-white focus:border-[#f5c16c]/50 focus:ring-[#f5c16c]/30 ${
+                            scoreOutOfRange ? 'border-rose-500/50 focus:border-rose-500' : ''
+                          }`}
                         />
+                        {scoreOutOfRange && (
+                          <p className="text-[10px] text-rose-400">
+                            Score must be 1-1000
+                          </p>
+                        )}
                       </div>
                     </div>
                   );

@@ -30,9 +30,16 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar"
 import { UserProfileDto } from "@/types/user-profile";
+import { performLogout } from "@/utils/auth/logout";
+import { useQueryClient } from "@/lib/query-client";
 
 export function NavUser({ user }: { user: UserProfileDto | null }) {
   const { isMobile } = useSidebar()
+  const queryClient = useQueryClient()
+
+  const handleLogout = async () => {
+    await performLogout(queryClient);
+  }
 
   const displayName = user?.username ?? "Guest";
   const displayEmail = user?.email ?? "";
@@ -99,7 +106,10 @@ export function NavUser({ user }: { user: UserProfileDto | null }) {
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator className="bg-[#f5c16c]/20" />
-            <DropdownMenuItem className="text-white/90 hover:bg-[#d23187]/20 hover:text-[#f5c16c]">
+            <DropdownMenuItem 
+              onClick={handleLogout}
+              className="text-white/90 hover:bg-[#d23187]/20 hover:text-[#f5c16c] cursor-pointer"
+            >
               <LogOut className="text-[#f5c16c]" />
               Log out
             </DropdownMenuItem>

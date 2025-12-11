@@ -40,7 +40,7 @@ export function EventRequestsCard({ guildId }: EventRequestsCardProps) {
     setLoading(true);
     setError(null);
     try {
-      const response = await eventServiceApi.getGuildEventRequests(guildId);
+      const response = await eventServiceApi.getGuildEventRequests();
       if (response.success && response.data) {
         // Ensure data is an array
         const requestsData = Array.isArray(response.data) ? response.data : [];
@@ -60,7 +60,7 @@ export function EventRequestsCard({ guildId }: EventRequestsCardProps) {
 
   useEffect(() => {
     fetchEventRequests();
-  }, [guildId]);
+  }, []);
 
   const pageCount = useMemo(() => Math.max(1, Math.ceil((eventRequests.length || 0) / pageSize)), [eventRequests.length]);
   const safePage = useMemo(() => Math.min(Math.max(1, page), pageCount), [page, pageCount]);

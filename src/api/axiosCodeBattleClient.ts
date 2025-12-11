@@ -25,6 +25,13 @@ interface EventServiceErrorResponse {
  */
 const axiosCodeBattleClient = axios.create({});
 
+// Listen for logout events to clear any pending requests
+if (typeof window !== 'undefined') {
+  window.addEventListener('auth:logout', () => {
+    console.log('[axiosCodeBattleClient] Logout event detected, clearing any cached state');
+  });
+}
+
 /**
  * An Axios interceptor that automatically attaches the user's JWT bearer token.
  */

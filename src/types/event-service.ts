@@ -63,6 +63,7 @@ export interface Event {
   assignment_date: string | null;
   guilds_left: number;
   current_participants: number;
+  remaining_slot: number;
   requester_guild_id?: string | null; // Guild that requested this event
   // Legacy PascalCase fields for backward compatibility
   ID?: string;
