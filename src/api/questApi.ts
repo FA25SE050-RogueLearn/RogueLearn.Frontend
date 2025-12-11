@@ -153,6 +153,7 @@ export interface AdminQuestDetailsDto {
   difficultyLevel: string;
   status: string;
   isActive: boolean;
+  subjectId?: string;
   subjectCode?: string;
   subjectName?: string;
   // Grouped steps for 3-track visualization
@@ -638,6 +639,78 @@ const questApi = {
       };
     }
   },
+
+  /**
+   * Updates the learning activities for a specific quest step.
+   * This is a full replacement operation - the activities array will overwrite existing content.
+   * Corresponds to PUT /api/admin/quest-steps/{questStepId}/content
+   */
+  adminUpdateQuestStepContent: async (
+    questStepId: string,
+    activities: QuestStepActivityPayload[]
+  ): Promise<ApiResponse<UpdateQuestStepContentResponse>> => {
+    try {
+      const res = await axiosClient.put<UpdateQuestStepContentResponse>(
+        `/api/admin/quest-steps/${questStepId}/content`,
+        { activities }
+      );
+      return {
+        isSuccess: true as const,
+        data: res.data,
+      };
+    } catch (error: any) {
+      const message = error.response?.data?.message || error.message || 'Failed to update quest step content';
+      return {
+        isSuccess: false as const,
+        data: null,
+        message,
+      };
+    }
+  },
 };
+
+// ========== QUEST STEP ACTIVITY TYPES ==========
+
+/**
+ * Activity payload for updating quest step content
+ */
+export interface QuestStepActivityPayload {
+  activityId: string;
+  type: 'Reading' | 'KnowledgeCheck' | 'Quiz';
+  skillId: string;
+  payload: ReadingPayload | KnowledgeCheckPayload | QuizPayload;
+}
+
+export interface ReadingPayload {
+  experiencePoints: number;
+  url: string;
+  articleTitle: string;
+  summary: string;
+}
+
+export interface QuestionPayload {
+  question: string;
+  options: string[];
+  answer: string;
+  explanation: string;
+}
+
+export interface KnowledgeCheckPayload {
+  experiencePoints: number;
+  questions: QuestionPayload[];
+}
+
+export interface QuizPayload {
+  experiencePoints: number;
+  questions: QuestionPayload[];
+}
+
+export interface UpdateQuestStepContentResponse {
+  questStepId: string;
+  isSuccess: boolean;
+  message: string;
+  activityCount: number;
+  updatedAt: string;
+}
 
 export default questApi;

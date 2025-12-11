@@ -19,7 +19,8 @@ import {
     CheckCircle,
     ExternalLink,
     Sparkles,
-    RefreshCw
+    RefreshCw,
+    Pencil
 } from "lucide-react";
 import { toast } from "sonner";
 import questApi, { AdminQuestDetailsDto, AdminQuestStepDto } from "@/api/questApi";
@@ -27,6 +28,7 @@ import QuestProgressionGraph from "@/components/admin/quests/QuestProgressionGra
 import { cn } from "@/lib/utils";
 import Link from "next/link";
 import { QuestGenerationModal } from "@/components/quests/QuestGenerationModal";
+import { EditQuestStepDialog } from "@/components/admin/quests/EditQuestStepDialog";
 
 export default function AdminQuestDetailPage() {
     const params = useParams();
@@ -42,6 +44,39 @@ export default function AdminQuestDetailPage() {
     const [generationJobId, setGenerationJobId] = useState<string | null>(null);
     const [isGenerating, setIsGenerating] = useState(false);
     const [isGenerationModalOpen, setIsGenerationModalOpen] = useState(false);
+
+    // Edit step state
+    const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+    const [editingStep, setEditingStep] = useState<AdminQuestStepDto | null>(null);
+
+    const handleEditStep = (step: AdminQuestStepDto) => {
+        setEditingStep(step);
+        setIsEditDialogOpen(true);
+    };
+
+    const handleEditSaved = async () => {
+        const editedStepId = editingStep?.id;
+        try {
+            const res = await questApi.adminGetQuestDetails(questId);
+            if (res.isSuccess && res.data) {
+                setQuest(res.data);
+                // Find and select the updated step
+                if (editedStepId) {
+                    const allSteps = [
+                        ...(res.data.standardSteps || []),
+                        ...(res.data.supportiveSteps || []),
+                        ...(res.data.challengingSteps || []),
+                    ];
+                    const updated = allSteps.find(s => s.id === editedStepId);
+                    if (updated) {
+                        setSelectedStep(updated);
+                    }
+                }
+            }
+        } catch (e: any) {
+            toast.error(e?.message || "Failed to refresh quest data");
+        }
+    };
 
     const loadQuest = useCallback(async () => {
         setLoading(true);
@@ -357,7 +392,7 @@ export default function AdminQuestDetailPage() {
                         {/* Right: Step Details */}
                         <div className="lg:col-span-1">
                             {selectedStep ? (
-                                <StepDetailPanel step={selectedStep} />
+                                <StepDetailPanel step={selectedStep} onEdit={handleEditStep} />
                             ) : (
                                 <Card className="bg-[#1a1410] border-[#f5c16c]/20 h-full">
                                     <CardContent className="flex items-center justify-center h-full min-h-[400px]">
@@ -396,13 +431,25 @@ export default function AdminQuestDetailPage() {
                     onClose={() => setIsGenerationModalOpen(false)}
                     onComplete={handleGenerationComplete}
                 />
+
+                {/* Edit Step Dialog */}
+                <EditQuestStepDialog
+                    isOpen={isEditDialogOpen}
+                    onClose={() => {
+                        setIsEditDialogOpen(false);
+                        setEditingStep(null);
+                    }}
+                    step={editingStep}
+                    questId={quest.id}
+                    onSaved={handleEditSaved}
+                />
             </div>
         </AdminLayout>
     );
 }
 
 // Step Detail Panel Component
-function StepDetailPanel({ step }: { step: AdminQuestStepDto }) {
+function StepDetailPanel({ step, onEdit }: { step: AdminQuestStepDto; onEdit?: (step: AdminQuestStepDto) => void }) {
     return (
         <Card className="bg-[#1a1410] border-[#f5c16c]/20 sticky top-6">
             <CardHeader className="border-b border-[#f5c16c]/10">
@@ -420,9 +467,21 @@ function StepDetailPanel({ step }: { step: AdminQuestStepDto }) {
                             {step.difficultyVariant}
                         </Badge>
                     </div>
-                    <Badge className="bg-[#7289da]/20 text-[#7289da] border-[#7289da]/30">
-                        {step.experiencePoints} XP
-                    </Badge>
+                    <div className="flex items-center gap-2">
+                        <Badge className="bg-[#7289da]/20 text-[#7289da] border-[#7289da]/30">
+                            {step.experiencePoints} XP
+                        </Badge>
+                        {onEdit && (
+                            <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => onEdit(step)}
+                                className="h-7 px-2 border-[#f5c16c]/30 text-white hover:bg-[#f5c16c]/10"
+                            >
+                                <Pencil className="w-3 h-3 mr-1" /> Edit
+                            </Button>
+                        )}
+                    </div>
                 </div>
                 <CardTitle className="text-white text-base mt-2">{step.title}</CardTitle>
                 <p className="text-white/50 text-sm">{step.description}</p>
@@ -442,8 +501,24 @@ function StepDetailPanel({ step }: { step: AdminQuestStepDto }) {
 function ActivityCard({ activity, index }: { activity: any; index: number }) {
     const [expanded, setExpanded] = useState(index === 0);
 
+    // Helper to get property value regardless of casing (camelCase or PascalCase)
+    const get = (obj: any, ...keys: string[]) => {
+        if (!obj) return undefined;
+        for (const key of keys) {
+            if (obj[key] !== undefined) return obj[key];
+            // Try PascalCase
+            const pascalKey = key.charAt(0).toUpperCase() + key.slice(1);
+            if (obj[pascalKey] !== undefined) return obj[pascalKey];
+        }
+        return undefined;
+    };
+
+    const activityType = get(activity, 'type') || 'Unknown';
+    const payload = get(activity, 'payload') || {};
+    const skillId = get(activity, 'skillId');
+
     const getActivityIcon = () => {
-        switch (activity.type) {
+        switch (activityType) {
             case 'Reading': return <BookOpen className="w-4 h-4 text-blue-400" />;
             case 'Quiz': return <BrainCircuit className="w-4 h-4 text-purple-400" />;
             case 'Coding': return <Code className="w-4 h-4 text-green-400" />;
@@ -453,7 +528,7 @@ function ActivityCard({ activity, index }: { activity: any; index: number }) {
     };
 
     const getActivityColor = () => {
-        switch (activity.type) {
+        switch (activityType) {
             case 'Reading': return 'border-blue-500/30 bg-blue-500/5';
             case 'Quiz': return 'border-purple-500/30 bg-purple-500/5';
             case 'Coding': return 'border-green-500/30 bg-green-500/5';
@@ -461,6 +536,15 @@ function ActivityCard({ activity, index }: { activity: any; index: number }) {
             default: return 'border-white/10 bg-white/5';
         }
     };
+
+    const experiencePoints = get(payload, 'experiencePoints');
+    const articleTitle = get(payload, 'articleTitle');
+    const summary = get(payload, 'summary');
+    const url = get(payload, 'url');
+    const questions = get(payload, 'questions') || [];
+    const topic = get(payload, 'topic');
+    const language = get(payload, 'language');
+    const difficulty = get(payload, 'difficulty');
 
     return (
         <div className={cn("border rounded-lg overflow-hidden", getActivityColor())}>
@@ -471,9 +555,9 @@ function ActivityCard({ activity, index }: { activity: any; index: number }) {
             >
                 <div className="flex items-center gap-2">
                     {getActivityIcon()}
-                    <span className="text-white font-medium text-sm">{activity.type}</span>
-                    {activity.payload?.experiencePoints && (
-                        <span className="text-white/40 text-xs">+{activity.payload.experiencePoints} XP</span>
+                    <span className="text-white font-medium text-sm">{activityType}</span>
+                    {experiencePoints && (
+                        <span className="text-white/40 text-xs">+{experiencePoints} XP</span>
                     )}
                 </div>
                 <ChevronLeft className={cn(
@@ -486,24 +570,24 @@ function ActivityCard({ activity, index }: { activity: any; index: number }) {
             {expanded && (
                 <div className="px-3 pb-3 space-y-3">
                     {/* Reading Activity */}
-                    {activity.type === 'Reading' && (
+                    {activityType === 'Reading' && (
                         <>
-                            {activity.payload?.articleTitle && (
+                            {articleTitle && (
                                 <div>
                                     <p className="text-xs text-white/40 uppercase tracking-wider mb-1">Article</p>
-                                    <p className="text-white font-medium text-sm">{activity.payload.articleTitle}</p>
+                                    <p className="text-white font-medium text-sm">{articleTitle}</p>
                                 </div>
                             )}
-                            {activity.payload?.summary && (
+                            {summary && (
                                 <div>
                                     <p className="text-xs text-white/40 uppercase tracking-wider mb-1">Summary</p>
-                                    <p className="text-white/70 text-sm leading-relaxed">{activity.payload.summary}</p>
+                                    <p className="text-white/70 text-sm leading-relaxed">{summary}</p>
                                 </div>
                             )}
-                            {activity.payload?.url && (
+                            {url && (
                                 <div>
                                     <a 
-                                        href={activity.payload.url} 
+                                        href={url} 
                                         target="_blank" 
                                         rel="noopener noreferrer"
                                         className="inline-flex items-center gap-1 text-blue-400 hover:text-blue-300 text-sm"
@@ -517,65 +601,71 @@ function ActivityCard({ activity, index }: { activity: any; index: number }) {
                     )}
 
                     {/* Knowledge Check / Quiz */}
-                    {(activity.type === 'KnowledgeCheck' || activity.type === 'Quiz') && activity.payload?.questions && (
+                    {(activityType === 'KnowledgeCheck' || activityType === 'Quiz') && questions.length > 0 && (
                         <div className="space-y-4">
                             <p className="text-xs text-white/40 uppercase tracking-wider">
-                                {activity.payload.questions.length} Questions
+                                {questions.length} Questions
                             </p>
-                            {activity.payload.questions.map((q: any, qIdx: number) => (
-                                <div key={qIdx} className="bg-black/20 rounded-lg p-3 space-y-2">
-                                    <p className="text-white text-sm font-medium">
-                                        Q{qIdx + 1}: {q.question}
-                                    </p>
-                                    <div className="space-y-1">
-                                        {q.options?.map((opt: string, oIdx: number) => (
-                                            <div 
-                                                key={oIdx}
-                                                className={cn(
-                                                    "px-2 py-1 rounded text-xs",
-                                                    opt === q.answer 
-                                                        ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
-                                                        : "bg-white/5 text-white/60"
-                                                )}
-                                            >
-                                                {opt}
-                                            </div>
-                                        ))}
-                                    </div>
-                                    {q.explanation && (
-                                        <div className="pt-2 border-t border-white/10">
-                                            <p className="text-xs text-white/40 mb-1">Explanation:</p>
-                                            <p className="text-xs text-white/60">{q.explanation}</p>
+                            {questions.map((q: any, qIdx: number) => {
+                                const question = get(q, 'question');
+                                const options = get(q, 'options') || [];
+                                const answer = get(q, 'answer');
+                                const explanation = get(q, 'explanation');
+                                return (
+                                    <div key={qIdx} className="bg-black/20 rounded-lg p-3 space-y-2">
+                                        <p className="text-white text-sm font-medium">
+                                            Q{qIdx + 1}: {question}
+                                        </p>
+                                        <div className="space-y-1">
+                                            {options.map((opt: string, oIdx: number) => (
+                                                <div 
+                                                    key={oIdx}
+                                                    className={cn(
+                                                        "px-2 py-1 rounded text-xs",
+                                                        opt === answer 
+                                                            ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
+                                                            : "bg-white/5 text-white/60"
+                                                    )}
+                                                >
+                                                    {opt}
+                                                </div>
+                                            ))}
                                         </div>
-                                    )}
-                                </div>
-                            ))}
+                                        {explanation && (
+                                            <div className="pt-2 border-t border-white/10">
+                                                <p className="text-xs text-white/40 mb-1">Explanation:</p>
+                                                <p className="text-xs text-white/60">{explanation}</p>
+                                            </div>
+                                        )}
+                                    </div>
+                                );
+                            })}
                         </div>
                     )}
 
                     {/* Coding Activity */}
-                    {activity.type === 'Coding' && (
+                    {activityType === 'Coding' && (
                         <>
-                            {activity.payload?.topic && (
+                            {topic && (
                                 <div>
                                     <p className="text-xs text-white/40 uppercase tracking-wider mb-1">Topic</p>
-                                    <p className="text-white text-sm">{activity.payload.topic}</p>
+                                    <p className="text-white text-sm">{topic}</p>
                                 </div>
                             )}
                             <div className="flex gap-4">
-                                {activity.payload?.language && (
+                                {language && (
                                     <div>
                                         <p className="text-xs text-white/40 uppercase tracking-wider mb-1">Language</p>
                                         <Badge className="bg-green-500/20 text-green-400 border-green-500/30">
-                                            {activity.payload.language}
+                                            {language}
                                         </Badge>
                                     </div>
                                 )}
-                                {activity.payload?.difficulty && (
+                                {difficulty && (
                                     <div>
                                         <p className="text-xs text-white/40 uppercase tracking-wider mb-1">Difficulty</p>
                                         <Badge className="bg-white/10 text-white/60 border-white/20">
-                                            {activity.payload.difficulty}
+                                            {difficulty}
                                         </Badge>
                                     </div>
                                 )}
@@ -584,10 +674,10 @@ function ActivityCard({ activity, index }: { activity: any; index: number }) {
                     )}
 
                     {/* Skill ID */}
-                    {activity.skillId && (
+                    {skillId && (
                         <div className="pt-2 border-t border-white/10">
                             <p className="text-xs text-white/30">
-                                Skill: <span className="font-mono">{activity.skillId.slice(0, 8)}...</span>
+                                Skill: <span className="font-mono">{skillId.slice(0, 8)}...</span>
                             </p>
                         </div>
                     )}
