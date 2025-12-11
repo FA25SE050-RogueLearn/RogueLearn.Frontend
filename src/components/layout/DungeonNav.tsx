@@ -37,6 +37,8 @@ import UserProfileModal from "@/components/profile/UserProfileModal"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { CharacterCreationWizard } from "@/components/features/character-creation/CharacterCreationWizard"
 import { usePageTransition } from "@/components/layout/PageTransition"
+import { performLogout } from "@/utils/auth/logout"
+import { useQueryClient } from "@/lib/query-client"
 
 const navItems = [
   { title: "Sanctum", url: "/dashboard", icon: LayoutGrid, color: "from-purple-500 to-pink-500" },
@@ -57,6 +59,7 @@ export function DungeonNav() {
   const pathname = usePathname()
   const router = useRouter()
   const { navigateTo } = usePageTransition()
+  const queryClient = useQueryClient()
   const [userProfile, setUserProfile] = React.useState<UserProfileDto | null>(null)
   const [showCharacterWizard, setShowCharacterWizard] = React.useState(false)
   const [hoveredIndex, setHoveredIndex] = React.useState<number | null>(null)
@@ -183,19 +186,8 @@ export function DungeonNav() {
   }
 
   const handleLogout = async () => {
-    const supabase = createClient()
-    await supabase.auth.signOut()
-    try {
-      const isHttps = typeof window !== 'undefined' && window.location.protocol === 'https:'
-      const domain = process.env['NEXT_PUBLIC_COOKIE_DOMAIN']
-      const secure = isHttps ? '; Secure' : ''
-      const sameSite = isHttps ? 'None' : 'Lax'
-      const dom = domain ? `; Domain=${domain}` : ''
-      document.cookie = `rl_access_token=; Path=/; Max-Age=0${secure}; SameSite=${sameSite}${dom}`
-      document.cookie = `rl_refresh_token=; Path=/; Max-Age=0${secure}; SameSite=${sameSite}${dom}`
-    } catch {}
-    router.push("/login")
-    router.refresh()
+    await performLogout(queryClient);
+    // Note: performLogout handles the redirect with cache busting
   }
 
   const handleOnboardingComplete = () => {

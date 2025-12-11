@@ -517,17 +517,28 @@ export default function EventDetailsContent({ eventId }: EventDetailsContentProp
         <div aria-hidden="true" className="absolute inset-0" style={TEXTURE_OVERLAY} />
 
         <CardContent className="relative z-10 p-8">
-          <div className="mb-5 flex items-center gap-3">
-            <button
-              type="button"
-              onClick={() => router.push('/code-battle')}
-              className="inline-flex items-center text-xs uppercase tracking-[0.35em] text-[#f5c16c] hover:text-[#f9d9eb] transition-colors"
-            >
-              <ArrowLeft className="mr-2 h-3 w-3" />
-              Events
-            </button>
-            <span className="text-white/40">/</span>
-            <span className="text-white/80">{event.title}</span>
+          <div className="mb-5 flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => router.push('/code-battle')}
+                className="inline-flex items-center text-xs uppercase tracking-[0.35em] text-[#f5c16c] hover:text-[#f9d9eb] transition-colors"
+              >
+                <ArrowLeft className="mr-2 h-3 w-3" />
+                Events
+              </button>
+              <span className="text-white/40">/</span>
+              <span className="text-white/80">{event.title}</span>
+            </div>
+
+            {status && (
+              <div className="inline-flex items-center gap-2 rounded-full border border-[#d23187]/50 bg-gradient-to-br ${status.bg} px-4 py-1.5 shadow-lg">
+                <StatusIcon className={`h-4 w-4 ${status.color}`} />
+                <span className={`text-xs font-bold uppercase tracking-wider ${status.color}`}>
+                  {status.label}
+                </span>
+              </div>
+            )}
           </div>
 
           <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
@@ -538,15 +549,6 @@ export default function EventDetailsContent({ eventId }: EventDetailsContentProp
               <p className="mt-4 max-w-2xl text-base text-foreground/75">
                 {event.description || 'Compete in this epic roguelike code battle.'}
               </p>
-
-              {status && (
-                <div className="mt-6 inline-flex items-center gap-2 rounded-full border border-[#d23187]/50 bg-gradient-to-br ${status.bg} px-5 py-2 shadow-lg">
-                  <StatusIcon className={`h-4 w-4 ${status.color}`} />
-                  <span className={`text-sm font-bold uppercase tracking-wider ${status.color}`}>
-                    {status.label}
-                  </span>
-                </div>
-              )}
             </div>
 
             {/* Event Stats */}
@@ -566,6 +568,20 @@ export default function EventDetailsContent({ eventId }: EventDetailsContentProp
                   </Card>
                 ))}
               </div>
+              {event.status === 'pending' && (
+                <Card className={`${PANEL_SURFACE_CLASS} text-center ${event.remaining_slot === 0 ? 'border-rose-500/40' : 'border-emerald-500/40'}`}>
+                  <div aria-hidden="true" className="absolute inset-0" style={CARD_TEXTURE} />
+                  <CardContent className="relative flex flex-col items-center gap-2 p-4">
+                    <Trophy className={`h-5 w-5 ${event.remaining_slot === 0 ? 'text-rose-400' : 'text-emerald-400'}`} />
+                    <span className={`text-2xl font-bold ${event.remaining_slot === 0 ? 'text-rose-300' : 'text-emerald-300'}`}>
+                      {event.remaining_slot}
+                    </span>
+                    <span className="text-xs uppercase tracking-wide text-foreground/60">
+                      Slots Remaining
+                    </span>
+                  </CardContent>
+                </Card>
+              )}
             </div>
           </div>
         </CardContent>
@@ -858,18 +874,40 @@ export default function EventDetailsContent({ eventId }: EventDetailsContentProp
               <div className="space-y-4">
                 {!showMemberSelection ? (
                   <div className="space-y-4">
-                    <div className="rounded-2xl border border-[#d23187]/30 bg-gradient-to-br from-[#d23187]/10 to-transparent p-5">
-                      <p className="text-sm text-[#f9d9eb]/80">
-                        Assemble your party! Select <span className="font-bold text-[#f5c16c]">up to {event.max_players_per_guild} warriors</span> from your guild to enter this legendary code battle.
-                      </p>
-                    </div>
-                    <Button
-                      onClick={handleShowMemberSelection}
-                      className={`w-full px-6 py-6 text-sm font-bold uppercase tracking-wider ${CTA_CLASS}`}
-                    >
-                      <Users className="mr-2 h-5 w-5" />
-                      Select Squad & Register
-                    </Button>
+                    {event.remaining_slot === 0 ? (
+                      <div className="rounded-2xl border border-rose-600/40 bg-gradient-to-r from-rose-600/20 to-rose-950/10 p-5 shadow-[0_0_20px_rgba(244,63,94,0.15)]">
+                        <div className="flex items-center gap-3">
+                          <div className="rounded-full bg-rose-600/30 p-2">
+                            <XCircle className="h-6 w-6 text-rose-300" />
+                          </div>
+                          <div>
+                            <p className="text-lg font-bold text-rose-300">Event is Full</p>
+                            <p className="text-xs text-rose-400/70">
+                              All guild slots have been filled for this event
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <>
+                        <div className="rounded-2xl border border-[#d23187]/30 bg-gradient-to-br from-[#d23187]/10 to-transparent p-5">
+                          <p className="text-sm text-[#f9d9eb]/80">
+                            Assemble your party! Select <span className="font-bold text-[#f5c16c]">up to {event.max_players_per_guild} warriors</span> from your guild to enter this legendary code battle.
+                          </p>
+                          <p className="mt-2 text-xs text-[#f5c16c]">
+                            {event.remaining_slot} guild slot{event.remaining_slot !== 1 ? 's' : ''} remaining
+                          </p>
+                        </div>
+                        <Button
+                          onClick={handleShowMemberSelection}
+                          disabled={event.remaining_slot === 0}
+                          className={`w-full px-6 py-6 text-sm font-bold uppercase tracking-wider ${CTA_CLASS} disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:shadow-[0_15px_40px_rgba(210,49,135,0.4)]`}
+                        >
+                          <Users className="mr-2 h-5 w-5" />
+                          Select Squad & Register
+                        </Button>
+                      </>
+                    )}
                   </div>
                 ) : (
                   <div className="space-y-4">

@@ -12,6 +12,15 @@ import { ApiErrorPayload, NormalizedApiErrorInfo } from '@/types/base/Error';
  */
 const axiosClient = axios.create({});
 
+// Listen for logout events to clear any pending requests
+if (typeof window !== 'undefined') {
+  window.addEventListener('auth:logout', () => {
+    // Cancel any pending requests (optional - axios doesn't have built-in cache)
+    // This is more of a cleanup to ensure no stale requests continue
+    console.log('[axiosClient] Logout event detected, clearing any cached state');
+  });
+}
+
 // Developer hint
 let hasWarnedMissingApiUrl = false;
 

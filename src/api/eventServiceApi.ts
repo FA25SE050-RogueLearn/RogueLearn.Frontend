@@ -543,11 +543,12 @@ const eventServiceApi = {
 
   /**
    * Get guild event requests (authenticated)
+   * Uses auth token to determine the guild automatically
    */
-  async getGuildEventRequests(guildId: string): Promise<ApiResponse<EventRequest[]>> {
+  async getGuildEventRequests(): Promise<ApiResponse<EventRequest[]>> {
     try {
-      console.log('🔍 Fetching event requests for guild:', guildId);
-      const response = await axiosCodeBattleClient.get(`/event-requests/${guildId}`);
+      console.log('🔍 Fetching event requests for authenticated guild');
+      const response = await axiosCodeBattleClient.get('/event-requests/my');
       console.log('📦 Event requests response:', response.data);
 
       if (response.data.success && response.data.data) {

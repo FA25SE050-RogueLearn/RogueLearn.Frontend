@@ -37,6 +37,8 @@ import { createClient } from "@/utils/supabase/client";
 import notificationsApi from "@/api/notificationsApi";
 import UserProfileModal from "@/components/profile/UserProfileModal";
 import { usePageTransition } from "@/components/layout/PageTransition";
+import { performLogout } from "@/utils/auth/logout";
+import { useQueryClient } from "@/lib/query-client";
 
 interface SidebarNavProps {
   userProfile?: {
@@ -67,6 +69,7 @@ export function SidebarNav({ userProfile }: SidebarNavProps) {
   const pathname = usePathname();
   const router = useRouter();
   const { navigateTo } = usePageTransition();
+  const queryClient = useQueryClient();
   const [profileModalOpen, setProfileModalOpen] = useState(false);
   const [profileModalTab, setProfileModalTab] = useState<"profile" | "settings" | "verification">("profile");
   const [unreadCount, setUnreadCount] = useState<number>(0);
@@ -92,18 +95,8 @@ export function SidebarNav({ userProfile }: SidebarNavProps) {
   }, [profileModalOpen]);
 
   const handleSignOut = async () => {
-    const supabase = createClient();
-    await supabase.auth.signOut();
-    try {
-      const isHttps = typeof window !== 'undefined' && window.location.protocol === 'https:';
-      const domain = process.env['NEXT_PUBLIC_COOKIE_DOMAIN'];
-      const secure = isHttps ? '; Secure' : '';
-      const sameSite = isHttps ? 'None' : 'Lax';
-      const dom = domain ? `; Domain=${domain}` : '';
-      document.cookie = `rl_access_token=; Path=/; Max-Age=0${secure}; SameSite=${sameSite}${dom}`;
-      document.cookie = `rl_refresh_token=; Path=/; Max-Age=0${secure}; SameSite=${sameSite}${dom}`;
-    } catch {}
-    router.push("/login");
+    await performLogout(queryClient);
+    // Note: performLogout handles the redirect with cache busting
   };
 
   const openModal = (tab: "profile" | "settings" | "verification") => {
