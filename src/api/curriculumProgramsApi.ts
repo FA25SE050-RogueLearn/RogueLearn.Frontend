@@ -9,6 +9,7 @@ import {
   UpdateCurriculumProgramCommandRequest,
   UpdateCurriculumProgramResponse,
 } from "@/types/curriculum-programs";
+import { Subject } from "@/types/subjects";
 
 const curriculumProgramsApi = {
   // =================================================================
@@ -74,6 +75,20 @@ const curriculumProgramsApi = {
   /** DELETE /api/admin/programs/{id} */
   remove: (id: string): Promise<void> =>
     axiosClient.delete(`/api/admin/programs/${id}`).then(() => {}),
+
+  /** GET /api/admin/programs/{programId}/subjects */
+  getProgramSubjects: (programId: string): Promise<ApiResponse<Subject[]>> =>
+    axiosClient
+      .get<Subject[]>(`/api/admin/programs/${programId}/subjects`)
+      .then((res) => ({
+        isSuccess: true,
+        data: res.data,
+      }))
+      .catch((error) => ({
+        isSuccess: false,
+        data: [],
+        message: error.response?.data?.message || error.message,
+      })),
 };
 
 export default curriculumProgramsApi;
