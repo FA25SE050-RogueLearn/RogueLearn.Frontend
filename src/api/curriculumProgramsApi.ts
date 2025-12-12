@@ -81,12 +81,12 @@ const curriculumProgramsApi = {
     axiosClient
       .get<Subject[]>(`/api/admin/programs/${programId}/subjects`)
       .then((res) => ({
-        isSuccess: true,
+        isSuccess: true as const,
         data: res.data,
       }))
       .catch((error) => ({
-        isSuccess: false,
-        data: [],
+        isSuccess: false as const,
+        data: null,
         message: error.response?.data?.message || error.message,
       })),
 };
