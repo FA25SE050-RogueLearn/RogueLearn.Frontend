@@ -10,7 +10,7 @@ import { gsap } from "gsap";
 import Link from "next/link";
 import { LearningPath, QuestChapter, QuestSummary } from "@/types/quest";
 import DifficultyBadge from "@/components/quests/DifficultyBadge";
-import { useRouter } from "next/navigation";
+import { usePageTransition } from "@/components/layout/PageTransition";
 import {
     Tooltip,
     TooltipContent,
@@ -27,7 +27,7 @@ interface ChapterQuestListViewProps {
 export function ChapterQuestListView({ learningPath, chapter }: ChapterQuestListViewProps) {
     const headerRef = useRef<HTMLDivElement>(null);
     const modulesRef = useRef<HTMLDivElement>(null);
-    const router = useRouter();
+    const { navigateTo } = usePageTransition();
 
     const quests = chapter.quests || [];
     const completedQuests = quests.filter(q => q.status === 'Completed').length;
@@ -54,7 +54,7 @@ export function ChapterQuestListView({ learningPath, chapter }: ChapterQuestList
     }, [chapter.sequence]);
 
     const handleStartQuest = (quest: QuestSummary) => {
-        router.push(`/quests/${quest.id}`);
+        navigateTo(`/quests/${quest.id}`);
     };
 
     return (

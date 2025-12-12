@@ -5,7 +5,7 @@ import { Compass, UserCog, Sparkles, MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { CharacterCreationWizard } from "@/components/features/character-creation/CharacterCreationWizard";
-import { useRouter } from "next/navigation";
+import { usePageTransition } from "@/components/layout/PageTransition";
 
 interface IncompleteSetupViewProps {
   pathName?: string;
@@ -13,7 +13,7 @@ interface IncompleteSetupViewProps {
 }
 
 export function IncompleteSetupView({ pathName, pathDescription }: IncompleteSetupViewProps) {
-  const router = useRouter();
+  const { navigateTo } = usePageTransition();
   const [showCharacterWizard, setShowCharacterWizard] = useState(false);
   const [dismissed, setDismissed] = useState(false);
 
@@ -51,7 +51,7 @@ export function IncompleteSetupView({ pathName, pathDescription }: IncompleteSet
           </Button>
           <Button
             variant="outline"
-            onClick={() => router.push('/profile')}
+            onClick={() => navigateTo('/profile')}
             className="border-white/20 text-white/70 hover:text-white hover:bg-white/5"
           >
             <UserCog className="w-4 h-4 mr-2" />
