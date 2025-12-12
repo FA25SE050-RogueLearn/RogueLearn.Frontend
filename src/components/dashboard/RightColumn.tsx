@@ -177,10 +177,13 @@ export function RightColumn({ achievements, userSkills }: RightColumnProps) {
 
         {achievements.length > 0 ? (
           <div className="space-y-3">
-            {achievements.slice(0, 5).map((achievement, idx) => (
-              <button
-                key={`${achievement.achievementId}-${idx}`}
-                onClick={() => setSelectedAchievement(achievement)}
+            {achievements
+              .slice(0, 5)
+              .sort((a, b) => new Date(b.earnedAt).getTime() - new Date(a.earnedAt).getTime())
+              .map((achievement, idx) => (
+                <button
+                  key={`${achievement.achievementId}-${idx}`}
+                  onClick={() => setSelectedAchievement(achievement)}
                 className="group w-full rounded-lg border border-[#f5c16c]/20 bg-[#1a0b08]/80 p-3 text-left transition-all hover:border-[#f5c16c]/40 hover:bg-[#1a0b08] hover:shadow-[0_0_15px_rgba(210,49,135,0.15)]"
               >
                 <div className="flex gap-3">

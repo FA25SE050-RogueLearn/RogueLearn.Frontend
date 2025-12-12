@@ -227,8 +227,8 @@ export function CreateEventRequestCard({ guildId, onRequestCreated }: CreateEven
 
     // Validate total questions across all difficulties (must be at least 3)
     const totalQuestions = distributions.reduce((sum, dist) => sum + dist.number_of_problems, 0);
-    if (totalQuestions < 3) {
-      toast.error("Total questions must be at least 3", {
+    if (totalQuestions < 1) {
+      toast.error("Total questions must be at least 1", {
         description: "Please add more problems across all difficulty levels."
       });
       return;
@@ -583,10 +583,10 @@ export function CreateEventRequestCard({ guildId, onRequestCreated }: CreateEven
                 <Label className="text-[#f5c16c]/80">Difficulty Distribution *</Label>
                 {(() => {
                   const totalQuestions = distributions.reduce((sum, dist) => sum + dist.number_of_problems, 0);
-                  const isValid = totalQuestions >= 3;
+                  const isValid = totalQuestions >= 1;
                   return (
                     <span className={`text-xs font-semibold ${isValid ? 'text-emerald-400' : 'text-rose-400'}`}>
-                      Total: {totalQuestions} {isValid ? '✓' : '(min: 3)'}
+                      Total: {totalQuestions} {isValid ? '✓' : '(min: 1)'}
                     </span>
                   );
                 })()}
