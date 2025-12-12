@@ -533,44 +533,6 @@ export default function CodeBattlePage() {
 
       const event = eventResponse.data;
 
-      // Get user's guild ID
-      const supabase = createClient();
-      const { data: guilds } = await supabase
-        .from('guilds')
-        .select('id')
-        .eq('created_by', playerId)
-        .limit(1);
-
-      const guildId = guilds?.[0]?.id;
-
-      if (!guildId) {
-        // Check if user is a member of any guild
-        const { data: memberships } = await supabase
-          .from('guild_members')
-          .select('guild_id')
-          .eq('user_id', playerId)
-          .limit(1);
-
-        const memberGuildId = memberships?.[0]?.guild_id;
-
-        if (!memberGuildId) {
-          toast.error('You must be in a guild to enter events');
-          return;
-        }
-      }
-
-      const userGuildId = guildId || (await supabase
-        .from('guild_members')
-        .select('guild_id')
-        .eq('user_id', playerId)
-        .limit(1)
-        .then(res => res.data?.[0]?.guild_id));
-
-      if (!userGuildId) {
-        toast.error('You must be in a guild to enter events');
-        return;
-      }
-
       // Check if user's guild is registered for this event
       const registrationResponse = await eventServiceApi.getRegisteredGuildMembers(eventId);
 
