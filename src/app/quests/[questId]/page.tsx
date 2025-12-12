@@ -6,6 +6,7 @@ import Link from "next/link";
 import { createServerApiClients } from "@/lib/api-server";
 import { QuestDetails, LearningPath } from "@/types/quest";
 import QuestDetailView from "@/components/quests/QuestDetailView";
+import { normalizeQuestDetails } from "@/lib/normalizeActivities";
 
 interface PageProps {
   params: Promise<{ questId: string }>;
@@ -45,11 +46,14 @@ export default async function QuestOverviewPage({ params }: PageProps) {
   const { coreApiClient } = await createServerApiClients();
 
   // Fetch all data in parallel, but handle errors individually
-  const [questDetails, learningPath, progressData] = await Promise.all([
+  const [rawQuestDetails, learningPath, progressData] = await Promise.all([
     safeFetch(coreApiClient.get<QuestDetails>(`/api/quests/${questId}`)),
     safeFetch(coreApiClient.get<LearningPath>('/api/learning-paths/me')),
     safeFetch(coreApiClient.get<StepProgressItem[]>(`/api/user-progress/quests/${questId}`))
   ]);
+
+  // Normalize quest details to handle both camelCase and PascalCase activity properties
+  const questDetails = rawQuestDetails ? normalizeQuestDetails(rawQuestDetails) : null;
 
   // Convert array of step progress to Record<stepId, status>
   const stepStatuses: Record<string, 'NotStarted' | 'InProgress' | 'Completed'> = {};
