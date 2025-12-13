@@ -41,6 +41,12 @@ interface UnityMatch {
   totalPlayers: number
   questions: QuestionResult[]
   playerSummaries: PlayerSummary[]
+  xpRewards?: Array<{
+    skillId: string
+    skillName: string
+    pointsAwarded: number
+  }>
+  xpTotal?: number
 }
 
 const theme = {
@@ -73,7 +79,13 @@ export default async function StatsPage({
   const proto = hdrs.get('x-forwarded-proto') || defaultProto
   const origin = `${proto}://${host}`
 
-  const statsUrl = new URL('/api/quests/game/sessions/unity-matches', origin)
+  // Prefer explicit API base if provided; otherwise use the current origin (Next.js)
+  const apiBase =
+    process.env.NEXT_PUBLIC_USER_API_URL ||
+    process.env.USER_API_BASE ||
+    origin
+  console.log(`[StatsPage] Using API base: ${apiBase}`)
+  const statsUrl = new URL('/api/quests/game/sessions/unity-matches', apiBase)
   statsUrl.searchParams.set('limit', '10')
   if (user) statsUrl.searchParams.set('userId', user.id)
 
@@ -122,6 +134,7 @@ export default async function StatsPage({
   const questionsCount = (mostRecentMatch.questions && mostRecentMatch.questions.length > 0)
     ? mostRecentMatch.questions.length
     : topics.length
+  const xpTotal = mostRecentMatch.xpTotal ?? mostRecentMatch.xpRewards?.reduce((sum, r) => sum + (r.pointsAwarded || 0), 0) ?? 0
 
   return (
     <div style={{
@@ -143,9 +156,24 @@ export default async function StatsPage({
             border: '1px solid rgba(255,255,255,0.06)',
             boxShadow: '0 10px 30px rgba(0,0,0,0.25)',
             color: theme.muted,
-            fontSize: 13
+            fontSize: 13,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 12
           }}>
-            Last updated: {new Date(mostRecentMatch.endUtc).toLocaleString()}
+            <span>Last updated: {new Date(mostRecentMatch.endUtc).toLocaleString()}</span>
+            {xpTotal > 0 && (
+              <span style={{
+                padding: '6px 10px',
+                borderRadius: 8,
+                background: '#14351d',
+                color: '#7ef29d',
+                border: '1px solid rgba(126,242,157,0.25)',
+                fontWeight: 700
+              }}>
+                +{xpTotal} XP
+              </span>
+            )}
           </div>
         </header>
 
@@ -236,6 +264,19 @@ export default async function StatsPage({
                 </div>
               ))}
             </div>
+
+            {mostRecentMatch.xpRewards && mostRecentMatch.xpRewards.length > 0 && (
+              <div style={{ marginTop: 14, padding: 12, borderRadius: 10, background: 'rgba(20,53,29,0.55)', border: '1px solid rgba(126,242,157,0.25)' }}>
+                <div style={{ color: '#7ef29d', fontWeight: 700, marginBottom: 6 }}>XP Earned</div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                  {mostRecentMatch.xpRewards.map((r, idx) => (
+                    <div key={`${r.skillId}-${idx}`} style={{ padding: '6px 10px', borderRadius: 8, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', color: '#e6fff0', fontSize: 12 }}>
+                      {r.skillName}: +{r.pointsAwarded} XP
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
           <div style={{

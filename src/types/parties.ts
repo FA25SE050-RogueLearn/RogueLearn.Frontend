@@ -52,6 +52,8 @@ export interface PartyInvitationDto {
   inviteeId: string;
   status: InvitationStatus;
   message?: string | null;
+  joinLink?: string | null;
+  gameSessionId?: string | null;
   invitedAt: string; // ISO timestamp
   respondedAt?: string | null; // ISO timestamp
   expiresAt: string; // ISO timestamp
@@ -86,6 +88,8 @@ export interface InviteMemberRequest {
   targets: InviteTarget[];
   message?: string | null;
   expiresAt?: string | null; // ISO timestamp
+  joinLink?: string | null;
+  gameSessionId?: string | null;
 }
 
 /** Payload to add a shared resource to the party stash. */

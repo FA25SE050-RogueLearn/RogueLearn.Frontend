@@ -6,7 +6,7 @@ import { PartyDto, PartyInvitationDto, PartyMemberDto } from "@/types/parties";
 import partiesApi from "@/api/partiesApi";
 import { getMyContext } from "@/api/usersApi";
 import { toast } from "sonner";
-import { Users, Plus, LayoutGrid, Compass, Archive, Bell, ChevronRight, HelpCircle } from "lucide-react";
+import { Users, Plus, LayoutGrid, Compass, Archive, Bell, ChevronRight, HelpCircle, ExternalLink } from "lucide-react";
 
 export default function PartyManagementClient() {
   const [showWizard, setShowWizard] = useState(false);
@@ -100,6 +100,9 @@ export default function PartyManagementClient() {
     try {
       await partiesApi.acceptInvitation(inv.partyId, inv.id, { partyId: inv.partyId, invitationId: inv.id, authUserId });
       toast.success("Invitation accepted");
+      if (inv.joinLink) {
+        window.open(inv.joinLink, "_blank");
+      }
       const [resInv, resMine] = await Promise.all([
         partiesApi.getMyPendingInvitations(),
         partiesApi.getMine(),
@@ -232,6 +235,21 @@ export default function PartyManagementClient() {
                 <div key={inv.id} className="rounded-lg border border-white/10 bg-black/30 p-3">
                   <div className="text-xs text-white mb-1 truncate">{inv.partyName || partyNameById[inv.partyId] || "Party"}</div>
                   <div className="text-[10px] text-white/40 mb-2">Expires {new Date(inv.expiresAt).toLocaleDateString()}</div>
+                  {inv.message && <div className="mb-2 text-[10px] text-white/60 line-clamp-2">{inv.message}</div>}
+                  {inv.joinLink && (
+                    <button
+                      onClick={() => window.open(inv.joinLink!, "_blank")}
+                      className="mb-2 flex items-center gap-1 rounded bg-[#f5c16c]/15 px-2 py-1 text-[10px] text-[#f5c16c] hover:bg-[#f5c16c]/25"
+                    >
+                      <ExternalLink className="h-3 w-3" />
+                      Open game link
+                    </button>
+                  )}
+                  {inv.gameSessionId && (
+                    <div className="mb-2 text-[10px] text-white/40">
+                      Session: <span className="text-white/70">{inv.gameSessionId}</span>
+                    </div>
+                  )}
                   <div className="flex gap-1.5">
                     <button onClick={() => handleAcceptInvite(inv)} className="flex-1 rounded bg-emerald-600/80 px-2 py-1 text-[10px] font-medium text-white hover:bg-emerald-600">Accept</button>
                     <button onClick={() => handleDeclineInvite(inv)} className="flex-1 rounded bg-rose-600/80 px-2 py-1 text-[10px] font-medium text-white hover:bg-rose-600">Decline</button>
@@ -312,3 +330,4 @@ export default function PartyManagementClient() {
     </div>
   );
 }
+

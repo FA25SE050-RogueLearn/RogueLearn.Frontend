@@ -157,6 +157,18 @@ const partiesApi = {
         data: res.data,
       })),
 
+  /** POST /api/parties/{partyId}/game-invite - Send a game invite to party members (non-leader allowed) */
+  inviteToGame: (
+    partyId: string,
+    payload: InviteMemberRequest
+  ): Promise<ApiResponse<PartyInvitationDto>> =>
+    axiosClient
+      .post<PartyInvitationDto>(`/api/parties/${partyId}/game-invite`, payload)
+      .then((res) => ({
+        isSuccess: true,
+        data: res.data,
+      })),
+
 
   /** PUT /api/parties/{partyId}/stash/{stashItemId} - Update a stash item (Party Leader only) */
   updateResource: (
