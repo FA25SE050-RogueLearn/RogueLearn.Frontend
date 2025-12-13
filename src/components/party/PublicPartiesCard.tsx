@@ -1,6 +1,7 @@
 "use client";
 import React, { useEffect, useMemo, useState } from "react";
 import partiesApi from "@/api/partiesApi";
+import { getMyContext } from "@/api/usersApi";
 import { PartyDto, PartyMemberDto } from "@/types/parties";
 import { toast } from "sonner";
 
@@ -18,6 +19,7 @@ export default function PublicPartiesCard({ onJoinedNavigate = true }: PublicPar
   const [sortBy, setSortBy] = useState<"members" | "newest" | "name">("members");
   const [page, setPage] = useState(1);
   const pageSize = 10;
+  const [authUserId, setAuthUserId] = useState<string | null>(null);
 
   useEffect(() => {
     let mounted = true;
@@ -33,6 +35,21 @@ export default function PublicPartiesCard({ onJoinedNavigate = true }: PublicPar
       } finally {
         if (!mounted) return;
         setLoadingPublic(false);
+      }
+    })();
+    return () => { mounted = false; };
+  }, []);
+
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const me = await getMyContext();
+        if (!mounted) return;
+        setAuthUserId(me.data?.authUserId ?? null);
+      } catch {
+        if (!mounted) return;
+        setAuthUserId(null);
       }
     })();
     return () => { mounted = false; };
@@ -142,39 +159,49 @@ export default function PublicPartiesCard({ onJoinedNavigate = true }: PublicPar
       </div>
 
       {/* Party List */}
-      {filtered.length === 0 ? (
+      {loadingPublic ? (
+        <div className="flex items-center justify-center py-24">
+          <div className="h-6 w-6 animate-spin rounded-full border-2 border-white/30 border-t-[#f5c16c]" />
+        </div>
+      ) : filtered.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-16 text-center">
           <div className="text-sm text-white/40">No public parties available right now.</div>
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-3 lg:grid-cols-2 xl:grid-cols-3">
-          {paged.map((p) => (
-            <div key={p.id} className="group rounded-xl border border-white/10 bg-black/30 p-4 transition-all hover:border-[#f5c16c]/30 hover:bg-black/40">
-              <div className="flex items-start justify-between">
-                <button className="flex-1 text-left" onClick={() => (window.location.href = `/parties/${p.id}`)}>
-                  <div className="text-sm font-medium text-white group-hover:text-[#f5c16c]">{p.name}</div>
-                  {p.description && (
-                    <div className="mt-1 line-clamp-2 text-xs text-white/50">{p.description}</div>
-                  )}
-                </button>
-                <div className="ml-3 flex items-center gap-1.5">
-                  <button
-                    onClick={() => handleJoin(p.id)}
-                    disabled={joinBusyId === p.id}
-                    className="rounded-lg bg-gradient-to-r from-[#f5c16c] to-[#d4a855] px-3 py-1.5 text-xs font-medium text-black disabled:opacity-50"
-                  >
-                    {joinBusyId === p.id ? "..." : "Join"}
+          {paged.map((p) => {
+            const isJoined = !!authUserId && (partyMembers[p.id]?.some(m => m.authUserId === authUserId && m.status === "Active") ?? false);
+            return (
+              <div key={p.id} className="group rounded-xl border border-white/10 bg-black/30 p-4 transition-all hover:border-[#f5c16c]/30 hover:bg-black/40">
+                <div className="flex items-start justify-between">
+                  <button className="flex-1 text-left" onClick={() => (window.location.href = `/parties/${p.id}`)}>
+                    <div className="text-sm font-medium text-white group-hover:text-[#f5c16c]">{p.name}</div>
+                    {p.description && (
+                      <div className="mt-1 line-clamp-2 text-xs text-white/50">{p.description}</div>
+                    )}
                   </button>
+                  <div className="ml-3 flex items-center gap-1.5">
+                    {!isJoined && (
+                      <button
+                        onClick={() => handleJoin(p.id)}
+                        disabled={joinBusyId === p.id}
+                        className="rounded-lg bg-gradient-to-r from-[#f5c16c] to-[#d4a855] px-3 py-1.5 text-xs font-medium text-black disabled:opacity-50"
+                      >
+                        {joinBusyId === p.id ? "..." : "Join"}
+                      </button>
+                    )}
+                  </div>
+                </div>
+                {renderMemberSlots(p)}
+                <div className="mt-2 flex items-center gap-3 text-[11px] text-white/40">
+                  <span className="rounded-full border border-[#f5c16c]/20 bg-[#f5c16c]/10 px-2 py-0.5 text-[#f5c16c]">{p.partyType}</span>
+                  <span>{partyMembers[p.id]?.length ?? (fetchingMembers[p.id] ? "..." : 0)}/{p.maxMembers} members</span>
+                  <span>{new Date(p.createdAt).toLocaleDateString()}</span>
+                  {isJoined && <span className="rounded-full border border-emerald-400/20 bg-emerald-500/10 px-2 py-0.5 text-emerald-400">Joined</span>}
                 </div>
               </div>
-              {renderMemberSlots(p)}
-              <div className="mt-2 flex items-center gap-3 text-[11px] text-white/40">
-                <span className="rounded-full border border-[#f5c16c]/20 bg-[#f5c16c]/10 px-2 py-0.5 text-[#f5c16c]">{p.partyType}</span>
-                <span>{partyMembers[p.id]?.length ?? (fetchingMembers[p.id] ? "..." : 0)}/{p.maxMembers} members</span>
-                <span>{new Date(p.createdAt).toLocaleDateString()}</span>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 

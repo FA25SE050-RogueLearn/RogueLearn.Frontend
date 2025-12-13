@@ -7,6 +7,7 @@ import tagsApi from "@/api/tagsApi";
 import { NoteDto } from "@/types/notes";
 import { Tag } from "@/types/tags";
 import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
@@ -395,6 +396,8 @@ export default function NotesTab() {
 
   // Upload to create note with AI tags
   const [uploading, setUploading] = useState(false);
+  const [creatingNote, setCreatingNote] = useState(false);
+  const [autoApplyAiTags, setAutoApplyAiTags] = useState(true);
   const fileInputId = "notes-upload-input";
   const onClickUpload = () => {
     const el = document.getElementById(fileInputId) as HTMLInputElement | null;
@@ -418,7 +421,7 @@ export default function NotesTab() {
     }
     setUploading(true);
     try {
-      const res = await notesApi.createWithAiTagsFromUpload({ authUserId, fileContent: file, fileName: file.name, contentType: file.type, applySuggestions: true, maxTags: 3 });
+      const res = await notesApi.createWithAiTagsFromUpload({ authUserId, fileContent: file, fileName: file.name, contentType: file.type, applySuggestions: autoApplyAiTags, maxTags: 3 });
       if (res.isSuccess) {
         toast.success("Created note from upload");
         await fetchNotes();
@@ -456,6 +459,7 @@ export default function NotesTab() {
       return;
     }
     try {
+      setCreatingNote(true);
       // Initialize with a valid BlockNote document (single empty paragraph)
       const initialDoc = [
         { type: "paragraph", content: [{ type: "text", text: "", styles: {} }] },
@@ -471,6 +475,9 @@ export default function NotesTab() {
         await fetchNotes();
       }
     } catch (e) {}
+    finally {
+      setCreatingNote(false);
+    }
   };
 
   const openEditNote = async (id: string) => {
@@ -571,7 +578,7 @@ export default function NotesTab() {
           toast.error(`File exceeds 5 MB: ${file.name}`);
           continue;
         }
-        const res = await notesApi.createWithAiTagsFromUpload({ authUserId, fileContent: file, fileName: file.name, contentType: file.type, applySuggestions: true, maxTags: 8 });
+        const res = await notesApi.createWithAiTagsFromUpload({ authUserId, fileContent: file, fileName: file.name, contentType: file.type, applySuggestions: autoApplyAiTags, maxTags: 8 });
         if (res.isSuccess) {
           toast.success(`Created note from ${file.name}`);
         }
@@ -618,9 +625,9 @@ export default function NotesTab() {
                 <Plus className="mr-1 h-3 w-3" />
                 Tag
               </Button>
-              <Button size="sm" variant="secondary" onClick={openNewNote} className="h-7 px-2">
-                <Plus className="mr-1 h-3 w-3" />
-                Note
+              <Button size="sm" variant="secondary" onClick={openNewNote} className="h-7 px-2" disabled={creatingNote}>
+                {creatingNote ? "Creating..." : (<><Plus className="mr-1 h-3 w-3" />
+                Note</>)}
               </Button>
             </div>
           </div>
@@ -635,8 +642,8 @@ export default function NotesTab() {
             </div>
           </div>
           <div className="space-y-2">
-            <Button onClick={openNewNote} className="w-full bg-linear-to-r from-[#f5c16c] to-[#d4a855] text-black">
-              <Plus className="mr-2 h-4 w-4" /> New Note
+            <Button onClick={openNewNote} disabled={creatingNote} className="w-full bg-linear-to-r from-[#f5c16c] to-[#d4a855] text-black">
+              {creatingNote ? "Creating..." : (<><Plus className="mr-2 h-4 w-4" /> New Note</>)}
             </Button>
             <div className="rounded-md border border-white/10 px-3 py-2 text-xs text-foreground/60" onDragOver={(e) => e.preventDefault()} onDrop={(e) => dropToUntagged(e)}>Drop note to remove all tags</div>
           </div>
@@ -656,7 +663,38 @@ export default function NotesTab() {
           <div className="p-16 text-center">
             <div className="mx-auto mb-4 h-12 w-12 rounded-full border border-[#f5c16c]/30 bg-[#f5c16c]/10" />
             <p className="mb-3 text-sm text-foreground/70">No scrolls found in this archive.</p>
-            <Button onClick={openNewNote}><Plus className="mr-2 h-4 w-4" /> Create your first note</Button>
+            <Button onClick={openNewNote} disabled={creatingNote}>{creatingNote ? "Creating..." : (<><Plus className="mr-2 h-4 w-4" /> Create your first note</>)}</Button>
+            <div className="mt-6">
+              <div
+                className="rounded-2xl border border-dashed border-[#f5c16c]/40 bg-[#0c0508]/60 p-6"
+                onDragOver={(e) => e.preventDefault()}
+                onDrop={handleDropFiles}
+              >
+                <div className="flex items-start justify-between gap-4">
+                  <div className="flex items-start gap-3">
+                    <div className="mt-1 rounded-lg bg-[#f5c16c]/10 p-2">
+                      <FilePlus className="h-5 w-5 text-[#f5c16c]" />
+                    </div>
+                    <div>
+                      <div className="text-sm font-medium text-white">Create notes from files</div>
+                      <div className="mt-1 text-xs text-foreground/70">Drag and drop documents to automatically create notes and apply AI-suggested tags.</div>
+                      <div className="mt-1 text-xs text-foreground/60">Supported formats: .pdf, .doc, .docx, .ppt, .pptx</div>
+                      <div className="mt-1 text-xs text-foreground/60">Max size: 5 MB per file</div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-foreground/70">Auto apply AI tags</span>
+                      <Switch checked={autoApplyAiTags} onCheckedChange={setAutoApplyAiTags} />
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <input id={fileInputId} type="file" multiple accept=".pdf,.doc,.docx,.ppt,.pptx" className="hidden" onChange={onFileSelected} />
+                      <Button variant="secondary" onClick={onClickUpload} disabled={uploading}>{uploading ? "Processing..." : "Choose files"}</Button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         ) : (
           <div className="h-[80vh] overflow-y-auto p-4 pb-24">
@@ -685,9 +723,15 @@ export default function NotesTab() {
                     <div className="mt-1 text-xs text-foreground/60">Max size: 5 MB per file</div>
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <input id={fileInputId} type="file" multiple accept=".pdf,.doc,.docx,.ppt,.pptx" className="hidden" onChange={onFileSelected} />
-                  <Button variant="secondary" onClick={onClickUpload} disabled={uploading}>{uploading ? "Processing..." : "Choose files"}</Button>
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-foreground/70">Auto apply AI tags</span>
+                    <Switch checked={autoApplyAiTags} onCheckedChange={setAutoApplyAiTags} />
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <input id={fileInputId} type="file" multiple accept=".pdf,.doc,.docx,.ppt,.pptx" className="hidden" onChange={onFileSelected} />
+                    <Button variant="secondary" onClick={onClickUpload} disabled={uploading}>{uploading ? "Processing..." : "Choose files"}</Button>
+                  </div>
                 </div>
               </div>
             </div>
