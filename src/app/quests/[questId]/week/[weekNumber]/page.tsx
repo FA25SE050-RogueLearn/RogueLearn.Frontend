@@ -56,7 +56,7 @@ export default async function WeekLearningPage({ params }: PageProps) {
         }
     }
 
-    const weeklyStep = questDetails?.steps?.find(step => step.stepNumber === weekNum);
+    const weeklyStep = questDetails?.steps?.find((step: { stepNumber: number; }) => step.stepNumber === weekNum);
 
     if (!questDetails) {
         return (

@@ -129,13 +129,23 @@ export default function GuildDirectoryPage() {
     };
   }, [guilds]);
 
-  const pageCount = useMemo(() => Math.max(1, Math.ceil((guilds.length || 0) / pageSize)), [guilds.length]);
+  const filteredGuilds = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return guilds;
+    return guilds.filter((g) => {
+      const name = (g.name ?? '').toLowerCase();
+      const desc = (g.description ?? '').toLowerCase();
+      return name.includes(q) || desc.includes(q);
+    });
+  }, [guilds, search]);
+
+  const pageCount = useMemo(() => Math.max(1, Math.ceil((filteredGuilds.length || 0) / pageSize)), [filteredGuilds.length]);
   const safePage = useMemo(() => Math.min(Math.max(1, page), pageCount), [page, pageCount]);
   const pagedGuilds = useMemo(() => {
     const start = (safePage - 1) * pageSize;
     const end = start + pageSize;
-    return guilds.slice(start, end);
-  }, [guilds, safePage]);
+    return filteredGuilds.slice(start, end);
+  }, [filteredGuilds, safePage]);
 
   return (
     <div className="relative flex min-h-screen flex-col overflow-hidden">
@@ -346,7 +356,7 @@ export default function GuildDirectoryPage() {
                   </Card>
                 )}
 
-                {!loading && !error && guilds.length === 0 && (
+                {!loading && !error && filteredGuilds.length === 0 && (
                   <Card className={GUILD_CARD_CLASS}>
                     <CardContent className="py-16 text-center">
                       <Shield className="mx-auto mb-4 h-16 w-16 text-foreground/30" />
@@ -358,7 +368,7 @@ export default function GuildDirectoryPage() {
                   </Card>
                 )}
 
-                {!loading && !error && guilds.length > 0 && (
+                {!loading && !error && filteredGuilds.length > 0 && (
                   <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
                     {pagedGuilds.map((guild) => (
                       <Card key={guild.id} className={GUILD_CARD_CLASS}>
@@ -453,10 +463,10 @@ export default function GuildDirectoryPage() {
                     ))}
                   </div>
                 )}
-                {!loading && !error && guilds.length > 0 && (
+                {!loading && !error && filteredGuilds.length > 0 && (
                   <div className="mt-2 flex items-center justify-between">
                     <div className="text-xs text-white/70">
-                      <span>Showing {(safePage - 1) * pageSize + 1}–{Math.min(guilds.length, safePage * pageSize)} of {guilds.length}</span>
+                      <span>Showing {(safePage - 1) * pageSize + 1}–{Math.min(filteredGuilds.length, safePage * pageSize)} of {filteredGuilds.length}</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <Button variant="outline" size="sm" onClick={() => setPage(p => Math.max(1, p - 1))} disabled={safePage === 1} className={`border-[#f5c16c]/30 ${safePage===1?'text-[#f5c16c]/50':'text-[#f5c16c]'}`}>Prev</Button>

@@ -13,6 +13,9 @@
 /.next/
 /out/
 
+# reports
+/report
+
 # production
 /build
 

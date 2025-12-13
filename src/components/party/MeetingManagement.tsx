@@ -114,6 +114,10 @@ export default function MeetingManagement({ partyId, variant = "full", showList 
     if (page > totalPages) setPage(1);
   }, [page, totalPages]);
 
+  // When a meeting transitions to EndedProcessing, the first details fetch might be empty.
+  // Avoid setTimeout: rely on user-driven retry and expand-triggered fetch.
+  // We intentionally do not auto-retry here to prevent unnecessary polling.
+
   function isUnauthorized(err: any): boolean {
     const msg = typeof err?.message === "string" ? err.message : "";
     return (err?.status === 401) || (err?.response?.status === 401) || /\b401\b/.test(msg);
@@ -604,13 +608,18 @@ export default function MeetingManagement({ partyId, variant = "full", showList 
   }
 
 
-  async function loadDetailsIfNeeded(meetingId: string) {
+  async function loadDetailsIfNeeded(meetingId: string, force = false) {
     if (!meetingId) return;
-    if (detailsById[meetingId] || detailsLoading[meetingId]) return;
+    if (!force) {
+      const existing = detailsById[meetingId] ?? null;
+      if (existing && (existing.participants?.length ?? 0) > 0) return;
+      if (detailsLoading[meetingId]) return;
+    }
     setDetailsLoading((prev) => ({ ...prev, [meetingId]: true }));
     try {
       const res = await meetingsApi.getMeetingDetails(meetingId);
-      setDetailsById((prev) => ({ ...prev, [meetingId]: res.data ?? null }));
+      const next = res.data ?? null;
+      setDetailsById((prev) => ({ ...prev, [meetingId]: next }));
     } catch (e: any) {
       setDetailsById((prev) => ({ ...prev, [meetingId]: null }));
     } finally {
@@ -888,8 +897,17 @@ export default function MeetingManagement({ partyId, variant = "full", showList 
                           Loading details…
                         </div>
                       ) : !details ? (
-                        <div className="text-[11px] text-white/60">
-                          No details available.
+                        <div className="space-y-2">
+                          <div className="text-[11px] text-white/60">No details available.</div>
+                          {m.meetingId && (
+                            <button
+                              onClick={() => loadDetailsIfNeeded(m.meetingId!, true)}
+                              disabled={!!detailsLoading[m.meetingId!]}
+                              className="rounded border border-white/20 bg-transparent px-3 py-1.5 text-[11px] text-white hover:bg-white/10 disabled:opacity-50"
+                            >
+                              {detailsLoading[m.meetingId!] ? "Retrying…" : "Retry fetching details"}
+                            </button>
+                          )}
                         </div>
                       ) : (
                         <div className="space-y-2">
@@ -899,6 +917,18 @@ export default function MeetingManagement({ partyId, variant = "full", showList 
                           <div className="text-xs text-white/70">
                             Participants ({(details.participants?.filter((p) => (p.roleInMeeting ?? "").toLowerCase() !== "organizer").length) ?? 0})
                           </div>
+                          {((details.participants?.length ?? 0) === 0) && m.meetingId && (
+                            <div className="flex items-center gap-2 text-[11px] text-white/60">
+                              <span>Participants not available yet.</span>
+                              <button
+                                onClick={() => loadDetailsIfNeeded(m.meetingId!, true)}
+                                disabled={!!detailsLoading[m.meetingId!]}
+                                className="rounded border border-white/20 bg-transparent px-2 py-1 text-[11px] text-white hover:bg-white/10 disabled:opacity-50"
+                              >
+                                {detailsLoading[m.meetingId!] ? "Retrying…" : "Retry"}
+                              </button>
+                            </div>
+                          )}
                           <ul className="grid grid-cols-1 gap-2 md:grid-cols-2">
                             {details.participants?.filter((p) => (p.roleInMeeting ?? "").toLowerCase() !== "organizer").map((p, idx) => (
                               <li
