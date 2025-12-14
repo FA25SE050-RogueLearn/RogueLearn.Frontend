@@ -85,10 +85,19 @@ export default async function StatsPage({
     process.env.USER_API_BASE ||
     origin
   console.log(`[StatsPage] Using API base: ${apiBase}`)
-  const statsUrl = new URL('/api/quests/game/sessions/unity-matches', apiBase)
-  statsUrl.searchParams.set('limit', '10')
-  if (user) statsUrl.searchParams.set('userId', user.id)
 
+  const buildStatsUrl = (base: string, pathPrefix: string = '') => {
+    // Ensure base doesn't end with slash and path doesn't start with slash to avoid double slashes if we were concatenating strings,
+    // but URL constructor handles this well. 
+    // However, if we want to inject /user-service, we need to be careful.
+
+    const url = new URL(`${pathPrefix}/api/quests/game/sessions/unity-matches`.replace('//', '/'), base)
+    url.searchParams.set('limit', '10')
+    if (user) url.searchParams.set('userId', user.id)
+    return url
+  }
+
+  let statsUrl = buildStatsUrl(apiBase)
   console.log(`[StatsPage] Fetching stats from: ${statsUrl.toString()}`)
 
   let ok = false
@@ -96,8 +105,18 @@ export default async function StatsPage({
   let errorMessage = ''
 
   try {
-    const res = await fetch(statsUrl.toString(), { cache: 'no-store' })
+    let res = await fetch(statsUrl.toString(), { cache: 'no-store' })
     console.log(`[StatsPage] Fetch status: ${res.status}`)
+
+    // Fallback: If 404 and we haven't tried user-service prefix yet, try it.
+    if (res.status === 404 && !statsUrl.toString().includes('/user-service')) {
+      console.log('[StatsPage] 404 received. Retrying with /user-service prefix...')
+      statsUrl = buildStatsUrl(apiBase, '/user-service')
+      console.log(`[StatsPage] Retry URL: ${statsUrl.toString()}`)
+      res = await fetch(statsUrl.toString(), { cache: 'no-store' })
+      console.log(`[StatsPage] Retry status: ${res.status}`)
+    }
+
     ok = res.ok
     if (ok) {
       data = await res.json()
