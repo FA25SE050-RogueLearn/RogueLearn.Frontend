@@ -1,6 +1,6 @@
 "use client"
 
-import { ReactNode } from "react"
+import { ReactNode, useMemo } from "react"
 import { cn } from "@/lib/utils"
 import { SidebarNav } from "@/components/layout/SidebarNav"
 import { useUserFullInfo } from "@/hooks/queries/useUserData"
@@ -12,7 +12,20 @@ interface DashboardFrameProps {
 
 export function DashboardFrame({ children, className }: DashboardFrameProps) {
   const { data: fullInfo } = useUserFullInfo();
-  const userProfile = fullInfo?.profile;
+  
+  // Extract roles from relations.userRoles and combine with profile data
+  const userProfile = useMemo(() => {
+    if (!fullInfo?.profile) return undefined;
+    
+    const roles = fullInfo.relations?.userRoles
+      ?.map(r => r.roleName)
+      .filter((name): name is string => !!name) ?? [];
+    
+    return {
+      ...fullInfo.profile,
+      roles,
+    };
+  }, [fullInfo]);
 
   return (
     <>

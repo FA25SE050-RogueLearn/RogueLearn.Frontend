@@ -89,15 +89,27 @@ export default async function StatsPage({
   statsUrl.searchParams.set('limit', '10')
   if (user) statsUrl.searchParams.set('userId', user.id)
 
+  console.log(`[StatsPage] Fetching stats from: ${statsUrl.toString()}`)
+
   let ok = false
   let data: { matches: UnityMatch[] } = { matches: [] }
+  let errorMessage = ''
 
   try {
     const res = await fetch(statsUrl.toString(), { cache: 'no-store' })
+    console.log(`[StatsPage] Fetch status: ${res.status}`)
     ok = res.ok
-    data = await res.json()
+    if (ok) {
+      data = await res.json()
+      console.log(`[StatsPage] Fetched ${data.matches?.length || 0} matches`)
+    } else {
+      const text = await res.text()
+      errorMessage = `Status: ${res.status} - ${text.slice(0, 500)}`
+      console.error(`[StatsPage] Fetch failed: ${errorMessage}`)
+    }
   } catch (e: any) {
-    console.error('Failed to fetch stats:', e)
+    errorMessage = e?.message || String(e)
+    console.error('[StatsPage] Exception fetching stats:', e)
   }
 
   if (!ok || !data.matches || data.matches.length === 0) {
@@ -118,7 +130,14 @@ export default async function StatsPage({
             color: theme.muted
           }}>
             {!ok ? (
-              <p>Failed to load match data. Make sure the backend is running and RESULTS_LOG_ROOT is configured.</p>
+              <div>
+                <p>Failed to load match data. Make sure the backend is running and RESULTS_LOG_ROOT is configured.</p>
+                <div style={{ marginTop: 12, padding: 12, background: 'rgba(0,0,0,0.3)', borderRadius: 8, fontFamily: 'monospace', fontSize: 13, color: '#f87171' }}>
+                  <strong>Debug Info:</strong><br />
+                  URL: {statsUrl.toString()}<br />
+                  Error: {errorMessage}
+                </div>
+              </div>
             ) : (
               <p>No matches found yet. Play a game to see your stats here!</p>
             )}
