@@ -1,13 +1,15 @@
 // roguelearn-web/src/components/features/character-creation/SelectClassStep.tsx
 import { useState } from "react";
 import { CareerClass } from "@/types/onboarding";
-import { SpecializationSubjectEntry } from "@/types/admin-management";
+// Updated import to use student DTO (StudentSubjectDto maps to SpecializationSubjectEntry structurally for UI)
+import { StudentSubjectDto } from "@/types/student-curriculum";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { ArrowRight, BookOpen, Loader2, GraduationCap } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import adminManagementApi from "@/api/adminManagementApi";
+// Updated import to use student API
+import studentCurriculumApi from "@/api/studentCurriculumApi";
 import { toast } from "sonner";
 
 interface SelectClassStepProps {
@@ -31,7 +33,8 @@ const classTags: Record<string, string[]> = {
  */
 export function SelectClassStep({ classes, selectedClass, onSelectClass, onNext, onBack }: SelectClassStepProps) {
     const [subjectsClass, setSubjectsClass] = useState<CareerClass | null>(null);
-    const [subjects, setSubjects] = useState<SpecializationSubjectEntry[]>([]);
+    // Updated state type
+    const [subjects, setSubjects] = useState<StudentSubjectDto[]>([]);
     const [loadingSubjects, setLoadingSubjects] = useState(false);
 
     const handleViewSubjects = async (cls: CareerClass) => {
@@ -39,7 +42,8 @@ export function SelectClassStep({ classes, selectedClass, onSelectClass, onNext,
         setLoadingSubjects(true);
         setSubjects([]);
         try {
-            const res = await adminManagementApi.getClassSpecialization(cls.id);
+            // Updated API call to use student endpoint
+            const res = await studentCurriculumApi.getClassSubjects(cls.id);
             if (res.isSuccess && res.data) {
                 setSubjects(res.data);
             } else {
@@ -176,21 +180,17 @@ export function SelectClassStep({ classes, selectedClass, onSelectClass, onNext,
                                                     <div className="flex-1 min-w-0">
                                                         <div className="flex items-center flex-wrap gap-2 mb-1.5">
                                                             <span className="px-2.5 py-1 bg-amber-500/15 text-amber-300 text-xs font-bold rounded">
-                                                                {subject.subjectCode || subject.placeholderSubjectCode || 'TBD'}
+                                                                {subject.subjectCode}
                                                             </span>
-                                                            {subject.semester > 0 && (
+                                                            {subject.semester && subject.semester > 0 && (
                                                                 <span className="px-2 py-0.5 bg-white/10 text-foreground/60 text-xs rounded">
                                                                     Semester {subject.semester}
                                                                 </span>
                                                             )}
-                                                            {subject.isRequired && (
-                                                                <span className="px-2 py-0.5 bg-red-500/15 text-red-400 text-xs rounded">
-                                                                    Required
-                                                                </span>
-                                                            )}
+                                                            {/* Note: 'isRequired' isn't on StudentSubjectDto, so removed */}
                                                         </div>
                                                         <h4 className="text-sm md:text-base font-medium text-white leading-snug">
-                                                            {subject.subjectName || subject.placeholderSubjectCode || 'Subject Pending'}
+                                                            {subject.subjectName}
                                                         </h4>
                                                     </div>
                                                 </div>

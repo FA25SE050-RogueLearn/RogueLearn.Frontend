@@ -1,3 +1,4 @@
+// roguelearn-web/src/components/features/character-creation/RouteSelectionStep.tsx
 'use client';
 
 import React, { useRef, useState } from 'react';
@@ -7,8 +8,10 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
 import { AcademicRoute } from '@/types/onboarding';
-import { Subject } from '@/types/subjects';
-import curriculumProgramsApi from '@/api/curriculumProgramsApi';
+// Updated import to use student DTO
+import { StudentSubjectDto } from '@/types/student-curriculum';
+// Updated import to use student API
+import studentCurriculumApi from '@/api/studentCurriculumApi';
 import { toast } from 'sonner';
 
 interface RouteSelectionStepProps {
@@ -30,7 +33,8 @@ export function RouteSelectionStep({
     const [hoveredId, setHoveredId] = useState<string | null>(null);
     const [expandedRoute, setExpandedRoute] = useState<AcademicRoute | null>(null);
     const [subjectsRoute, setSubjectsRoute] = useState<AcademicRoute | null>(null);
-    const [subjects, setSubjects] = useState<Subject[]>([]);
+    // Updated state type
+    const [subjects, setSubjects] = useState<StudentSubjectDto[]>([]);
     const [loadingSubjects, setLoadingSubjects] = useState(false);
 
     const scroll = (direction: 'left' | 'right') => {
@@ -54,7 +58,8 @@ export function RouteSelectionStep({
         setLoadingSubjects(true);
         setSubjects([]);
         try {
-            const res = await curriculumProgramsApi.getProgramSubjects(route.id);
+            // Updated API call to use student endpoint
+            const res = await studentCurriculumApi.getProgramSubjects(route.id);
             if (res.isSuccess && res.data) {
                 setSubjects(res.data);
             } else {
