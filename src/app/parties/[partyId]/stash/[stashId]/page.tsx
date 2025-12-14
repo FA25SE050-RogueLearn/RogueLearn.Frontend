@@ -161,8 +161,8 @@ export default function PartyStashDetailPage() {
         setCursorColor(nameToColor(String(dn)));
         if (!mounted || !authId) {
           setCanEdit(false);
-          setAccessDenied(true);
-          setMembershipChecked(true);
+          setAccessDenied(false);
+          setMembershipChecked(false);
           return;
         }
         // Check if user is a member of the party
