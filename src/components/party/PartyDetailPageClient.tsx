@@ -167,11 +167,6 @@ export default function PartyDetailPageClient({ partyId }: { partyId: string }) 
 
   const handleLeaveParty = async () => {
     if (!party) return;
-    if (role === "Leader") {
-      setError("Leader must transfer leadership before leaving");
-      setShowLeaveConfirm(false);
-      return;
-    }
     setIsLeaving(true);
     try {
       await partiesApi.leave(party.id, { partyId: party.id, authUserId: authUserId! });
