@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/utils/supabase/client'
-import { Swords, Flame, Trophy, Settings, Play, Copy, Users } from 'lucide-react'
+import { Swords, Flame, Trophy, Settings, Play, Copy, Users, ArrowLeft } from 'lucide-react'
 import UnityPlayer from '@/components/unity/UnityPlayer'
 
 interface Subject {
@@ -229,7 +229,32 @@ export default function BossFightSetupPage() {
   // Show initial choice screen
   if (mode === 'choice') {
     return (
-      <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #0a0508 0%, #1a0b10 50%, #0a0508 100%)', padding: 32, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #0a0508 0%, #1a0b10 50%, #0a0508 100%)', padding: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
+        {/* Back Button */}
+        <button
+          onClick={() => router.push('/dashboard')}
+          style={{
+            position: 'absolute',
+            top: 32,
+            left: 32,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+            padding: '12px 20px',
+            background: 'rgba(245, 193, 108, 0.1)',
+            border: '2px solid rgba(245, 193, 108, 0.3)',
+            borderRadius: 12,
+            color: '#f5c16c',
+            cursor: 'pointer',
+            fontSize: 16,
+            fontWeight: 600,
+            transition: 'all 0.2s'
+          }}
+        >
+          <ArrowLeft style={{ width: 20, height: 20 }} />
+          Back
+        </button>
+
         <div style={{ maxWidth: 800, width: '100%' }}>
           <div style={{
             textAlign: 'center',
