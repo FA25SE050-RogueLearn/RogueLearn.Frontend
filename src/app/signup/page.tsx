@@ -27,7 +27,7 @@ export default function SignupPage() {
     setIsLoading(true);
     const supabase = await createClient();
 
-    const { error } = await supabase.auth.signUp({
+    const { error, data } = await supabase.auth.signUp({
       email,
       password,
       options: {
@@ -41,9 +41,21 @@ export default function SignupPage() {
     });
 
     if (error) {
-      setError(error.message);
+      const msg = (error.message || '').toLowerCase();
+      const friendly = (msg.includes('already registered') || msg.includes('already exists')) ? 'Email is already registered' : error.message;
+      setError(friendly);
       setIsLoading(false);
-    } else {
+      return;
+    }
+
+    const identitiesLen = Array.isArray(data?.user?.identities) ? data!.user!.identities!.length : 0;
+    if (identitiesLen === 0) {
+      setError('Email is already registered');
+      setIsLoading(false);
+      return;
+    }
+
+    {
       setMessage('Registration successful! Please check your email to verify your account.');
       setIsLoading(false);
     }

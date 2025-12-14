@@ -22,9 +22,9 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import FeedbackModal from './FeedbackModal';
+import { usePageTransition } from '@/components/layout/PageTransition';
 
 interface QuestDetailViewProps {
   questDetails: QuestDetails;
@@ -76,7 +76,7 @@ export default function QuestDetailView({
   learningPathName,
   chapterName,
 }: QuestDetailViewProps) {
-  const router = useRouter();
+  const { navigateTo } = usePageTransition();
   const [feedbackOpen, setFeedbackOpen] = useState(false);
   const [feedbackStep, setFeedbackStep] = useState<{ id: string; stepNumber: number } | null>(null);
 
@@ -225,7 +225,7 @@ export default function QuestDetailView({
                       size="sm"
                       onClick={() => {
                         if (locked) return;
-                        router.push(`/quests/${questId}/week/${step.stepNumber}`);
+                        navigateTo(`/quests/${questId}/week/${step.stepNumber}`);
                       }}
                       className={cn(
                         'whitespace-nowrap shrink-0 h-16 px-6 rounded-lg font-semibold transition-all duration-300',

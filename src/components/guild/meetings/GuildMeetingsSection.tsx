@@ -69,6 +69,7 @@ export default function GuildMeetingsSection({ guildId }: Props) {
   const [members, setMembers] = useState<GuildMemberDto[]>([]);
   const [page, setPage] = useState<number>(1);
   const pageSize = 5;
+  const [search, setSearch] = useState<string>("");
 
   function isUnauthorized(err: any): boolean {
     const msg = typeof err?.message === "string" ? err.message : "";
@@ -131,16 +132,19 @@ export default function GuildMeetingsSection({ guildId }: Props) {
     return me?.role ?? null;
   }, [members, authUserId]);
 
+  const filteredMeetings = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return guildMeetings;
+    return guildMeetings.filter((m) => (m.title ?? "").toLowerCase().includes(q));
+  }, [guildMeetings, search]);
+
   const sortedMeetings = useMemo(() => {
-    return [...guildMeetings].sort((a, b) => {
-      const sa = (a.spaceName ?? '').toLowerCase();
-      const sb = (b.spaceName ?? '').toLowerCase();
-      if (sa && sb) return sa.localeCompare(sb);
-      if (sa) return -1;
-      if (sb) return 1;
-      return (a.title ?? '').toLowerCase().localeCompare((b.title ?? '').toLowerCase());
+    return [...filteredMeetings].sort((a, b) => {
+      const ta = new Date(a.actualStartTime || a.scheduledStartTime || 0).getTime();
+      const tb = new Date(b.actualStartTime || b.scheduledStartTime || 0).getTime();
+      return tb - ta;
     });
-  }, [guildMeetings]);
+  }, [filteredMeetings]);
   const pageCount = useMemo(() => Math.max(1, Math.ceil((sortedMeetings.length || 0) / pageSize)), [sortedMeetings.length]);
   const safePage = useMemo(() => Math.min(Math.max(1, page), pageCount), [page, pageCount]);
   const pagedMeetings = useMemo(() => {
@@ -654,9 +658,13 @@ export default function GuildMeetingsSection({ guildId }: Props) {
     }
   }
 
-  async function loadDetailsIfNeeded(meetingId: string) {
+  async function loadDetailsIfNeeded(meetingId: string, force = false) {
     if (!meetingId) return;
-    if (detailsById[meetingId] || detailsLoading[meetingId]) return;
+    if (!force) {
+      const existing = detailsById[meetingId] ?? null;
+      if (existing && (existing.participants?.length ?? 0) > 0) return;
+      if (detailsLoading[meetingId]) return;
+    }
     setDetailsLoading((prev) => ({ ...prev, [meetingId]: true }));
     try {
       const res = await meetingsApi.getMeetingDetails(meetingId);
@@ -795,6 +803,14 @@ export default function GuildMeetingsSection({ guildId }: Props) {
         <div className="mb-2 flex items-center justify-between">
           <h5 className="text-xs font-semibold">Meetings</h5>
           <div className="flex items-center gap-2">
+            <div className="relative">
+              <input
+                value={search}
+                onChange={(e) => { setPage(1); setSearch(e.target.value); }}
+                placeholder="Search meetings"
+                className="rounded border border-white/20 bg-transparent px-3 py-1.5 text-xs text-white placeholder-white/50 min-w-[200px]"
+              />
+            </div>
             {loadingMeetings && <span className="text-xs text-white/60">Loading...</span>}
             {needsAuth && (myRole === "GuildMaster") && (
               <button
@@ -806,7 +822,7 @@ export default function GuildMeetingsSection({ guildId }: Props) {
             )}
           </div>
         </div>
-        {guildMeetings.length === 0 ? (
+        {sortedMeetings.length === 0 ? (
           <div className="text-xs text-white/60">No meetings yet.</div>
         ) : (
           <Accordion type="single" collapsible value={expandedId} onValueChange={(val) => {
@@ -917,6 +933,18 @@ export default function GuildMeetingsSection({ guildId }: Props) {
                       <div className="space-y-2">
                         <div className="text-sm font-medium text-white">{details.meeting?.title}</div>
                         <div className="text-xs text-white/70">Participants ({(details.participants?.filter((p) => (p.roleInMeeting ?? "").toLowerCase() !== "organizer").length) ?? 0})</div>
+                        {((details.participants?.length ?? 0) === 0) && m.meetingId && (
+                          <div className="flex items-center gap-2 text-[11px] text-white/60">
+                            <span>Participants not available yet.</span>
+                            <button
+                              onClick={() => loadDetailsIfNeeded(m.meetingId!, true)}
+                              disabled={!!detailsLoading[m.meetingId!]}
+                              className="rounded border border-white/20 bg-transparent px-2 py-1 text-[11px] text-white hover:bg-white/10 disabled:opacity-50"
+                            >
+                              {detailsLoading[m.meetingId!] ? "Retrying…" : "Retry"}
+                            </button>
+                          </div>
+                        )}
                         <ul className="grid grid-cols-1 gap-2 md:grid-cols-2">
                           {details.participants?.filter((p) => (p.roleInMeeting ?? "").toLowerCase() !== "organizer").map((p, idx) => (
                             <li key={(p.userId ?? String(idx)) + (p.joinTime ?? "")} className="rounded border border-white/10 bg-white/5 p-2">
@@ -953,7 +981,18 @@ export default function GuildMeetingsSection({ guildId }: Props) {
                         </div>
                       </div>
                     ) : (
-                      <div className="text-xs text-white/60">No details available.</div>
+                      <div className="space-y-2">
+                        <div className="text-xs text-white/60">No details available.</div>
+                        {m.meetingId && (
+                          <button
+                            onClick={() => loadDetailsIfNeeded(m.meetingId!, true)}
+                            disabled={!!detailsLoading[m.meetingId!]}
+                            className="rounded border border-white/20 bg-transparent px-3 py-1.5 text-[11px] text-white hover:bg-white/10 disabled:opacity-50"
+                          >
+                            {detailsLoading[m.meetingId!] ? "Retrying…" : "Retry fetching details"}
+                          </button>
+                        )}
+                      </div>
                     )}
                   </AccordionContent>
                 </AccordionItem>

@@ -20,7 +20,6 @@ export default function PartyDetailPageClient({ partyId }: { partyId: string }) 
   const [party, setParty] = useState<PartyDto | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [accessDenied, setAccessDenied] = useState(false);
   const [showScheduleModal, setShowScheduleModal] = useState(false);
   const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
   const [isLeaving, setIsLeaving] = useState(false);
@@ -92,15 +91,7 @@ export default function PartyDetailPageClient({ partyId }: { partyId: string }) 
         setStashCount((stashRes.data ?? []).length);
         setInvites(invRes.data ?? []);
 
-        // Check if current user is a member of this party
-        if (authUserId && membersList.length > 0) {
-          const isMember = membersList.some(
-            (m) => m.authUserId === authUserId && m.status === "Active"
-          );
-          if (!isMember) {
-            setAccessDenied(true);
-          }
-        }
+        // Do not set access state here; membership is determined via usePartyRole
       } catch {
         if (!mounted) return;
         setMembers([]);
@@ -202,7 +193,7 @@ export default function PartyDetailPageClient({ partyId }: { partyId: string }) 
   }
 
   // Check access after loading is complete - if role is null, user is not a member
-  if (accessDenied || role === null) {
+  if (role === null) {
     return (
       <div className="flex flex-col items-center justify-center py-32 gap-6">
         <div className="rounded-full bg-rose-500/10 p-6">

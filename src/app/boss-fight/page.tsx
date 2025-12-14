@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation'
 import { createClient } from '@/utils/supabase/client'
 import { Swords, Flame, Trophy, Settings, Play, Copy, Users, ArrowLeft } from 'lucide-react'
 import UnityPlayer from '@/components/unity/UnityPlayer'
+import partiesApi from '@/api/partiesApi'
+import { PartyDto, PartyMemberDto } from '@/types/parties'
 
 interface Subject {
   id: string
@@ -16,8 +18,10 @@ type Mode = 'choice' | 'setup' | 'joining' | 'hosting' | 'playing'
 
 export default function BossFightSetupPage() {
   const router = useRouter()
+  const SUBJECTS_PER_PAGE = 6
   const [mode, setMode] = useState<Mode>('choice')
   const [subjects, setSubjects] = useState<Subject[]>([])
+  const [subjectPage, setSubjectPage] = useState(1)
   const [selectedSubjects, setSelectedSubjects] = useState<string[]>([])
   const [totalQuestions, setTotalQuestions] = useState(50)
   const [easyPercent, setEasyPercent] = useState(30)
@@ -30,6 +34,11 @@ export default function BossFightSetupPage() {
   const [joinCodeInput, setJoinCodeInput] = useState('')
   const [inviteUrl, setInviteUrl] = useState<string | null>(null)
   const [sessionId, setSessionId] = useState<string | null>(null)
+  const [myParties, setMyParties] = useState<PartyDto[]>([])
+  const [partyMembers, setPartyMembers] = useState<Record<string, PartyMemberDto[]>>({})
+  const [selectedPartyId, setSelectedPartyId] = useState<string | null>(null)
+  const [selectedInvitees, setSelectedInvitees] = useState<Record<string, boolean>>({})
+  const [sendingPartyInvite, setSendingPartyInvite] = useState(false)
 
   useEffect(() => {
     const fetchUserAndSubjects = async () => {
@@ -68,6 +77,7 @@ export default function BossFightSetupPage() {
           })
 
           setSubjects(Array.from(subjectMap.values()))
+          setSubjectPage(1)
         }
       } catch (error) {
         console.error('Failed to fetch subjects:', error)
@@ -79,6 +89,40 @@ export default function BossFightSetupPage() {
     }
     fetchUserAndSubjects()
   }, [])
+
+  useEffect(() => {
+    const maxPage = Math.max(1, Math.ceil(subjects.length / SUBJECTS_PER_PAGE))
+    setSubjectPage((p) => Math.min(p, maxPage))
+  }, [subjects])
+
+  useEffect(() => {
+    if (!userId) return
+    let active = true
+      ; (async () => {
+        try {
+          const res = await partiesApi.getMine()
+          if (!active) return
+          setMyParties(res.data ?? [])
+          if ((res.data ?? []).length > 0) {
+            const firstId = (res.data ?? [])[0].id
+            setSelectedPartyId(firstId)
+            const membersRes = await partiesApi.getMembers(firstId)
+            if (active) {
+              setPartyMembers({ [firstId]: membersRes.data ?? [] })
+              const defaults: Record<string, boolean> = {}
+                ; (membersRes.data ?? []).forEach(m => { defaults[m.authUserId] = true })
+              setSelectedInvitees(defaults)
+            }
+          }
+        } catch {
+          if (active) {
+            setMyParties([])
+            setPartyMembers({})
+          }
+        }
+      })()
+    return () => { active = false }
+  }, [userId])
 
   const handleSubjectToggle = (subjectId: string) => {
     setSelectedSubjects(prev =>
@@ -112,6 +156,57 @@ export default function BossFightSetupPage() {
     }
   }
 
+  const handlePartyChange = async (partyId: string) => {
+    setSelectedPartyId(partyId)
+    if (partyMembers[partyId]) {
+      const defaults: Record<string, boolean> = {}
+      partyMembers[partyId].forEach(m => { defaults[m.authUserId] = true })
+      setSelectedInvitees(defaults)
+      return
+    }
+    try {
+      const res = await partiesApi.getMembers(partyId)
+      setPartyMembers((prev) => ({ ...prev, [partyId]: res.data ?? [] }))
+      const defaults: Record<string, boolean> = {}
+        ; (res.data ?? []).forEach(m => { defaults[m.authUserId] = true })
+      setSelectedInvitees(defaults)
+    } catch {
+      // ignore
+    }
+  }
+
+  const toggleInvitee = (authId: string) => {
+    setSelectedInvitees((prev) => ({ ...prev, [authId]: !prev[authId] }))
+  }
+
+  const sendPartyGameInvite = async () => {
+    if (!selectedPartyId || !inviteUrl || !sessionId || !joinCode) {
+      alert('Missing join code or party')
+      return
+    }
+    const targets = Object.entries(selectedInvitees).filter(([, v]) => v).map(([id]) => ({ userId: id }))
+    if (targets.length === 0) {
+      alert('Select at least one member')
+      return
+    }
+    setSendingPartyInvite(true)
+    try {
+      await partiesApi.inviteToGame(selectedPartyId, {
+        targets,
+        message: 'Join my boss fight!',
+        expiresAt: new Date(Date.now() + 6 * 60 * 60 * 1000).toISOString(),
+        joinLink: inviteUrl,
+        gameSessionId: sessionId,
+      })
+      alert('Party game invite sent')
+    } catch (err) {
+      console.error(err)
+      alert('Failed to send invite')
+    } finally {
+      setSendingPartyInvite(false)
+    }
+  }
+
   const handlePrepareForBattle = async () => {
     if (selectedSubjects.length === 0) {
       alert('Please select at least one subject')
@@ -134,7 +229,7 @@ export default function BossFightSetupPage() {
       setJoinCode(code)
 
       // Step 2: Create game session with configured subjects
-      const origin = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5051'
+      const origin = process.env.NEXT_PUBLIC_API_URL || 'https://localhost:5051'
       const selectedSubjectCodes = subjects
         .filter(s => selectedSubjects.includes(s.id))
         .map(s => s.subjectCode)
@@ -534,6 +629,74 @@ export default function BossFightSetupPage() {
             </div>
           )}
 
+          {/* Party game invite */}
+          {inviteUrl && sessionId && (
+            <div style={{
+              background: 'rgba(15,10,10,0.7)',
+              border: '2px solid rgba(245, 193, 108, 0.3)',
+              borderRadius: 16,
+              padding: 24,
+              marginBottom: 32
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                <div style={{ color: '#f5c16c', fontWeight: 700 }}>Invite your party</div>
+                {sendingPartyInvite && <div style={{ color: 'white', fontSize: 12 }}>Sending...</div>}
+              </div>
+              <div style={{ display: 'grid', gap: 12, gridTemplateColumns: '1fr 1fr' }}>
+                <div>
+                  <div style={{ color: '#bbb', fontSize: 12, marginBottom: 6 }}>Party</div>
+                  <select
+                    value={selectedPartyId ?? ''}
+                    onChange={(e) => handlePartyChange(e.target.value)}
+                    style={{
+                      width: '100%',
+                      padding: 10,
+                      background: 'rgba(0,0,0,0.6)',
+                      color: 'white',
+                      border: '1px solid rgba(255,255,255,0.2)',
+                      borderRadius: 8
+                    }}
+                  >
+                    {(myParties ?? []).length === 0 && <option value="">No parties</option>}
+                    {myParties.map(p => (
+                      <option key={p.id} value={p.id}>{p.name}</option>
+                    ))}
+                  </select>
+                  <div style={{ color: '#888', fontSize: 12, marginTop: 6 }}>Join link and session id will be sent.</div>
+                </div>
+                <div style={{ maxHeight: 120, overflowY: 'auto', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, padding: 8 }}>
+                  {(partyMembers[selectedPartyId ?? ''] ?? []).length === 0 && (
+                    <div style={{ color: '#888', fontSize: 12 }}>No members to invite.</div>
+                  )}
+                  {(partyMembers[selectedPartyId ?? ''] ?? []).map(m => (
+                    <label key={m.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '4px 6px', color: 'white', fontSize: 13 }}>
+                      <span>{m.username ?? m.email ?? 'Member'}</span>
+                      <input type="checkbox" checked={!!selectedInvitees[m.authUserId]} onChange={() => toggleInvitee(m.authUserId)} />
+                    </label>
+                  ))}
+                </div>
+              </div>
+              <div style={{ marginTop: 12, textAlign: 'right' }}>
+                <button
+                  onClick={sendPartyGameInvite}
+                  disabled={sendingPartyInvite || !selectedPartyId}
+                  style={{
+                    padding: '10px 20px',
+                    background: 'linear-gradient(135deg, #d23187 0%, #f061a6 50%, #f5c16c 100%)',
+                    border: 'none',
+                    borderRadius: 10,
+                    color: 'white',
+                    fontWeight: 700,
+                    cursor: sendingPartyInvite ? 'not-allowed' : 'pointer',
+                    opacity: sendingPartyInvite ? 0.7 : 1
+                  }}
+                >
+                  Send invite to party
+                </button>
+              </div>
+            </div>
+          )}
+
           {/* Start Game Button */}
           <div style={{ textAlign: 'center' }}>
             <button
@@ -630,32 +793,71 @@ export default function BossFightSetupPage() {
                   No subjects found. Start some quests to unlock subjects for boss fights!
                 </div>
               ) : (
-                subjects.map((subject) => (
-                  <button
-                    key={subject.id}
-                    onClick={() => handleSubjectToggle(subject.id)}
-                    style={{
-                      padding: 16,
-                      border: selectedSubjects.includes(subject.id)
-                        ? '2px solid #f5c16c'
-                        : '2px solid rgba(245, 193, 108, 0.3)',
-                      borderRadius: 12,
-                      background: selectedSubjects.includes(subject.id)
-                        ? 'rgba(245, 193, 108, 0.15)'
-                        : 'rgba(10, 5, 8, 0.5)',
-                      cursor: 'pointer',
-                      transition: 'all 0.3s',
-                      textAlign: 'left'
-                    }}
-                  >
-                    <div style={{ fontSize: 14, color: '#f5c16c', fontWeight: 600, marginBottom: 4 }}>
-                      {subject.subjectCode}
+                <>
+                  {subjects
+                    .slice((subjectPage - 1) * SUBJECTS_PER_PAGE, subjectPage * SUBJECTS_PER_PAGE)
+                    .map((subject) => (
+                      <button
+                        key={subject.id}
+                        onClick={() => handleSubjectToggle(subject.id)}
+                        style={{
+                          padding: 16,
+                          border: selectedSubjects.includes(subject.id)
+                            ? '2px solid #f5c16c'
+                            : '2px solid rgba(245, 193, 108, 0.3)',
+                          borderRadius: 12,
+                          background: selectedSubjects.includes(subject.id)
+                            ? 'rgba(245, 193, 108, 0.15)'
+                            : 'rgba(10, 5, 8, 0.5)',
+                          cursor: 'pointer',
+                          transition: 'all 0.3s',
+                          textAlign: 'left'
+                        }}
+                      >
+                        <div style={{ fontSize: 14, color: '#f5c16c', fontWeight: 600, marginBottom: 4 }}>
+                          {subject.subjectCode}
+                        </div>
+                        <div style={{ fontSize: 12, color: 'rgba(255, 255, 255, 0.7)' }}>
+                          {subject.subjectName}
+                        </div>
+                      </button>
+                    ))}
+                  {subjects.length > SUBJECTS_PER_PAGE && (
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 12, gap: 12 }}>
+                      <button
+                        onClick={() => setSubjectPage((p) => Math.max(1, p - 1))}
+                        disabled={subjectPage === 1}
+                        style={{
+                          padding: '8px 16px',
+                          background: 'rgba(10, 5, 8, 0.6)',
+                          border: '1px solid rgba(245, 193, 108, 0.3)',
+                          borderRadius: 8,
+                          color: subjectPage === 1 ? 'rgba(255,255,255,0.5)' : '#f5c16c',
+                          cursor: subjectPage === 1 ? 'not-allowed' : 'pointer'
+                        }}
+                      >
+                        Prev
+                      </button>
+                      <div style={{ color: '#f5c16c', fontSize: 13 }}>
+                        Page {subjectPage} of {Math.ceil(subjects.length / SUBJECTS_PER_PAGE)}
+                      </div>
+                      <button
+                        onClick={() => setSubjectPage((p) => Math.min(Math.ceil(subjects.length / SUBJECTS_PER_PAGE), p + 1))}
+                        disabled={subjectPage >= Math.ceil(subjects.length / SUBJECTS_PER_PAGE)}
+                        style={{
+                          padding: '8px 16px',
+                          background: 'rgba(10, 5, 8, 0.6)',
+                          border: '1px solid rgba(245, 193, 108, 0.3)',
+                          borderRadius: 8,
+                          color: subjectPage >= Math.ceil(subjects.length / SUBJECTS_PER_PAGE) ? 'rgba(255,255,255,0.5)' : '#f5c16c',
+                          cursor: subjectPage >= Math.ceil(subjects.length / SUBJECTS_PER_PAGE) ? 'not-allowed' : 'pointer'
+                        }}
+                      >
+                        Next
+                      </button>
                     </div>
-                    <div style={{ fontSize: 12, color: 'rgba(255, 255, 255, 0.7)' }}>
-                      {subject.subjectName}
-                    </div>
-                  </button>
-                ))
+                  )}
+                </>
               )}
             </div>
           </div>

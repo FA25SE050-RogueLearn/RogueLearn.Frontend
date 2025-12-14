@@ -2,15 +2,17 @@
 import React, { useEffect, useMemo, useState } from "react";
 import PartyCreationWizard from "./PartyCreationWizard";
 import PublicPartiesCard from "./PublicPartiesCard";
+import PartyInfoModal from "./PartyInfoModal";
 import { PartyDto, PartyInvitationDto, PartyMemberDto } from "@/types/parties";
 import partiesApi from "@/api/partiesApi";
 import { getMyContext } from "@/api/usersApi";
 import { toast } from "sonner";
-import { Users, Plus, LayoutGrid, Compass, Archive, Bell, ChevronRight, HelpCircle } from "lucide-react";
+import { Users, Plus, LayoutGrid, Compass, Archive, Bell, ChevronRight, HelpCircle, ExternalLink } from "lucide-react";
 
 export default function PartyManagementClient() {
   const [showWizard, setShowWizard] = useState(false);
-  const [activeView, setActiveView] = useState<"dashboard" | "discover" | "archived">("dashboard");
+  const [showInfoModal, setShowInfoModal] = useState(false);
+  const [activeView, setActiveView] = useState<"dashboard" | "discover">("dashboard");
   const [parties, setParties] = useState<PartyDto[]>([]);
   const [loadingParties, setLoadingParties] = useState(true);
   const [errorParties, setErrorParties] = useState<string | null>(null);
@@ -100,6 +102,9 @@ export default function PartyManagementClient() {
     try {
       await partiesApi.acceptInvitation(inv.partyId, inv.id, { partyId: inv.partyId, invitationId: inv.id, authUserId });
       toast.success("Invitation accepted");
+      if (inv.joinLink) {
+        window.open(inv.joinLink, "_blank");
+      }
       const [resInv, resMine] = await Promise.all([
         partiesApi.getMyPendingInvitations(),
         partiesApi.getMine(),
@@ -210,13 +215,7 @@ export default function PartyManagementClient() {
               <Compass className="h-4 w-4" />
               Discover
             </button>
-            <button
-              className={`flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm transition-all ${activeView === "archived" ? "bg-[#f5c16c]/10 text-[#f5c16c] border border-[#f5c16c]/30" : "text-white/70 hover:bg-white/5 hover:text-white"}`}
-              onClick={() => setActiveView("archived")}
-            >
-              <Archive className="h-4 w-4" />
-              Archived
-            </button>
+            
           </nav>
         </div>
 
@@ -232,6 +231,21 @@ export default function PartyManagementClient() {
                 <div key={inv.id} className="rounded-lg border border-white/10 bg-black/30 p-3">
                   <div className="text-xs text-white mb-1 truncate">{inv.partyName || partyNameById[inv.partyId] || "Party"}</div>
                   <div className="text-[10px] text-white/40 mb-2">Expires {new Date(inv.expiresAt).toLocaleDateString()}</div>
+                  {inv.message && <div className="mb-2 text-[10px] text-white/60 line-clamp-2">{inv.message}</div>}
+                  {inv.joinLink && (
+                    <button
+                      onClick={() => window.open(inv.joinLink!, "_blank")}
+                      className="mb-2 flex items-center gap-1 rounded bg-[#f5c16c]/15 px-2 py-1 text-[10px] text-[#f5c16c] hover:bg-[#f5c16c]/25"
+                    >
+                      <ExternalLink className="h-3 w-3" />
+                      Open game link
+                    </button>
+                  )}
+                  {inv.gameSessionId && (
+                    <div className="mb-2 text-[10px] text-white/40">
+                      Session: <span className="text-white/70">{inv.gameSessionId}</span>
+                    </div>
+                  )}
                   <div className="flex gap-1.5">
                     <button onClick={() => handleAcceptInvite(inv)} className="flex-1 rounded bg-emerald-600/80 px-2 py-1 text-[10px] font-medium text-white hover:bg-emerald-600">Accept</button>
                     <button onClick={() => handleDeclineInvite(inv)} className="flex-1 rounded bg-rose-600/80 px-2 py-1 text-[10px] font-medium text-white hover:bg-rose-600">Decline</button>
@@ -244,7 +258,7 @@ export default function PartyManagementClient() {
 
         {/* Quick Help */}
         <div className="border-t border-white/10 pt-4">
-          <button className="flex w-full items-center gap-2 rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-xs text-white/50 hover:border-white/20 hover:text-white/70">
+          <button onClick={() => setShowInfoModal(true)} className="flex w-full items-center gap-2 rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-xs text-white/50 hover:border-white/20 hover:text-white/70">
             <HelpCircle className="h-4 w-4" />
             Party Guide
           </button>
@@ -255,7 +269,7 @@ export default function PartyManagementClient() {
       <div className="p-6 overflow-y-auto">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-lg font-semibold text-white">
-            {activeView === "dashboard" ? "My Parties" : activeView === "discover" ? "Discover Public Parties" : "Archived Parties"}
+            {activeView === "dashboard" ? "My Parties" : "Discover Public Parties"}
           </h2>
           {loadingInvites ? (
             <span className="text-xs text-white/40">Loading...</span>
@@ -296,13 +310,12 @@ export default function PartyManagementClient() {
 
         {activeView === "discover" && <PublicPartiesCard />}
 
-        {activeView === "archived" && (
-          <div className="flex flex-col items-center justify-center py-20 text-center">
-            <Archive className="h-12 w-12 text-white/20 mb-4" />
-            <div className="text-sm text-white/40">No archived parties.</div>
-          </div>
-        )}
+        
       </div>
+
+      {showInfoModal && (
+        <PartyInfoModal open={showInfoModal} onClose={() => setShowInfoModal(false)} />
+      )}
 
       <PartyCreationWizard
         open={showWizard}

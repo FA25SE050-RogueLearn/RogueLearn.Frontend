@@ -8,7 +8,7 @@ import {
   GetQuestProgressResponse, 
   SubmitQuizAnswerResponse
 } from '../types/quest-progress';
-
+import { normalizeStepActivities } from '../lib/normalizeActivities';
 
 // ========== NEW RESPONSE TYPES FOR BACKGROUND JOBS ==========
 
@@ -179,15 +179,10 @@ const questApi = {
    */
   getQuestDetails: (questId: string): Promise<ApiResponse<QuestDetails | null>> =>
     axiosClient.get<QuestDetails>(`/api/quests/${questId}`).then(res => {
-      // ⭐ Parse content strings if needed
+      // ⭐ Parse content strings and normalize activity properties
       const questDetails = res.data;
       if (questDetails?.steps) {
-        questDetails.steps = questDetails.steps.map(step => ({
-          ...step,
-          content: typeof step.content === 'string' 
-            ? JSON.parse(step.content) 
-            : step.content
-        }));
+        questDetails.steps = questDetails.steps.map(normalizeStepActivities);
       }
       
       return {
@@ -203,11 +198,8 @@ const questApi = {
    */
   getQuestStep: (questId: string, stepId: string): Promise<ApiResponse<QuestStep | null>> =>
     axiosClient.get<QuestStep>(`/api/quests/${questId}/steps/${stepId}`).then(res => {
-      // ⭐ Parse content if it's a string
-      const step = res.data;
-      if (step && typeof step.content === 'string') {
-        step.content = JSON.parse(step.content);
-      }
+      // ⭐ Parse content and normalize activity properties
+      const step = normalizeStepActivities(res.data);
       
       return {
         isSuccess: true,
@@ -549,18 +541,10 @@ const questApi = {
       const res = await axiosClient.get<AdminQuestDetailsDto>(`/api/admin/quests/${questId}`);
       const data = res.data;
       
-      // Parse content strings in each track if needed
-      const parseSteps = (steps: AdminQuestStepDto[]) => 
-        steps.map(step => ({
-          ...step,
-          content: typeof step.content === 'string' 
-            ? JSON.parse(step.content) 
-            : step.content
-        }));
-      
-      if (data.standardSteps) data.standardSteps = parseSteps(data.standardSteps);
-      if (data.supportiveSteps) data.supportiveSteps = parseSteps(data.supportiveSteps);
-      if (data.challengingSteps) data.challengingSteps = parseSteps(data.challengingSteps);
+      // Parse content strings and normalize activity properties in each track
+      if (data.standardSteps) data.standardSteps = data.standardSteps.map(normalizeStepActivities);
+      if (data.supportiveSteps) data.supportiveSteps = data.supportiveSteps.map(normalizeStepActivities);
+      if (data.challengingSteps) data.challengingSteps = data.challengingSteps.map(normalizeStepActivities);
       
       return {
         isSuccess: true as const,

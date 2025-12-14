@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { createServerApiClients } from "@/lib/api-server";
 import { QuestDetails, LearningPath } from "@/types/quest";
+import { normalizeQuestDetails } from "@/lib/normalizeActivities";
 
 interface PageProps {
     params: Promise<{
@@ -35,10 +36,13 @@ export default async function WeekLearningPage({ params }: PageProps) {
     await safeFetch(coreApiClient.post(`/api/quests/${questId}/start`));
 
     // Fetch data in parallel with safe error handling
-    const [questDetails, learningPath] = await Promise.all([
+    const [rawQuestDetails, learningPath] = await Promise.all([
         safeFetch(coreApiClient.get<QuestDetails>(`/api/quests/${questId}`)),
         safeFetch(coreApiClient.get<LearningPath>('/api/learning-paths/me'))
     ]);
+
+    // Normalize quest details to handle both camelCase and PascalCase activity properties
+    const questDetails = rawQuestDetails ? normalizeQuestDetails(rawQuestDetails) : null;
 
     // Find chapter name from learning path
     let chapterName = '';
@@ -52,7 +56,7 @@ export default async function WeekLearningPage({ params }: PageProps) {
         }
     }
 
-    const weeklyStep = questDetails?.steps?.find(step => step.stepNumber === weekNum);
+    const weeklyStep = questDetails?.steps?.find((step: { stepNumber: number; }) => step.stepNumber === weekNum);
 
     if (!questDetails) {
         return (

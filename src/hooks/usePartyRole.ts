@@ -9,11 +9,21 @@ export function usePartyRole(partyId: string) {
   const [roles, setRoles] = useState<PartyRole[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [contextChecked, setContextChecked] = useState<boolean>(false);
 
   const refresh = useCallback(async () => {
-    if (!partyId || !authUserId) {
+    if (!partyId) {
       setRoles([]);
       setLoading(false);
+      return;
+    }
+    if (!authUserId) {
+      if (contextChecked) {
+        setRoles([]);
+        setLoading(false);
+      } else {
+        setLoading(true);
+      }
       return;
     }
     setLoading(true);
@@ -27,7 +37,7 @@ export function usePartyRole(partyId: string) {
     } finally {
       setLoading(false);
     }
-  }, [partyId, authUserId]);
+  }, [partyId, authUserId, contextChecked]);
 
   useEffect(() => {
     let mounted = true;
@@ -36,9 +46,11 @@ export function usePartyRole(partyId: string) {
         const me = await getMyContext();
         if (!mounted) return;
         setAuthUserId(me.data?.authUserId ?? null);
+        setContextChecked(true);
       } catch {
         if (!mounted) return;
         setAuthUserId(null);
+        setContextChecked(true);
       }
     })();
     return () => { mounted = false; };
