@@ -74,26 +74,37 @@ export default function ConnectFapPage() {
 
     try {
       setStep('processing');
+      // Visual sequence: Start reading
       setProcessingStep(1);
-      
-      // Simulate processing steps for better UX
-      await new Promise(r => setTimeout(r, 500));
+
+      await new Promise(r => setTimeout(r, 600));
+
+      // Step 2: Analyze (This is where we wait for the Backend API)
       setProcessingStep(2);
-      
+
       const recordResult = await processAcademicRecord(htmlContent, userProfile.routeId);
 
       if (!recordResult.isSuccess || !recordResult.data) {
         throw new Error(recordResult.message || 'Failed to process academic record.');
       }
-      
-      setProcessingStep(3);
-      await new Promise(r => setTimeout(r, 500));
-      setProcessingStep(4);
+
+      // API Success: The backend has finished everything (Extraction -> Grades -> XP -> Quest Gen)
+      // Now we just play the remaining animations to show the user it's done.
+
+      setProcessingStep(3); // Visual: Building skill tree (Already done by backend)
+      await new Promise(r => setTimeout(r, 700));
+
+      setProcessingStep(4); // Visual: Creating questline (Already done by backend)
+      await new Promise(r => setTimeout(r, 700));
+
+      // Critical: Advance to step 5 to visually mark step 4 as "Completed" (Green Check)
+      setProcessingStep(5);
+      await new Promise(r => setTimeout(r, 1000)); // Brief pause to see the green checks
 
       // Store processing results
       setCalculatedGpa(recordResult.data.calculatedGpa ?? null);
       setSubjectsProcessed(recordResult.data.subjectsProcessed);
-      
+
       // Check if XP was awarded
       if (recordResult.data.xpAwarded && recordResult.data.xpAwarded.totalXp > 0) {
         setXpAwarded(recordResult.data.xpAwarded);
@@ -134,7 +145,7 @@ export default function ConnectFapPage() {
     { label: 'Reading academic data', icon: FileText },
     { label: 'Analyzing subjects & grades', icon: FileText },
     { label: 'Building skill tree & awarding XP', icon: Zap },
-    { label: 'Creating your questline', icon: Trophy },
+    { label: 'Forging your questline', icon: Trophy },
   ];
 
   // Group XP awards by skill for display
@@ -175,9 +186,9 @@ export default function ConnectFapPage() {
           </div>
           <h3 className="text-xl font-semibold text-white">Failed to Load Data</h3>
           <p className="max-w-md text-white/60">{error}</p>
-          <Button 
-            onClick={fetchData} 
-            variant="outline" 
+          <Button
+            onClick={fetchData}
+            variant="outline"
             className="mt-4 border-[#f5c16c]/50 text-[#f5c16c] hover:bg-[#f5c16c]/10"
           >
             Try Again
@@ -239,18 +250,17 @@ export default function ConnectFapPage() {
           )}
 
           {/* Action Button */}
-          <Button 
-            onClick={handleProcessAndInitialize} 
-            disabled={isSubmitting || !userProfile?.routeId || !hasContent} 
-            className={`w-full h-14 rounded-2xl text-sm font-semibold uppercase tracking-[0.2em] transition-all duration-300 ${
-              hasContent 
-                ? 'bg-gradient-to-r from-[#d23187] via-[#f061a6] to-[#f5c16c] text-[#1a0b08] shadow-lg shadow-[#d23187]/30 hover:shadow-[#d23187]/50' 
-                : 'bg-white/10 text-white/50 cursor-not-allowed'
-            }`}
+          <Button
+            onClick={handleProcessAndInitialize}
+            disabled={isSubmitting || !userProfile?.routeId || !hasContent}
+            className={`w-full h-14 rounded-2xl text-sm font-semibold uppercase tracking-[0.2em] transition-all duration-300 ${hasContent
+              ? 'bg-gradient-to-r from-[#d23187] via-[#f061a6] to-[#f5c16c] text-[#1a0b08] shadow-lg shadow-[#d23187]/30 hover:shadow-[#d23187]/50'
+              : 'bg-white/10 text-white/50 cursor-not-allowed'
+              }`}
           >
             {isUpdateFlow ? <RefreshCw className="mr-2 h-5 w-5" /> : <GitBranch className="mr-2 h-5 w-5" />}
-            {hasContent 
-              ? (isUpdateFlow ? "Sync & Update Progress" : "Build My Skill Tree") 
+            {hasContent
+              ? (isUpdateFlow ? "Sync & Update Progress" : "Build My Skill Tree")
               : "Paste HTML to continue"
             }
           </Button>
@@ -267,25 +277,23 @@ export default function ConnectFapPage() {
               const isActive = processingStep === i + 1;
               const isComplete = processingStep > i + 1;
               const Icon = s.icon;
-              
+
               return (
-                <div 
+                <div
                   key={i}
-                  className={`flex items-center gap-4 rounded-xl border p-4 transition-all duration-500 ${
-                    isComplete 
-                      ? 'border-emerald-500/30 bg-emerald-500/10' 
-                      : isActive 
-                        ? 'border-[#f5c16c]/50 bg-[#f5c16c]/10' 
-                        : 'border-white/10 bg-white/5'
-                  }`}
+                  className={`flex items-center gap-4 rounded-xl border p-4 transition-all duration-500 ${isComplete
+                    ? 'border-emerald-500/30 bg-emerald-500/10'
+                    : isActive
+                      ? 'border-[#f5c16c]/50 bg-[#f5c16c]/10'
+                      : 'border-white/10 bg-white/5'
+                    }`}
                 >
-                  <div className={`flex h-10 w-10 items-center justify-center rounded-lg transition-all duration-500 ${
-                    isComplete 
-                      ? 'bg-emerald-500/20' 
-                      : isActive 
-                        ? 'bg-[#f5c16c]/20' 
-                        : 'bg-white/10'
-                  }`}>
+                  <div className={`flex h-10 w-10 items-center justify-center rounded-lg transition-all duration-500 ${isComplete
+                    ? 'bg-emerald-500/20'
+                    : isActive
+                      ? 'bg-[#f5c16c]/20'
+                      : 'bg-white/10'
+                    }`}>
                     {isComplete ? (
                       <CheckCircle2 className="h-5 w-5 text-emerald-400" />
                     ) : isActive ? (
@@ -294,9 +302,8 @@ export default function ConnectFapPage() {
                       <Icon className={`h-5 w-5 ${isActive ? 'text-[#f5c16c]' : 'text-white/40'}`} />
                     )}
                   </div>
-                  <span className={`text-sm font-medium transition-colors duration-500 ${
-                    isComplete ? 'text-emerald-400' : isActive ? 'text-white' : 'text-white/40'
-                  }`}>
+                  <span className={`text-sm font-medium transition-colors duration-500 ${isComplete ? 'text-emerald-400' : isActive ? 'text-white' : 'text-white/40'
+                    }`}>
                     {s.label}
                   </span>
                 </div>
@@ -412,17 +419,17 @@ export default function ConnectFapPage() {
         {/* Main Card */}
         <Card className={HERO_CARD_CLASS}>
           {/* Texture overlay */}
-          <div 
-            aria-hidden="true" 
-            className="pointer-events-none absolute inset-0" 
-            style={CARD_TEXTURE as React.CSSProperties} 
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-0"
+            style={CARD_TEXTURE as React.CSSProperties}
           />
           {/* Glows */}
           <div aria-hidden="true" className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(210,49,135,0.18),transparent_55%)]" />
           <div aria-hidden="true" className="absolute inset-0 bg-[radial-gradient(circle_at_bottom_left,rgba(245,193,108,0.12),transparent_55%)]" />
           {/* Decorative runes */}
           <div className="absolute right-6 top-6 text-[#f5c16c]/10 text-2xl">◆</div>
-          
+
           {/* Header */}
           <div className="relative z-10 border-b border-[#f5c16c]/20 p-6 md:p-8">
             <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
@@ -449,7 +456,7 @@ export default function ConnectFapPage() {
               )}
             </div>
           </div>
-          
+
           <CardContent className="relative z-10 p-6 md:p-8">
             {renderContent()}
           </CardContent>
@@ -461,13 +468,13 @@ export default function ConnectFapPage() {
         {/* Collapsible Instructions */}
         {step === 'form' && !isLoading && !error && (
           <Card className="relative overflow-hidden rounded-[20px] border border-[#f5c16c]/20 bg-gradient-to-br from-[#1f0d09]/95 to-[#2a1510]/95">
-            <div 
-              aria-hidden="true" 
-              className="pointer-events-none absolute inset-0" 
-              style={{ ...CARD_TEXTURE, opacity: 0.15 } as React.CSSProperties} 
+            <div
+              aria-hidden="true"
+              className="pointer-events-none absolute inset-0"
+              style={{ ...CARD_TEXTURE, opacity: 0.15 } as React.CSSProperties}
             />
-            
-            <button 
+
+            <button
               onClick={() => setShowInstructions(!showInstructions)}
               className="relative z-10 flex w-full items-center justify-between p-4 text-left transition-colors hover:bg-white/5"
             >
@@ -483,7 +490,7 @@ export default function ConnectFapPage() {
                 <ChevronDown className="h-5 w-5 text-white/50" />
               )}
             </button>
-            
+
             {showInstructions && (
               <CardContent className="relative z-10 border-t border-[#f5c16c]/10 p-4 pt-4">
                 <ol className="grid gap-2 text-sm md:grid-cols-2">
@@ -535,8 +542,8 @@ export default function ConnectFapPage() {
 
       {/* Character Creation Wizard Dialog */}
       <Dialog open={showCharacterWizard} onOpenChange={setShowCharacterWizard}>
-        <DialogContent 
-          aria-describedby="character-wizard-description" 
+        <DialogContent
+          aria-describedby="character-wizard-description"
           className="max-w-[1200px] w-[95vw] h-[90vh] overflow-hidden rounded-[40px] border border-white/12 bg-gradient-to-br from-[#12060a] via-[#1d0a11] to-[#060205] p-0 shadow-[0_32px_140px_rgba(20,2,16,0.85)] backdrop-blur-2xl"
         >
           <DialogHeader>
