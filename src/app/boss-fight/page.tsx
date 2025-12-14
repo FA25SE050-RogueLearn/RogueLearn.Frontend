@@ -50,7 +50,7 @@ export default function BossFightSetupPage() {
 
       // Fetch user's subjects from their quests
       try {
-        const origin = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5051'
+        const origin = process.env.NEXT_PUBLIC_API_URL || 'https://localhost:6968'
         const { data: { session } } = await supabase.auth.getSession()
         const token = session?.access_token
 
