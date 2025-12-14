@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
-import { Loader2, AlertCircle, RefreshCw, GitBranch, Sparkles, CheckCircle2, Copy, ExternalLink, FileText, Map, Trophy, ChevronDown, ChevronUp, Zap, Star, TrendingUp } from 'lucide-react';
+import { Loader2, AlertCircle, RefreshCw, GitBranch, Sparkles, CheckCircle2, Copy, ExternalLink, FileText, Map, Trophy, ChevronDown, ChevronUp, Zap, Star, TrendingUp, Puzzle } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { UserProfileDto } from '@/types/user-profile';
 import profileApi, { invalidateMyProfileCache } from '@/api/profileApi';
@@ -504,6 +504,29 @@ export default function ConnectFapPage() {
                 <p className="mt-3 text-center text-xs text-white/40">
                   Then come back here and paste with Ctrl+V
                 </p>
+
+                {/* Extension Download Button */}
+                <div className="mt-4 pt-4 border-t border-[#f5c16c]/10">
+                  <div className="flex flex-col sm:flex-row items-center justify-between gap-3 rounded-xl border border-[#d23187]/30 bg-[#d23187]/10 p-4">
+                    <div className="flex items-center gap-3 text-center sm:text-left">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-lg border border-[#d23187]/30 bg-[#d23187]/20">
+                        <Puzzle className="h-5 w-5 text-[#d23187]" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-white">Want an easier way?</p>
+                        <p className="text-xs text-white/60">Use our browser extension to auto-extract FAP data</p>
+                      </div>
+                    </div>
+                    <Button
+                      onClick={() => router.push('/extension')}
+                      size="sm"
+                      className="shrink-0 bg-gradient-to-r from-[#d23187] to-[#f061a6] text-white hover:shadow-lg hover:shadow-[#d23187]/30"
+                    >
+                      <Puzzle className="mr-2 h-4 w-4" />
+                      Get Extension
+                    </Button>
+                  </div>
+                </div>
               </CardContent>
             )}
           </Card>

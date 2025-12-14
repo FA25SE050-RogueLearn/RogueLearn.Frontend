@@ -46,6 +46,7 @@ interface SidebarNavProps {
     firstName?: string | null;
     lastName?: string | null;
     profileImageUrl?: string | null;
+    roles?: string[];
   };
 }
 
@@ -62,8 +63,10 @@ const secondaryNavItems = [
   { title: "Arsenal", url: "/arsenal", icon: Archive },
   { title: "Party", url: "/parties", icon: Users },
   // { title: "Adventure", url: "/game", icon: Compass },
-  { title: "Admin", url: "/admin", icon: Shield },
 ];
+
+const adminNavItem = { title: "Admin", url: "/admin", icon: Shield };
+const adminRoles = ["Admin", "Administrator", "Game Master"];
 
 export function SidebarNav({ userProfile }: SidebarNavProps) {
   const pathname = usePathname();
@@ -188,6 +191,16 @@ export function SidebarNav({ userProfile }: SidebarNavProps) {
                   </DropdownMenuItem>
                 );
               })}
+              {/* Show Admin only if user has admin role */}
+              {userProfile?.roles?.some(role => adminRoles.includes(role)) && (
+                <DropdownMenuItem
+                  onClick={() => handleNavigation(adminNavItem.url)}
+                  className="cursor-pointer text-[#f5c16c]/80 hover:bg-[#f5c16c]/15 hover:text-[#f5c16c]"
+                >
+                  <adminNavItem.icon className="mr-2 h-4 w-4" />
+                  {adminNavItem.title}
+                </DropdownMenuItem>
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
         </div>

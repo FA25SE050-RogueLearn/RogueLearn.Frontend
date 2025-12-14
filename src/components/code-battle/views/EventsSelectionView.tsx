@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useRouter } from 'next/navigation';
 import type { Event } from '@/types/event-service';
-import { createClient } from '@/utils/supabase/client';
+import profileApi from '@/api/profileApi';
 import { toast } from 'sonner';
 
 interface EventsSelectionViewProps {
@@ -303,36 +303,38 @@ export default function EventsSelectionView({
   useEffect(() => {
     const checkGuildMasterStatusAndRegistrations = async () => {
       try {
-        const supabase = createClient();
-        const { data: { user } } = await supabase.auth.getUser();
+        // Use profile API to get user info including roles
+        const profileResponse = await profileApi.getMyProfile();
 
-        if (!user) {
-          console.log('No user found');
+        if (!profileResponse.isSuccess || !profileResponse.data) {
+          console.log('No user profile found');
           return;
         }
 
-        console.log('Current user ID:', user.id);
-        setUserId(user.id);
+        const profile = profileResponse.data;
+        console.log('Current user ID:', profile.authUserId);
+        setUserId(profile.authUserId);
 
-        // Query guilds table to find guild where user is the creator
-        const { data: guilds, error } = await supabase
-          .from('guilds')
-          .select('id, name')
-          .eq('created_by', user.id)
-          .limit(1);
-
-        if (error) {
-          console.error('❌ Error querying guilds:', error);
-          return;
-        }
-
-        if (guilds && guilds.length > 0) {
-          const guild = guilds[0];
-          console.log('✅ User is guild master of:', guild.name, 'ID:', guild.id);
+        // Check if user has "Guild Master" role directly from profile roles array
+        const hasGuildMasterRole = profile.roles?.includes('Guild Master');
+        
+        if (hasGuildMasterRole) {
+          console.log('✅ User has Guild Master role');
           setIsGuildMaster(true);
-          setGuildId(guild.id);
+          
+          // Get guild info to get the guildId
+          const socialResponse = await profileApi.getSocialByAuthId(profile.authUserId);
+          if (socialResponse.isSuccess && socialResponse.data?.relations?.guildMembers) {
+            const guildMembership = socialResponse.data.relations.guildMembers.find(
+              (member) => member.role === 'GuildMaster'
+            );
+            if (guildMembership) {
+              console.log('✅ User is guild master of:', guildMembership.guildName, 'ID:', guildMembership.guildId);
+              setGuildId(guildMembership.guildId);
+            }
+          }
         } else {
-          console.log('⚠️ User is not a guild master');
+          console.log('⚠️ User does not have Guild Master role');
         }
       } catch (error) {
         console.error('❌ Error checking guild master status:', error);
