@@ -41,6 +41,7 @@ interface QuestCardProps {
   onStartQuest: () => void;
 }
 
+// ... (Helper functions extractSubjectCode, extractSubjectName, getGradeColor, getStatusInfo remain unchanged) ...
 // Extract subject code from title (e.g., "CEA201: Computer..." -> "CEA201")
 function extractSubjectCode(title: string): string | null {
   const match = title.match(/^([A-Z]{2,4}\d{2,3}[a-z]?)/i);
@@ -167,7 +168,7 @@ export function QuestCard({
   const [skillsData, setSkillsData] = useState<GetQuestSkillsResponse | null>(null);
   const [loadingSkills, setLoadingSkills] = useState(false);
   const [skillsLoaded, setSkillsLoaded] = useState(false);
-  const [isStarting, setIsStarting] = useState(false); // New local state for button
+  const [isStarting, setIsStarting] = useState(false);
 
   const subjectCode = quest.subjectCode || extractSubjectCode(quest.title);
   const subjectName = extractSubjectName(quest.title);
@@ -193,23 +194,29 @@ export function QuestCard({
     }
   };
 
-  // Wrapper for start action to call API
-  const handleStartClick = async () => {
+  const handleStartClick = async (e: React.MouseEvent) => {
+    // Prevent event bubbling if wrapped in other click handlers
+    e.stopPropagation();
+
     if (isStarting || isLocked || isGenerating) return;
 
     setIsStarting(true);
     try {
-      // Only call start endpoint if quest hasn't started
+      // Explicitly call the start API if the quest is NotStarted
       if (quest.status === 'NotStarted') {
+        console.log("Starting quest:", quest.id); // Debug log
         await questApi.startQuest(quest.id);
       }
-      // Proceed to navigation regardless (it handles the redirect)
+
+      // Call the parent handler to navigate
       onStartQuest();
     } catch (error) {
       console.error("Failed to start quest:", error);
-      // Navigate anyway - maybe user can retry inside
+      // Still attempt navigation so user isn't stuck
       onStartQuest();
     } finally {
+      // We don't necessarily set isStarting false here if we navigate away immediately,
+      // but it's safe to do so.
       setIsStarting(false);
     }
   };
@@ -226,13 +233,11 @@ export function QuestCard({
               : 'border-[#f5c16c]/20 bg-gradient-to-br from-[#2d1810]/80 to-black hover:border-[#f5c16c]/50 hover:-translate-y-1 hover:shadow-[0_10px_30px_rgba(245,193,108,0.15)]'
         }`}
     >
-      {/* Texture */}
       <div className="pointer-events-none absolute inset-0 opacity-[0.03]" style={{ backgroundImage: 'url(/images/asfalt-dark.png)' }} />
 
       <CardContent className="p-5 flex flex-col h-full gap-3">
         {/* Top Row: Subject Code + Badges */}
         <div className="flex items-start justify-between gap-2">
-          {/* Subject Code Badge */}
           <div className="flex items-center gap-2">
             {subjectCode && (
               <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#f5c16c]/10 border border-[#f5c16c]/30 text-[#f5c16c] text-sm font-bold tracking-wide">
@@ -242,7 +247,6 @@ export function QuestCard({
             )}
           </div>
 
-          {/* Status & Difficulty Badges */}
           <div className="flex flex-wrap gap-1.5 justify-end">
             {quest.isRecommended && !isLocked && quest.status !== 'Completed' && (
               <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/20 px-2 py-0.5 text-[10px] font-medium text-amber-300 border border-amber-500/30 animate-pulse">
@@ -274,7 +278,6 @@ export function QuestCard({
         {/* Academic Score Section */}
         {!isLocked && (
           <div className="flex items-center gap-2">
-            {/* Grade Display */}
             <TooltipProvider>
               <Tooltip delayDuration={200}>
                 <TooltipTrigger asChild>
@@ -295,7 +298,6 @@ export function QuestCard({
               </Tooltip>
             </TooltipProvider>
 
-            {/* Academic Status */}
             <TooltipProvider>
               <Tooltip delayDuration={200}>
                 <TooltipTrigger asChild>
@@ -312,7 +314,6 @@ export function QuestCard({
               </Tooltip>
             </TooltipProvider>
 
-            {/* Skills Popover */}
             <Popover>
               <PopoverTrigger asChild>
                 <button
