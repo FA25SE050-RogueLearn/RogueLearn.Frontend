@@ -36,6 +36,7 @@ export interface ProcessAcademicRecordResponse {
   message?: string | null;
   learningPathId: string;
   subjectsProcessed: number;
+  questsGenerated: number; // Added to match backend response
   calculatedGpa?: number | null;
   xpAwarded?: XpAwardedSummary | null;
 }
