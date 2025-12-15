@@ -34,7 +34,6 @@ export interface XpAwardedSummary {
 export interface ProcessAcademicRecordResponse {
   isSuccess: boolean;
   message?: string | null;
-  learningPathId: string;
   subjectsProcessed: number;
   questsGenerated: number; // Added to match backend response
   calculatedGpa?: number | null;
@@ -78,12 +77,10 @@ export interface GetAcademicStatusResponse {
   completedSubjects: number;
   inProgressSubjects: number;
   failedSubjects: number;
-  learningPathId: string | null;
   totalQuests: number;
   completedQuests: number;
   skillInitialization: SkillInitializationInfo;
   subjects: SubjectProgressDto[];
-  chapters: ChapterProgressDto[];
 }
 
 export interface SkillInitializationInfo {
@@ -101,13 +98,4 @@ export interface SubjectProgressDto {
   grade: string | null;
   questId: string | null;
   questStatus: string | null;
-}
-
-export interface ChapterProgressDto {
-  chapterId: string;
-  title: string;
-  sequence: number;
-  status: string;
-  totalQuests: number;
-  completedQuests: number;
 }
