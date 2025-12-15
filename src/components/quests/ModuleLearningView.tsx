@@ -17,19 +17,15 @@ import {
     Trophy
 } from "lucide-react";
 import Link from "next/link";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import {
     QuestStep,
     Activity,
     ReadingActivityPayload,
     KnowledgeCheckActivityPayload,
     QuizActivityPayload,
-    CodingActivityPayload,
-    KnowledgeCheckQuestion,
-    QuizQuestion
 } from "@/types/quest";
 import questApi from "@/api/questApi";
-import { CodingChallengeModal } from "./CodingChallengeModal";
 import WeeklyProgressCard from "./WeeklyProgressCard";
 import { toast } from "sonner";
 
@@ -37,7 +33,6 @@ import { toast } from "sonner";
 
 /**
  * ReadingActivityContent: Displays reading material with session engagement
- * Features: Article summary, start session, open in new tab (no iframe)
  */
 const ReadingActivityContent = ({
     payload,
@@ -103,8 +98,6 @@ const ReadingActivityContent = ({
 
 /**
  * KnowledgeCheckActivityContent: Single or multiple questions with immediate feedback
- * Features: Question display, answer selection, immediate correctness feedback, explanations
- * Note: This is for formative assessment (no grading required to complete)
  */
 const KnowledgeCheckActivityContent = ({ payload }: { payload: KnowledgeCheckActivityPayload }) => {
     const [selectedAnswers, setSelectedAnswers] = useState<Record<number, string>>({});
@@ -124,22 +117,20 @@ const KnowledgeCheckActivityContent = ({ payload }: { payload: KnowledgeCheckAct
         return { options: ['Option A', 'Option B', 'Option C', 'Option D'], correct: 'Option A' };
     };
 
-    // Helper to get correct answer (API uses 'answer', but we support 'correctAnswer' for backward compat)
     const getAnswer = (q: any): string => q.answer || q.correctAnswer || '';
 
     const baseQuestions = payload.questions || [];
 
-    // Normalize questions to have consistent structure
     const questions = baseQuestions.map(q => {
         const hasOptions = Array.isArray(q.options) && q.options.length > 0;
         const d = deriveDefault(q.question);
         const opts = hasOptions ? q.options : d.options;
         const correct = getAnswer(q) || d.correct;
-        return { 
+        return {
             question: q.question,
-            options: opts, 
-            answer: correct,  // Normalize to 'answer' field
-            explanation: q.explanation || '' 
+            options: opts,
+            answer: correct,
+            explanation: q.explanation || ''
         };
     });
 
@@ -247,59 +238,6 @@ const KnowledgeCheckActivityContent = ({ payload }: { payload: KnowledgeCheckAct
     );
 };
 
-/**
- * CodingActivityContent: Displays coding challenge setup
- * Features: Language badge, difficulty badge, topic description, start button
- * Note: Opens CodingChallengeModal when started
- */
-const CodingActivityContent = ({
-    payload,
-    onStartChallenge
-}: {
-    payload: CodingActivityPayload;
-    onStartChallenge: (content: CodingActivityPayload) => void;
-}) => (
-    <Card className="relative overflow-hidden bg-black/40 border-[#f5c16c]/20">
-        <div
-            className="pointer-events-none absolute inset-0 opacity-20 mix-blend-overlay"
-            style={{
-                backgroundImage: 'url(/images/asfalt-dark.png)',
-                backgroundSize: '350px 350px',
-                backgroundRepeat: 'repeat'
-            }}
-        />
-        <CardHeader className="relative z-10">
-            <CardTitle className="text-white">💻 Coding Challenge</CardTitle>
-        </CardHeader>
-        <CardContent className="relative z-10 space-y-4">
-            <div className="flex items-center gap-4 mb-4 flex-wrap">
-                <span className="px-3 py-1 rounded-full bg-blue-500/20 border border-blue-500/40 text-blue-300 text-sm font-semibold">
-                    {payload.language}
-                </span>
-                <span className="px-3 py-1 rounded-full bg-purple-500/20 border border-purple-500/40 text-purple-300 text-sm font-semibold">
-                    {payload.difficulty}
-                </span>
-            </div>
-            <div>
-                <h4 className="font-semibold text-white mb-2">Topic:</h4>
-                <p className="text-white/80">{payload.topic}</p>
-            </div>
-            <div className="p-4 rounded-lg bg-[#f5c16c]/10 border border-[#f5c16c]/30">
-                <p className="text-sm text-[#f5c16c]">
-                    This coding challenge will be generated dynamically when you start working on it.
-                    The challenge will be tailored to the <strong>{payload.topic}</strong> topic at a <strong>{payload.difficulty}</strong> level using <strong>{payload.language}</strong>.
-                </p>
-            </div>
-            <Button
-                className="w-full bg-gradient-to-r from-[#f5c16c] to-[#d4a855] text-black font-semibold hover:from-[#d4a855] hover:to-[#f5c16c]"
-                onClick={() => onStartChallenge(payload)}
-            >
-                Start Coding Challenge
-            </Button>
-        </CardContent>
-    </Card>
-);
-
 // ========== MAIN COMPONENT ==========
 
 interface ModuleLearningViewProps {
@@ -311,25 +249,6 @@ interface ModuleLearningViewProps {
     totalWeeks: number;
 }
 
-/**
- * ModuleLearningView: Main component for viewing and completing weekly learning modules
- * 
- * Features:
- * - Activity navigation (previous/next)
- * - Progress tracking (completed/total activities)
- * - Activity rendering based on type (Reading, KnowledgeCheck, Quiz, Coding)
- * - Quiz validation flow (must pass before marking complete)
- * - Week completion celebration
- * 
- * State Management:
- * - currentActivityIndex: Track which activity user is viewing
- * - completedActivities: List of completed activity IDs
- * - quizPassedState: Track if current quiz was passed (required for completion)
- * - isCompleting: Show loading state during completion
- * - activeCodingChallenge: Track active coding challenge modal
- * - isLoadingProgress: Show loading state while fetching progress
- * - stepProgress: Cached progress data
- */
 export function ModuleLearningView({
     weeklyStep,
     questId,
@@ -338,115 +257,81 @@ export function ModuleLearningView({
     chapterName,
     totalWeeks
 }: ModuleLearningViewProps) {
-    // ========== STATE MANAGEMENT ==========
     const [currentActivityIndex, setCurrentActivityIndex] = useState(0);
     const [completedActivities, setCompletedActivities] = useState<string[]>([]);
     const [isCompleting, setIsCompleting] = useState(false);
-    const [activeCodingChallenge, setActiveCodingChallenge] = useState<CodingActivityPayload | null>(null);
     const [isLoadingProgress, setIsLoadingProgress] = useState(true);
-    const [stepProgress, setStepProgress] = useState<any>(null);
-
-    // ⭐ NEW: Track if quiz was passed (for Quiz activities only)
+    // ⭐ Cached progress state to avoid re-fetching
+    const [stepProgressData, setStepProgressData] = useState<any>(null);
     const [quizPassedState, setQuizPassedState] = useState<boolean | null>(null);
 
-    // ========== DERIVED STATE ==========
-    const activities = weeklyStep.content?.activities || [];
+    // Use memoized activities from props instead of parsing from API response every time
+    const activities = useMemo(() => weeklyStep.content?.activities || [], [weeklyStep]);
     const currentActivity = activities[currentActivityIndex];
     const totalActivities = activities.length;
     const isFirstActivity = currentActivityIndex === 0;
     const isLastActivity = currentActivityIndex === totalActivities - 1;
-    const isWeekComplete = completedActivities.length === totalActivities;
     const isActivityComplete = completedActivities.includes(currentActivity?.activityId);
+
+    const isWeekComplete = stepProgressData?.status === 'Completed' || (totalActivities > 0 && completedActivities.length === totalActivities);
 
     // ========== EFFECTS ==========
 
     /**
-     * Fetch progress when component mounts
-     * Loads completed activities and step progress data
+     * Fetch progress function reused for initial load and refreshing
+     * ⭐ OPTIMIZED: Only updates state if data actually changes or is missing
      */
-    useEffect(() => {
-        const fetchProgress = async () => {
-            try {
-                setIsLoadingProgress(true);
-                const response = await questApi.getCompletedActivities(questId, weeklyStep.id);
+    const fetchProgress = useCallback(async () => {
+        try {
+            // Only show loading on initial load, not background refresh
+            if (!stepProgressData) setIsLoadingProgress(true);
 
-                if (response.isSuccess && response.data) {
-                    // Extract completed activity IDs
-                    const completed = response.data.activities
-                        .filter((a: any) => a.isCompleted)
-                        .map((a: any) => a.activityId);
+            const response = await questApi.getCompletedActivities(questId, weeklyStep.id);
 
-                    setCompletedActivities(completed);
-                    setStepProgress(response.data);
+            if (response.isSuccess && response.data) {
+                const completed = response.data.activities
+                    .filter((a: any) => a.isCompleted)
+                    .map((a: any) => a.activityId);
 
-                    console.log(`✅ Loaded progress: ${completed.length}/${response.data.totalCount} activities completed`);
-                } else {
-                    // 404/403 means no progress yet - this is normal for first-time users
-                    // Backend will lazy-create the attempt when user completes their first activity
-                    console.log("No progress found - user hasn't started this quest yet");
-                    setCompletedActivities([]);
-                    setStepProgress(null);
-                }
-            } catch (error) {
-                // Network or unexpected errors - still don't block the user
-                console.error("Failed to fetch progress:", error);
-                setCompletedActivities([]);
-                setStepProgress(null);
-            } finally {
-                setIsLoadingProgress(false);
+                setCompletedActivities(completed);
+                setStepProgressData(response.data);
             }
-        };
-
-        fetchProgress();
+        } catch (error) {
+            console.error("Failed to fetch progress:", error);
+        } finally {
+            setIsLoadingProgress(false);
+        }
     }, [questId, weeklyStep.id]);
 
     /**
-     * ⭐ NEW: Reset quiz pass state when activity changes
-     * Ensures each Quiz activity starts fresh without pass/fail state
+     * Fetch progress when component mounts
      */
+    useEffect(() => {
+        fetchProgress();
+    }, []); // fetchProgress depends on stable IDs and stepProgressData
+
+    // Reset quiz pass state when activity changes
     useEffect(() => {
         setQuizPassedState(null);
     }, [currentActivityIndex]);
 
-    // ========== HANDLERS ==========
-
-    /**
-     * Navigate to next activity
-     */
     const handleNextActivity = () => {
         if (!isLastActivity) {
             setCurrentActivityIndex(prev => prev + 1);
         }
     };
 
-    /**
-     * Navigate to previous activity
-     */
     const handlePrevActivity = () => {
         if (!isFirstActivity) {
             setCurrentActivityIndex(prev => prev - 1);
         }
     };
 
-    /**
-     * ⭐ UPDATED: Mark activity as complete with Quiz validation
-     * 
-     * For Quiz activities: Only allows completion if quiz was passed
-     * For other activities: Allows immediate completion
-     * 
-     * Flow:
-     * 1. Check if activity already completed
-     * 2. If Quiz: verify quizPassedState === true
-     * 3. Call updateActivityProgress API
-     * 4. Update local state
-     * 5. Auto-advance to next activity (if not last)
-     */
     const handleCompleteActivity = async () => {
         if (!currentActivity || completedActivities.includes(currentActivity.activityId)) {
             return;
         }
 
-        // ⭐ NEW: If it's a Quiz, require that it was passed first
         if (currentActivity.type === 'Quiz') {
             if (quizPassedState !== true) {
                 toast.error("You must pass the quiz first before completing this activity.");
@@ -455,49 +340,31 @@ export function ModuleLearningView({
         }
 
         setIsCompleting(true);
-        
-        // Retry logic for transient errors (e.g., lazy creation race condition)
-        const maxRetries = 2;
-        let lastError: any = null;
-        
-        for (let attempt = 0; attempt <= maxRetries; attempt++) {
-            try {
-                await questApi.updateActivityProgress(questId, weeklyStep.id, currentActivity.activityId, 'Completed');
-                setCompletedActivities(prev => [...prev, currentActivity.activityId]);
-                setQuizPassedState(null); // Reset for next activity
 
-                // Auto-advance to next activity if not last
-                if (!isLastActivity) {
-                    setTimeout(() => {
-                        handleNextActivity();
-                    }, 500);
-                }
-                
-                setIsCompleting(false);
-                return; // Success - exit the function
-            } catch (error) {
-                lastError = error;
-                console.error(`Attempt ${attempt + 1} failed:`, error);
-                
-                // Wait before retry (exponential backoff)
-                if (attempt < maxRetries) {
-                    await new Promise(resolve => setTimeout(resolve, 500 * (attempt + 1)));
-                }
+        try {
+            await questApi.updateActivityProgress(questId, weeklyStep.id, currentActivity.activityId, 'Completed');
+
+            // ⭐ Optimistically update local state immediately
+            setCompletedActivities(prev => [...prev, currentActivity.activityId]);
+
+            // Background refresh to sync server state (XP, etc) without blocking UI
+            fetchProgress();
+
+            setQuizPassedState(null);
+
+            if (!isLastActivity) {
+                setTimeout(() => {
+                    handleNextActivity();
+                }, 500);
             }
+        } catch (error) {
+            console.error("Failed to mark activity as complete:", error);
+            toast.error("There was an error saving your progress. Please try again.");
+        } finally {
+            setIsCompleting(false);
         }
-        
-        // All retries failed
-        console.error("Failed to mark activity as complete after retries:", lastError);
-        toast.error("There was an error saving your progress. Please try again.");
-        setIsCompleting(false);
     };
 
-    /**
-     * Render activity content based on activity type
-     * 
-     * ⭐ UPDATED: Quiz case now uses imported QuizActivityContentComponent
-     * Passes callbacks for quiz pass/fail tracking
-     */
     const [readingSessionStarted, setReadingSessionStarted] = useState(false);
 
     useEffect(() => {
@@ -509,7 +376,6 @@ export function ModuleLearningView({
             case 'Reading':
                 return (
                     <ReadingActivityContent
-                        // ⭐ KEY ADDED: Force re-mount when activity ID changes
                         key={activity.activityId}
                         payload={activity.payload as ReadingActivityPayload}
                         sessionStarted={readingSessionStarted}
@@ -527,15 +393,12 @@ export function ModuleLearningView({
                 );
             case 'KnowledgeCheck':
                 return <KnowledgeCheckActivityContent
-                    // ⭐ KEY ADDED: Force re-mount when activity ID changes.
-                    // This resets the internal state (selectedAnswers, submitted) for the new question.
                     key={activity.activityId}
                     payload={activity.payload as KnowledgeCheckActivityPayload}
                 />;
             case 'Quiz':
                 return (
                     <QuizActivityContentComponent
-                        // ⭐ KEY ADDED: Force re-mount when activity ID changes
                         key={activity.activityId}
                         payload={activity.payload as QuizActivityPayload}
                         questId={questId}
@@ -543,30 +406,17 @@ export function ModuleLearningView({
                         activityId={activity.activityId}
                         isActivityComplete={isActivityComplete}
                         onQuizPassed={(result) => {
-                            // ✅ Quiz passed - enable completion
                             setQuizPassedState(true);
-                            console.log("Quiz passed:", result);
                         }}
                         onQuizFailed={(result) => {
-                            // ❌ Quiz failed - disable completion
                             setQuizPassedState(false);
-                            console.log("Quiz failed:", result);
                         }}
                     />
                 );
-            case 'Coding':
-                return <CodingActivityContent
-                    // ⭐ KEY ADDED: Force re-mount when activity ID changes
-                    key={activity.activityId}
-                    payload={activity.payload as CodingActivityPayload}
-                    onStartChallenge={setActiveCodingChallenge}
-                />;
             default:
                 return <p className="text-white/60">Unknown activity type: {activity.type}</p>;
         }
     };
-
-    // ========== RENDER ==========
 
     if (!currentActivity) {
         return (
@@ -579,21 +429,8 @@ export function ModuleLearningView({
 
     return (
         <div className="space-y-6">
-            {/* Coding Challenge Modal */}
-            {activeCodingChallenge && (
-                <CodingChallengeModal
-                    challengeContent={activeCodingChallenge}
-                    onClose={() => setActiveCodingChallenge(null)}
-                    onComplete={() => {
-                        handleCompleteActivity();
-                        setActiveCodingChallenge(null);
-                    }}
-                />
-            )}
-
             {/* Header Section */}
             <div className="flex items-start justify-between gap-4">
-                {/* Breadcrumb and Title */}
                 <div className="flex-1">
                     <div className="flex items-center gap-2 text-sm text-white/60 mb-2">
                         <Link href="/quests" className="hover:text-[#f5c16c]">
@@ -619,7 +456,6 @@ export function ModuleLearningView({
                     </p>
                 </div>
 
-                {/* Weekly Progress Card */}
                 <div className="w-80">
                     {isLoadingProgress ? (
                         <Card className="bg-black/40 border-[#f5c16c]/20">
@@ -638,7 +474,7 @@ export function ModuleLearningView({
                 </div>
             </div>
 
-            {/* Main Activity Card - Full Width & Height */}
+            {/* Main Activity Card */}
             <Card className="relative overflow-hidden border-[#f5c16c]/20 bg-gradient-to-br from-[#2d1810] via-[#1a0a08] to-[#0a0506] min-h-[calc(100vh-280px)]">
                 <div
                     className="pointer-events-none absolute inset-0 opacity-25 mix-blend-overlay"
@@ -648,9 +484,7 @@ export function ModuleLearningView({
                         backgroundRepeat: 'repeat'
                     }}
                 />
-                {/* Integrated Navigation Bar at Top of Card */}
                 <div className="relative z-10 flex items-center justify-between gap-4 px-6 py-2.5 border-b border-[#f5c16c]/20 bg-black/30">
-                    {/* Previous Button */}
                     <Button
                         variant="ghost"
                         size="sm"
@@ -661,7 +495,6 @@ export function ModuleLearningView({
                         <ArrowLeft className="w-4 h-4 mr-1" /> Previous
                     </Button>
 
-                    {/* Center: Activity Info + Complete Button */}
                     <div className="flex items-center gap-4">
                         <span className="text-sm text-white/60">
                             Activity {currentActivityIndex + 1}/{totalActivities}: <span className="text-white font-medium">{currentActivity.type}</span>
@@ -674,10 +507,9 @@ export function ModuleLearningView({
                         {!isActivityComplete ? (
                             <Button
                                 size="sm"
-                                className={`font-semibold ${
-                                    currentActivity.type === 'Quiz' && quizPassedState !== true
-                                        ? 'bg-gray-600 cursor-not-allowed opacity-50'
-                                        : 'bg-gradient-to-r from-[#f5c16c] to-[#d4a855] text-black hover:from-[#d4a855] hover:to-[#f5c16c]'
+                                className={`font-semibold ${currentActivity.type === 'Quiz' && quizPassedState !== true
+                                    ? 'bg-gray-600 cursor-not-allowed opacity-50'
+                                    : 'bg-gradient-to-r from-[#f5c16c] to-[#d4a855] text-black hover:from-[#d4a855] hover:to-[#f5c16c]'
                                     }`}
                                 onClick={handleCompleteActivity}
                                 disabled={
@@ -702,7 +534,6 @@ export function ModuleLearningView({
                         )}
                     </div>
 
-                    {/* Next Button */}
                     <Button
                         variant="ghost"
                         size="sm"
@@ -719,7 +550,6 @@ export function ModuleLearningView({
                 </CardContent>
             </Card>
 
-            {/* Week Completion Banner */}
             {isWeekComplete && (
                 <Card className="relative overflow-hidden border-emerald-500/50 bg-gradient-to-br from-emerald-950/50 to-emerald-900/30">
                     <div
@@ -756,8 +586,6 @@ export function ModuleLearningView({
                     </CardContent>
                 </Card>
             )}
-
-
         </div>
     );
 }
