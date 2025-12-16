@@ -134,7 +134,32 @@ export default function ClassesManagementPage() {
         try {
             const res = await adminManagementApi.getClassSpecialization(cls.id);
             if (res.isSuccess && res.data) {
-                setSpecSubjects(Array.isArray(res.data) ? res.data : []);
+                const entries = Array.isArray(res.data) ? res.data : [];
+                setSpecSubjects(entries);
+
+                // Identify missing subjects in our map
+                const missingIds = entries
+                    .map(e => e.subjectId)
+                    .filter(id => !subjectMap[id]);
+
+                // Fetch missing subjects individually if needed
+                if (missingIds.length > 0) {
+                    const uniqueMissingIds = Array.from(new Set(missingIds));
+                    const newSubjects: Record<string, Subject> = {};
+
+                    await Promise.all(uniqueMissingIds.map(async (id) => {
+                        try {
+                            const subRes = await subjectsApi.getById(id);
+                            if (subRes.isSuccess && subRes.data) {
+                                newSubjects[id] = subRes.data;
+                            }
+                        } catch (err) {
+                            console.error(`Failed to load subject ${id}`, err);
+                        }
+                    }));
+
+                    setSubjectMap(prev => ({ ...prev, ...newSubjects }));
+                }
             } else {
                 setSpecSubjects([]);
             }
