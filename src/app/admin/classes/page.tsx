@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { AdminLayout } from "@/components/layout/AdminLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -27,6 +27,9 @@ export default function ClassesManagementPage() {
     const [addSpecId, setAddSpecId] = useState("");
     const [addSemester, setAddSemester] = useState(1);
 
+    // Cache map for subject details to avoid repeated lookups or missing data
+    const [subjectMap, setSubjectMap] = useState<Record<string, Subject>>({});
+
     useEffect(() => {
         loadData();
     }, []);
@@ -34,17 +37,26 @@ export default function ClassesManagementPage() {
     const loadData = async () => {
         setLoading(true);
         try {
-            const [cRes, sRes] = await Promise.all([
-                classesApi.getAll(),
-                subjectsApi.getAll()
-            ]);
+            // Fetch classes
+            const cRes = await classesApi.getAll();
             if (cRes.isSuccess && cRes.data) {
                 const classData = cRes.data;
                 setClassList(Array.isArray(classData) ? classData : []);
             }
+
+            // Fetch initial batch of subjects (page 1, large size to get most)
+            // Note: In a real app with thousands of subjects, you'd want a search-based selector
+            const sRes = await subjectsApi.getAll(1, 100);
             if (sRes.isSuccess && sRes.data) {
                 const subjectData = sRes.data.items;
                 setSubjects(Array.isArray(subjectData) ? subjectData : []);
+
+                // Build initial map
+                const map: Record<string, Subject> = {};
+                if (Array.isArray(subjectData)) {
+                    subjectData.forEach(s => map[s.id] = s);
+                }
+                setSubjectMap(prev => ({ ...prev, ...map }));
             }
         } catch (e: any) {
             toast.error(e?.normalized?.message || e?.message || "Failed to load initial data");
@@ -59,7 +71,32 @@ export default function ClassesManagementPage() {
         try {
             const res = await adminManagementApi.getClassSpecialization(cls.id);
             if (res.isSuccess && res.data) {
-                setSpecSubjects(Array.isArray(res.data) ? res.data : []);
+                const entries = Array.isArray(res.data) ? res.data : [];
+                setSpecSubjects(entries);
+
+                // Identify missing subjects in our map
+                const missingIds = entries
+                    .map(e => e.subjectId)
+                    .filter(id => !subjectMap[id]);
+
+                // Fetch missing subjects individually if needed
+                if (missingIds.length > 0) {
+                    const uniqueMissingIds = Array.from(new Set(missingIds));
+                    const newSubjects: Record<string, Subject> = {};
+
+                    await Promise.all(uniqueMissingIds.map(async (id) => {
+                        try {
+                            const subRes = await subjectsApi.getById(id);
+                            if (subRes.isSuccess && subRes.data) {
+                                newSubjects[id] = subRes.data;
+                            }
+                        } catch (err) {
+                            console.error(`Failed to load subject ${id}`, err);
+                        }
+                    }));
+
+                    setSubjectMap(prev => ({ ...prev, ...newSubjects }));
+                }
             } else {
                 setSpecSubjects([]);
             }
@@ -185,14 +222,20 @@ export default function ClassesManagementPage() {
                                     </div>
                                     {(Array.isArray(specSubjects) ? specSubjects : [])
                                         .slice()
-                                        .sort((a, b) => ((a.semester ?? 0) - (b.semester ?? 0)) || ((a.subjectCode ?? a.placeholderSubjectCode ?? '').localeCompare(b.subjectCode ?? b.placeholderSubjectCode ?? '')))
+                                        .sort((a, b) => ((a.semester ?? 0) - (b.semester ?? 0)))
                                         .map(sub => {
-                                            const displayCode = sub.subjectCode || sub.placeholderSubjectCode || 'N/A';
+                                            // Try to find the subject in our cache map using the subjectId
+                                            const resolvedSubject = subjectMap[sub.subjectId];
+
+                                            // Fallback logic: check DTO fields -> check map -> default
+                                            const code = sub.subjectCode || resolvedSubject?.subjectCode|| 'N/A';
+                                            const name = sub.subjectName || resolvedSubject?.subjectName || 'Unknown Subject';
+
                                             return (
                                                 <div key={sub.id} className="grid grid-cols-[1fr_100px_48px] items-center bg-[#0a0506] p-3 rounded-lg border border-[#f5c16c]/20">
                                                     <div className="flex items-center gap-3">
-                                                        <span className="text-[#f5c16c] font-mono text-xs">{displayCode}</span>
-                                                        {sub.subjectName && <span className="text-sm text-white">{sub.subjectName}</span>}
+                                                        <span className="text-[#f5c16c] font-mono text-xs">{code}</span>
+                                                        <span className="text-sm text-white">{name}</span>
                                                     </div>
                                                     <div className="text-sm text-white/70 text-right">{sub.semester}</div>
                                                     <div className="flex justify-end">
