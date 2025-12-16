@@ -1,6 +1,6 @@
 "use client";
 import React, { useEffect, useMemo, useState } from "react";
-import { Swords, Video, Calendar, Clock, Users, ExternalLink, Play, Square, AlertCircle, FileText } from "lucide-react";
+import { Swords, Video, Calendar, Clock, Users, ExternalLink, Play, Square, AlertCircle, FileText, RefreshCw } from "lucide-react";
 import { useGoogleMeet, MeetScopes } from "@/hooks/useGoogleMeet";
 import googleMeetApi from "@/api/googleMeetApi";
 import meetingsApi from "@/api/meetingsApi";
@@ -676,6 +676,27 @@ export default function GuildMeetingsSection({ guildId }: Props) {
     }
   }
 
+  async function reload() {
+    setLoadingMeetings(true);
+    try {
+      const [mList, mMembers] = await Promise.all([
+        meetingsApi.getGuildMeetings(guildId),
+        guildsApi.getMembers(guildId),
+      ]);
+      setGuildMeetings(mList.data ?? []);
+      setMembers(mMembers.data ?? []);
+      const active = detectActiveMeeting(mList.data ?? []);
+      if (active) {
+        setActiveMeeting({ meeting: active, google: null });
+      } else {
+        setActiveMeeting({ meeting: null, google: null });
+      }
+    } catch (e: any) {
+    } finally {
+      setLoadingMeetings(false);
+    }
+  }
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -812,6 +833,14 @@ export default function GuildMeetingsSection({ guildId }: Props) {
               />
             </div>
             {loadingMeetings && <span className="text-xs text-white/60">Loading...</span>}
+            <button
+              onClick={reload}
+              disabled={loadingMeetings}
+              className="rounded p-1.5 text-white/70 hover:bg-white/10 hover:text-white disabled:opacity-50"
+              title="Refresh meetings"
+            >
+              <RefreshCw className={`h-4 w-4 ${loadingMeetings ? "animate-spin" : ""}`} />
+            </button>
             {needsAuth && (myRole === "GuildMaster") && (
               <button
                 onClick={handleAuthorize}
