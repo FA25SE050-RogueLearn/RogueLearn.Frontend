@@ -55,7 +55,7 @@ export default function AdminFeedbackPage() {
   const [subjectsPage, setSubjectsPage] = useState(1);
   const [subjectsHasMore, setSubjectsHasMore] = useState(false);
   const [loadingSubjects, setLoadingSubjects] = useState(false);
-  
+
   // Quest step content dialog state
   const [contentDialogOpen, setContentDialogOpen] = useState(false);
   const [selectedFeedbackItem, setSelectedFeedbackItem] = useState<FeedbackItem | null>(null);
@@ -284,8 +284,8 @@ export default function AdminFeedbackPage() {
                       <TableCell>
                         <span className={cn("px-2 py-1 rounded text-[10px] uppercase font-bold tracking-wider border",
                           it.category === 'ContentError' ? "bg-[#e07a5f]/10 text-[#e07a5f] border-[#e07a5f]/30" :
-                          it.category === 'TechnicalIssue' ? "bg-orange-50 text-orange-600 border-orange-200" :
-                          "bg-[#f5c16c]/10 text-[#f5c16c] border-[#7289da]/30"
+                            it.category === 'TechnicalIssue' ? "bg-orange-50 text-orange-600 border-orange-200" :
+                              "bg-[#f5c16c]/10 text-[#f5c16c] border-[#7289da]/30"
                         )}>{it.category}</span>
                       </TableCell>
                       <TableCell><div className="flex gap-0.5">{[...Array(5)].map((_, i) => <div key={i} className={cn("h-1.5 w-1.5 rounded-full", i < it.rating ? "bg-[#f5c16c]" : "bg-[#beaca3]/40")} />)}</div></TableCell>
@@ -335,7 +335,7 @@ export default function AdminFeedbackPage() {
                 </div>
               )}
             </DialogHeader>
-            
+
             <div className="max-h-[70vh] overflow-y-auto pr-4">
               {loadingContent ? (
                 <div className="flex items-center justify-center py-12">
@@ -355,7 +355,7 @@ export default function AdminFeedbackPage() {
                           <span className="ml-auto text-xs font-medium">+{activity.payload.experiencePoints} XP</span>
                         )}
                       </div>
-                      
+
                       {/* Activity Content */}
                       <div className="p-4 bg-[#0a0506]/50">
                         {/* Topic if available */}
@@ -365,7 +365,7 @@ export default function AdminFeedbackPage() {
                             <p className="text-sm font-medium text-white">{(activity.payload as any).topic}</p>
                           </div>
                         )}
-                        
+
                         {/* Questions for KnowledgeCheck/Quiz */}
                         {activity.payload && 'questions' in activity.payload && (
                           <div className="space-y-3">
@@ -379,12 +379,12 @@ export default function AdminFeedbackPage() {
                                 </p>
                                 <div className="space-y-1 mb-2">
                                   {q.options?.map((opt: string, oIdx: number) => (
-                                    <div 
-                                      key={oIdx} 
+                                    <div
+                                      key={oIdx}
                                       className={cn(
                                         "text-xs px-2 py-1 rounded",
-                                        opt === q.correctAnswer 
-                                          ? "bg-emerald-50 text-emerald-700 border border-emerald-200" 
+                                        opt === q.correctAnswer
+                                          ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
                                           : "bg-[#0a0506] text-white/70"
                                       )}
                                     >
@@ -402,7 +402,7 @@ export default function AdminFeedbackPage() {
                             ))}
                           </div>
                         )}
-                        
+
                         {/* Reading content */}
                         {activity.type === 'Reading' && activity.payload && 'articleTitle' in activity.payload && (
                           <div className="space-y-2">
@@ -423,25 +423,7 @@ export default function AdminFeedbackPage() {
                             )}
                           </div>
                         )}
-                        
-                        {/* Coding content */}
-                        {activity.type === 'Coding' && activity.payload && (
-                          <div className="space-y-2">
-                            {'problemTitle' in activity.payload && (
-                              <div>
-                                <span className="text-xs font-medium text-white/50 uppercase tracking-wide">Problem</span>
-                                <p className="text-sm font-medium text-white">{(activity.payload as any).problemTitle}</p>
-                              </div>
-                            )}
-                            {'problemDescription' in activity.payload && (
-                              <div>
-                                <span className="text-xs font-medium text-white/50 uppercase tracking-wide">Description</span>
-                                <p className="text-sm text-white/70 whitespace-pre-wrap">{(activity.payload as any).problemDescription}</p>
-                              </div>
-                            )}
-                          </div>
-                        )}
-                        
+
                         {/* Activity ID */}
                         <div className="mt-3 pt-2 border-t border-[#f5c16c]/20">
                           <span className="text-[10px] font-mono text-white/30">ID: {activity.activityId}</span>
