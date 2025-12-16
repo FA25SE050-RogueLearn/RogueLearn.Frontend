@@ -484,12 +484,12 @@ export default function GuildDetailPage() {
                 </TabsContent>
 
                 <TabsContent value="rankings" className="space-y-8">
-                  <div className="flex items-end justify-center gap-4 pt-4">
+                  <div className="flex items-end justify-center gap-12 pt-4 w-full">
                     <div className="flex flex-col items-center">
                       {top3[1] && (
                         <div className="w-20 h-20 rounded-full border-4 border-gray-400 overflow-hidden mb-2 relative">
                           <Avatar className="w-full h-full">
-                            <AvatarImage src={top3[1].profileImageUrl ?? undefined} alt={displayName(top3[1]) ?? ""} />
+                            <AvatarImage className="object-cover" src={top3[1].profileImageUrl ?? undefined} alt={displayName(top3[1]) ?? ""} />
                             <AvatarFallback>{(displayName(top3[1]) ?? "").slice(0,2).toUpperCase()}</AvatarFallback>
                           </Avatar>
                           <div className="absolute bottom-0 w-full bg-gray-400 text-black text-center text-xs font-bold">#2</div>
@@ -505,7 +505,7 @@ export default function GuildDetailPage() {
                       {top3[0] && (
                         <div className="w-24 h-24 rounded-full border-4 border-[#d4a353] overflow-hidden mb-2 relative">
                           <Avatar className="w-full h-full">
-                            <AvatarImage src={top3[0].profileImageUrl ?? undefined} alt={displayName(top3[0]) ?? ""} />
+                            <AvatarImage className="object-cover" src={top3[0].profileImageUrl ?? undefined} alt={displayName(top3[0]) ?? ""} />
                             <AvatarFallback>{(displayName(top3[0]) ?? "").slice(0,2).toUpperCase()}</AvatarFallback>
                           </Avatar>
                           <div className="absolute bottom-0 w-full bg-[#d4a353] text-black text-center text-xs font-bold">#1</div>
@@ -520,7 +520,7 @@ export default function GuildDetailPage() {
                       {top3[2] && (
                         <div className="w-20 h-20 rounded-full border-4 border-orange-700 overflow-hidden mb-2 relative">
                           <Avatar className="w-full h-full">
-                            <AvatarImage src={top3[2].profileImageUrl ?? undefined} alt={displayName(top3[2]) ?? ""} />
+                            <AvatarImage className="object-cover" src={top3[2].profileImageUrl ?? undefined} alt={displayName(top3[2]) ?? ""} />
                             <AvatarFallback>{(displayName(top3[2]) ?? "").slice(0,2).toUpperCase()}</AvatarFallback>
                           </Avatar>
                           <div className="absolute bottom-0 w-full bg-orange-700 text-white text-center text-xs font-bold">#3</div>
@@ -546,24 +546,26 @@ export default function GuildDetailPage() {
                       <table className="w-full text-left text-sm text-foreground/70">
                         <thead className="bg-black/40 text-[11px] uppercase font-bold text-foreground/50 border-b border-[#f5c16c]/20">
                           <tr>
-                            <th className="p-4 w-16">Rank</th>
-                            <th className="p-4">Hero</th>
-                            <th className="p-4">Role</th>
-                            <th className="p-4 text-right">Contribution</th>
+                            <th className="p-4 w-[15%]">Rank</th>
+                            <th className="p-4 w-[45%]">Hero</th>
+                            <th className="p-4 w-[20%]">Role</th>
+                            <th className="p-4 w-[20%] text-right">Contribution</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-[#f5c16c]/15">
                           {rankPagedMembers.map((m, i) => (
                             <tr key={m.memberId} className="hover:bg-black/40 transition">
                               <td className="p-4 font-bold text-foreground/60">#{rankOf(m, (safeRankPage - 1) * rankPageSize + i)}</td>
-                              <td className="p-4 flex items-center gap-3 text-white">
-                                <div className="w-8 h-8 rounded-full overflow-hidden bg-black">
-                                  <Avatar className="w-full h-full">
-                                    <AvatarImage src={m.profileImageUrl ?? undefined} alt={displayName(m) ?? ''} />
-                                    <AvatarFallback>{(displayName(m) ?? '').slice(0,2).toUpperCase()}</AvatarFallback>
-                                  </Avatar>
+                              <td className="p-4">
+                                <div className="flex items-center gap-3 text-white">
+                                  <div className="w-8 h-8 rounded-full overflow-hidden bg-black shrink-0">
+                                    <Avatar className="w-full h-full">
+                                      <AvatarImage className="object-cover" src={m.profileImageUrl ?? undefined} alt={displayName(m) ?? ''} />
+                                      <AvatarFallback>{(displayName(m) ?? '').slice(0,2).toUpperCase()}</AvatarFallback>
+                                    </Avatar>
+                                  </div>
+                                  <span className="truncate">{displayName(m) ?? m.authUserId}</span>
                                 </div>
-                                <span>{displayName(m) ?? m.authUserId}</span>
                               </td>
                               <td className="p-4">
                                 <span className="px-2 py-0.5 rounded border border-[#f5c16c]/25 text-white/80 text-[10px] uppercase">{m.role}</span>

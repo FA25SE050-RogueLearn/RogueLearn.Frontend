@@ -294,7 +294,7 @@ export default function FeaturesSection() {
                                         <div className="relative ml-[calc(50%-1rem)] flex items-center gap-2">
                                             <div className="ring-background size-8 ring-4">
                                                 <Image
-                                                    className="size-full rounded-full"
+                                                    className="size-full rounded-full object-cover"
                                                     src="https://avatars.githubusercontent.com/u/47919550?v=4"
                                                     alt="M. Irung avatar"
                                                     width={64}
