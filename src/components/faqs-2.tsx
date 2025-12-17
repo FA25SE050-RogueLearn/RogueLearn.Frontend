@@ -8,27 +8,27 @@ export default function FAQsTwo() {
         {
             id: 'item-1',
             question: 'What is RogueLearn?',
-            answer: 'RogueLearn is a gamified learning platform that combines RPG mechanics with programming education. Complete quests, battle bugs, level up your skills, and join guilds—all while learning real coding concepts.',
+            answer: 'RogueLearn is a gamified learning platform that transforms programming education into an RPG adventure. Complete quests, track your progress, compete in code battles, earn achievements, and join guilds—all while mastering real coding skills.',
         },
         {
             id: 'item-2',
-            question: 'Do I need prior programming experience?',
-            answer: 'Not at all! RogueLearn is designed for all skill levels. Our quest system starts with beginner-friendly challenges and progressively introduces advanced concepts as you level up your character.',
+            question: 'How does the Quest system work?',
+            answer: 'Quests are structured learning paths with step-by-step challenges. You can track your completion percentage, resume from where you left off, and earn XP for each step completed. Find quests that match your current subject curriculum.',
         },
         {
             id: 'item-3',
-            question: 'What programming languages can I learn?',
-            answer: 'Currently, we offer quests for JavaScript, Python, Java, and C++. Each language has its own skill tree with unique abilities to unlock. More languages are being added based on community requests.',
+            question: 'What are Code Battles?',
+            answer: 'Code Battles are competitive events where you solve programming challenges against other learners. Join active events, compete for positions on leaderboards, and earn special achievements. New battles are regularly added!',
         },
         {
             id: 'item-4',
-            question: 'How does the guild system work?',
-            answer: "Guilds are groups of learners who tackle challenges together. Join or create a guild, participate in raids (collaborative coding challenges), compete on leaderboards, and share knowledge with your party members.",
+            question: 'How do Guilds and Parties work?',
+            answer: "Guilds are communities of learners collaborating together. Join a guild to access shared resources and compete in guild events. Parties are smaller groups for focused study sessions and tackling challenges with friends.",
         },
         {
             id: 'item-5',
-            question: 'Is RogueLearn free to use?',
-            answer: 'Yes! RogueLearn offers a free tier with access to core quests and features. Premium membership unlocks exclusive dungeons, advanced skill trees, and additional customization options for your character.',
+            question: 'How do I track my progress?',
+            answer: 'Your dashboard shows everything: active quests with completion percentage, skills with XP levels, earned achievements, and your guild/party memberships. Watch your skills level up as you complete more challenges!',
         },
     ]
 

@@ -11,20 +11,15 @@ import { ProgressiveBlur } from "@/components/ui/progressive-blur";
 
 export default function HeroSection() {
   const menuItems = [
-    { label: "Home", ariaLabel: "Go to home page", link: "/" },
-    { label: "Game", ariaLabel: "Navigate to game page", link: "/game" },
-    {
-      label: "Learning",
-      ariaLabel: "Navigate to learning section",
-      link: "#learning",
-    },
-    { label: "About", ariaLabel: "Navigate to about section", link: "#about" },
+    { label: "Home", ariaLabel: "Go to home page", link: "#home" },
+    { label: "Features", ariaLabel: "View features", link: "#features" },
+    { label: "The Guild", ariaLabel: "Meet the team", link: "#team" },
+    { label: "FAQ", ariaLabel: "View FAQs", link: "#faq" },
   ];
 
   const socialItems = [
-    { label: "GitHub", link: "https://github.com/FA25SE050-RogueLearn" },
-    { label: "Discord", link: "#discord" },
-    { label: "Twitter", link: "#twitter" },
+    { label: "Login", link: "/login" },
+    { label: "Sign Up", link: "/signup" },
   ];
 
   return (
@@ -144,10 +139,10 @@ export default function HeroSection() {
 
                   <div className="text-center border-x border-border/50">
                     <div className="font-heading text-4xl font-bold text-foreground">
-                      50<span className="text-primary">+</span>
+                      200<span className="text-primary">+</span>
                     </div>
                     <div className="mt-2 font-body text-sm text-muted-foreground">
-                      Coding Challenges
+                      Epic Quests
                     </div>
                   </div>
 

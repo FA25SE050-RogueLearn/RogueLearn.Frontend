@@ -1,6 +1,10 @@
 /* roguelearn-web/src/app/globals.css */
 @import "tailwindcss";
 
+html {
+  scroll-behavior: smooth;
+}
+
 /* CSS Variables with hsl() inside */
 :root {
   /* Light Mode - Clean Default */

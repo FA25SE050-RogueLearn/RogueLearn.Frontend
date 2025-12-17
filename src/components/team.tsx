@@ -3,39 +3,33 @@ import Link from 'next/link'
 
 const members = [
     {
-        name: 'Alex Rodriguez',
-        role: 'Lead Game Designer',
-        avatar: 'https://i.pravatar.cc/400?img=33',
+        name: 'Dinh Duong',
+        role: 'Frontend Developer',
+        avatar: '/dinh-duong.png',
         link: '#',
     },
     {
-        name: 'Maya Patel',
-        role: 'Chief Learning Officer',
-        avatar: 'https://i.pravatar.cc/400?img=47',
+        name: 'Duy Tan',
+        role: 'Game Developer',
+        avatar: '/duy-tan.png',
         link: '#',
     },
     {
-        name: 'Jordan Kim',
-        role: 'Senior Developer',
-        avatar: 'https://i.pravatar.cc/400?img=13',
+        name: 'Minh Anh',
+        role: 'Full Stack Developer',
+        avatar: '/minh-anh.png',
         link: '#',
     },
     {
-        name: 'Samantha Chen',
-        role: 'Quest Architect',
-        avatar: 'https://i.pravatar.cc/400?img=44',
+        name: 'Song Phuc',
+        role: 'Backend Developer',
+        avatar: '/song-phuc.png',
         link: '#',
     },
     {
-        name: 'Marcus Johnson',
-        role: 'Community Manager',
-        avatar: 'https://i.pravatar.cc/400?img=12',
-        link: '#',
-    },
-    {
-        name: 'Elena Volkov',
-        role: 'UX Engineer',
-        avatar: 'https://i.pravatar.cc/400?img=45',
+        name: 'Thinh An',
+        role: 'Full Stack Developer',
+        avatar: '/thinh-an.png',
         link: '#',
     },
 ]
@@ -50,15 +44,15 @@ export default function TeamSection() {
                         <h2 className="font-heading text-3xl font-bold sm:text-4xl text-foreground">Meet Our <span className="text-primary">Guild</span></h2>
                     </div>
                     <div className="mt-6 sm:mt-0">
-                        <p className="font-body text-muted-foreground">A diverse team of developers, educators, and game designers united by one mission: making programming education engaging, effective, and accessible through gamification.</p>
+                        <p className="font-body text-muted-foreground">Meet the passionate team behind RogueLearn. Five dedicated developers working together to transform programming education into an engaging RPG adventure.</p>
                     </div>
                 </div>
                 <div className="mt-12 md:mt-24">
-                    <div className="grid gap-x-6 gap-y-12 sm:grid-cols-2 lg:grid-cols-3">
+                    <div className="flex flex-wrap justify-center gap-6 gap-y-12">
                         {members.map((member, index) => (
                             <div
                                 key={index}
-                                className="group overflow-hidden">
+                                className="group overflow-hidden w-full sm:w-[calc(50%-12px)] lg:w-[calc(33.33%-16px)]">
                                 <Image
                                     className="h-96 w-full rounded-md object-cover object-top grayscale transition-all duration-500 hover:grayscale-0 group-hover:h-[22.5rem] group-hover:rounded-xl"
                                     src={member.avatar}
