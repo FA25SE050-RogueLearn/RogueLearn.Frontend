@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { Trophy, Sword, Lightbulb, GraduationCap, ScrollText, Users, Shield } from "lucide-react";
 import QuestProgressClient from "@/components/dashboard/QuestProgressClient";
-import { FeaturedEventsSection } from "@/components/dashboard/FeaturedEventsSection";
+
 import { RightColumn } from "@/components/dashboard/RightColumn";
 import { useUserFullInfo, useUserAchievements } from "@/hooks/queries/useUserData";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -167,7 +167,7 @@ export function DashboardClient() {
           </div>
         </div>
 
-        <FeaturedEventsSection />
+
         <QuestProgressClient subjects={subjects} />
       </main>
 
