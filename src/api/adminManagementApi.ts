@@ -104,15 +104,15 @@ const adminManagementApi = {
    // SUBJECT SKILL MAPPINGS (SubjectsController)
    // =================================================================
    
-   // ⭐ UPDATE: Return correct DTO type
    getSubjectSkills: (subjectId: string): Promise<ApiResponse<SubjectSkillMappingDto[]>> =>
      axiosClient.get<SubjectSkillMappingDto[]>(`/api/admin/subjects/${subjectId}/skills`).then(res => ({
        isSuccess: true,
        data: res.data
      })),
      
+   // ⭐ UPDATE: Changed payload key from 'relevance' to 'relevanceWeight' to match C# property
    addSubjectSkill: (subjectId: string, skillId: string, relevance: number = 1.0): Promise<ApiResponse<void>> =>
-     axiosClient.post<void>(`/api/admin/subjects/${subjectId}/skills`, { skillId, relevance }).then(() => ({
+     axiosClient.post<void>(`/api/admin/subjects/${subjectId}/skills`, { skillId, relevanceWeight: relevance }).then(() => ({
        isSuccess: true,
        data: undefined
      })),
