@@ -272,7 +272,7 @@ export function PostDetailView({ guildId, postId }: Props) {
                           const initials = ((display.match(/\b\w/g) || []).slice(0, 2).join("") || display.charAt(0)).toUpperCase();
                           return (
                             <Avatar className="h-8 w-8 rounded-lg border border-[#f5c16c]/30">
-                              <AvatarImage src={c.authorProfileImageUrl ?? undefined} alt={display} />
+                              <AvatarImage className="object-cover" src={c.authorProfileImageUrl ?? undefined} alt={display} />
                               <AvatarFallback className="rounded-lg bg-gradient-to-br from-[#d23187] to-[#f5c16c] text-white text-xs font-bold">
                                 {initials}
                               </AvatarFallback>
