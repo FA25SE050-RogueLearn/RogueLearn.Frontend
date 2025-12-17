@@ -64,7 +64,6 @@ export default function ProgramsManagementPage() {
 
     // Import state
     const [rawText, setRawText] = useState("");
-    const [importSemester, setImportSemester] = useState<string>("");
     const [importStatus, setImportStatus] = useState<string | null>(null);
     const [importError, setImportError] = useState<string | null>(null);
 
@@ -158,31 +157,7 @@ export default function ProgramsManagementPage() {
             await curriculumImportApi.importCurriculum({ rawText });
             setImportStatus("Import successful! Refreshing catalog...");
             setRawText("");
-            setImportSemester("");
             toast.success("Curriculum imported successfully");
-            setTimeout(() => {
-                loadData();
-                setImportStatus(null);
-            }, 2000);
-        } catch (error: any) {
-            setImportStatus(null);
-            setImportError(`Import failed: ${error.response?.data?.message || error?.normalized?.message || 'An unexpected error occurred.'}`);
-        }
-    };
-
-    const handleImportSubject = async () => {
-        setImportStatus("Importing subject... This may take a moment.");
-        setImportError(null);
-        try {
-            const semesterValue = importSemester.trim() ? parseInt(importSemester, 10) : undefined;
-            await curriculumImportApi.importSubjectFromText({
-                rawText,
-                semester: semesterValue
-            });
-            setImportStatus("Import successful! Refreshing catalog...");
-            setRawText("");
-            setImportSemester("");
-            toast.success("Subject imported successfully");
             setTimeout(() => {
                 loadData();
                 setImportStatus(null);
@@ -351,7 +326,7 @@ export default function ProgramsManagementPage() {
                         <Card className="bg-[#1a1410] border-[#f5c16c]/20">
                             <CardHeader className="border-b border-[#f5c16c]/10">
                                 <CardTitle className="text-white">Import Curriculum Data</CardTitle>
-                                <p className="text-sm text-white/60">Import curriculum programs or individual subjects from raw HTML/text</p>
+                                <p className="text-sm text-white/60">Import curriculum programs from raw HTML/text</p>
                             </CardHeader>
                             <CardContent className="space-y-4 pt-6">
                                 <div>
@@ -364,22 +339,7 @@ export default function ProgramsManagementPage() {
                                         className="mt-2 h-40 bg-[#0a0506] border-[#f5c16c]/20 text-white placeholder:text-white/40"
                                     />
                                 </div>
-                                <div className="flex gap-4 items-end">
-                                    <div className="w-32">
-                                        <Label htmlFor="semester" className="text-sm text-white/70">Semester (Optional)</Label>
-                                        <Input
-                                            id="semester"
-                                            type="number"
-                                            min="1"
-                                            max="10"
-                                            value={importSemester}
-                                            onChange={(e) => setImportSemester(e.target.value)}
-                                            placeholder="e.g., 1"
-                                            className="mt-2 bg-[#0a0506] border-[#f5c16c]/20 text-white placeholder:text-white/40"
-                                        />
-                                    </div>
-                                    <p className="text-xs text-white/50 pb-2">Only used when importing a single subject</p>
-                                </div>
+
                                 {importStatus && (
                                     <div className="flex items-center gap-2 text-emerald-400">
                                         <CheckCircle className="w-4 h-4" />
@@ -399,14 +359,6 @@ export default function ProgramsManagementPage() {
                                         className="bg-[#f5c16c] hover:bg-[#f5c16c]/90 text-black font-semibold"
                                     >
                                         <UploadCloud className="mr-2 h-4 w-4" /> Import Full Curriculum
-                                    </Button>
-                                    <Button
-                                        onClick={handleImportSubject}
-                                        disabled={!rawText || !!importStatus}
-                                        variant="outline"
-                                        className="border-[#f5c16c]/30 text-white hover:bg-[#f5c16c]/10"
-                                    >
-                                        <UploadCloud className="mr-2 h-4 w-4" /> Import Single Subject
                                     </Button>
                                 </div>
                             </CardContent>

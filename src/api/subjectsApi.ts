@@ -18,9 +18,9 @@ const subjectsApi = {
   // =================================================================
   
   /** GET /api/admin/subjects */
-  getAll: (page: number = 1, pageSize: number = 100): Promise<ApiResponse<PaginatedSubjectsResponse>> =>
+  getAll: (page: number = 1, pageSize: number = 100, search?: string): Promise<ApiResponse<PaginatedSubjectsResponse>> =>
     axiosClient.get<PaginatedSubjectsResponse>('/api/admin/subjects', {
-      params: { page, pageSize },
+      params: { page, pageSize, search },
     }).then(res => ({
       isSuccess: true,
       data: res.data,

@@ -74,9 +74,16 @@ export function GuildPostsSection({ guildId }: GuildPostsSectionProps) {
     if (!guildId) return;
     setLoading(true);
     guildPostsApi
-      .getByGuild(guildId)
+      .getByGuild(guildId, { size: 50 })
       .then((res) => {
-        setPosts(res.data ?? []);
+        const data = res.data ?? [];
+        // Sort by pinned first, then by date descending
+        data.sort((a, b) => {
+          if (a.isPinned && !b.isPinned) return -1;
+          if (!a.isPinned && b.isPinned) return 1;
+          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+        });
+        setPosts(data);
         setError(null);
       })
       .catch((err) => {
@@ -755,7 +762,7 @@ export function GuildPostsSection({ guildId }: GuildPostsSectionProps) {
                                 <div className="flex items-center justify-between">
                                   <div className="flex items-center gap-2">
                                     <Avatar className="h-8 w-8 rounded-lg border border-[#f5c16c]/30">
-                                      <AvatarImage src={c.authorProfileImageUrl ?? undefined} alt={display} />
+                                      <AvatarImage className="object-cover" src={c.authorProfileImageUrl ?? undefined} alt={display} />
                                       <AvatarFallback className="rounded-lg bg-gradient-to-br from-[#d23187] to-[#f5c16c] text-white text-xs font-bold">{initials}</AvatarFallback>
                                     </Avatar>
                                     <div className="flex flex-col leading-tight">

@@ -85,19 +85,50 @@ export default async function StatsPage({
     process.env.USER_API_BASE ||
     origin
   console.log(`[StatsPage] Using API base: ${apiBase}`)
-  const statsUrl = new URL('/api/quests/game/sessions/unity-matches', apiBase)
-  statsUrl.searchParams.set('limit', '10')
-  if (user) statsUrl.searchParams.set('userId', user.id)
+
+  const buildStatsUrl = (base: string, pathPrefix: string = '') => {
+    // Ensure base doesn't end with slash and path doesn't start with slash to avoid double slashes if we were concatenating strings,
+    // but URL constructor handles this well. 
+    // However, if we want to inject /user-service, we need to be careful.
+
+    const url = new URL(`${pathPrefix}/api/quests/game/sessions/unity-matches`.replace('//', '/'), base)
+    url.searchParams.set('limit', '10')
+    if (user) url.searchParams.set('userId', user.id)
+    return url
+  }
+
+  let statsUrl = buildStatsUrl(apiBase)
+  console.log(`[StatsPage] Fetching stats from: ${statsUrl.toString()}`)
 
   let ok = false
   let data: { matches: UnityMatch[] } = { matches: [] }
+  let errorMessage = ''
 
   try {
-    const res = await fetch(statsUrl.toString(), { cache: 'no-store' })
+    let res = await fetch(statsUrl.toString(), { cache: 'no-store' })
+    console.log(`[StatsPage] Fetch status: ${res.status}`)
+
+    // Fallback: If 404 and we haven't tried user-service prefix yet, try it.
+    if (res.status === 404 && !statsUrl.toString().includes('/user-service')) {
+      console.log('[StatsPage] 404 received. Retrying with /user-service prefix...')
+      statsUrl = buildStatsUrl(apiBase, '/user-service')
+      console.log(`[StatsPage] Retry URL: ${statsUrl.toString()}`)
+      res = await fetch(statsUrl.toString(), { cache: 'no-store' })
+      console.log(`[StatsPage] Retry status: ${res.status}`)
+    }
+
     ok = res.ok
-    data = await res.json()
+    if (ok) {
+      data = await res.json()
+      console.log(`[StatsPage] Fetched ${data.matches?.length || 0} matches`)
+    } else {
+      const text = await res.text()
+      errorMessage = `Status: ${res.status} - ${text.slice(0, 500)}`
+      console.error(`[StatsPage] Fetch failed: ${errorMessage}`)
+    }
   } catch (e: any) {
-    console.error('Failed to fetch stats:', e)
+    errorMessage = e?.message || String(e)
+    console.error('[StatsPage] Exception fetching stats:', e)
   }
 
   if (!ok || !data.matches || data.matches.length === 0) {
@@ -118,7 +149,14 @@ export default async function StatsPage({
             color: theme.muted
           }}>
             {!ok ? (
-              <p>Failed to load match data. Make sure the backend is running and RESULTS_LOG_ROOT is configured.</p>
+              <div>
+                <p>Failed to load match data. Make sure the backend is running and RESULTS_LOG_ROOT is configured.</p>
+                <div style={{ marginTop: 12, padding: 12, background: 'rgba(0,0,0,0.3)', borderRadius: 8, fontFamily: 'monospace', fontSize: 13, color: '#f87171' }}>
+                  <strong>Debug Info:</strong><br />
+                  URL: {statsUrl.toString()}<br />
+                  Error: {errorMessage}
+                </div>
+              </div>
             ) : (
               <p>No matches found yet. Play a game to see your stats here!</p>
             )}

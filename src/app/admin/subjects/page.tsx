@@ -74,20 +74,10 @@ export default function SubjectsManagementPage() {
     const loadData = useCallback(async () => {
         setLoading(true);
         try {
-            const res = await subjectsApi.getAll(page, pageSize);
+            // Updated to pass debouncedSearch to the API
+            const res = await subjectsApi.getAll(page, pageSize, debouncedSearch);
             if (res.isSuccess && res.data) {
-                let items = res.data.items || [];
-                
-                // Client-side filtering (if backend doesn't support search)
-                if (debouncedSearch) {
-                    const query = debouncedSearch.toLowerCase();
-                    items = items.filter(s => 
-                        s.subjectCode.toLowerCase().includes(query) ||
-                        s.subjectName.toLowerCase().includes(query)
-                    );
-                }
-                
-                setSubjects(items);
+                setSubjects(res.data.items || []);
                 setTotalCount(res.data.totalCount || 0);
                 setTotalPages(res.data.totalPages || 1);
             }
@@ -193,8 +183,6 @@ export default function SubjectsManagementPage() {
         }
     };
 
-    const filteredSubjects = subjects;
-
     return (
         <AdminLayout>
             <div className="space-y-6">
@@ -224,135 +212,135 @@ export default function SubjectsManagementPage() {
                             </Button>
                         </div>
 
-                {/* Search and Stats */}
-                <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
-                    <div className="relative w-full sm:w-80">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/40" />
-                        <Input
-                            placeholder="Search by code or name..."
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            className="pl-10 border-[#f5c16c]/30 bg-[#0a0506]"
-                        />
-                    </div>
-                    <div className="text-sm text-white/60">
-                        Showing {filteredSubjects.length} of {totalCount} subjects
-                    </div>
-                </div>
-
-                {/* Subjects Grid */}
-                {loading ? (
-                    <div className="flex items-center justify-center py-12">
-                        <Loader2 className="h-8 w-8 animate-spin text-[#f5c16c]" />
-                    </div>
-                ) : filteredSubjects.length === 0 ? (
-                    <div className="text-center py-12">
-                        <BookOpen className="h-12 w-12 text-white/20 mx-auto mb-4" />
-                        <p className="text-white/50">
-                            {searchQuery ? "No subjects match your search." : "No subjects found. Create your first subject to get started."}
-                        </p>
-                    </div>
-                ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                        {filteredSubjects.map(subject => (
-                            <Card key={subject.id} className="bg-[#1a1410] border border-[#f5c16c]/30 shadow-sm hover:shadow-md transition-shadow group">
-                                <CardContent className="p-4">
-                                    <div className="flex justify-between items-start mb-2">
-                                        <span className="text-[#f5c16c] font-mono text-sm font-semibold">{subject.subjectCode}</span>
-                                        <span className="text-xs px-2 py-0.5 rounded-full bg-[#7289da]/20 text-[#7289da] border border-[#7289da]/30">
-                                            {subject.credits} credits
-                                        </span>
-                                    </div>
-                                    <h3 className="text-sm font-medium text-white mb-2 line-clamp-2">{subject.subjectName}</h3>
-                                    <p className="text-xs text-white/50 line-clamp-2 mb-4">{subject.description || "No description"}</p>
-                                    
-                                    <div className="space-y-2">
-                                        <Button 
-                                            asChild
-                                            size="sm" 
-                                            variant="outline" 
-                                            className="w-full h-8 border-[#7289da]/30 text-white hover:bg-[#7289da]/10"
-                                        >
-                                            <Link href={`/admin/content/subjects/${subject.id}/edit`}>
-                                                <FileText className="w-3 h-3 mr-1" /> Edit Syllabus
-                                            </Link>
-                                        </Button>
-                                        <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                            <Button 
-                                                size="sm" 
-                                                variant="outline" 
-                                                onClick={() => openEditDialog(subject)}
-                                                className="flex-1 h-8 border-[#f5c16c]/30 text-white hover:bg-[#f5c16c]/10"
-                                            >
-                                                <Pencil className="w-3 h-3 mr-1" /> Edit
-                                            </Button>
-                                            <Button 
-                                                size="sm" 
-                                                variant="outline" 
-                                                onClick={() => setDeleteTarget(subject)}
-                                                className="h-8 border-red-500/30 text-red-400 hover:bg-red-500/10"
-                                            >
-                                                <Trash2 className="w-3 h-3" />
-                                            </Button>
-                                        </div>
-                                    </div>
-                                </CardContent>
-                            </Card>
-                        ))}
-                    </div>
-                )}
-
-                {/* Pagination */}
-                {totalPages > 1 && (
-                    <div className="flex items-center justify-center gap-2 pt-4">
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setPage(p => Math.max(1, p - 1))}
-                            disabled={page === 1}
-                            className="border-[#f5c16c]/30 text-white/70 hover:text-white disabled:opacity-50"
-                        >
-                            <ChevronLeft className="w-4 h-4" />
-                        </Button>
-                        <div className="flex items-center gap-1">
-                            {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                                let pageNum: number;
-                                if (totalPages <= 5) {
-                                    pageNum = i + 1;
-                                } else if (page <= 3) {
-                                    pageNum = i + 1;
-                                } else if (page >= totalPages - 2) {
-                                    pageNum = totalPages - 4 + i;
-                                } else {
-                                    pageNum = page - 2 + i;
-                                }
-                                return (
-                                    <Button
-                                        key={pageNum}
-                                        variant={page === pageNum ? "default" : "outline"}
-                                        size="sm"
-                                        onClick={() => setPage(pageNum)}
-                                        className={page === pageNum 
-                                            ? "bg-[#f5c16c] text-black font-semibold" 
-                                            : "border-[#f5c16c]/30 text-white/70 hover:text-white"
-                                        }
-                                    >
-                                        {pageNum}
-                                    </Button>
-                                );
-                            })}
+                        {/* Search and Stats */}
+                        <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+                            <div className="relative w-full sm:w-80">
+                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/40" />
+                                <Input
+                                    placeholder="Search by code or name..."
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                    className="pl-10 border-[#f5c16c]/30 bg-[#0a0506]"
+                                />
+                            </div>
+                            <div className="text-sm text-white/60">
+                                Showing {subjects.length} of {totalCount} subjects
+                            </div>
                         </div>
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-                            disabled={page === totalPages}
-                            className="border-[#f5c16c]/30 text-white/70 hover:text-white disabled:opacity-50"
-                        >
-                            <ChevronRight className="w-4 h-4" />
-                        </Button>
-                    </div>
-                )}
+
+                        {/* Subjects Grid */}
+                        {loading ? (
+                            <div className="flex items-center justify-center py-12">
+                                <Loader2 className="h-8 w-8 animate-spin text-[#f5c16c]" />
+                            </div>
+                        ) : subjects.length === 0 ? (
+                            <div className="text-center py-12">
+                                <BookOpen className="h-12 w-12 text-white/20 mx-auto mb-4" />
+                                <p className="text-white/50">
+                                    {searchQuery ? "No subjects match your search." : "No subjects found. Create your first subject to get started."}
+                                </p>
+                            </div>
+                        ) : (
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                                {subjects.map(subject => (
+                                    <Card key={subject.id} className="bg-[#1a1410] border border-[#f5c16c]/30 shadow-sm hover:shadow-md transition-shadow group">
+                                        <CardContent className="p-4">
+                                            <div className="flex justify-between items-start mb-2">
+                                                <span className="text-[#f5c16c] font-mono text-sm font-semibold">{subject.subjectCode}</span>
+                                                <span className="text-xs px-2 py-0.5 rounded-full bg-[#7289da]/20 text-[#7289da] border border-[#7289da]/30">
+                                                    {subject.credits} credits
+                                                </span>
+                                            </div>
+                                            <h3 className="text-sm font-medium text-white mb-2 line-clamp-2">{subject.subjectName}</h3>
+                                            <p className="text-xs text-white/50 line-clamp-2 mb-4">{subject.description || "No description"}</p>
+
+                                            <div className="space-y-2">
+                                                <Button
+                                                    asChild
+                                                    size="sm"
+                                                    variant="outline"
+                                                    className="w-full h-8 border-[#7289da]/30 text-white hover:bg-[#7289da]/10"
+                                                >
+                                                    <Link href={`/admin/content/subjects/${subject.id}/edit`}>
+                                                        <FileText className="w-3 h-3 mr-1" /> Edit Syllabus
+                                                    </Link>
+                                                </Button>
+                                                <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                    <Button
+                                                        size="sm"
+                                                        variant="outline"
+                                                        onClick={() => openEditDialog(subject)}
+                                                        className="flex-1 h-8 border-[#f5c16c]/30 text-white hover:bg-[#f5c16c]/10"
+                                                    >
+                                                        <Pencil className="w-3 h-3 mr-1" /> Edit
+                                                    </Button>
+                                                    <Button
+                                                        size="sm"
+                                                        variant="outline"
+                                                        onClick={() => setDeleteTarget(subject)}
+                                                        className="h-8 border-red-500/30 text-red-400 hover:bg-red-500/10"
+                                                    >
+                                                        <Trash2 className="w-3 h-3" />
+                                                    </Button>
+                                                </div>
+                                            </div>
+                                        </CardContent>
+                                    </Card>
+                                ))}
+                            </div>
+                        )}
+
+                        {/* Pagination */}
+                        {totalPages > 1 && (
+                            <div className="flex items-center justify-center gap-2 pt-4">
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => setPage(p => Math.max(1, p - 1))}
+                                    disabled={page === 1}
+                                    className="border-[#f5c16c]/30 text-white/70 hover:text-white disabled:opacity-50"
+                                >
+                                    <ChevronLeft className="w-4 h-4" />
+                                </Button>
+                                <div className="flex items-center gap-1">
+                                    {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                                        let pageNum: number;
+                                        if (totalPages <= 5) {
+                                            pageNum = i + 1;
+                                        } else if (page <= 3) {
+                                            pageNum = i + 1;
+                                        } else if (page >= totalPages - 2) {
+                                            pageNum = totalPages - 4 + i;
+                                        } else {
+                                            pageNum = page - 2 + i;
+                                        }
+                                        return (
+                                            <Button
+                                                key={pageNum}
+                                                variant={page === pageNum ? "default" : "outline"}
+                                                size="sm"
+                                                onClick={() => setPage(pageNum)}
+                                                className={page === pageNum
+                                                    ? "bg-[#f5c16c] text-black font-semibold"
+                                                    : "border-[#f5c16c]/30 text-white/70 hover:text-white"
+                                                }
+                                            >
+                                                {pageNum}
+                                            </Button>
+                                        );
+                                    })}
+                                </div>
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                                    disabled={page === totalPages}
+                                    className="border-[#f5c16c]/30 text-white/70 hover:text-white disabled:opacity-50"
+                                >
+                                    <ChevronRight className="w-4 h-4" />
+                                </Button>
+                            </div>
+                        )}
                     </TabsContent>
 
                     {/* Import Tab */}
@@ -435,41 +423,41 @@ export default function SubjectsManagementPage() {
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-2">
                                     <Label className="text-white/70">Subject Code *</Label>
-                                    <Input 
-                                        value={formData.subjectCode} 
-                                        onChange={e => setFormData({ ...formData, subjectCode: e.target.value })} 
-                                        placeholder="e.g., SWE101" 
-                                        className="border-[#f5c16c]/30 bg-[#0a0506]" 
+                                    <Input
+                                        value={formData.subjectCode}
+                                        onChange={e => setFormData({ ...formData, subjectCode: e.target.value })}
+                                        placeholder="e.g., SWE101"
+                                        className="border-[#f5c16c]/30 bg-[#0a0506]"
                                     />
                                 </div>
                                 <div className="space-y-2">
                                     <Label className="text-white/70">Credits *</Label>
-                                    <Input 
-                                        type="number" 
-                                        value={formData.credits} 
-                                        onChange={e => setFormData({ ...formData, credits: parseInt(e.target.value) || 0 })} 
+                                    <Input
+                                        type="number"
+                                        value={formData.credits}
+                                        onChange={e => setFormData({ ...formData, credits: parseInt(e.target.value) || 0 })}
                                         min={0}
                                         max={10}
-                                        className="border-[#f5c16c]/30 bg-[#0a0506]" 
+                                        className="border-[#f5c16c]/30 bg-[#0a0506]"
                                     />
                                 </div>
                             </div>
                             <div className="space-y-2">
                                 <Label className="text-white/70">Subject Name *</Label>
-                                <Input 
-                                    value={formData.subjectName} 
-                                    onChange={e => setFormData({ ...formData, subjectName: e.target.value })} 
-                                    placeholder="e.g., Introduction to Software Engineering" 
-                                    className="border-[#f5c16c]/30 bg-[#0a0506]" 
+                                <Input
+                                    value={formData.subjectName}
+                                    onChange={e => setFormData({ ...formData, subjectName: e.target.value })}
+                                    placeholder="e.g., Introduction to Software Engineering"
+                                    className="border-[#f5c16c]/30 bg-[#0a0506]"
                                 />
                             </div>
                             <div className="space-y-2">
                                 <Label className="text-white/70">Description</Label>
-                                <Textarea 
-                                    value={formData.description} 
-                                    onChange={e => setFormData({ ...formData, description: e.target.value })} 
-                                    placeholder="Brief description of the subject..." 
-                                    className="border-[#f5c16c]/30 bg-[#0a0506] min-h-[100px] resize-none" 
+                                <Textarea
+                                    value={formData.description}
+                                    onChange={e => setFormData({ ...formData, description: e.target.value })}
+                                    placeholder="Brief description of the subject..."
+                                    className="border-[#f5c16c]/30 bg-[#0a0506] min-h-[100px] resize-none"
                                 />
                             </div>
                         </div>
@@ -490,7 +478,7 @@ export default function SubjectsManagementPage() {
                         <DialogHeader>
                             <DialogTitle className="text-white">Delete Subject</DialogTitle>
                             <DialogDescription className="text-white/60">
-                                Are you sure you want to delete <span className="text-[#f5c16c] font-semibold">{deleteTarget?.subjectCode} - {deleteTarget?.subjectName}</span>? 
+                                Are you sure you want to delete <span className="text-[#f5c16c] font-semibold">{deleteTarget?.subjectCode} - {deleteTarget?.subjectName}</span>?
                                 This action cannot be undone.
                             </DialogDescription>
                         </DialogHeader>
@@ -498,8 +486,8 @@ export default function SubjectsManagementPage() {
                             <Button variant="outline" onClick={() => setDeleteTarget(null)} className="border-[#f5c16c]/30 text-white/70 hover:text-white">
                                 Cancel
                             </Button>
-                            <Button 
-                                onClick={handleDeleteSubject} 
+                            <Button
+                                onClick={handleDeleteSubject}
                                 disabled={deleting}
                                 className="bg-red-500 hover:bg-red-600 text-white"
                             >

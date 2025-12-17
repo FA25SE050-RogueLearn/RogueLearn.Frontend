@@ -1,7 +1,7 @@
 // roguelearn-web/src/api/questApi.ts
 import axiosClient from './axiosClient';
 import { ApiResponse } from '../types/base/Api';
-import { QuestDetails, QuestStep, QuestProgress } from '../types/quest';
+import { QuestDetails, QuestStep, QuestProgress, QuestSummary } from '../types/quest';
 import { 
   GetStepProgressResponse, 
   GetCompletedActivitiesResponse, 
@@ -172,6 +172,17 @@ const questApi = {
   // =================================================================
   // QUESTS (QuestsController)
   // =================================================================
+
+  /**
+   * ⭐ NEW: Gets all quests available to the current user.
+   * Replaces the need for a Learning Path wrapper.
+   * Corresponds to GET /api/quests/me
+   */
+  getMyQuests: (): Promise<ApiResponse<QuestSummary[]>> =>
+    axiosClient.get<QuestSummary[]>('/api/quests/me').then(res => ({
+      isSuccess: true,
+      data: res.data,
+    })),
 
   /**
    * Gets the detailed information for a single quest, including all weekly steps.
@@ -677,6 +688,7 @@ export interface QuestionPayload {
   options: string[];
   answer: string;
   explanation: string;
+  experiencePoints?: number;
 }
 
 export interface KnowledgeCheckPayload {

@@ -1,6 +1,6 @@
 "use client";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { FileText } from "lucide-react";
+import { FileText, RefreshCw } from "lucide-react";
 import { useGoogleMeet, MeetScopes } from "@/hooks/useGoogleMeet";
 import googleMeetApi from "@/api/googleMeetApi";
 import meetingsApi from "@/api/meetingsApi";
@@ -80,6 +80,7 @@ export default function MeetingManagement({ partyId, variant = "full", showList 
   const { role, loading: roleLoading } = usePartyRole(partyId);
   const [page, setPage] = useState(1);
   const pageSize = 5;
+  const [search, setSearch] = useState<string>("");
 
   
 
@@ -96,13 +97,19 @@ export default function MeetingManagement({ partyId, variant = "full", showList 
     }
   }, [partyId]);
 
+  const filteredMeetings = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return partyMeetings;
+    return partyMeetings.filter((m) => (m.title ?? "").toLowerCase().includes(q));
+  }, [partyMeetings, search]);
+
   const sortedMeetings = useMemo(() => {
-    return [...partyMeetings].sort((a, b) => {
+    return [...filteredMeetings].sort((a, b) => {
       const ta = new Date(a.scheduledStartTime || a.actualStartTime || 0).getTime();
       const tb = new Date(b.scheduledStartTime || b.actualStartTime || 0).getTime();
       return tb - ta;
     });
-  }, [partyMeetings]);
+  }, [filteredMeetings]);
 
   const totalPages = useMemo(() => Math.max(1, Math.ceil(sortedMeetings.length / pageSize)), [sortedMeetings.length]);
   const pagedMeetings = useMemo(() => {
@@ -743,17 +750,22 @@ export default function MeetingManagement({ partyId, variant = "full", showList 
         <div className="mb-2 flex items-center justify-between">
           <h5 className="text-xs font-semibold">Meetings</h5>
           <div className="flex items-center gap-2">
-            {loadingMeetings && (
-              <div className="flex items-center justify-center py-4">
-                <div className="h-5 w-5 animate-spin rounded-full border-2 border-white/30 border-t-[#f5c16c]" />
-              </div>
-            )}
+            <div className="relative">
+              <input
+                value={search}
+                onChange={(e) => { setPage(1); setSearch(e.target.value); }}
+                placeholder="Search meetings"
+                className="rounded border border-white/20 bg-transparent px-3 py-1.5 text-xs text-white placeholder-white/50 min-w-[200px]"
+              />
+            </div>
+            {loadingMeetings && <span className="text-xs text-white/60">Loading...</span>}
             <button
               onClick={() => { setExpandedId(""); reloadMeetings(); }}
               disabled={loadingMeetings}
-              className="rounded border border-white/20 bg-transparent px-3 py-1.5 text-xs font-medium text-white hover:bg-white/10 disabled:opacity-50"
+              className="rounded p-1.5 text-white/70 hover:bg-white/10 hover:text-white disabled:opacity-50"
+              title="Refresh meetings"
             >
-              Refresh
+              <RefreshCw className={`h-4 w-4 ${loadingMeetings ? "animate-spin" : ""}`} />
             </button>
             {needsAuth && (
               <button
@@ -765,8 +777,8 @@ export default function MeetingManagement({ partyId, variant = "full", showList 
             )}
           </div>
         </div>
-        {partyMeetings.length === 0 ? (
-          <div className="text-xs text-white/60">No meetings yet.</div>
+        {sortedMeetings.length === 0 ? (
+          <div className="text-xs text-white/60">No meetings found.</div>
         ) : (
           <Accordion
             type="single"
@@ -988,7 +1000,7 @@ export default function MeetingManagement({ partyId, variant = "full", showList 
               })}
           </Accordion>
         )}
-        {partyMeetings.length > 0 && (
+        {sortedMeetings.length > 0 && (
           <div className="mt-3 flex items-center justify-between">
             <div className="text-xs text-white/60">
               Page {page} of {totalPages}
