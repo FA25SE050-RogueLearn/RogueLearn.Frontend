@@ -66,6 +66,9 @@ export default function GamePage() {
       setWsUrl(data.wsUrl ?? null);
       let mid = typeof data?.match_id === "string" ? data.match_id : null;
       if (!mid) {
+        const supabase = createClient();
+        const { data: { session } } = await supabase.auth.getSession();
+        const token = session?.access_token;
         const payload = {
           user_id: userId,
           relay_join_code: String(data.joinCode),
@@ -77,7 +80,10 @@ export default function GamePage() {
         const createUrl = `${base}/api/quests/game/sessions/create`;
         const createRes = await fetch(createUrl, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            ...(token ? { "Authorization": `Bearer ${token}` } : {}),
+          },
           body: JSON.stringify(payload),
         });
         if (createRes.ok) {

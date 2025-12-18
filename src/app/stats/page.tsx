@@ -67,6 +67,10 @@ export default async function StatsPage({
 }) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
+  const { data: { session } } = await supabase.auth.getSession()
+  const authHeaders: Record<string, string> = session?.access_token
+    ? { Authorization: `Bearer ${session.access_token}` }
+    : {}
 
   const params = await searchParams
   const quizCompleted = params.quizCompleted === 'true'
@@ -105,7 +109,7 @@ export default async function StatsPage({
   let errorMessage = ''
 
   try {
-    let res = await fetch(statsUrl.toString(), { cache: 'no-store' })
+    let res = await fetch(statsUrl.toString(), { cache: 'no-store', headers: authHeaders })
     console.log(`[StatsPage] Fetch status: ${res.status}`)
 
     // Fallback: If 404 and we haven't tried user-service prefix yet, try it.
@@ -113,7 +117,7 @@ export default async function StatsPage({
       console.log('[StatsPage] 404 received. Retrying with /user-service prefix...')
       statsUrl = buildStatsUrl(apiBase, '/user-service')
       console.log(`[StatsPage] Retry URL: ${statsUrl.toString()}`)
-      res = await fetch(statsUrl.toString(), { cache: 'no-store' })
+      res = await fetch(statsUrl.toString(), { cache: 'no-store', headers: authHeaders })
       console.log(`[StatsPage] Retry status: ${res.status}`)
     }
 
