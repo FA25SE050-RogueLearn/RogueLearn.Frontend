@@ -74,7 +74,6 @@ export default function SubjectsManagementPage() {
     const loadData = useCallback(async () => {
         setLoading(true);
         try {
-            // Updated to pass debouncedSearch to the API
             const res = await subjectsApi.getAll(page, pageSize, debouncedSearch);
             if (res.isSuccess && res.data) {
                 setSubjects(res.data.items || []);
@@ -154,6 +153,13 @@ export default function SubjectsManagementPage() {
             toast.error("Please paste the syllabus content first");
             return;
         }
+
+        // --- Added Validation for Semester ---
+        if (!importSemester.trim()) {
+            toast.error("Please enter a semester number");
+            return;
+        }
+
         setImporting(true);
         setImportStatus("Importing subject... AI is extracting syllabus data.");
         setImportError(null);
@@ -362,9 +368,9 @@ export default function SubjectsManagementPage() {
                                 </div>
 
                                 <div>
-                                    <Label htmlFor="semester" className="text-sm text-white/70">Semester (Optional)</Label>
+                                    <Label htmlFor="semester" className="text-sm text-white/70">Semester</Label>
                                     <p className="text-xs text-white/50 mb-2">
-                                        Override the semester if AI extraction is incorrect
+                                        Provide the Subject semester
                                     </p>
                                     <Input
                                         id="semester"
@@ -394,7 +400,8 @@ export default function SubjectsManagementPage() {
 
                                 <Button
                                     onClick={handleImportSubject}
-                                    disabled={!rawText.trim() || importing}
+                                    // --- Validation Check: Disable if rawText or semester is empty ---
+                                    disabled={!rawText.trim() || !importSemester.trim() || importing}
                                     className="bg-[#f5c16c] hover:bg-[#f5c16c]/90 text-black font-semibold"
                                 >
                                     {importing ? (
