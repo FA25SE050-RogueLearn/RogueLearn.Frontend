@@ -1,10 +1,9 @@
 "use client";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { FileText, RefreshCw } from "lucide-react";
+import { FileText, RefreshCw, Video } from "lucide-react";
 import { useGoogleMeet, MeetScopes } from "@/hooks/useGoogleMeet";
 import googleMeetApi from "@/api/googleMeetApi";
 import meetingsApi from "@/api/meetingsApi";
-import * as usersApi from "@/api/usersApi";
 import partiesApi from "@/api/partiesApi";
 import type { PartyMemberDto } from "@/types/parties";
 import {
@@ -23,6 +22,7 @@ import {
   AccordionContent,
 } from "@/components/ui/accordion";
 import { TooltipProvider, Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
+import { toast } from "sonner";
 import { usePartyRole } from "@/hooks/usePartyRole";
 
 interface Props {
@@ -81,6 +81,11 @@ export default function MeetingManagement({ partyId, variant = "full", showList 
   const [page, setPage] = useState(1);
   const pageSize = 5;
   const [search, setSearch] = useState<string>("");
+  const [recordingsById, setRecordingsById] = useState<Record<string, any[] | null>>({});
+  const [recordingsLoading, setRecordingsLoading] = useState<Record<string, boolean>>({});
+  const [recordingLinkById, setRecordingLinkById] = useState<Record<string, string | null>>({});
+  const [recordingMetaById, setRecordingMetaById] = useState<Record<string, { url: string; fileId?: string | null } | null>>({});
+  const [syncingById, setSyncingById] = useState<Record<string, boolean>>({});
 
   
 
@@ -151,6 +156,105 @@ export default function MeetingManagement({ partyId, variant = "full", showList 
       return `${participant.anonymousUser.displayName} (Guest)`;
     }
     return "Unknown User";
+  }
+
+  function linkifySummary(text?: string | null): React.ReactNode {
+    const t = (text ?? "").trim();
+    if (!t) return "No summary available.";
+    const lines = t.split(/\r?\n/);
+    const nodes: React.ReactNode[] = [];
+    let listType: "ul" | "ol" | null = null;
+    let listItems: React.ReactNode[] = [];
+    const isUrl = (s: string) => /^https?:\/\/\S+$/i.test(s);
+    const urlRegex = /(https?:\/\/[^\s]+)/gi;
+    const boldLineRegex = /^\*\*(.+?)\*\*$/;
+    const renderBoldInline = (s: string) => {
+      const res: React.ReactNode[] = [];
+      let last = 0;
+      let i = 0;
+      const re = /\*\*([^*]+)\*\*/g;
+      let m: RegExpExecArray | null;
+      while ((m = re.exec(s))) {
+        if (m.index > last) res.push(<span key={`t-${i++}`}>{s.slice(last, m.index)}</span>);
+        res.push(<span key={`b-${i++}`} className="font-extrabold text-base md:text-lg">{m[1]}</span>);
+        last = re.lastIndex;
+      }
+      if (last < s.length) res.push(<span key={`t-${i++}`}>{s.slice(last)}</span>);
+      return res;
+    };
+    const renderInline = (s: string) => {
+      const tokens = s.split(urlRegex);
+      return tokens.map((tok, idx) => {
+        if (isUrl(tok)) {
+          return (
+            <a key={idx} href={tok} target="_blank" rel="noopener noreferrer" className="text-[#f5c16c] underline">
+              {tok}
+            </a>
+          );
+        }
+        return <React.Fragment key={idx}>{renderBoldInline(tok)}</React.Fragment>;
+      });
+    };
+    const flushList = () => {
+      if (listType && listItems.length > 0) {
+        nodes.push(
+          listType === "ul" ? (
+            <ul key={`list-${nodes.length}`} className="ml-6 mb-2 list-disc">
+              {listItems}
+            </ul>
+          ) : (
+            <ol key={`list-${nodes.length}`} className="ml-6 mb-2 list-decimal">
+              {listItems}
+            </ol>
+          )
+        );
+      }
+      listType = null;
+      listItems = [];
+    };
+    for (const raw of lines) {
+      const line = raw.trimEnd();
+      if (!line.trim()) { flushList(); continue; }
+      if (boldLineRegex.test(line)) {
+        flushList();
+        const content = line.replace(/^\*\*(.+?)\*\*$/, "$1");
+        nodes.push(
+          <h3 key={`hb-${nodes.length}`} className="mt-4 mb-2 font-extrabold text-xl">
+            {renderInline(content)}
+          </h3>
+        );
+        continue;
+      }
+      const headingMatch = line.match(/^(#{1,6})\s+(.*)$/);
+      if (headingMatch) {
+        flushList();
+        const level = headingMatch[1].length;
+        const content = headingMatch[2];
+        const Tag = `h${level}` as any;
+        nodes.push(
+          React.createElement(
+            Tag,
+            { key: `h-${nodes.length}`, className: "mt-4 mb-2 font-bold text-lg" },
+            renderInline(content)
+          )
+        );
+        continue;
+      }
+      const listMatch = line.match(/^(\*|\-|\d+\.)\s+(.*)$/);
+      if (listMatch) {
+        const marker = listMatch[1];
+        const content = listMatch[2];
+        const type: "ul" | "ol" = /^\d+\.$/.test(marker) ? "ol" : "ul";
+        if (listType && listType !== type) flushList();
+        listType = type;
+        listItems.push(<li key={`li-${listItems.length}`} className="mb-1">{renderInline(content)}</li>);
+        continue;
+      }
+      flushList();
+      nodes.push(<p key={`p-${nodes.length}`} className="mt-2">{renderInline(line)}</p>);
+    }
+    flushList();
+    return <>{nodes}</>;
   }
 
   useEffect(() => {
@@ -479,45 +583,64 @@ export default function MeetingManagement({ partyId, variant = "full", showList 
       if (!meeting?.meetingId) throw new Error("No meeting to sync");
       if (!meeting.actualEndTime) throw new Error("Meeting has no end time yet");
       const endedAt = new Date(meeting.actualEndTime).getTime();
-      const canSync = Date.now() - endedAt >= 10 * 60 * 1000;
-      if (!canSync) throw new Error("Sync available ~10 minutes after meeting ends");
+      const canSync = Date.now() - endedAt >= 5 * 60 * 1000;
+      if (!canSync) throw new Error("Sync available ~5 minutes after meeting ends");
       const initialToken = activeToken ?? (await getAccessToken(requiredBothScopes));
       let effectiveToken = initialToken;
+      const meetingId = meeting.meetingId!;
+      setSyncingById((prev) => ({ ...prev, [meetingId]: true }));
+      let link = recordingLinkById[meetingId] ?? "";
+      let meta = recordingMetaById[meetingId] ?? null;
+      if (!link) {
+        const found = await handleListRecordingsFor(meeting);
+        if (found) {
+          link = found.url;
+          meta = { url: found.url, fileId: found.fileId } as any;
+        }
+      }
+      if (!link) throw new Error("No generated recording available yet");
+      const artifacts: ArtifactInputDto[] = [
+        { artifactType: "recording", url: link, fileId: meta?.fileId ?? null }
+      ];
+      await meetingsApi.processArtifactsAndSummarize(meetingId, artifacts, effectiveToken);
+      toast.success("recording process successfully");
+      const completed: MeetingDto = { ...meeting, status: MeetingStatus.Completed } as MeetingDto;
+      try { await meetingsApi.upsertMeeting(completed); } catch { }
+      const listRes = await meetingsApi.getPartyMeetings(partyId);
+      setPartyMeetings(listRes.data ?? []);
+      try { await loadDetailsIfNeeded(meetingId, true); } catch {}
+      setNeedsAuth(false);
+    } catch (e: any) {
+      setError(e?.message ?? "Failed to sync transcripts");
+    } finally {
+      if (meeting?.meetingId) setSyncingById((prev) => ({ ...prev, [meeting.meetingId!]: false }));
+    }
+  }
+
+  async function handleListRecordingsFor(meeting: MeetingDto): Promise<{ url: string; fileId: string | null } | null> {
+    try {
+      if (!meeting?.meetingId) throw new Error("No meeting to list recordings");
+      const meetingId = meeting.meetingId as string;
+      setRecordingsLoading((prev) => ({ ...prev, [meetingId]: true }));
+      let token = activeToken ?? (await getAccessToken(requiredBothScopes));
       let confList: any;
       try {
-        confList = await googleMeetApi.listConferenceRecords(effectiveToken, { pageSize: 10 });
+        confList = await googleMeetApi.listConferenceRecords(token, { pageSize: 10 });
       } catch (e: any) {
         if (isUnauthorized(e)) {
           try {
             const refreshed = await refreshAccessToken();
-            effectiveToken = refreshed;
+            token = refreshed;
             setActiveToken(refreshed);
             try { sessionStorage.setItem(`meetingToken:${partyId}`, refreshed); } catch (_) {}
-            try {
-              confList = await googleMeetApi.listConferenceRecords(effectiveToken, { pageSize: 10 });
-            } catch (e2: any) {
-              if (isUnauthorized(e2)) {
-                try {
-                  const newToken = await requestToken(requiredBothScopes);
-                  effectiveToken = newToken;
-                  setActiveToken(newToken);
-                  try { sessionStorage.setItem(`meetingToken:${partyId}`, newToken); } catch (_) {}
-                  confList = await googleMeetApi.listConferenceRecords(effectiveToken, { pageSize: 10 });
-                } catch {
-                  setNeedsAuth(true);
-                  throw new Error("Authorization required to access Google Meet. Click Authorize and retry.");
-                }
-              } else {
-                throw e2;
-              }
-            }
+            confList = await googleMeetApi.listConferenceRecords(token, { pageSize: 10 });
           } catch {
             try {
-              const newToken = await requestToken(requiredBothScopes);
-              effectiveToken = newToken;
-              setActiveToken(newToken);
-              try { sessionStorage.setItem(`meetingToken:${partyId}`, newToken); } catch (_) {}
-              confList = await googleMeetApi.listConferenceRecords(effectiveToken, { pageSize: 10 });
+              const gisToken = await requestToken(requiredBothScopes);
+              token = gisToken;
+              setActiveToken(gisToken);
+              try { sessionStorage.setItem(`meetingToken:${partyId}`, gisToken); } catch (_) {}
+              confList = await googleMeetApi.listConferenceRecords(token, { pageSize: 10 });
             } catch {
               setNeedsAuth(true);
               throw new Error("Authorization required to access Google Meet. Click Authorize and retry.");
@@ -529,44 +652,98 @@ export default function MeetingManagement({ partyId, variant = "full", showList 
       }
       const records: any[] = confList?.conferenceRecords ?? confList?.records ?? [];
       if (!records || records.length === 0) throw new Error("No conference records found");
-      const latest = records[0];
-      const conferenceId: string = latest?.name?.split("/")?.pop?.() ?? latest?.conferenceId ?? latest?.id;
-      if (!conferenceId) throw new Error("Unable to determine conferenceId");
-      let transcriptsRes: any;
-      try {
-        transcriptsRes = await googleMeetApi.listTranscripts(effectiveToken, conferenceId);
-      } catch (e: any) {
-        if (isUnauthorized(e)) {
+      let expectedSpace = (meeting?.spaceName ?? "").trim();
+      let expectedResourceName: string | null = null;
+      if (!expectedSpace) {
+        const link = meeting?.meetingLink ?? "";
+        const codeMatch = link.match(/[a-z0-9]+-[a-z0-9]+-[a-z0-9]+/i);
+        const code = codeMatch?.[0] ?? null;
+        if (code) {
           try {
-            const refreshed = await refreshAccessToken();
-            effectiveToken = refreshed;
-            setActiveToken(refreshed);
-            try { sessionStorage.setItem(`meetingToken:${partyId}`, refreshed); } catch (_) {}
-            try {
-              transcriptsRes = await googleMeetApi.listTranscripts(effectiveToken, conferenceId);
-            } catch (e2: any) {
-              if (isUnauthorized(e2)) {
+            const space = await googleMeetApi.getSpace(token, code);
+            expectedResourceName = space?.name ?? null;
+            expectedSpace = (expectedResourceName ?? "").split("/").pop() ?? "";
+          } catch (e: any) {
+            if (isUnauthorized(e)) {
+              try {
+                const refreshed = await refreshAccessToken();
+                token = refreshed;
+                setActiveToken(refreshed);
+                try { sessionStorage.setItem(`meetingToken:${partyId}`, refreshed); } catch (_) {}
+                const space = await googleMeetApi.getSpace(token, code);
+                expectedResourceName = space?.name ?? null;
+                expectedSpace = (expectedResourceName ?? "").split("/").pop() ?? "";
+              } catch {
                 try {
-                  const newToken = await requestToken(requiredBothScopes);
-                  effectiveToken = newToken;
-                  setActiveToken(newToken);
-                  try { sessionStorage.setItem(`meetingToken:${partyId}`, newToken); } catch (_) {}
-                  transcriptsRes = await googleMeetApi.listTranscripts(effectiveToken, conferenceId);
+                  const gisToken = await requestToken(requiredBothScopes);
+                  token = gisToken;
+                  setActiveToken(gisToken);
+                  try { sessionStorage.setItem(`meetingToken:${partyId}`, gisToken); } catch (_) {}
+                  const space = await googleMeetApi.getSpace(token, code);
+                  expectedResourceName = space?.name ?? null;
+                  expectedSpace = (expectedResourceName ?? "").split("/").pop() ?? "";
                 } catch {
                   setNeedsAuth(true);
                   throw new Error("Authorization required to access Google Meet. Click Authorize and retry.");
                 }
-              } else {
-                throw e2;
               }
             }
+          }
+        }
+      }
+      let matchedConferenceId: string | null = null;
+      const candidates = records.slice(0, 5);
+      for (const r of candidates) {
+        const rid = r?.name?.split("/")?.pop?.() ?? r?.conferenceId ?? r?.id;
+        if (!rid) continue;
+        let rec: any;
+        try {
+          rec = await googleMeetApi.getConferenceRecord(token, rid);
+        } catch (e: any) {
+          if (isUnauthorized(e)) {
+            try {
+              const refreshed = await refreshAccessToken();
+              token = refreshed;
+              setActiveToken(refreshed);
+              try { sessionStorage.setItem(`meetingToken:${partyId}`, refreshed); } catch (_) {}
+              rec = await googleMeetApi.getConferenceRecord(token, rid);
+            } catch {
+              try {
+                const gisToken = await requestToken(requiredBothScopes);
+                token = gisToken;
+                setActiveToken(gisToken);
+                try { sessionStorage.setItem(`meetingToken:${partyId}`, gisToken); } catch (_) {}
+                rec = await googleMeetApi.getConferenceRecord(token, rid);
+              } catch {}
+            }
+          }
+        }
+        const spaceName = (rec?.space ?? "").split("/").pop();
+        if (spaceName && expectedSpace && spaceName === expectedSpace) {
+          matchedConferenceId = rec?.name?.split("/")?.pop?.() ?? rid;
+          break;
+        }
+      }
+      const conferenceId = matchedConferenceId ?? undefined;
+      if (!conferenceId) throw new Error("Unable to determine conferenceId");
+      let recordingsRes: any;
+      try {
+        recordingsRes = await googleMeetApi.listRecordings(token, conferenceId);
+      } catch (e: any) {
+        if (isUnauthorized(e)) {
+          try {
+            const refreshed = await refreshAccessToken();
+            token = refreshed;
+            setActiveToken(refreshed);
+            try { sessionStorage.setItem(`meetingToken:${partyId}`, refreshed); } catch (_) {}
+            recordingsRes = await googleMeetApi.listRecordings(token, conferenceId);
           } catch {
             try {
-              const newToken = await requestToken(requiredBothScopes);
-              effectiveToken = newToken;
-              setActiveToken(newToken);
-              try { sessionStorage.setItem(`meetingToken:${partyId}`, newToken); } catch (_) {}
-              transcriptsRes = await googleMeetApi.listTranscripts(effectiveToken, conferenceId);
+              const gisToken = await requestToken(requiredBothScopes);
+              token = gisToken;
+              setActiveToken(gisToken);
+              try { sessionStorage.setItem(`meetingToken:${partyId}`, gisToken); } catch (_) {}
+              recordingsRes = await googleMeetApi.listRecordings(token, conferenceId);
             } catch {
               setNeedsAuth(true);
               throw new Error("Authorization required to access Google Meet. Click Authorize and retry.");
@@ -576,31 +753,39 @@ export default function MeetingManagement({ partyId, variant = "full", showList 
           throw e;
         }
       }
-      const transcripts: any[] = transcriptsRes?.transcripts ?? transcriptsRes?.items ?? [];
-      const artifacts: ArtifactInputDto[] = [];
-      for (const t of transcripts) {
-        const transcriptId: string = t?.name?.split("/")?.pop?.() ?? t?.transcriptId ?? t?.id;
-        const exportUri = t?.docsDocument?.uri ?? t?.docsDocument?.resourceUri ?? null;
-        artifacts.push({
-          artifactType: "transcript",
-          url: exportUri ?? `https://meet.google.com/transcript/${transcriptId}`,
-          state: t?.state ?? null,
-          exportUri: exportUri ?? null,
-          docsDocumentId: t?.docsDocument?.id ?? null,
-        });
+      const recordings: any[] = recordingsRes?.recordings ?? recordingsRes?.items ?? [];
+      setRecordingsById((prev) => ({ ...prev, [meetingId]: recordings }));
+      const generated = recordings.filter((r: any) => r?.state === "FILE_GENERATED");
+      let cleanUrl = "";
+      let fileId: string | null = null;
+      if (generated.length > 0) {
+        const r = generated[0];
+        const driveId = r?.driveDestination?.file ?? r?.driveFile?.id ?? null;
+        let link = r?.driveDestination?.exportUri ?? r?.driveFile?.uri ?? r?.driveFile?.resourceUri ?? r?.docsDocument?.uri ?? r?.docsDocument?.resourceUri ?? null;
+        if (!link && driveId) link = `https://drive.google.com/file/d/${driveId}/view`;
+        cleanUrl = typeof link === "string" ? link.replace(/[`\s]+/g, "").trim() : "";
+        fileId = r?.driveDestination?.file ?? r?.driveFile?.id ?? r?.docsDocument?.id ?? null;
       }
-      if (artifacts.length > 0) {
-        await meetingsApi.processArtifactsAndSummarize(meeting.meetingId as string, artifacts);
+      if (cleanUrl) {
+        setRecordingLinkById((prev) => ({ ...prev, [meetingId]: cleanUrl }));
+        setRecordingMetaById((prev) => ({ ...prev, [meetingId]: { url: cleanUrl, fileId } }));
+        toast.info("recording found, pls wait for processing");
+        return { url: cleanUrl, fileId };
+      } else {
+        setRecordingLinkById((prev) => ({ ...prev, [meetingId]: null }));
+        setRecordingMetaById((prev) => ({ ...prev, [meetingId]: null }));
+        toast.info("No recordings yet or still being generated. Try again in ~5 minutes.");
+        return null;
       }
-      const completed: MeetingDto = { ...meeting, status: MeetingStatus.Completed } as MeetingDto;
-      try { await meetingsApi.upsertMeeting(completed); } catch { }
-      const listRes = await meetingsApi.getPartyMeetings(partyId);
-      setPartyMeetings(listRes.data ?? []);
-      setNeedsAuth(false);
     } catch (e: any) {
-      setError(e?.message ?? "Failed to sync transcripts");
+      // setError(e?.message ?? "Failed to list recordings");
+      return null;
+    } finally {
+      setRecordingsLoading((prev) => ({ ...prev, [meeting.meetingId as string]: false }));
     }
   }
+
+  
 
   async function handleAuthorize() {
     setError(null);
@@ -760,7 +945,7 @@ export default function MeetingManagement({ partyId, variant = "full", showList 
             </div>
             {loadingMeetings && <span className="text-xs text-white/60">Loading...</span>}
             <button
-              onClick={() => { setExpandedId(""); reloadMeetings(); }}
+              onClick={() => { reloadMeetings(); }}
               disabled={loadingMeetings}
               className="rounded p-1.5 text-white/70 hover:bg-white/10 hover:text-white disabled:opacity-50"
               title="Refresh meetings"
@@ -873,27 +1058,6 @@ export default function MeetingManagement({ partyId, variant = "full", showList 
                                 End Meeting
                               </button>
                             )}
-                            <TooltipProvider>
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <span>
-                                    <button
-                                      onClick={() => handleSyncMeetingFor(m)}
-                                      disabled={!(m.status === MeetingStatus.EndedProcessing && m.actualEndTime && (Date.now() - new Date(m.actualEndTime).getTime() >= 10 * 60 * 1000))}
-                                      className="group inline-flex items-center gap-2 rounded-lg border border-[#f5c16c]/40 bg-linear-to-r from-[#f5c16c] to-[#d4a855] px-4 py-2.5 text-sm font-bold text-black shadow-[0_0_15px_rgba(245,193,108,0.25)] hover:from-[#d4a855] hover:to-[#f5c16c] disabled:opacity-50 disabled:cursor-not-allowed"
-                                    >
-                                      <FileText className="h-4 w-4" />
-                                      Transcript
-                                    </button>
-                                  </span>
-                                </TooltipTrigger>
-                                <TooltipContent>
-                                  {!(m.status === MeetingStatus.EndedProcessing && m.actualEndTime && (Date.now() - new Date(m.actualEndTime).getTime() >= 10 * 60 * 1000))
-                                    ? "Available ~10 minutes after meeting ends"
-                                    : "Sync transcripts from Google Meet"}
-                                </TooltipContent>
-                              </Tooltip>
-                            </TooltipProvider>
                           </>
                         )}
                       </div>
@@ -988,9 +1152,25 @@ export default function MeetingManagement({ partyId, variant = "full", showList 
                               ];
                             })()}
                           </ul>
-                          <div className="text-xs text-white/70">Summary</div>
-                          <div className="whitespace-pre-wrap rounded border border-white/10 bg-white/5 p-3 text-xs text-white/80">
-                            {details.summaryText ?? "No summary available."}
+                          <div className="flex items-center justify-between">
+                            <div className="text-xs text-white/70">Summary</div>
+                            {role && role !== "Member" && (
+                              <button
+                                onClick={() => handleSyncMeetingFor(m)}
+                                disabled={!!syncingById[m.meetingId!] || m.status === MeetingStatus.Completed}
+                                className="group inline-flex items-center gap-2 rounded-lg border border-[#f5c16c]/40 bg-linear-to-r from-[#f5c16c] to-[#d4a855] px-3 py-1.5 text-xs font-bold text-black shadow-[0_0_15px_rgba(245,193,108,0.25)] hover:from-[#d4a855] hover:to-[#f5c16c] disabled:opacity-50 disabled:cursor-not-allowed"
+                              >
+                                {syncingById[m.meetingId!] ? (
+                                  <span className="h-4 w-4 animate-spin rounded-full border-2 border-black/30 border-t-black" />
+                                ) : (
+                                  <FileText className="h-4 w-4" />
+                                )}
+                                Transcript
+                              </button>
+                            )}
+                          </div>
+                          <div className="whitespace-pre-wrap rounded border border-white/10 bg-white/5 p-3 text-xs text-white/80 mt-2">
+                            {linkifySummary(details.summaryText)}
                           </div>
                         </div>
                       )}

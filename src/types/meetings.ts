@@ -60,6 +60,7 @@ export interface ArtifactInputDto {
   exportUri?: string | null;
   driveFileId?: string | null;
   docsDocumentId?: string | null;
+  fileId?: string | null;
 }
 
 export interface MeetingDetailsDto {
