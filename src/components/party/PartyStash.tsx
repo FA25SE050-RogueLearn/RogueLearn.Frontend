@@ -1,7 +1,7 @@
 "use client";
 import React, { useEffect, useMemo, useState } from "react";
 import partiesApi from "@/api/partiesApi";
-import { PartyStashItemDto } from "@/types/parties";
+import { PartyStashItemDto, PartyMemberDto } from "@/types/parties";
 import Link from "next/link";
 import { FileText, Plus, Search, RefreshCw, Pencil, Trash2, Eye, X, Clock, Users, ArrowLeft } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -37,6 +37,7 @@ function extractPlainText(blocks?: Record<string, unknown>[]) {
 export default function PartyStash({ partyId }: { partyId: string }) {
   const router = useRouter();
   const [items, setItems] = useState<PartyStashItemDto[]>([]);
+  const [members, setMembers] = useState<PartyMemberDto[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showAdd, setShowAdd] = useState(false);
@@ -62,8 +63,12 @@ export default function PartyStash({ partyId }: { partyId: string }) {
     setLoading(true);
     setError(null);
     try {
-      const res = await partiesApi.getResources(partyId);
+      const [res, membersRes] = await Promise.all([
+        partiesApi.getResources(partyId),
+        partiesApi.getMembers(partyId),
+      ]);
       setItems(res.data ?? []);
+      setMembers(membersRes.data ?? []);
     } catch (e: any) {
       setError(e?.message ?? "Failed to load stash");
     } finally {
@@ -188,6 +193,11 @@ export default function PartyStash({ partyId }: { partyId: string }) {
     if (diffHours < 24) return `${diffHours}h ago`;
     if (diffDays < 7) return `${diffDays}d ago`;
     return date.toLocaleDateString();
+  };
+
+  const getUsername = (userId: string) => {
+    const member = members.find((m) => m.authUserId === userId);
+    return member?.username || member?.firstName || "Unknown";
   };
 
   if (roleLoading || loading) {
@@ -342,6 +352,9 @@ export default function PartyStash({ partyId }: { partyId: string }) {
                         </h3>
                       </div>
                       <div className="flex items-center gap-1 text-xs text-white/40">
+                        <Users className="h-3 w-3" />
+                        <span>{getUsername(item.sharedByUserId)}</span>
+                        <span>•</span>
                         <Clock className="h-3 w-3" />
                         {formatDate(item.sharedAt)}
                       </div>

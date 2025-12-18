@@ -3,15 +3,22 @@
 import Link from "next/link";
 import { Trophy, Sword, Lightbulb, GraduationCap, ScrollText, Users, Shield } from "lucide-react";
 import QuestProgressClient from "@/components/dashboard/QuestProgressClient";
-import { FeaturedEventsSection } from "@/components/dashboard/FeaturedEventsSection";
+
 import { RightColumn } from "@/components/dashboard/RightColumn";
 import { useUserFullInfo, useUserAchievements } from "@/hooks/queries/useUserData";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { QuestAttemptItem } from "@/types/user-profile";
+import { useEffect } from "react";
 
 export function DashboardClient() {
-  const { data: fullInfo, isLoading: isLoadingUser } = useUserFullInfo();
-  const { data: achievements = [], isLoading: isLoadingAchievements } = useUserAchievements();
+  const { data: fullInfo, isLoading: isLoadingUser, refetch: refetchUser } = useUserFullInfo();
+  const { data: achievements = [], isLoading: isLoadingAchievements, refetch: refetchAchievements } = useUserAchievements();
+
+  useEffect(() => {
+    // Force refresh on mount to ensure latest data
+    refetchUser();
+    refetchAchievements();
+  }, [refetchUser, refetchAchievements]);
 
   const activeAttempt: QuestAttemptItem | undefined = fullInfo?.relations.questAttempts.find(a => {
     const s = a.status.toLowerCase();
@@ -160,7 +167,7 @@ export function DashboardClient() {
           </div>
         </div>
 
-        <FeaturedEventsSection />
+
         <QuestProgressClient subjects={subjects} />
       </main>
 

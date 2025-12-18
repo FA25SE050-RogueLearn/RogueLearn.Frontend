@@ -6,7 +6,6 @@ import HeroSection from '@/components/hero-section';
 import FAQsTwo from '@/components/faqs-2';
 import FooterSection from '@/components/footer-one';
 import CallToAction from '@/components/call-to-action';
-import TestimonialsSection from '@/components/testimonials';
 import TeamSection from '@/components/team';
 import ContentSection from '@/components/content-one';
 import QuickIntro from '@/components/QuickIntro';
@@ -19,12 +18,17 @@ export default function Home() {
       {!introComplete && (
         <QuickIntro onComplete={() => setIntroComplete(true)} />
       )}
-      <div>
+      <div id="home">
         <HeroSection />
-        <ContentSection />
-        <TestimonialsSection />
-        <TeamSection />
-        <FAQsTwo />
+        <div id="features">
+          <ContentSection />
+        </div>
+        <div id="team">
+          <TeamSection />
+        </div>
+        <div id="faq">
+          <FAQsTwo />
+        </div>
         <CallToAction />
         <FooterSection />
       </div>

@@ -2,7 +2,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import partiesApi from "@/api/partiesApi";
-import type { PartyStashItemDto } from "@/types/parties";
+import type { PartyStashItemDto, PartyMemberDto } from "@/types/parties";
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import { PartialBlock } from "@blocknote/core";
@@ -29,6 +29,7 @@ export default function PartyStashDetailPage() {
   const stashId = (params?.stashId as string) ?? "";
 
   const [item, setItem] = useState<PartyStashItemDto | null>(null);
+  const [members, setMembers] = useState<PartyMemberDto[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [accessDenied, setAccessDenied] = useState(false);
   const [membershipChecked, setMembershipChecked] = useState(false);
@@ -167,8 +168,9 @@ export default function PartyStashDetailPage() {
         }
         // Check if user is a member of the party
         const membersRes = await partiesApi.getMembers(partyId);
-        const members = membersRes.data ?? [];
-        const isMember = members.some(
+        const fetchedMembers = membersRes.data ?? [];
+        setMembers(fetchedMembers);
+        const isMember = fetchedMembers.some(
           (m) => m.authUserId === authId && m.status === "Active"
         );
         if (!isMember) {
@@ -193,6 +195,11 @@ export default function PartyStashDetailPage() {
       mounted = false;
     };
   }, [partyId]);
+
+  const getUsername = (userId: string) => {
+    const member = members.find((m) => m.authUserId === userId);
+    return member?.username || member?.firstName || "Unknown";
+  };
 
   const doc = useMemo(() => new Y.Doc(), [partyId, stashId]);
   const provider = useMemo(() => new YPartyKitProvider(
@@ -277,6 +284,11 @@ export default function PartyStashDetailPage() {
                   <span>{item?.tags?.length ?? 0} tags</span>
                   {item && (
                     <>
+                      <span>•</span>
+                      <span className="flex items-center gap-1">
+                        <Users className="h-3 w-3" />
+                        {getUsername(item.sharedByUserId)}
+                      </span>
                       <span>•</span>
                       <span>{new Date(item.sharedAt).toLocaleDateString()}</span>
                     </>

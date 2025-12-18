@@ -4,7 +4,8 @@ import { useState, useEffect } from "react";
 import { AdminLayout } from "@/components/layout/AdminLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Loader2, BookOpen, Link as LinkIcon, Plus, X, Search, Circle, Zap, Crown } from "lucide-react";
+import { Label } from "@/components/ui/label"; // Imported Label
+import { Loader2, BookOpen, Link as LinkIcon, Plus, X, Search, Circle, Zap, Crown, Scale } from "lucide-react";
 import { toast } from "sonner";
 import subjectsApi from "@/api/subjectsApi";
 import adminManagementApi from "@/api/adminManagementApi";
@@ -25,7 +26,7 @@ const SubjectNode = ({ data }: { data: { label: string; code: string } }) => (
     </div>
 );
 
-const SkillNode = ({ data }: { data: { label: string; tier: number; onDelete: () => void } }) => {
+const SkillNode = ({ data }: { data: { label: string; tier: number; weight: number; onDelete: () => void } }) => {
     const tierConfig = {
         1: { color: "border-emerald-500 text-emerald-600 bg-emerald-50", icon: Circle },
         2: { color: "border-[#7289da] text-[#f5c16c] bg-[#f5c16c]/10", icon: Zap },
@@ -33,6 +34,9 @@ const SkillNode = ({ data }: { data: { label: string; tier: number; onDelete: ()
     }[data.tier as 1 | 2 | 3] || { color: "border-gray-400 text-gray-600 bg-gray-50", icon: Circle };
 
     const Icon = tierConfig.icon;
+
+    // Visual indicator for weight (opacity or size could be used, here just a badge)
+    const weightPercent = Math.round(data.weight * 100);
 
     return (
         <div className={`relative group min-w-[140px] px-4 py-3 rounded-xl border-2 ${tierConfig.color} shadow-md flex items-center gap-3 z-10`}>
@@ -42,7 +46,12 @@ const SkillNode = ({ data }: { data: { label: string; tier: number; onDelete: ()
             <Handle type="source" position={Position.Bottom} className="w-2 h-2 !bg-[#beaca3] border-none" />
 
             <Icon className="w-5 h-5 shrink-0" />
-            <div className="text-xs font-semibold">{data.label}</div>
+            <div className="flex flex-col">
+                <div className="text-xs font-semibold">{data.label}</div>
+                <div className="text-[9px] opacity-70 flex items-center gap-1">
+                    <Scale className="w-3 h-3" /> {weightPercent}%
+                </div>
+            </div>
 
             <button
                 onClick={(e) => { e.stopPropagation(); data.onDelete(); }}
@@ -65,6 +74,10 @@ export default function CurriculumMapPage() {
     const [mappedSkills, setMappedSkills] = useState<SubjectSkillMappingDto[]>([]);
     const [loadingMappings, setLoadingMappings] = useState(false);
     const [skillSearch, setSkillSearch] = useState("");
+
+    // ⭐ NEW: Relevance Weight State
+    const [relevance, setRelevance] = useState(1.0);
+
     const [nodes, setNodes] = useState<Node[]>([]);
     const [edges, setEdges] = useState<Edge[]>([]);
 
@@ -90,14 +103,20 @@ export default function CurriculumMapPage() {
             return {
                 id: mapping.skillId, type: 'skill',
                 position: { x: radius * Math.cos(angle), y: radius * Math.sin(angle) },
-                data: { label: mapping.skillName, tier, onDelete: () => handleRemoveMapping(mapping.skillId) },
+                data: {
+                    label: mapping.skillName,
+                    tier,
+                    weight: mapping.relevanceWeight,
+                    onDelete: () => handleRemoveMapping(mapping.skillId)
+                },
             };
         });
 
         const subjectEdges: Edge[] = safeMappedSkills.map((mapping) => ({
             id: `edge-subject-${mapping.skillId}`, source: 'subject-center', target: mapping.skillId,
             type: 'default', animated: false,
-            style: { stroke: '#beaca3', strokeWidth: 1, opacity: 0.4, strokeDasharray: '5,5' },
+            // Adjust opacity based on weight to visualize relevance
+            style: { stroke: '#beaca3', strokeWidth: 1 + mapping.relevanceWeight * 2, opacity: 0.3 + (mapping.relevanceWeight * 0.7), strokeDasharray: '5,5' },
         }));
 
         const dependencyEdges: Edge[] = [];
@@ -152,7 +171,8 @@ export default function CurriculumMapPage() {
     const handleAddMapping = async (skillId: string) => {
         if (!selectedSubject) return;
         try {
-            await adminManagementApi.addSubjectSkill(selectedSubject.id, skillId);
+            // ⭐ Use the state relevance value
+            await adminManagementApi.addSubjectSkill(selectedSubject.id, skillId, relevance);
             toast.success("Skill mapped");
             const res = await adminManagementApi.getSubjectSkills(selectedSubject.id);
             if (res.isSuccess) setMappedSkills(Array.isArray(res.data) ? res.data : []);
@@ -188,7 +208,7 @@ export default function CurriculumMapPage() {
                         Subject Skill Mappings
                     </h1>
                     <p className="text-white/60 mt-1">
-                        Visualize subject composition. Blue lines indicate skill prerequisites.
+                        Visualize subject composition. Use the slider to set skill relevance before adding.
                     </p>
                 </div>
 
@@ -237,8 +257,7 @@ export default function CurriculumMapPage() {
                                     <div className="flex items-center gap-2 text-[#f5c16c]"><Zap className="w-3 h-3" /> Intermediate</div>
                                     <div className="flex items-center gap-2 text-purple-600"><Crown className="w-3 h-3" /> Advanced</div>
                                     <div className="h-px bg-[#beaca3]/30 my-1" />
-                                    <div className="flex items-center gap-2 text-[#beaca3]"><span className="w-4 h-0.5 bg-[#beaca3] border-dashed" /> Subject Link</div>
-                                    <div className="flex items-center gap-2 text-[#f5c16c]"><span className="w-4 h-0.5 bg-[#f5c16c]" /> Prerequisite</div>
+                                    <div className="flex items-center gap-2 text-white/70"><Scale className="w-3 h-3" /> Relevance Weight (0-1)</div>
                                 </div>
                             </>
                         ) : (
@@ -253,11 +272,33 @@ export default function CurriculumMapPage() {
 
                     {/* Right Column: Available Skills */}
                     <Card className="w-1/4 bg-[#1a1410] border-[#f5c16c]/30 flex flex-col min-h-0">
-                        <CardHeader className="pb-3">
+                        <CardHeader className="pb-3 space-y-3">
                             <CardTitle className="text-sm font-bold text-[#f5c16c] uppercase tracking-wider flex items-center gap-2">
                                 <Plus className="w-4 h-4" /> Add Skills
                             </CardTitle>
-                            <Input placeholder="Filter skills..." value={skillSearch} onChange={e => setSkillSearch(e.target.value)} className="h-8 border-[#f5c16c]/30 text-xs mt-2" />
+
+                            {/* ⭐ NEW: Relevance Weight Slider */}
+                            <div className="bg-[#0a0506]/60 rounded-lg p-3 border border-[#f5c16c]/10">
+                                <div className="flex justify-between items-center mb-2">
+                                    <Label className="text-[10px] text-white/60 uppercase tracking-widest">Relevance Weight</Label>
+                                    <span className="text-xs font-bold text-[#f5c16c]">{relevance.toFixed(1)}</span>
+                                </div>
+                                <input
+                                    type="range"
+                                    min="0.1"
+                                    max="1.0"
+                                    step="0.1"
+                                    value={relevance}
+                                    onChange={(e) => setRelevance(parseFloat(e.target.value))}
+                                    className="w-full accent-[#d23187] h-1.5 bg-gray-700 rounded-lg appearance-none cursor-pointer"
+                                />
+                                <div className="flex justify-between text-[9px] text-white/30 mt-1 px-1">
+                                    <span>Low</span>
+                                    <span>High</span>
+                                </div>
+                            </div>
+
+                            <Input placeholder="Filter skills..." value={skillSearch} onChange={e => setSkillSearch(e.target.value)} className="h-8 border-[#f5c16c]/30 text-xs" />
                         </CardHeader>
                         <CardContent className="flex-1 overflow-y-auto pr-2 space-y-1">
                             {availableSkills.slice(0, 50).map(skill => (
@@ -267,7 +308,13 @@ export default function CurriculumMapPage() {
                                         <div className="text-sm text-white/70 group-hover:text-white">{skill.name}</div>
                                         <div className="text-[10px] text-white/40">Tier {skill.tier} • {skill.domain}</div>
                                     </div>
-                                    <Plus className="w-3 h-3 text-white/30 group-hover:text-[#f5c16c]" />
+                                    <div className="flex items-center gap-2">
+                                        {/* Preview of weight being added */}
+                                        <span className="text-[10px] text-[#f5c16c] opacity-0 group-hover:opacity-100 transition-opacity">
+                                            {relevance.toFixed(1)}
+                                        </span>
+                                        <Plus className="w-3 h-3 text-white/30 group-hover:text-[#f5c16c]" />
+                                    </div>
                                 </button>
                             ))}
                         </CardContent>

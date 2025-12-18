@@ -11,7 +11,8 @@ import {
   BrainCircuit,
   Code,
   CheckCircle2,
-  List
+  List,
+  Clock // Added Clock icon for InProgress state
 } from 'lucide-react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
@@ -87,7 +88,7 @@ export default function QuestDetailView({
 
   // Handle null/undefined stepStatuses gracefully
   const stepStatuses = questProgress.stepStatuses || {};
-  
+
   const completedStepNumbers = new Set<number>();
   Object.entries(stepStatuses).forEach(([stepId, status]) => {
     if (status === 'Completed') {
@@ -233,7 +234,9 @@ export default function QuestDetailView({
                           ? 'cursor-not-allowed opacity-50 bg-white/5 border border-white/10 text-white/40'
                           : stepStatus === 'Completed'
                             ? 'bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 hover:bg-emerald-500/30'
-                            : 'bg-gradient-to-r from-[#f5c16c] to-[#d4a855] text-black hover:shadow-lg hover:shadow-[#f5c16c]/50'
+                            : stepStatus === 'InProgress'
+                              ? 'bg-blue-500/20 border border-blue-500/40 text-blue-300 hover:bg-blue-500/30' // DISTINCT STYLE FOR IN-PROGRESS
+                              : 'bg-gradient-to-r from-[#f5c16c] to-[#d4a855] text-black hover:shadow-lg hover:shadow-[#f5c16c]/50'
                       )}
                     >
                       {locked ? (
@@ -241,10 +244,20 @@ export default function QuestDetailView({
                           <Lock className="w-4 h-4" />
                           Locked
                         </span>
+                      ) : stepStatus === 'Completed' ? (
+                        <span className="flex items-center gap-2">
+                          <CheckCircle2 className="w-4 h-4" />
+                          Review
+                        </span>
+                      ) : stepStatus === 'InProgress' ? (
+                        <span className="flex items-center gap-2">
+                          <Clock className="w-4 h-4" />
+                          Continue
+                        </span>
                       ) : (
                         <span className="flex items-center gap-2">
                           <Play className="w-4 h-4" />
-                          {stepStatus === 'Completed' ? 'Review' : 'Continue'}
+                          Start
                         </span>
                       )}
                     </Button>

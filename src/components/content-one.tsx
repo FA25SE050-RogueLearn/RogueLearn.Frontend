@@ -19,14 +19,14 @@ export default function ContentSection() {
                         <div className="grid sm:grid-cols-5 sm:divide-x divide-border">
                             <CodeIllustration className="sm:col-span-2" />
                             <div className="mt-6 sm:col-span-3 sm:mt-0 sm:border-l border-border sm:pl-12">
-                                <h3 className="font-heading text-foreground text-xl font-bold">Real Code Challenges</h3>
-                                <p className="font-body text-muted-foreground mt-4 text-lg">Face authentic programming challenges disguised as epic quests. Each victory strengthens your understanding and unlocks advanced techniques.</p>
+                                <h3 className="font-heading text-foreground text-xl font-bold">Code Battle Event</h3>
+                                <p className="font-body text-muted-foreground mt-4 text-lg">Compete in real-time code battles against other learners. Join active events, climb leaderboards, and earn achievements through competitive programming.</p>
                             </div>
                         </div>
                         <div className="grid sm:grid-cols-5 sm:divide-x divide-border">
                             <div className="pt-12 sm:col-span-3 sm:border-r border-border sm:pr-12">
-                                <h3 className="font-heading text-foreground text-xl font-bold">Progressive Skill Trees</h3>
-                                <p className="font-body text-muted-foreground mt-4 text-lg">Customize your learning journey. Choose your class, unlock abilities, and specialize in languages that match your career goals.</p>
+                                <h3 className="font-heading text-foreground text-xl font-bold">Party Stash</h3>
+                                <p className="font-body text-muted-foreground mt-4 text-lg">Share knowledge with your guild. Store and organize notes, resources, and code snippets in a shared stash accessible to all party members.</p>
                             </div>
                             <div className="row-start-1 flex items-center justify-center pt-12 sm:col-span-2 sm:row-start-auto">
                                 <ScheduleIllustation className="pt-8" />

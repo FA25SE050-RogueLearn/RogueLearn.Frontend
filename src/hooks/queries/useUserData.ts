@@ -22,8 +22,10 @@ export function useUserFullInfo() {
         return null;
       }
     },
-    staleTime: 2 * 60 * 1000, // 2 minutes
-    gcTime: 10 * 60 * 1000, // 10 minutes
+    staleTime: 30 * 1000, // 30 seconds
+    gcTime: 5 * 60 * 1000, // 5 minutes
+    refetchOnWindowFocus: true,
+    refetchOnMount: true,
   });
 }
 
@@ -50,7 +52,9 @@ export function useUserAchievements() {
         return [];
       }
     },
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: 60 * 1000, // 1 minute
     gcTime: 15 * 60 * 1000, // 15 minutes
+    refetchOnWindowFocus: true,
+    refetchOnMount: true,
   });
 }
