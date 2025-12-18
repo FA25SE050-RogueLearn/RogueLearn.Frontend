@@ -96,7 +96,7 @@ export default function PartyInfoModal({ open, onClose, partyId }: Props) {
           <section className="mt-6 rounded-lg border border-white/10 bg-white/5 p-6">
             <div className="mb-3 flex items-center gap-2 text-xl font-semibold text-white"><CalendarDays className="h-6 w-6" /> Meetings Notes</div>
             <ul className="space-y-1 text-base text-white/90">
-              <li><span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">Transcript sync</span> available about 10 minutes after ending a meeting.</li>
+              <li><span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">Transcript sync</span> available about 5 minutes after ending a meeting.</li>
               <li>If authorization is required, use the <span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">Authorize</span> button to grant <span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">Google Meet</span> scopes.</li>
               <li>All members can see the meeting <span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">join link</span> when active.</li>
             </ul>

@@ -40,7 +40,7 @@ export interface PartyMemberDto {
   lastName?: string | null;
   profileImageUrl?: string | null;
   level: number;
-  experiencePoints: number;
+  experiencePoints: number; 
   bio?: string | null;
 }
 
