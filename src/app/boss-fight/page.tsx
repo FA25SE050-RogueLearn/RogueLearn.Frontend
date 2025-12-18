@@ -127,8 +127,8 @@ export default function BossFightSetupPage() {
   const handleSubjectToggle = (subjectId: string) => {
     setSelectedSubjects(prev =>
       prev.includes(subjectId)
-        ? prev.filter(id => id !== subjectId)
-        : [...prev, subjectId]
+        ? []
+        : [subjectId]
     )
   }
 
@@ -209,11 +209,12 @@ export default function BossFightSetupPage() {
 
   const handlePrepareForBattle = async () => {
     if (selectedSubjects.length === 0) {
-      alert('Please select at least one subject')
+      alert('Please select a subject')
       return
     }
 
     setLoading(true)
+    let hostId: string | null = null
     try {
       // Step 1: Get join code from host endpoint (with userId)
       const hostRes = await fetch('/api/game/host', {
@@ -226,10 +227,14 @@ export default function BossFightSetupPage() {
       }
       const hostData = await hostRes.json()
       const code = String(hostData.joinCode)
+      hostId = hostData.hostId ? String(hostData.hostId) : null
       setJoinCode(code)
 
       // Step 2: Create game session with configured subjects
       const origin = process.env.NEXT_PUBLIC_API_URL || 'https://localhost:5051'
+      const supabase = createClient()
+      const { data: { session } } = await supabase.auth.getSession()
+      const token = session?.access_token
       const selectedSubjectCodes = subjects
         .filter(s => selectedSubjects.includes(s.id))
         .map(s => s.subjectCode)
@@ -237,19 +242,33 @@ export default function BossFightSetupPage() {
 
       const sessionRes = await fetch(`${origin}/api/quests/game/sessions/create`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+        },
         body: JSON.stringify({
           user_id: userId,
           relay_join_code: code,
           pack_spec: {
             subject: selectedSubjectCodes,
-            difficulty: 'mixed',
+            difficulty: `Easy: ${easyPercent}%, Medium: ${mediumPercent}%, Hard: ${hardPercent}%`,
             count: totalQuestions
           }
         })
       })
 
       if (!sessionRes.ok) {
+        try {
+          if (hostId) {
+            await fetch('/api/game/host', {
+              method: 'DELETE',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ hostId })
+            })
+          }
+        } catch {
+          // ignore cleanup failures
+        }
         throw new Error('Failed to create game session')
       }
 
@@ -289,36 +308,7 @@ export default function BossFightSetupPage() {
       return
     }
 
-    setLoading(true)
-    try {
-      // Call the join endpoint
-      const joinRes = await fetch('/api/game/join', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ joinCode: joinCodeInput })
-      })
-
-      if (!joinRes.ok) {
-        throw new Error('Failed to join game')
-      }
-
-      const joinData = await joinRes.json()
-
-      // Get the match ID from the join response or from query params
-      const matchId = joinData.matchId || new URLSearchParams(window.location.search).get('match')
-
-      if (!matchId) {
-        throw new Error('No match ID found')
-      }
-
-      setSessionId(matchId)
-      setMode('playing')
-    } catch (error) {
-      console.error('Failed to join game:', error)
-      alert('Failed to join game. Please check the code and try again.')
-    } finally {
-      setLoading(false)
-    }
+    router.push(`/play?code=${encodeURIComponent(joinCodeInput)}`)
   }
 
   // Show initial choice screen
@@ -781,15 +771,15 @@ export default function BossFightSetupPage() {
           }}>
             <h2 style={{ fontSize: 24, fontWeight: 700, color: '#f5c16c', marginBottom: 24, display: 'flex', alignItems: 'center', gap: 12 }}>
               <Trophy style={{ width: 24, height: 24 }} />
-              Choose Your Subjects
+              Choose Your Subject
             </h2>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 16 }}>
               {loadingSubjects ? (
-                <div style={{ textAlign: 'center', padding: 32, color: '#f5c16c', opacity: 0.7 }}>
+                <div style={{ gridColumn: '1/-1', textAlign: 'center', padding: 32, color: '#f5c16c', opacity: 0.7 }}>
                   Loading your subjects...
                 </div>
               ) : subjects.length === 0 ? (
-                <div style={{ textAlign: 'center', padding: 32, color: '#f5c16c', opacity: 0.7 }}>
+                <div style={{ gridColumn: '1/-1', textAlign: 'center', padding: 32, color: '#f5c16c', opacity: 0.7 }}>
                   No subjects found. Start some quests to unlock subjects for boss fights!
                 </div>
               ) : (
@@ -801,25 +791,50 @@ export default function BossFightSetupPage() {
                         key={subject.id}
                         onClick={() => handleSubjectToggle(subject.id)}
                         style={{
-                          padding: 16,
+                          position: 'relative',
+                          padding: 20,
                           border: selectedSubjects.includes(subject.id)
                             ? '2px solid #f5c16c'
-                            : '2px solid rgba(245, 193, 108, 0.3)',
-                          borderRadius: 12,
+                            : '2px solid rgba(245, 193, 108, 0.1)',
+                          borderRadius: 16,
                           background: selectedSubjects.includes(subject.id)
-                            ? 'rgba(245, 193, 108, 0.15)'
-                            : 'rgba(10, 5, 8, 0.5)',
+                            ? 'linear-gradient(135deg, rgba(245, 193, 108, 0.2), rgba(210, 49, 135, 0.1))'
+                            : 'rgba(10, 5, 8, 0.4)',
                           cursor: 'pointer',
-                          transition: 'all 0.3s',
-                          textAlign: 'left'
+                          transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                          textAlign: 'left',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: 8,
+                          boxShadow: selectedSubjects.includes(subject.id)
+                            ? '0 8px 24px rgba(245, 193, 108, 0.15)'
+                            : 'none',
+                          transform: selectedSubjects.includes(subject.id) ? 'translateY(-2px)' : 'none'
                         }}
                       >
-                        <div style={{ fontSize: 14, color: '#f5c16c', fontWeight: 600, marginBottom: 4 }}>
+                        <div style={{
+                          fontSize: 18,
+                          color: selectedSubjects.includes(subject.id) ? '#f5c16c' : 'rgba(255,255,255,0.9)',
+                          fontWeight: 700,
+                          letterSpacing: -0.5
+                        }}>
                           {subject.subjectCode}
                         </div>
-                        <div style={{ fontSize: 12, color: 'rgba(255, 255, 255, 0.7)' }}>
+                        <div style={{ fontSize: 13, color: 'rgba(255, 255, 255, 0.5)', lineHeight: 1.4 }}>
                           {subject.subjectName}
                         </div>
+                        {selectedSubjects.includes(subject.id) && (
+                          <div style={{
+                            position: 'absolute',
+                            top: 12,
+                            right: 12,
+                            width: 8,
+                            height: 8,
+                            borderRadius: '50%',
+                            background: '#f5c16c',
+                            boxShadow: '0 0 12px #f5c16c'
+                          }} />
+                        )}
                       </button>
                     ))}
                   {subjects.length > SUBJECTS_PER_PAGE && (
@@ -875,24 +890,40 @@ export default function BossFightSetupPage() {
                 <Settings style={{ width: 24, height: 24 }} />
                 Total Questions
               </h2>
-              <input
-                type="number"
-                min={10}
-                max={100}
-                value={totalQuestions}
-                onChange={(e) => setTotalQuestions(parseInt(e.target.value) || 50)}
-                style={{
-                  width: '100%',
-                  padding: 16,
-                  fontSize: 24,
-                  fontWeight: 700,
-                  textAlign: 'center',
-                  background: 'rgba(10, 5, 8, 0.8)',
-                  border: '2px solid rgba(245, 193, 108, 0.3)',
-                  borderRadius: 12,
-                  color: '#f5c16c'
-                }}
-              />
+              <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                <button
+                  onClick={() => setTotalQuestions(Math.max(10, totalQuestions - 5))}
+                  style={{
+                    width: 48, height: 48, borderRadius: 12, background: 'rgba(255,255,255,0.05)',
+                    border: '1px solid rgba(255,255,255,0.1)', color: 'white', fontSize: 24, cursor: 'pointer'
+                  }}
+                >-</button>
+                <input
+                  type="number"
+                  min={5}
+                  max={100}
+                  value={totalQuestions}
+                  onChange={(e) => setTotalQuestions(Math.max(5, Math.min(100, parseInt(e.target.value) || 50)))}
+                  style={{
+                    flex: 1,
+                    padding: 12,
+                    fontSize: 24,
+                    fontWeight: 700,
+                    textAlign: 'center',
+                    background: 'rgba(10, 5, 8, 0.8)',
+                    border: '2px solid rgba(245, 193, 108, 0.3)',
+                    borderRadius: 12,
+                    color: '#f5c16c'
+                  }}
+                />
+                <button
+                  onClick={() => setTotalQuestions(Math.min(100, totalQuestions + 5))}
+                  style={{
+                    width: 48, height: 48, borderRadius: 12, background: 'rgba(255,255,255,0.05)',
+                    border: '1px solid rgba(255,255,255,0.1)', color: 'white', fontSize: 24, cursor: 'pointer'
+                  }}
+                >+</button>
+              </div>
             </div>
 
             {/* Difficulty Mix */}
@@ -907,6 +938,13 @@ export default function BossFightSetupPage() {
                 Difficulty Mix
               </h2>
 
+              {/* Visual Distribution Bar */}
+              <div style={{ height: 16, borderRadius: 8, overflow: 'hidden', display: 'flex', marginBottom: 32, boxShadow: '0 0 20px rgba(0,0,0,0.3)' }}>
+                <div style={{ width: `${easyPercent}%`, background: '#4ade80', transition: 'width 0.3s' }} />
+                <div style={{ width: `${mediumPercent}%`, background: '#fb923c', transition: 'width 0.3s' }} />
+                <div style={{ width: `${hardPercent}%`, background: '#ef4444', transition: 'width 0.3s' }} />
+              </div>
+
               {/* Easy */}
               <div style={{ marginBottom: 20 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
@@ -919,7 +957,7 @@ export default function BossFightSetupPage() {
                   max={100}
                   value={easyPercent}
                   onChange={(e) => handleDifficultyChange('easy', parseInt(e.target.value))}
-                  style={{ width: '100%', accentColor: '#4ade80' }}
+                  style={{ width: '100%', accentColor: '#4ade80', cursor: 'pointer' }}
                 />
               </div>
 
@@ -935,7 +973,7 @@ export default function BossFightSetupPage() {
                   max={100}
                   value={mediumPercent}
                   onChange={(e) => handleDifficultyChange('medium', parseInt(e.target.value))}
-                  style={{ width: '100%', accentColor: '#fb923c' }}
+                  style={{ width: '100%', accentColor: '#fb923c', cursor: 'pointer' }}
                 />
               </div>
 
@@ -951,7 +989,7 @@ export default function BossFightSetupPage() {
                   max={100}
                   value={hardPercent}
                   onChange={(e) => handleDifficultyChange('hard', parseInt(e.target.value))}
-                  style={{ width: '100%', accentColor: '#ef4444' }}
+                  style={{ width: '100%', accentColor: '#ef4444', cursor: 'pointer' }}
                 />
               </div>
             </div>

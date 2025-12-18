@@ -1,12 +1,19 @@
+import { createClient } from '@/utils/supabase/server'
 export const dynamic = 'force-dynamic'
 export default async function PlayerLastSummaryPage({ params }: { params: Promise<{ userId: string }> }) {
   const { userId } = await params
-  const origin = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
+  const supabase = await createClient()
+  const { data: { session } } = await supabase.auth.getSession()
+  const token = session?.access_token
+  const origin = (process.env.NEXT_PUBLIC_API_URL || 'https://localhost:5051').replace(/\/+$/, '')
   const url = `${origin}/api/player/${userId}/last-summary`
   let ok = false
   let data: any = null
   try {
-    const res = await fetch(url, { cache: 'no-store' })
+    const res = await fetch(url, {
+      cache: 'no-store',
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    })
     ok = res.ok
     data = await res.json()
   } catch (e: any) {

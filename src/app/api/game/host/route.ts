@@ -37,13 +37,19 @@ export async function POST(req: NextRequest) {
     process.env.ENABLE_LOCAL_DOCKER !== "0" &&
     process.env.ENABLE_LOCAL_DOCKER !== "false";
 
+  const gameApiKey = process.env.RL_GAME_API_KEY || process.env.GAME_API_KEY;
+
   try {
     let backendError: string | null = null;
     if (controllerUrl) {
       try {
+        const headers: Record<string, string> = { "Content-Type": "application/json" };
+        if (gameApiKey) {
+          headers["X-Game-Api-Key"] = gameApiKey;
+        }
         const res = await fetch(controllerUrl, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers,
           body: JSON.stringify({ userId }),
         });
         if (res.ok) {
@@ -92,6 +98,9 @@ export async function POST(req: NextRequest) {
         if (userApiBase) envs.push('-e', `USER_API_BASE=${userApiBase}`);
       }
       envs.push('-e', `INSECURE_TLS=${process.env.INSECURE_TLS || '0'}`);
+      if (gameApiKey) {
+        envs.push('-e', `RL_GAME_API_KEY=${gameApiKey}`);
+      }
 
       // Pass userId to Unity server if provided
       if (userId) {
@@ -220,5 +229,88 @@ export async function POST(req: NextRequest) {
     }
   } catch (err: any) {
     return NextResponse.json({ ok: false, error: err?.message ?? String(err) }, { status: 500 });
+  }
+}
+
+export async function DELETE(req: NextRequest) {
+  let hostId: string | null = null;
+  try {
+    const body = await req.json();
+    hostId = body?.hostId || null;
+  } catch {
+    // ignore
+  }
+
+  if (!hostId) {
+    return NextResponse.json({ ok: false, error: "Missing hostId" }, { status: 400 });
+  }
+
+  const controllerBase =
+    process.env.HOST_CONTROLLER_URL ||
+    process.env.NEXT_PUBLIC_API_URL ||
+    "";
+  const controllerPath =
+    process.env.HOST_CONTROLLER_PATH || "/api/quests/game/sessions/host";
+  const controllerUrl = controllerBase
+    ? `${controllerBase.replace(/\/$/, "")}${controllerPath.startsWith("/") ? controllerPath : `/${controllerPath}`}/${encodeURIComponent(hostId)}`
+    : null;
+
+  const enableLocalDocker =
+    process.env.ENABLE_LOCAL_DOCKER !== "0" &&
+    process.env.ENABLE_LOCAL_DOCKER !== "false";
+  const gameApiKey = process.env.RL_GAME_API_KEY || process.env.GAME_API_KEY;
+
+  if (controllerUrl) {
+    try {
+      const headers: Record<string, string> = {};
+      if (gameApiKey) {
+        headers["X-Game-Api-Key"] = gameApiKey;
+      }
+      const res = await fetch(controllerUrl, {
+        method: "DELETE",
+        headers,
+      });
+
+      if (res.ok) {
+        const data = await res.json().catch(() => ({}));
+        return NextResponse.json({ ok: true, hostId, ...data });
+      }
+
+      const text = await res.text().catch(() => "");
+      return NextResponse.json(
+        { ok: false, error: `Backend error: ${res.status} ${text}` },
+        { status: 502 }
+      );
+    } catch (err: any) {
+      return NextResponse.json(
+        { ok: false, error: err?.message ?? String(err) },
+        { status: 502 }
+      );
+    }
+  }
+
+  if (!enableLocalDocker || hostId.startsWith("local-")) {
+    return NextResponse.json({ ok: true, hostId, message: "No-op stop in this environment" });
+  }
+
+  try {
+    const { spawn } = await import("child_process");
+
+    await new Promise((resolve, reject) => {
+      const p = spawn("docker", ["rm", "-f", hostId], { stdio: ["ignore", "pipe", "pipe"] });
+      let err = "";
+      p.stderr.on("data", (d) => (err += d.toString()));
+      p.on("exit", (code) => {
+        if (code === 0) resolve(true);
+        else reject(new Error(err.trim() || `docker rm -f failed (code ${code})`));
+      });
+    });
+
+    return NextResponse.json({ ok: true, hostId, message: "Stopped local Docker host" });
+  } catch (err: any) {
+    return NextResponse.json(
+      { ok: false, error: err?.message ?? String(err) },
+      { status: 500 }
+    );
   }
 }
