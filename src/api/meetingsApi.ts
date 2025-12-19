@@ -35,10 +35,15 @@ const meetingsApi = {
   /** POST /api/meetings/{meetingId}/artifacts - Process artifacts and summarize */
   processArtifactsAndSummarize: (
     meetingId: string,
-    artifacts: ArtifactInputDto[]
+    artifacts: ArtifactInputDto[],
+    accessToken: string
   ): Promise<void> =>
     axiosClient
-      .post(`/api/meetings/${meetingId}/artifacts`, artifacts)
+      .post(`/api/meetings/${meetingId}/artifacts`, {
+        meetingId,
+        artifacts,
+        accessToken,
+      })
       .then(() => {}),
 
   /** POST /api/meetings/{meetingId}/summary - Create or update summary */
