@@ -15,7 +15,8 @@ import {
     Link as LinkIcon,
     Sparkles,
     Trophy,
-    Clock
+    Clock,
+    Code
 } from "lucide-react";
 import Link from "next/link";
 import { useState, useEffect, useCallback, useMemo } from "react";
@@ -31,6 +32,7 @@ import questApi from "@/api/questApi";
 import WeeklyProgressCard from "./WeeklyProgressCard";
 import { toast } from "sonner";
 
+// ... (Sub-components remain unchanged)
 // ========== SUB-COMPONENTS FOR ACTIVITIES ==========
 
 /**
@@ -334,10 +336,8 @@ export function ModuleLearningView({
             }
         }
 
-        // Coding activities are completed via callback.
-        if (currentActivity.type === 'Coding') {
-            return;
-        }
+        // Fix: Removed the early return for Coding type to allow manual skipping.
+        // The "Skip & Complete" button in the UI will now work.
 
         setIsCompleting(true);
 
@@ -369,12 +369,6 @@ export function ModuleLearningView({
         await fetchProgress();
         if (currentActivity && !completedActivities.includes(currentActivity.activityId)) {
             setCompletedActivities(prev => [...prev, currentActivity.activityId]);
-        }
-
-        if (!isLastActivity) {
-            setTimeout(() => {
-                handleNextActivity();
-            }, 1000);
         }
     }
 
@@ -530,8 +524,8 @@ export function ModuleLearningView({
                             </span>
                         )}
 
-                        {/* Show Mark Complete button for non-coding activities */}
-                        {!isActivityComplete && currentActivity.type !== 'Coding' && (
+                        {/* Mark Complete button enabled for ALL activities including Coding */}
+                        {!isActivityComplete && (
                             <Button
                                 size="sm"
                                 className={`font-semibold ${currentActivity.type === 'Quiz' && quizPassedState !== true
@@ -546,12 +540,16 @@ export function ModuleLearningView({
                             >
                                 {isCompleting ? (
                                     <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+                                ) : currentActivity.type === 'Coding' ? (
+                                    <Code className="w-4 h-4 mr-1" />
                                 ) : (
                                     <CheckCircle className="w-4 h-4 mr-1" />
                                 )}
                                 {currentActivity.type === 'Quiz' && quizPassedState !== true
                                     ? 'Pass Quiz First'
-                                    : 'Mark Complete'
+                                    : currentActivity.type === 'Coding'
+                                        ? 'Skip & Complete'
+                                        : 'Mark Complete'
                                 }
                             </Button>
                         )}
