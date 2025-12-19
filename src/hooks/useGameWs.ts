@@ -17,8 +17,14 @@ export function useGameWs(opts: UseGameWsOptions) {
 
   useEffect(() => {
     if (!url || !autoConnect || wsRef.current) return;
+    let cancelled = false;
+    const schedule = (fn: () => void) => {
+      Promise.resolve().then(() => {
+        if (!cancelled) fn();
+      });
+    };
     try {
-      setStatus("connecting");
+      schedule(() => setStatus("connecting"));
       const ws = new WebSocket(url);
       wsRef.current = ws;
       ws.onopen = () => setStatus("open");
@@ -29,10 +35,14 @@ export function useGameWs(opts: UseGameWsOptions) {
       };
       ws.onclose = () => setStatus("closed");
     } catch (e: any) {
-      setStatus("error");
-      setError(e?.message ?? String(e));
+      const message = e?.message ?? String(e);
+      schedule(() => {
+        setStatus("error");
+        setError(message);
+      });
     }
     return () => {
+      cancelled = true;
       try { wsRef.current?.close(); } catch {}
       wsRef.current = null;
     };
