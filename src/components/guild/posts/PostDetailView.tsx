@@ -309,7 +309,7 @@ export function PostDetailView({ guildId, postId }: Props) {
                       )}
                     </div>
                     {isDeleted ? (
-                      <div className="text-sm text-white/50 italic">Comment removed</div>
+                      <div className="text-sm text-white/50 italic">Comment deleted</div>
                     ) : editingId === c.id ? (
                       <Textarea value={editText} onChange={(e) => setEditText(e.target.value)} className="mt-2 min-h-[80px] border-[#f5c16c]/30 bg-black/40 text-white focus:border-[#f5c16c]/50" />
                     ) : (

@@ -56,7 +56,7 @@ export default function GuildDetailPage() {
   const [configOpen, setConfigOpen] = useState<boolean>(false);
   const [cfgName, setCfgName] = useState<string>("");
   const [cfgDescription, setCfgDescription] = useState<string>("");
-  const [cfgPrivacy, setCfgPrivacy] = useState<'public' | 'invite_only'>("public");
+  const [cfgPrivacy, setCfgPrivacy] = useState<'public' | 'private'>("public");
   const [cfgMaxMembers, setCfgMaxMembers] = useState<number>(50);
   const [cfgSubmitting, setCfgSubmitting] = useState<boolean>(false);
   const [cfgError, setCfgError] = useState<string | null>(null);
@@ -83,7 +83,7 @@ export default function GuildDetailPage() {
         if (g) {
           setCfgName(g.name);
           setCfgDescription(g.description);
-          setCfgPrivacy(g.isPublic ? 'public' : 'invite_only');
+          setCfgPrivacy(g.isPublic ? 'public' : 'private');
           setCfgMaxMembers(g.maxMembers);
         }
         setError(null);
@@ -236,7 +236,7 @@ export default function GuildDetailPage() {
                       ) : (
                         <div className="flex items-center gap-2 rounded-full border border-amber-400/30 bg-amber-400/10 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-amber-400">
                           <Lock className="h-3.5 w-3.5" />
-                          Invite Only
+                          Private
                         </div>
                       )}
                       
@@ -341,13 +341,13 @@ export default function GuildDetailPage() {
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <div>
                         <label className="text-xs font-semibold uppercase tracking-wide text-white/80">Privacy</label>
-                        <Select value={cfgPrivacy} onValueChange={(v) => setCfgPrivacy(v as 'public' | 'invite_only')}>
+                        <Select value={cfgPrivacy} onValueChange={(v) => setCfgPrivacy(v as 'public' | 'private')}>
                           <SelectTrigger className="mt-1 border-[#f5c16c]/25 bg-[#140707]/80 text-white">
                             <SelectValue placeholder="Select privacy" />
                           </SelectTrigger>
                           <SelectContent className="border-[#f5c16c]/25 bg-[#1a0e0d] text-white">
                             <SelectItem value="public">Public</SelectItem>
-                            <SelectItem value="invite_only">Invite Only</SelectItem>
+                            <SelectItem value="private">Private</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
@@ -496,7 +496,7 @@ export default function GuildDetailPage() {
                         </div>
                       )}
                       <div className="text-white font-bold">{displayName(top3[1]) ?? "—"}</div>
-                      <div className="text-gray-500 text-xs">{(top3[1]?.contributionPoints ?? 0).toLocaleString()} Contribution</div>
+                      <div className="text-gray-500 text-xs">{(top3[1]?.contributionPoints ?? 0).toLocaleString()} Points</div>
                       <div className="h-24 w-24 bg-linear-to-t from-gray-400/20 to-transparent rounded-t-lg mt-2"></div>
                     </div>
 
@@ -512,7 +512,7 @@ export default function GuildDetailPage() {
                         </div>
                       )}
                       <div className="text-[#d4a353] font-bold text-lg">{displayName(top3[0]) ?? "—"}</div>
-                      <div className="text-[#d4a353]/80 text-sm">{(top3[0]?.contributionPoints ?? 0).toLocaleString()} Contribution</div>
+                      <div className="text-[#d4a353]/80 text-sm">{(top3[0]?.contributionPoints ?? 0).toLocaleString()} Points</div>
                       <div className="h-32 w-32 bg-linear-to-t from-[#d4a353]/20 to-transparent rounded-t-lg mt-2 border-t border-[#d4a353]/30"></div>
                     </div>
 
@@ -527,7 +527,7 @@ export default function GuildDetailPage() {
                         </div>
                       )}
                       <div className="text-white font-bold">{displayName(top3[2]) ?? "—"}</div>
-                      <div className="text-gray-500 text-xs">{(top3[2]?.contributionPoints ?? 0).toLocaleString()} Contribution</div>
+                      <div className="text-gray-500 text-xs">{(top3[2]?.contributionPoints ?? 0).toLocaleString()} Points</div>
                       <div className="h-20 w-24 bg-linear-to-t from-orange-700/20 to-transparent rounded-t-lg mt-2"></div>
                     </div>
                   </div>
@@ -539,7 +539,6 @@ export default function GuildDetailPage() {
                         <h3 className="text-white font-semibold text-sm uppercase tracking-widest flex items-center gap-2">
                           <Trophy className="h-4 w-4 text-[#f5c16c]" /> Guild Rankings
                         </h3>
-                        <span className="text-[10px] text-foreground/60">Merit Contributions</span>
                       </div>
                     </CardHeader>
                     <CardContent className="relative z-10 p-0">
@@ -549,7 +548,7 @@ export default function GuildDetailPage() {
                             <th className="p-4 w-[15%]">Rank</th>
                             <th className="p-4 w-[45%]">Hero</th>
                             <th className="p-4 w-[20%]">Role</th>
-                            <th className="p-4 w-[20%] text-right">Contribution</th>
+                            <th className="p-4 w-[20%] text-right">Contribution Points</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-[#f5c16c]/15">
