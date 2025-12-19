@@ -2,6 +2,13 @@
 import { NextRequest, NextResponse } from "next/server";
 export const runtime = 'nodejs';
 
+function sanitizeBaseUrl(value: string | undefined): string {
+  if (!value) return "";
+  const trimmed = value.trim();
+  const unquoted = trimmed.replace(/^["'`]+|["'`]+$/g, "");
+  return unquoted.replace(/\/+$/, "");
+}
+
 // Utility to generate a pseudo-random 6-letter join code
 function generateJoinCode(): string {
   const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // avoid confusable chars
@@ -23,10 +30,11 @@ export async function POST(req: NextRequest) {
   }
 
   // Prefer calling the backend controller that can actually run Docker.
-  const controllerBase =
+  const controllerBase = sanitizeBaseUrl(
     process.env.HOST_CONTROLLER_URL ||
     process.env.NEXT_PUBLIC_API_URL ||
-    "";
+    ""
+  );
   const controllerPath =
     process.env.HOST_CONTROLLER_PATH || "/api/quests/game/sessions/host";
   const controllerUrl = controllerBase
@@ -34,8 +42,8 @@ export async function POST(req: NextRequest) {
     }`
     : null;
   const enableLocalDocker =
-    process.env.ENABLE_LOCAL_DOCKER !== "0" &&
-    process.env.ENABLE_LOCAL_DOCKER !== "false";
+    process.env.ENABLE_LOCAL_DOCKER === "1" ||
+    process.env.ENABLE_LOCAL_DOCKER === "true";
 
   const gameApiKey = process.env.RL_GAME_API_KEY || process.env.GAME_API_KEY;
 
@@ -52,6 +60,24 @@ export async function POST(req: NextRequest) {
           headers,
           body: JSON.stringify({ userId }),
         });
+
+        if (res.status === 404 && controllerBase.endsWith("/user-service")) {
+          const altBase = controllerBase.replace(/\/user-service$/, "");
+          const altUrl = `${altBase}${controllerPath.startsWith("/") ? controllerPath : `/${controllerPath}`}`;
+          const retry = await fetch(altUrl, {
+            method: "POST",
+            headers,
+            body: JSON.stringify({ userId }),
+          });
+          if (retry.ok) {
+            const data = await retry.json();
+            return NextResponse.json({ ok: true, ...data });
+          }
+          const text = await retry.text();
+          backendError = `Backend error: ${retry.status} ${text}`;
+          console.error(`[host] backend retry responded non-OK: ${backendError}`);
+        }
+
         if (res.ok) {
           const data = await res.json();
           // Expect backend to return { joinCode, hostId, message, wsUrl }

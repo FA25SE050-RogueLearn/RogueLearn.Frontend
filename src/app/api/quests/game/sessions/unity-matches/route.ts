@@ -12,6 +12,63 @@ export async function GET(request: Request) {
     // Try Supabase first
     try {
       const supabase = await createClient()
+
+      const parseJson = (val: any) => {
+        if (val == null) return null
+        if (typeof val === 'string') {
+          try {
+            return JSON.parse(val)
+          } catch {
+            return null
+          }
+        }
+        return val
+      }
+
+      const isGuidLike = (val: any) => {
+        if (typeof val !== 'string') return false
+        return /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(val)
+      }
+
+      const tryLoadSessionPack = async (row: any, matchId: string) => {
+        try {
+          let sessionRow: any = null
+
+          const byMatchResult = await supabase
+            .from('game_sessions')
+            .select('question_pack, session_id, match_result_id, created_at, user_id')
+            .eq('match_result_id', row.id)
+            .maybeSingle()
+
+          if (!byMatchResult.error && byMatchResult.data) sessionRow = byMatchResult.data
+
+          if (!sessionRow && isGuidLike(matchId)) {
+            const bySessionId = await supabase
+              .from('game_sessions')
+              .select('question_pack, session_id, match_result_id, created_at, user_id')
+              .eq('session_id', matchId)
+              .maybeSingle()
+            if (!bySessionId.error && bySessionId.data) sessionRow = bySessionId.data
+          }
+
+          if (!sessionRow && row.user_id) {
+            const byUser = await supabase
+              .from('game_sessions')
+              .select('question_pack, session_id, match_result_id, created_at, user_id')
+              .eq('user_id', row.user_id)
+              .order('created_at', { ascending: false })
+              .limit(1)
+              .maybeSingle()
+            if (!byUser.error && byUser.data) sessionRow = byUser.data
+          }
+
+          const pack = parseJson(sessionRow?.question_pack)
+          return pack && typeof pack === 'object' ? pack : null
+        } catch {
+          return null
+        }
+      }
+
       let query = supabase
         .from('match_results')
         .select('id, match_id, created_at, total_players, match_data, user_id')
@@ -22,26 +79,35 @@ export async function GET(request: Request) {
       }
       const { data: rows, error } = await query
       if (!error && rows && rows.length > 0) {
-        const matches = rows.map((r: any) => {
-          let md: any = null
-          try { md = typeof r.match_data === 'string' ? JSON.parse(r.match_data) : r.match_data } catch { md = null }
+        const matches: any[] = []
+        for (const r of rows) {
+          const md = parseJson(r.match_data) || {}
           const matchId = md?.matchId || r.match_id || r.id
+          const endUtc = md?.endUtc || md?.timestamp || r.created_at || new Date().toISOString()
           const result = md?.result || 'unknown'
-          const endUtc = md?.timestamp || r.created_at || new Date().toISOString()
+          const totalPlayers = md?.totalPlayers ?? r.total_players ?? 0
+
           const questionsFromData = Array.isArray(md?.questions) ? md.questions : []
           const topicsFromSummary = Array.isArray(md?.playerSummaries?.[0]?.topicBreakdown) ? md.playerSummaries[0].topicBreakdown : []
           const questionsCount = questionsFromData.length || topicsFromSummary.length
-          return {
+
+          const existingPack = md?.questionPack && typeof md.questionPack === 'object' ? md.questionPack : null
+          const packFromSession = existingPack ? null : await tryLoadSessionPack(r, matchId)
+          const questionPack = existingPack || packFromSession
+
+          matches.push({
+            ...md,
             matchId,
             endUtc,
             result,
-            totalPlayers: r.total_players || 0,
+            totalPlayers,
             questions: questionsFromData.length > 0
               ? questionsFromData
               : Array.from({ length: questionsCount }).map((_, i) => ({ questionId: i + 1, topic: topicsFromSummary[i]?.topic || '', difficulty: '', prompt: topicsFromSummary[i]?.topic || '', correctAnswerIndex: 0, playerAnswers: [] })),
-            playerSummaries: Array.isArray(md?.playerSummaries) ? md.playerSummaries : []
-          }
-        })
+            playerSummaries: Array.isArray(md?.playerSummaries) ? md.playerSummaries : [],
+            questionPack: questionPack || undefined,
+          })
+        }
         return NextResponse.json({ matches })
       }
     } catch { }

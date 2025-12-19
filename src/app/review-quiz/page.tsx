@@ -14,6 +14,12 @@ interface QuizQuestion {
   explanation?: string
 }
 
+const getDigits = (val?: string) => {
+  if (!val) return ''
+  const m = val.match(/\d+/g)
+  return m ? m.join('') : ''
+}
+
 function ReviewQuizContent() {
   const searchParams = useSearchParams()
   const router = useRouter()
@@ -40,7 +46,7 @@ function ReviewQuizContent() {
         console.log('[ReviewQuiz] Filtering for topics:', topics)
 
         // Fetch the actual match data to get the real questions
-        const response = await fetch(`/api/quests/game/sessions/unity-matches?limit=10`)
+        const response = await fetch(`/api/quests/game/sessions/unity-matches?limit=50`)
 
         if (!response.ok) {
           throw new Error('Failed to fetch match data')
@@ -89,77 +95,85 @@ function ReviewQuizContent() {
           console.log('[ReviewQuiz] Error fetching match data from Supabase:', err)
         }
 
-        // Get the topic breakdown from player summaries (this has the correct/wrong counts)
-        const topicBreakdown = match.playerSummaries?.[0]?.topicBreakdown || []
-        console.log('[ReviewQuiz] Topic breakdown:', topicBreakdown)
+        const supabase = createClient()
+        const { data: auth } = await supabase.auth.getUser()
+        const authedUserId = auth?.user?.id || ''
 
-        // Filter to weak topics and generate questions for wrong answers
-        const weakTopics = topicBreakdown.filter((t: any) => {
-          const hasWrongAnswers = t.correct < t.total
-          const isWeakTopic = topics.some(topic =>
-            t.topic?.toLowerCase().includes(topic.toLowerCase()) ||
-            topic.toLowerCase().includes(t.topic?.toLowerCase())
-          )
-          return hasWrongAnswers && isWeakTopic
-        })
+        const selectedTopics = topics.map(t => t.toLowerCase())
+        const topicSelected = (topic?: string) => {
+          if (selectedTopics.length === 0) return true
+          const lower = (topic || '').toLowerCase()
+          return selectedTopics.some(t => lower.includes(t) || t.includes(lower))
+        }
 
-        console.log('[ReviewQuiz] Weak topics with wrong answers:', weakTopics)
+        const matchQuestionResults = match.questions || []
 
-        // Generate questions for the wrong answers in each weak topic
-        const quizQuestions = weakTopics.flatMap((t: any, topicIdx: number) => {
-          const wrongCount = t.total - t.correct
+        const attemptsByPrompt = new Map<string, { attempts: number, correct: number, topic?: string, difficulty?: string }>()
+        for (const m of matches) {
+          const summaries = m.playerSummaries || []
+          const summary = summaries.find((s: any) =>
+            authedUserId && s.userId && String(s.userId).toLowerCase() === authedUserId.toLowerCase()
+          ) || summaries[0]
+          const pid = summary?.playerId
+          if (pid == null) continue
 
-          // Use questions from question pack if available, otherwise from match
-          const allQuestions = questionPack?.questions || match.questions || []
-          console.log('[ReviewQuiz] All questions available:', allQuestions.length)
+          const qs = m.questions || []
+          for (const qr of qs) {
+            if (!qr?.prompt) continue
+            const pa = qr.playerAnswers?.find((a: any) => a.playerId === pid)
+            if (!pa) continue
 
-          // Try to find actual questions for this topic
-          const topicQuestions = allQuestions.filter((q: any) =>
-            q.topic?.toLowerCase() === t.topic?.toLowerCase()
-          )
-
-          console.log(`[ReviewQuiz] Topic "${t.topic}": ${t.correct}/${t.total} correct, ${wrongCount} wrong`)
-          console.log(`[ReviewQuiz] Found ${topicQuestions.length} questions for topic "${t.topic}"`)
-
-          // Only include questions where we have actual question data with real options
-          const reviewQuestions = []
-
-          for (let wrongIdx = 0; wrongIdx < wrongCount; wrongIdx++) {
-            // Try to use actual question data
-            const actualQuestion = topicQuestions[t.correct + wrongIdx]
-
-            // Only include if we have actual question data with valid options
-            // Check if options are real (not placeholders like ["A", "B", "C", "D"])
-            const hasRealOptions = actualQuestion &&
-                                  Array.isArray(actualQuestion.options) &&
-                                  actualQuestion.options.length > 1 &&
-                                  (actualQuestion.options[0].length > 1 || // Real options are usually longer than 1 char
-                                   actualQuestion.options.some((opt: any) => opt.length > 1)) // At least one option is detailed
-
-            if (actualQuestion && actualQuestion.prompt && hasRealOptions) {
-              console.log(`[ReviewQuiz] Including question: "${actualQuestion.prompt.substring(0, 50)}..."`)
-              console.log(`[ReviewQuiz] Options:`, actualQuestion.options)
-
-              reviewQuestions.push({
-                id: actualQuestion.questionId?.toString() || `${topicIdx}-${wrongIdx}`,
-                prompt: actualQuestion.prompt,
-                options: actualQuestion.options,
-                answerIndex: actualQuestion.correctAnswerIndex ?? 0,
-                topic: t.topic,
-                difficulty: actualQuestion.difficulty || 'mixed',
-                explanation: actualQuestion.explanation || `Review the "${t.topic}" section to understand this concept better.`
-              })
-            } else {
-              console.log(`[ReviewQuiz] Skipping question without complete data: topic="${t.topic}", wrongIdx=${wrongIdx}`)
-              if (actualQuestion) {
-                console.log(`[ReviewQuiz]   - prompt: ${actualQuestion.prompt ? 'exists' : 'missing'}`)
-                console.log(`[ReviewQuiz]   - options:`, actualQuestion.options)
-              }
-            }
+            const key = String(qr.prompt)
+            const existing = attemptsByPrompt.get(key) || { attempts: 0, correct: 0, topic: qr.topic, difficulty: qr.difficulty }
+            existing.attempts += 1
+            if (pa.correct) existing.correct += 1
+            attemptsByPrompt.set(key, existing)
           }
+        }
 
-          return reviewQuestions
-        })
+        const packQuestions = match.questionPack?.questions || questionPack?.questions || []
+        const findPackQuestion = (qr: any) => {
+          const byPrompt = packQuestions.find((pq: any) => pq?.prompt && qr?.prompt && pq.prompt === qr.prompt)
+          if (byPrompt) return byPrompt
+          const byId = packQuestions.find((pq: any) => {
+            const digits = getDigits(pq?.id)
+            return digits && qr?.questionId != null && digits === String(qr.questionId)
+          })
+          return byId
+        }
+
+        const quizQuestions = (packQuestions || [])
+          .map((pq: any, idx: number) => {
+            const prompt = pq?.prompt
+            if (!prompt) return null
+
+            const stats = attemptsByPrompt.get(String(prompt))
+            if (!stats || stats.attempts <= 0) return null
+            if (stats.correct >= stats.attempts) return null
+
+            const topic = pq?.topic || stats.topic || 'mixed'
+            if (!topicSelected(topic)) return null
+
+            const options = Array.isArray(pq?.options) ? pq.options : []
+            const hasRealOptions = options.length > 1 && options.some((opt: any) => String(opt || '').trim().length > 1)
+            if (!hasRealOptions) return null
+
+            const matchQr = matchQuestionResults.find((qr: any) => qr?.prompt && String(qr.prompt) === String(prompt))
+            const answerIndex = (typeof pq?.answerIndex === 'number')
+              ? pq.answerIndex
+              : (matchQr?.correctAnswerIndex ?? 0)
+
+            return {
+              id: String(getDigits(pq?.id) || idx),
+              prompt: String(prompt),
+              options,
+              answerIndex,
+              topic,
+              difficulty: pq?.difficulty || stats.difficulty || 'mixed',
+              explanation: pq?.explanation
+            } as QuizQuestion
+          })
+          .filter(Boolean) as QuizQuestion[]
 
         console.log('[ReviewQuiz] Generated quiz questions:', quizQuestions)
         console.log('[ReviewQuiz] Total questions to review:', quizQuestions.length)
@@ -242,7 +256,7 @@ function ReviewQuizContent() {
     <div style={{ padding: 24, maxWidth: 800, margin: '0 auto' }}>
       <div style={{ marginBottom: 24 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-          <h1 style={{ fontSize: 28, fontWeight: 700 }}>🎯 Review Quiz</h1>
+          <h1 style={{ fontSize: 28, fontWeight: 700 }}>Review Quiz</h1>
           <div style={{ fontSize: 14, color: '#666' }}>
             Question {currentIndex + 1} / {questions.length}
           </div>
@@ -305,8 +319,8 @@ function ReviewQuizContent() {
               >
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <span>{String.fromCharCode(65 + index)}) {option}</span>
-                  {showCorrect && <span>✓</span>}
-                  {showWrong && <span>✗</span>}
+                  {showCorrect && <span>Correct</span>}
+                  {showWrong && <span>Wrong</span>}
                 </div>
               </button>
             )
@@ -321,7 +335,7 @@ function ReviewQuizContent() {
             borderRadius: 8,
             fontSize: 14
           }}>
-            <div style={{ fontWeight: 600, marginBottom: 8 }}>💡 Explanation:</div>
+            <div style={{ fontWeight: 600, marginBottom: 8 }}>Explanation:</div>
             <div>{currentQuestion.explanation}</div>
           </div>
         )}

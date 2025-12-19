@@ -5,6 +5,7 @@ import { headers } from 'next/headers'
 import PracticeButton from './PracticeButton'
 
 interface PlayerSummary {
+  userId?: string
   playerId: number
   totalQuestions: number
   correctAnswers: number
@@ -41,6 +42,17 @@ interface UnityMatch {
   totalPlayers: number
   questions: QuestionResult[]
   playerSummaries: PlayerSummary[]
+  questionPack?: {
+    questions?: Array<{
+      id?: string
+      prompt?: string
+      options?: string[]
+      answerIndex?: number
+      topic?: string
+      difficulty?: string
+      explanation?: string
+    }>
+  }
   xpRewards?: Array<{
     skillId: string
     skillName: string
@@ -171,12 +183,32 @@ export default async function StatsPage({
   }
 
   const mostRecentMatch = data.matches[0]
-  const firstSummary = mostRecentMatch.playerSummaries?.[0]
-  const topics = firstSummary?.topicBreakdown || []
+  const currentSummary = (mostRecentMatch.playerSummaries || []).find(s =>
+    user?.id && s.userId && s.userId.toLowerCase() === user.id.toLowerCase()
+  ) || mostRecentMatch.playerSummaries?.[0]
+  const topics = currentSummary?.topicBreakdown || []
+  const weakTopics = topics.filter(t => t.correct < t.total)
   const questionsCount = (mostRecentMatch.questions && mostRecentMatch.questions.length > 0)
     ? mostRecentMatch.questions.length
     : topics.length
   const xpTotal = mostRecentMatch.xpTotal ?? mostRecentMatch.xpRewards?.reduce((sum, r) => sum + (r.pointsAwarded || 0), 0) ?? 0
+
+  const getDigits = (val?: string) => {
+    if (!val) return ''
+    const m = val.match(/\d+/g)
+    return m ? m.join('') : ''
+  }
+
+  const findPackQuestion = (q: QuestionResult) => {
+    const packQuestions = mostRecentMatch.questionPack?.questions || []
+    const byPrompt = packQuestions.find(pq => pq?.prompt && q.prompt && pq.prompt === q.prompt)
+    if (byPrompt) return byPrompt
+    const byId = packQuestions.find(pq => {
+      const digits = getDigits(pq?.id)
+      return digits && q.questionId != null && digits === String(q.questionId)
+    })
+    return byId
+  }
 
   return (
     <div style={{
@@ -336,7 +368,7 @@ export default async function StatsPage({
               Jump back into a focused review quiz based on your misses from the latest match.
             </p>
             <a
-              href={`/review-quiz?matchId=${mostRecentMatch.matchId}&topics=${topics.map(t => encodeURIComponent(t.topic)).join(',')}`}
+              href={`/review-quiz?matchId=${mostRecentMatch.matchId}&topics=${weakTopics.map(t => encodeURIComponent(t.topic)).join(',')}`}
               style={{
                 display: 'inline-block',
                 padding: '12px 14px',
@@ -444,10 +476,10 @@ export default async function StatsPage({
               <h2 style={{ margin: 0, fontSize: 22, fontWeight: 800 }}>Questions Review</h2>
               <p style={{ margin: 0, fontSize: 13, color: theme.muted }}>Replay the questions from this match and focus on your gaps.</p>
             </div>
-            {firstSummary && firstSummary.correctAnswers < firstSummary.totalQuestions && (
+            {currentSummary && weakTopics.length > 0 && (
               <PracticeButton
                 matchId={mostRecentMatch.matchId}
-                topics={topics.filter(t => t.correct < t.total).map(t => t.topic)}
+                topics={weakTopics.map(t => t.topic)}
               />
             )}
           </div>
@@ -455,8 +487,13 @@ export default async function StatsPage({
           {mostRecentMatch.questions && mostRecentMatch.questions.length > 0 ? (
             <div style={{ display: 'grid', gap: 10 }}>
               {mostRecentMatch.questions.map((q, i) => {
-                const playerAnswer = q.playerAnswers?.find(pa => pa.playerId === firstSummary?.playerId)
+                const playerAnswer = q.playerAnswers?.find(pa => pa.playerId === currentSummary?.playerId)
                 const gotRight = playerAnswer?.correct
+                const packQ = findPackQuestion(q)
+                const options = Array.isArray(packQ?.options) ? packQ?.options : null
+                const correctIndex = (typeof packQ?.answerIndex === 'number') ? packQ.answerIndex : (q.correctAnswerIndex || 0)
+                const correctText = options && options[correctIndex] ? options[correctIndex] : null
+                const chosenText = options && playerAnswer && options[playerAnswer.chosenAnswer] ? options[playerAnswer.chosenAnswer] : null
                 return (
                   <div
                     key={q.questionId || i}
@@ -474,7 +511,7 @@ export default async function StatsPage({
                       {q.prompt}
                     </div>
                     <div style={{ fontSize: 13, color: theme.muted, marginBottom: 10 }}>
-                      Correct answer: {String.fromCharCode(65 + (q.correctAnswerIndex || 0))}
+                      Correct answer: {String.fromCharCode(65 + correctIndex)}{correctText ? ` - ${correctText}` : ''}
                     </div>
                     <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
                       <span style={{
@@ -489,7 +526,7 @@ export default async function StatsPage({
                       </span>
                       {playerAnswer && (
                         <span style={{ fontSize: 12, color: theme.muted }}>
-                          Your answer: {String.fromCharCode(65 + (playerAnswer.chosenAnswer || 0))}
+                          Your answer: {String.fromCharCode(65 + (playerAnswer.chosenAnswer || 0))}{chosenText ? ` - ${chosenText}` : ''}
                         </span>
                       )}
                     </div>

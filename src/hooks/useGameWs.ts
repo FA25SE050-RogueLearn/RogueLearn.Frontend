@@ -17,27 +17,32 @@ export function useGameWs(opts: UseGameWsOptions) {
 
   useEffect(() => {
     if (!url || !autoConnect || wsRef.current) return;
-    let timer: number | undefined;
-    const start = () => {
-      try {
-        setStatus("connecting");
-        const ws = new WebSocket(url);
-        wsRef.current = ws;
-        ws.onopen = () => setStatus("open");
-        ws.onmessage = (ev) => setLastMessage(typeof ev.data === "string" ? ev.data : String(ev.data));
-        ws.onerror = (ev: Event) => {
-          setStatus("error");
-          setError("WebSocket error");
-        };
-        ws.onclose = () => setStatus("closed");
-      } catch (e: any) {
-        setStatus("error");
-        setError(e?.message ?? String(e));
-      }
+    let cancelled = false;
+    const schedule = (fn: () => void) => {
+      Promise.resolve().then(() => {
+        if (!cancelled) fn();
+      });
     };
-    timer = window.setTimeout(start, 0);
+    try {
+      schedule(() => setStatus("connecting"));
+      const ws = new WebSocket(url);
+      wsRef.current = ws;
+      ws.onopen = () => setStatus("open");
+      ws.onmessage = (ev) => setLastMessage(typeof ev.data === "string" ? ev.data : String(ev.data));
+      ws.onerror = (ev: Event) => {
+        setStatus("error");
+        setError("WebSocket error");
+      };
+      ws.onclose = () => setStatus("closed");
+    } catch (e: any) {
+      const message = e?.message ?? String(e);
+      schedule(() => {
+        setStatus("error");
+        setError(message);
+      });
+    }
     return () => {
-      if (timer) clearTimeout(timer);
+      cancelled = true;
       try { wsRef.current?.close(); } catch {}
       wsRef.current = null;
     };
