@@ -1,3 +1,4 @@
+// roguelearn-web/src/components/admin/quests/EditQuestStepDialog.tsx
 "use client";
 
 import { useState, useEffect } from "react";
@@ -33,12 +34,15 @@ import {
   ChevronDown,
   ChevronUp,
   GripVertical,
+  Code,
+  Cpu
 } from "lucide-react";
 import questApi, {
   AdminQuestStepDto,
   QuestStepActivityPayload,
   QuestionPayload,
 } from "@/api/questApi";
+import adminContentApi from "@/api/adminContentApi";
 import { cn } from "@/lib/utils";
 
 interface QuestSkillInfo {
@@ -56,7 +60,7 @@ interface EditQuestStepDialogProps {
   onSaved: () => void;
 }
 
-type ActivityType = "Reading" | "KnowledgeCheck" | "Quiz";
+type ActivityType = "Reading" | "KnowledgeCheck" | "Quiz" | "Coding";
 
 interface ActivityFormData {
   activityId: string;
@@ -68,6 +72,12 @@ interface ActivityFormData {
     articleTitle?: string;
     summary?: string;
     questions?: QuestionPayload[];
+    // Coding specific fields
+    topic?: string;
+    language?: string;
+    description?: string;
+    starterCode?: string;
+    validationCriteria?: string;
   };
   isExpanded: boolean;
 }
@@ -94,48 +104,75 @@ export function EditQuestStepDialog({
   const [skills, setSkills] = useState<QuestSkillInfo[]>([]);
   const [saving, setSaving] = useState(false);
   const [loadingSkills, setLoadingSkills] = useState(false);
+  const [loadingContent, setLoadingContent] = useState(false);
 
   // Reset activities when dialog opens with step data
   useEffect(() => {
-    if (isOpen && step) {
-      console.log("[EditQuestStepDialog] Loading step content:", step.content);
-      
-      const activitiesArray = get(step.content, 'activities') || [];
-      const existingActivities: ActivityFormData[] = activitiesArray.map((a: any, idx: number) => {
-        const payload = get(a, 'payload') || {};
-        const activityType = get(a, 'type') || "Reading";
-        
-        console.log(`[EditQuestStepDialog] Activity ${idx}:`, { 
-          rawType: a.type, 
-          resolvedType: activityType,
-          skillId: get(a, 'skillId'),
-          payload 
-        });
-        
-        return {
-          activityId: get(a, 'activityId') || crypto.randomUUID(),
-          type: activityType as ActivityType,
-          skillId: get(a, 'skillId') || "",
-          payload: {
-            experiencePoints: get(payload, 'experiencePoints') || 0,
-            url: get(payload, 'url') || "",
-            articleTitle: get(payload, 'articleTitle') || "",
-            summary: get(payload, 'summary') || "",
-            questions: (get(payload, 'questions') || []).map((q: any) => ({
-              question: get(q, 'question') || "",
-              options: get(q, 'options') || ["", "", "", ""],
-              answer: get(q, 'answer') || "",
-              explanation: get(q, 'explanation') || "",
-            })),
-          },
-          isExpanded: idx === 0,
-        };
-      });
-      setActivities(existingActivities);
-    } else if (!isOpen) {
-      // Clear state when dialog closes
-      setActivities([]);
-    }
+    const fetchContent = async () => {
+      if (isOpen && step) {
+        setLoadingContent(true);
+        try {
+          // Fetch detailed content for this step
+          const res = await adminContentApi.getQuestStepContent(step.id);
+
+          if (res.isSuccess && res.data) {
+            console.log("[EditQuestStepDialog] Loaded detailed step content:", res.data);
+
+            const activitiesArray = get(res.data, 'activities') || [];
+            const existingActivities: ActivityFormData[] = activitiesArray.map((a: any, idx: number) => {
+              const payload = get(a, 'payload') || {};
+              const activityType = get(a, 'type') || "Reading";
+
+              console.log(`[EditQuestStepDialog] Activity ${idx}:`, {
+                rawType: a.type,
+                resolvedType: activityType,
+                skillId: get(a, 'skillId'),
+                payload
+              });
+
+              return {
+                activityId: get(a, 'activityId') || crypto.randomUUID(),
+                type: activityType as ActivityType,
+                skillId: get(a, 'skillId') || "",
+                payload: {
+                  experiencePoints: get(payload, 'experiencePoints') || 0,
+                  url: get(payload, 'url') || "",
+                  articleTitle: get(payload, 'articleTitle') || "",
+                  summary: get(payload, 'summary') || "",
+                  questions: (get(payload, 'questions') || []).map((q: any) => ({
+                    question: get(q, 'question') || "",
+                    options: get(q, 'options') || ["", "", "", ""],
+                    answer: get(q, 'answer') || "",
+                    explanation: get(q, 'explanation') || "",
+                  })),
+                  // Map Coding fields
+                  topic: get(payload, 'topic') || "",
+                  language: get(payload, 'language') || "",
+                  description: get(payload, 'description') || "",
+                  starterCode: get(payload, 'starterCode') || "",
+                  validationCriteria: get(payload, 'validationCriteria') || "",
+                },
+                isExpanded: idx === 0,
+              };
+            });
+            setActivities(existingActivities);
+          } else {
+            console.warn("[EditQuestStepDialog] Failed to fetch detailed content.");
+            toast.error("Failed to load full step details.");
+            setActivities([]);
+          }
+        } catch (error) {
+          console.error("[EditQuestStepDialog] Error fetching content:", error);
+          toast.error("Error loading step details");
+        } finally {
+          setLoadingContent(false);
+        }
+      } else if (!isOpen) {
+        setActivities([]);
+      }
+    };
+
+    fetchContent();
   }, [isOpen, step]);
 
   useEffect(() => {
@@ -165,11 +202,16 @@ export function EditQuestStepDialog({
       type,
       skillId: skills.length > 0 ? skills[0].skillId : "",
       payload: {
-        experiencePoints: type === "Reading" ? 15 : type === "KnowledgeCheck" ? 30 : 50,
+        experiencePoints: type === "Reading" ? 15 : type === "KnowledgeCheck" ? 30 : type === "Coding" ? 60 : 50,
         url: "",
         articleTitle: "",
         summary: "",
-        questions: type !== "Reading" ? [createEmptyQuestion()] : [],
+        questions: (type === "KnowledgeCheck" || type === "Quiz") ? [createEmptyQuestion()] : [],
+        topic: type === "Coding" ? "New Coding Challenge" : "",
+        language: type === "Coding" ? "csharp" : "",
+        description: "",
+        starterCode: "",
+        validationCriteria: ""
       },
       isExpanded: true,
     };
@@ -284,6 +326,12 @@ export function EditQuestStepDialog({
           }
         });
       }
+      if (a.type === "Coding") {
+        if (!a.payload.topic) validationErrors.push(`Activity ${i + 1}: Topic is required`);
+        if (!a.payload.language) validationErrors.push(`Activity ${i + 1}: Language is required`);
+        if (!a.payload.description) validationErrors.push(`Activity ${i + 1}: Description is required`);
+        if (!a.payload.starterCode) validationErrors.push(`Activity ${i + 1}: Starter code is required`);
+      }
     });
 
     if (validationErrors.length > 0) {
@@ -293,23 +341,46 @@ export function EditQuestStepDialog({
 
     setSaving(true);
     try {
-      const payload: QuestStepActivityPayload[] = activities.map((a) => ({
-        activityId: a.activityId,
-        type: a.type,
-        skillId: a.skillId,
-        payload:
-          a.type === "Reading"
-            ? {
-                experiencePoints: Number(a.payload.experiencePoints),
-                url: a.payload.url || "",
-                articleTitle: a.payload.articleTitle || "",
-                summary: a.payload.summary || "",
-              }
-            : {
-                experiencePoints: Number(a.payload.experiencePoints),
-                questions: a.payload.questions || [],
-              },
-      }));
+      const payload: any[] = activities.map((a) => {
+        if (a.type === 'Reading') {
+          return {
+            activityId: a.activityId,
+            type: a.type,
+            skillId: a.skillId,
+            payload: {
+              experiencePoints: Number(a.payload.experiencePoints),
+              url: a.payload.url || "",
+              articleTitle: a.payload.articleTitle || "",
+              summary: a.payload.summary || "",
+            }
+          }
+        }
+        if (a.type === 'Coding') {
+          return {
+            activityId: a.activityId,
+            type: a.type,
+            skillId: a.skillId,
+            payload: {
+              experiencePoints: Number(a.payload.experiencePoints),
+              topic: a.payload.topic,
+              language: a.payload.language,
+              description: a.payload.description,
+              starterCode: a.payload.starterCode,
+              validationCriteria: a.payload.validationCriteria
+            }
+          }
+        }
+        // Quiz or KnowledgeCheck
+        return {
+          activityId: a.activityId,
+          type: a.type,
+          skillId: a.skillId,
+          payload: {
+            experiencePoints: Number(a.payload.experiencePoints),
+            questions: a.payload.questions || [],
+          },
+        }
+      });
 
       console.log("[EditQuestStepDialog] Saving payload:", JSON.stringify(payload, null, 2));
       const res = await questApi.adminUpdateQuestStepContent(step.id, payload);
@@ -336,6 +407,8 @@ export function EditQuestStepDialog({
         return <CheckCircle className="w-4 h-4 text-amber-400" />;
       case "Quiz":
         return <BrainCircuit className="w-4 h-4 text-purple-400" />;
+      case "Coding":
+        return <Code className="w-4 h-4 text-green-400" />;
     }
   };
 
@@ -347,6 +420,8 @@ export function EditQuestStepDialog({
         return "border-amber-500/30 bg-amber-500/5";
       case "Quiz":
         return "border-purple-500/30 bg-purple-500/5";
+      case "Coding":
+        return "border-green-500/30 bg-green-500/5";
     }
   };
 
@@ -354,8 +429,9 @@ export function EditQuestStepDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="bg-[#1a1410] border-[#f5c16c]/30 max-w-4xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
+      {/* ⭐ CHANGED: Increased max-width to 95vw and height to 90vh */}
+      <DialogContent className="bg-[#1a1410] border-[#f5c16c]/30 max-w-[95vw] h-[90vh] flex flex-col p-0 overflow-hidden">
+        <DialogHeader className="px-6 py-4 border-b border-[#f5c16c]/20 shrink-0">
           <DialogTitle className="text-white flex items-center gap-2">
             Edit Week {step.stepNumber} Activities
             <Badge className="bg-[#7289da]/20 text-[#7289da] border-[#7289da]/30">
@@ -367,164 +443,189 @@ export function EditQuestStepDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4 py-4">
-          <div className="flex items-center justify-between">
-            <span className="text-sm text-white/60">
-              {activities.length} activit{activities.length === 1 ? "y" : "ies"}
-            </span>
-            <div className="flex gap-2">
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => addActivity("Reading")}
-                className="border-blue-500/30 text-blue-400 hover:bg-blue-500/10"
-              >
-                <BookOpen className="w-3 h-3 mr-1" /> Reading
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => addActivity("KnowledgeCheck")}
-                className="border-amber-500/30 text-amber-400 hover:bg-amber-500/10"
-              >
-                <CheckCircle className="w-3 h-3 mr-1" /> Knowledge Check
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => addActivity("Quiz")}
-                className="border-purple-500/30 text-purple-400 hover:bg-purple-500/10"
-              >
-                <BrainCircuit className="w-3 h-3 mr-1" /> Quiz
-              </Button>
+        <div className="flex-1 overflow-y-auto px-6 py-4">
+          {loadingContent ? (
+            <div className="flex items-center justify-center h-full">
+              <Loader2 className="h-8 w-8 animate-spin text-[#f5c16c]" />
+              <span className="ml-3 text-white/60">Loading step details...</span>
             </div>
-          </div>
+          ) : (
+            <div className="space-y-4 max-w-7xl mx-auto">
+              {/* ⭐ FIXED: Use flex-wrap and gap-2 to allow buttons to flow nicely */}
+              <div className="flex flex-wrap items-center justify-between gap-4 sticky top-0 bg-[#1a1410] z-10 py-4 border-b border-[#f5c16c]/10 mb-4">
+                <span className="text-sm text-white/60 whitespace-nowrap">
+                  {activities.length} activit{activities.length === 1 ? "y" : "ies"}
+                </span>
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => addActivity("Reading")}
+                    className="border-blue-500/30 text-blue-400 hover:bg-blue-500/10"
+                  >
+                    <BookOpen className="w-3 h-3 mr-1" /> Reading
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => addActivity("KnowledgeCheck")}
+                    className="border-amber-500/30 text-amber-400 hover:bg-amber-500/10"
+                  >
+                    <CheckCircle className="w-3 h-3 mr-1" /> Knowledge Check
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => addActivity("Coding")}
+                    className="border-green-500/30 text-green-400 hover:bg-green-500/10"
+                  >
+                    <Code className="w-3 h-3 mr-1" /> Coding
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => addActivity("Quiz")}
+                    className="border-purple-500/30 text-purple-400 hover:bg-purple-500/10"
+                  >
+                    <BrainCircuit className="w-3 h-3 mr-1" /> Quiz
+                  </Button>
+                </div>
+              </div>
 
-          {activities.length === 0 && (
-            <div className="text-center py-12 border border-dashed border-white/20 rounded-lg">
-              <p className="text-white/40 mb-4">No activities yet</p>
-              <p className="text-white/30 text-sm">
-                Click the buttons above to add activities
-              </p>
+              {activities.length === 0 && (
+                <div className="text-center py-12 border border-dashed border-white/20 rounded-lg">
+                  <p className="text-white/40 mb-4">No activities yet</p>
+                  <p className="text-white/30 text-sm">
+                    Click the buttons above to add activities
+                  </p>
+                </div>
+              )}
+
+              <div className="space-y-4 pb-8">
+                {activities.map((activity, activityIndex) => (
+                  <Card
+                    key={activity.activityId}
+                    className={cn("border overflow-hidden", getActivityColor(activity.type))}
+                  >
+                    <CardHeader
+                      className="py-3 px-4 cursor-pointer hover:bg-white/5 transition-colors"
+                      onClick={() => toggleExpanded(activityIndex)}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <GripVertical className="w-4 h-4 text-white/30" />
+                          {getActivityIcon(activity.type)}
+                          <span className="text-white font-medium">{activity.type}</span>
+                          <span className="text-white/40 text-sm">
+                            +{activity.payload.experiencePoints} XP
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              removeActivity(activityIndex);
+                            }}
+                            className="text-red-400 hover:text-red-300 hover:bg-red-500/10 h-8 w-8 p-0"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                          {activity.isExpanded ? (
+                            <ChevronUp className="w-4 h-4 text-white/40" />
+                          ) : (
+                            <ChevronDown className="w-4 h-4 text-white/40" />
+                          )}
+                        </div>
+                      </div>
+                    </CardHeader>
+
+                    {activity.isExpanded && (
+                      <CardContent className="pt-0 pb-4 px-4 space-y-4 bg-black/20">
+                        <div className="grid grid-cols-2 gap-4 mt-4">
+                          <div className="space-y-2">
+                            <Label className="text-white/70">Skill *</Label>
+                            <Select
+                              value={activity.skillId}
+                              onValueChange={(v) =>
+                                updateActivity(activityIndex, { skillId: v })
+                              }
+                            >
+                              <SelectTrigger className="border-[#f5c16c]/30 bg-[#0a0506]">
+                                <SelectValue placeholder="Select skill" />
+                              </SelectTrigger>
+                              <SelectContent className="bg-[#1a1410] border-[#f5c16c]/30">
+                                {loadingSkills ? (
+                                  <div className="p-2 text-center">
+                                    <Loader2 className="w-4 h-4 animate-spin mx-auto" />
+                                  </div>
+                                ) : (
+                                  skills.map((skill) => (
+                                    <SelectItem key={skill.skillId} value={skill.skillId}>
+                                      {skill.skillName}
+                                    </SelectItem>
+                                  ))
+                                )}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div className="space-y-2">
+                            <Label className="text-white/70">Experience Points *</Label>
+                            <Input
+                              type="number"
+                              min={1}
+                              value={activity.payload.experiencePoints}
+                              onChange={(e) =>
+                                updatePayload(activityIndex, {
+                                  experiencePoints: parseInt(e.target.value) || 0,
+                                })
+                              }
+                              className="border-[#f5c16c]/30 bg-[#0a0506]"
+                            />
+                          </div>
+                        </div>
+
+                        {activity.type === "Reading" && (
+                          <ReadingActivityForm
+                            payload={activity.payload}
+                            onUpdate={(updates) => updatePayload(activityIndex, updates)}
+                          />
+                        )}
+
+                        {activity.type === "Coding" && (
+                          <CodingActivityForm
+                            payload={activity.payload}
+                            onUpdate={(updates) => updatePayload(activityIndex, updates)}
+                          />
+                        )}
+
+                        {(activity.type === "KnowledgeCheck" ||
+                          activity.type === "Quiz") && (
+                            <QuestionsForm
+                              questions={activity.payload.questions || []}
+                              onUpdateQuestion={(qIdx, updates) =>
+                                updateQuestion(activityIndex, qIdx, updates)
+                              }
+                              onUpdateOption={(qIdx, oIdx, value) =>
+                                updateQuestionOption(activityIndex, qIdx, oIdx, value)
+                              }
+                              onAddQuestion={() => addQuestion(activityIndex)}
+                              onRemoveQuestion={(qIdx) =>
+                                removeQuestion(activityIndex, qIdx)
+                              }
+                            />
+                          )}
+                      </CardContent>
+                    )}
+                  </Card>
+                ))}
+              </div>
             </div>
           )}
-
-          <div className="space-y-4">
-            {activities.map((activity, activityIndex) => (
-              <Card
-                key={activity.activityId}
-                className={cn("border overflow-hidden", getActivityColor(activity.type))}
-              >
-                <CardHeader
-                  className="py-3 px-4 cursor-pointer hover:bg-white/5 transition-colors"
-                  onClick={() => toggleExpanded(activityIndex)}
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <GripVertical className="w-4 h-4 text-white/30" />
-                      {getActivityIcon(activity.type)}
-                      <span className="text-white font-medium">{activity.type}</span>
-                      <span className="text-white/40 text-sm">
-                        +{activity.payload.experiencePoints} XP
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          removeActivity(activityIndex);
-                        }}
-                        className="text-red-400 hover:text-red-300 hover:bg-red-500/10 h-8 w-8 p-0"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                      {activity.isExpanded ? (
-                        <ChevronUp className="w-4 h-4 text-white/40" />
-                      ) : (
-                        <ChevronDown className="w-4 h-4 text-white/40" />
-                      )}
-                    </div>
-                  </div>
-                </CardHeader>
-
-                {activity.isExpanded && (
-                  <CardContent className="pt-0 pb-4 px-4 space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label className="text-white/70">Skill *</Label>
-                        <Select
-                          value={activity.skillId}
-                          onValueChange={(v) =>
-                            updateActivity(activityIndex, { skillId: v })
-                          }
-                        >
-                          <SelectTrigger className="border-[#f5c16c]/30 bg-[#0a0506]">
-                            <SelectValue placeholder="Select skill" />
-                          </SelectTrigger>
-                          <SelectContent className="bg-[#1a1410] border-[#f5c16c]/30">
-                            {loadingSkills ? (
-                              <div className="p-2 text-center">
-                                <Loader2 className="w-4 h-4 animate-spin mx-auto" />
-                              </div>
-                            ) : (
-                              skills.map((skill) => (
-                                <SelectItem key={skill.skillId} value={skill.skillId}>
-                                  {skill.skillName}
-                                </SelectItem>
-                              ))
-                            )}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div className="space-y-2">
-                        <Label className="text-white/70">Experience Points *</Label>
-                        <Input
-                          type="number"
-                          min={1}
-                          value={activity.payload.experiencePoints}
-                          onChange={(e) =>
-                            updatePayload(activityIndex, {
-                              experiencePoints: parseInt(e.target.value) || 0,
-                            })
-                          }
-                          className="border-[#f5c16c]/30 bg-[#0a0506]"
-                        />
-                      </div>
-                    </div>
-
-                    {activity.type === "Reading" && (
-                      <ReadingActivityForm
-                        payload={activity.payload}
-                        onUpdate={(updates) => updatePayload(activityIndex, updates)}
-                      />
-                    )}
-
-                    {(activity.type === "KnowledgeCheck" ||
-                      activity.type === "Quiz") && (
-                      <QuestionsForm
-                        questions={activity.payload.questions || []}
-                        onUpdateQuestion={(qIdx, updates) =>
-                          updateQuestion(activityIndex, qIdx, updates)
-                        }
-                        onUpdateOption={(qIdx, oIdx, value) =>
-                          updateQuestionOption(activityIndex, qIdx, oIdx, value)
-                        }
-                        onAddQuestion={() => addQuestion(activityIndex)}
-                        onRemoveQuestion={(qIdx) =>
-                          removeQuestion(activityIndex, qIdx)
-                        }
-                      />
-                    )}
-                  </CardContent>
-                )}
-              </Card>
-            ))}
-          </div>
         </div>
 
-        <DialogFooter>
+        <DialogFooter className="px-6 py-4 border-t border-[#f5c16c]/20 shrink-0 bg-[#1a1410]">
           <Button
             variant="outline"
             onClick={onClose}
@@ -534,7 +635,7 @@ export function EditQuestStepDialog({
           </Button>
           <Button
             onClick={handleSave}
-            disabled={saving}
+            disabled={saving || loadingContent}
             className="bg-[#f5c16c] hover:bg-[#f5c16c]/90 text-black font-semibold"
           >
             {saving ? (
@@ -585,6 +686,77 @@ function ReadingActivityForm({
           onChange={(e) => onUpdate({ summary: e.target.value })}
           placeholder="Brief description of what the article covers..."
           className="border-[#f5c16c]/30 bg-[#0a0506] min-h-[80px] resize-none"
+        />
+      </div>
+    </div>
+  );
+}
+
+function CodingActivityForm({
+  payload,
+  onUpdate,
+}: {
+  payload: ActivityFormData["payload"];
+  onUpdate: (updates: Partial<ActivityFormData["payload"]>) => void;
+}) {
+  return (
+    <div className="space-y-4">
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label className="text-white/70">Topic *</Label>
+          <Input
+            value={payload.topic || ""}
+            onChange={(e) => onUpdate({ topic: e.target.value })}
+            placeholder="e.g., Recursion"
+            className="border-[#f5c16c]/30 bg-[#0a0506]"
+          />
+        </div>
+        <div className="space-y-2">
+          <Label className="text-white/70">Language *</Label>
+          <Select
+            value={payload.language || "csharp"}
+            onValueChange={(v) => onUpdate({ language: v })}
+          >
+            <SelectTrigger className="border-[#f5c16c]/30 bg-[#0a0506]">
+              <SelectValue placeholder="Select language" />
+            </SelectTrigger>
+            <SelectContent className="bg-[#1a1410] border-[#f5c16c]/30">
+              <SelectItem value="csharp">C#</SelectItem>
+              <SelectItem value="java">Java</SelectItem>
+              <SelectItem value="python">Python</SelectItem>
+              <SelectItem value="javascript">JavaScript</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        <Label className="text-white/70">Description *</Label>
+        <Textarea
+          value={payload.description || ""}
+          onChange={(e) => onUpdate({ description: e.target.value })}
+          placeholder="Detailed instructions for the coding task..."
+          className="border-[#f5c16c]/30 bg-[#0a0506] min-h-[100px] resize-y"
+        />
+      </div>
+
+      <div className="space-y-2">
+        <Label className="text-white/70">Starter Code *</Label>
+        <Textarea
+          value={payload.starterCode || ""}
+          onChange={(e) => onUpdate({ starterCode: e.target.value })}
+          placeholder="// Initial code provided to the user..."
+          className="border-[#f5c16c]/30 bg-[#0a0506] min-h-[150px] font-mono text-xs"
+        />
+      </div>
+
+      <div className="space-y-2">
+        <Label className="text-white/70">Validation Criteria (Internal) *</Label>
+        <Textarea
+          value={payload.validationCriteria || ""}
+          onChange={(e) => onUpdate({ validationCriteria: e.target.value })}
+          placeholder="Instructions for the AI grader on how to evaluate the solution..."
+          className="border-[#f5c16c]/30 bg-[#0a0506] min-h-[80px]"
         />
       </div>
     </div>
@@ -649,7 +821,7 @@ function QuestionsForm({
             <div className="space-y-2">
               <Label className="text-white/60 text-xs">Options *</Label>
               <div className="grid grid-cols-2 gap-2">
-                {q.options.map((opt, oIdx) => (
+                {q.options.map((opt: string, oIdx: number) => (
                   <Input
                     key={oIdx}
                     value={opt}
@@ -675,8 +847,8 @@ function QuestionsForm({
                 </SelectTrigger>
                 <SelectContent className="bg-[#1a1410] border-[#f5c16c]/30">
                   {q.options
-                    .filter((opt) => opt.trim())
-                    .map((opt, oIdx) => (
+                    .filter((opt: string) => opt.trim())
+                    .map((opt: string, oIdx: number) => (
                       <SelectItem key={oIdx} value={opt}>
                         {opt}
                       </SelectItem>
@@ -702,7 +874,7 @@ function QuestionsForm({
 
       {questions.length === 0 && (
         <div className="text-center py-4 border border-dashed border-white/20 rounded-lg">
-          <p className="text-white/40 text-sm">No questions yet. Click "Add Question" above.</p>
+          <p className="text-white/40 text-sm">No questions yet. Click &quot;Add Question&quot; above.</p>
         </div>
       )}
     </div>

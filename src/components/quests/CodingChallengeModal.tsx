@@ -8,11 +8,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loader2, AlertCircle, Code, Cpu } from "lucide-react";
 import CodeEditor from "@/components/code-battle/CodeEditor";
 import eventServiceApi from "@/api/eventServiceApi";
-import { CodingContent, CodingActivityPayload } from "@/types/quest";
+import { CodingContent } from "@/types/quest";
 import { Problem, ProblemDetails, SubmitSolutionResponse } from "@/types/event-service";
 
 // Accept both old CodingContent and new CodingActivityPayload
-type ChallengeContentType = CodingContent | CodingActivityPayload;
+type ChallengeContentType = CodingContent;
 
 interface CodingChallengeModalProps {
   challengeContent: ChallengeContentType;

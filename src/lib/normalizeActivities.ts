@@ -1,3 +1,4 @@
+// roguelearn-web/src/lib/normalizeActivities.ts
 // Utility functions to normalize activity properties from API responses
 // Handles both camelCase and PascalCase properties
 
@@ -80,9 +81,16 @@ export function normalizePayload(payload: any, type: string): any {
       const codingTopic = getPropertyInsensitive<string>(payload, 'topic');
       const language = getPropertyInsensitive<string>(payload, 'language');
       const difficulty = getPropertyInsensitive<string>(payload, 'difficulty');
+      const description = getPropertyInsensitive<string>(payload, 'description');
+      const starterCode = getPropertyInsensitive<string>(payload, 'starterCode');
+      const validationCriteria = getPropertyInsensitive<string>(payload, 'validationCriteria');
+
       if (codingTopic !== undefined) normalized.topic = codingTopic;
       if (language !== undefined) normalized.language = language;
       if (difficulty !== undefined) normalized.difficulty = difficulty;
+      if (description !== undefined) normalized.description = description;
+      if (starterCode !== undefined) normalized.starterCode = starterCode;
+      if (validationCriteria !== undefined) normalized.validationCriteria = validationCriteria;
       break;
   }
   

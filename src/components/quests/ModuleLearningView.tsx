@@ -2,9 +2,9 @@
 "use client";
 
 import { QuizActivityContent as QuizActivityContentComponent } from "./activities/QuizActivityContent";
+import CodingActivity from "./activities/CodingActivity";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import {
     ArrowLeft,
     ArrowRight,
@@ -14,7 +14,8 @@ import {
     Loader2,
     Link as LinkIcon,
     Sparkles,
-    Trophy
+    Trophy,
+    Clock
 } from "lucide-react";
 import Link from "next/link";
 import { useState, useEffect, useCallback, useMemo } from "react";
@@ -24,6 +25,7 @@ import {
     ReadingActivityPayload,
     KnowledgeCheckActivityPayload,
     QuizActivityPayload,
+    QuestCodingActivityPayload,
 } from "@/types/quest";
 import questApi from "@/api/questApi";
 import WeeklyProgressCard from "./WeeklyProgressCard";
@@ -277,10 +279,6 @@ export function ModuleLearningView({
 
     // ========== EFFECTS ==========
 
-    /**
-     * Fetch progress function reused for initial load and refreshing
-     * ⭐ OPTIMIZED: Only updates state if data actually changes or is missing
-     */
     const fetchProgress = useCallback(async () => {
         try {
             // Only show loading on initial load, not background refresh
@@ -303,12 +301,9 @@ export function ModuleLearningView({
         }
     }, [questId, weeklyStep.id]);
 
-    /**
-     * Fetch progress when component mounts
-     */
     useEffect(() => {
         fetchProgress();
-    }, []); // fetchProgress depends on stable IDs and stepProgressData
+    }, []);
 
     // Reset quiz pass state when activity changes
     useEffect(() => {
@@ -339,6 +334,11 @@ export function ModuleLearningView({
             }
         }
 
+        // Coding activities are completed via callback.
+        if (currentActivity.type === 'Coding') {
+            return;
+        }
+
         setIsCompleting(true);
 
         try {
@@ -364,6 +364,19 @@ export function ModuleLearningView({
             setIsCompleting(false);
         }
     };
+
+    const handleCodingComplete = async () => {
+        await fetchProgress();
+        if (currentActivity && !completedActivities.includes(currentActivity.activityId)) {
+            setCompletedActivities(prev => [...prev, currentActivity.activityId]);
+        }
+
+        if (!isLastActivity) {
+            setTimeout(() => {
+                handleNextActivity();
+            }, 1000);
+        }
+    }
 
     const [readingSessionStarted, setReadingSessionStarted] = useState(false);
 
@@ -411,6 +424,18 @@ export function ModuleLearningView({
                         onQuizFailed={(result) => {
                             setQuizPassedState(false);
                         }}
+                    />
+                );
+            case 'Coding':
+                return (
+                    <CodingActivity
+                        key={activity.activityId}
+                        questId={questId}
+                        stepId={weeklyStep.id}
+                        activityId={activity.activityId}
+                        payload={activity.payload as QuestCodingActivityPayload}
+                        onComplete={handleCodingComplete}
+                        isCompleted={isActivityComplete}
                     />
                 );
             default:
@@ -504,7 +529,9 @@ export function ModuleLearningView({
                                 <Sparkles className="w-3 h-3" /> +{(currentActivity.payload as any).experiencePoints} XP
                             </span>
                         )}
-                        {!isActivityComplete ? (
+
+                        {/* Show Mark Complete button for non-coding activities */}
+                        {!isActivityComplete && currentActivity.type !== 'Coding' && (
                             <Button
                                 size="sm"
                                 className={`font-semibold ${currentActivity.type === 'Quiz' && quizPassedState !== true
@@ -527,7 +554,9 @@ export function ModuleLearningView({
                                     : 'Mark Complete'
                                 }
                             </Button>
-                        ) : (
+                        )}
+
+                        {isActivityComplete && (
                             <span className="flex items-center gap-1.5 text-sm text-emerald-400 font-semibold">
                                 <CheckCircle className="w-4 h-4" /> Completed
                             </span>

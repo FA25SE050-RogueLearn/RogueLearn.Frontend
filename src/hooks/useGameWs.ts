@@ -17,22 +17,27 @@ export function useGameWs(opts: UseGameWsOptions) {
 
   useEffect(() => {
     if (!url || !autoConnect || wsRef.current) return;
-    try {
-      setStatus("connecting");
-      const ws = new WebSocket(url);
-      wsRef.current = ws;
-      ws.onopen = () => setStatus("open");
-      ws.onmessage = (ev) => setLastMessage(typeof ev.data === "string" ? ev.data : String(ev.data));
-      ws.onerror = (ev: Event) => {
+    let timer: number | undefined;
+    const start = () => {
+      try {
+        setStatus("connecting");
+        const ws = new WebSocket(url);
+        wsRef.current = ws;
+        ws.onopen = () => setStatus("open");
+        ws.onmessage = (ev) => setLastMessage(typeof ev.data === "string" ? ev.data : String(ev.data));
+        ws.onerror = (ev: Event) => {
+          setStatus("error");
+          setError("WebSocket error");
+        };
+        ws.onclose = () => setStatus("closed");
+      } catch (e: any) {
         setStatus("error");
-        setError("WebSocket error");
-      };
-      ws.onclose = () => setStatus("closed");
-    } catch (e: any) {
-      setStatus("error");
-      setError(e?.message ?? String(e));
-    }
+        setError(e?.message ?? String(e));
+      }
+    };
+    timer = window.setTimeout(start, 0);
     return () => {
+      if (timer) clearTimeout(timer);
       try { wsRef.current?.close(); } catch {}
       wsRef.current = null;
     };

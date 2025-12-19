@@ -1,3 +1,4 @@
+// roguelearn-web/src/app/admin/quests/[questId]/page.tsx
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
@@ -7,8 +8,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { 
-    Loader2, 
+import {
+    Loader2,
     ChevronLeft,
     Zap,
     Shield,
@@ -20,7 +21,8 @@ import {
     ExternalLink,
     Sparkles,
     RefreshCw,
-    Pencil
+    Pencil,
+    Cpu
 } from "lucide-react";
 import { toast } from "sonner";
 import questApi, { AdminQuestDetailsDto, AdminQuestStepDto } from "@/api/questApi";
@@ -112,8 +114,8 @@ export default function AdminQuestDetailPage() {
         // Select first step of new track
         if (quest) {
             const steps = track === 'Standard' ? quest.standardSteps :
-                         track === 'Supportive' ? quest.supportiveSteps :
-                         quest.challengingSteps;
+                track === 'Supportive' ? quest.supportiveSteps :
+                    quest.challengingSteps;
             if (steps && steps.length > 0) {
                 setSelectedStep(steps[0]);
             } else {
@@ -155,9 +157,9 @@ export default function AdminQuestDetailPage() {
         }
     };
 
-    const totalSteps = quest ? 
-        (quest.standardSteps?.length || 0) + 
-        (quest.supportiveSteps?.length || 0) + 
+    const totalSteps = quest ?
+        (quest.standardSteps?.length || 0) +
+        (quest.supportiveSteps?.length || 0) +
         (quest.challengingSteps?.length || 0) : 0;
 
     if (loading) {
@@ -175,8 +177,8 @@ export default function AdminQuestDetailPage() {
             <AdminLayout>
                 <div className="text-center py-12">
                     <p className="text-white/50">Quest not found.</p>
-                    <Button 
-                        variant="outline" 
+                    <Button
+                        variant="outline"
                         onClick={() => router.push('/admin/quests')}
                         className="mt-4"
                     >
@@ -313,20 +315,20 @@ export default function AdminQuestDetailPage() {
                                         <CardTitle className="text-white">Quest Progression</CardTitle>
                                         <Tabs value={selectedTrack} onValueChange={(v) => handleTrackChange(v as any)}>
                                             <TabsList className="bg-[#0a0506] border border-[#f5c16c]/20">
-                                                <TabsTrigger 
-                                                    value="Standard" 
+                                                <TabsTrigger
+                                                    value="Standard"
                                                     className="data-[state=active]:bg-[#f5c16c] data-[state=active]:text-black text-xs"
                                                 >
                                                     <Zap className="w-3 h-3 mr-1" /> Standard
                                                 </TabsTrigger>
-                                                <TabsTrigger 
-                                                    value="Supportive" 
+                                                <TabsTrigger
+                                                    value="Supportive"
                                                     className="data-[state=active]:bg-emerald-500 data-[state=active]:text-black text-xs"
                                                 >
                                                     <Shield className="w-3 h-3 mr-1" /> Supportive
                                                 </TabsTrigger>
-                                                <TabsTrigger 
-                                                    value="Challenging" 
+                                                <TabsTrigger
+                                                    value="Challenging"
                                                     className="data-[state=active]:bg-pink-500 data-[state=active]:text-black text-xs"
                                                 >
                                                     <Flame className="w-3 h-3 mr-1" /> Challenging
@@ -336,8 +338,8 @@ export default function AdminQuestDetailPage() {
                                     </div>
                                 </CardHeader>
                                 <CardContent className="pt-6">
-                                    <QuestProgressionGraph 
-                                        quest={quest} 
+                                    <QuestProgressionGraph
+                                        quest={quest}
                                         selectedTrack={selectedTrack}
                                         onStepClick={handleStepClick}
                                     />
@@ -456,7 +458,7 @@ function StepDetailPanel({ step, onEdit }: { step: AdminQuestStepDto; onEdit?: (
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                         <span className="text-[#f5c16c] font-bold">Week {step.stepNumber}</span>
-                        <Badge 
+                        <Badge
                             className={cn(
                                 "text-xs",
                                 step.difficultyVariant === 'Standard' && "bg-[#f5c16c]/20 text-[#f5c16c] border-[#f5c16c]/30",
@@ -544,7 +546,9 @@ function ActivityCard({ activity, index }: { activity: any; index: number }) {
     const questions = get(payload, 'questions') || [];
     const topic = get(payload, 'topic');
     const language = get(payload, 'language');
-    const difficulty = get(payload, 'difficulty');
+    const description = get(payload, 'description');
+    const starterCode = get(payload, 'starterCode');
+    const validationCriteria = get(payload, 'validationCriteria');
 
     return (
         <div className={cn("border rounded-lg overflow-hidden", getActivityColor())}>
@@ -586,9 +590,9 @@ function ActivityCard({ activity, index }: { activity: any; index: number }) {
                             )}
                             {url && (
                                 <div>
-                                    <a 
-                                        href={url} 
-                                        target="_blank" 
+                                    <a
+                                        href={url}
+                                        target="_blank"
                                         rel="noopener noreferrer"
                                         className="inline-flex items-center gap-1 text-blue-400 hover:text-blue-300 text-sm"
                                     >
@@ -618,11 +622,11 @@ function ActivityCard({ activity, index }: { activity: any; index: number }) {
                                         </p>
                                         <div className="space-y-1">
                                             {options.map((opt: string, oIdx: number) => (
-                                                <div 
+                                                <div
                                                     key={oIdx}
                                                     className={cn(
                                                         "px-2 py-1 rounded text-xs",
-                                                        opt === answer 
+                                                        opt === answer
                                                             ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
                                                             : "bg-white/5 text-white/60"
                                                     )}
@@ -652,7 +656,7 @@ function ActivityCard({ activity, index }: { activity: any; index: number }) {
                                     <p className="text-white text-sm">{topic}</p>
                                 </div>
                             )}
-                            <div className="flex gap-4">
+                            <div className="flex items-center justify-between">
                                 {language && (
                                     <div>
                                         <p className="text-xs text-white/40 uppercase tracking-wider mb-1">Language</p>
@@ -661,15 +665,37 @@ function ActivityCard({ activity, index }: { activity: any; index: number }) {
                                         </Badge>
                                     </div>
                                 )}
-                                {difficulty && (
-                                    <div>
-                                        <p className="text-xs text-white/40 uppercase tracking-wider mb-1">Difficulty</p>
-                                        <Badge className="bg-white/10 text-white/60 border-white/20">
-                                            {difficulty}
-                                        </Badge>
-                                    </div>
-                                )}
                             </div>
+
+                            {description && (
+                                <div>
+                                    <p className="text-xs text-white/40 uppercase tracking-wider mb-1">Description</p>
+                                    <p className="text-white/70 text-sm leading-relaxed whitespace-pre-wrap">{description}</p>
+                                </div>
+                            )}
+
+                            {starterCode && (
+                                <div>
+                                    <p className="text-xs text-white/40 uppercase tracking-wider mb-1">Starter Code</p>
+                                    <div className="relative rounded-lg bg-black/40 border border-white/10 p-3 font-mono text-xs overflow-x-auto">
+                                        <pre className="text-emerald-300">
+                                            {starterCode.replace(/newline/g, '\n')}
+                                        </pre>
+                                    </div>
+                                </div>
+                            )}
+
+                            {validationCriteria && (
+                                <div className="rounded-lg bg-blue-500/10 border border-blue-500/20 p-3">
+                                    <div className="flex items-center gap-2 mb-1 text-blue-400">
+                                        <Cpu className="w-3 h-3" />
+                                        <span className="text-xs font-bold uppercase tracking-wider">Validation Logic</span>
+                                    </div>
+                                    <p className="text-blue-300/80 text-xs italic">
+                                        {validationCriteria}
+                                    </p>
+                                </div>
+                            )}
                         </>
                     )}
 
