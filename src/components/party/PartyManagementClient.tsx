@@ -103,7 +103,8 @@ export default function PartyManagementClient() {
       await partiesApi.acceptInvitation(inv.partyId, inv.id, { partyId: inv.partyId, invitationId: inv.id, authUserId });
       toast.success("Invitation accepted");
       if (inv.joinLink) {
-        window.open(inv.joinLink, "_blank");
+        window.location.assign(inv.joinLink);
+        return;
       }
       const [resInv, resMine] = await Promise.all([
         partiesApi.getMyPendingInvitations(),
