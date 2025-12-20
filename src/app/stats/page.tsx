@@ -2,6 +2,8 @@ export const dynamic = 'force-dynamic'
 
 import { createClient } from '@/utils/supabase/server'
 import { headers } from 'next/headers'
+import Link from 'next/link'
+import { ArrowLeft } from 'lucide-react'
 import PracticeButton from './PracticeButton'
 
 interface PlayerSummary {
@@ -70,6 +72,20 @@ const theme = {
   text: '#f7f0e9',
   muted: '#cbbfb3',
   success: '#4ade80',
+}
+
+const backLinkStyle: React.CSSProperties = {
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: 8,
+  padding: '10px 12px',
+  borderRadius: 10,
+  border: '1px solid rgba(255,255,255,0.12)',
+  background: 'rgba(255,255,255,0.04)',
+  color: '#ffffff',
+  textDecoration: 'none',
+  fontSize: 13,
+  fontWeight: 700,
 }
 
 export default async function StatsPage({
@@ -156,6 +172,10 @@ export default async function StatsPage({
         padding: '40px 20px',
       }}>
         <div style={{ maxWidth: 1200, margin: '0 auto' }}>
+          <Link href="/dashboard" style={backLinkStyle}>
+            <ArrowLeft size={16} />
+            Back to Dashboard
+          </Link>
           <h1 style={{ marginBottom: 16, fontSize: 32, fontWeight: 800 }}>Your Game Stats</h1>
           <div style={{
             padding: 16,
@@ -218,6 +238,10 @@ export default async function StatsPage({
       padding: '40px 20px',
     }}>
       <div style={{ maxWidth: 1200, margin: '0 auto' }}>
+        <Link href="/dashboard" style={backLinkStyle}>
+          <ArrowLeft size={16} />
+          Back to Dashboard
+        </Link>
         <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 28 }}>
           <div>
             <div style={{ fontSize: 13, color: theme.muted, letterSpacing: 1, textTransform: 'uppercase' }}>Overview</div>
