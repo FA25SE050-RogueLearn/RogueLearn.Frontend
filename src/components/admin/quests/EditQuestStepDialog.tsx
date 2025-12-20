@@ -702,7 +702,7 @@ function QuestionsForm({
 
       {questions.length === 0 && (
         <div className="text-center py-4 border border-dashed border-white/20 rounded-lg">
-          <p className="text-white/40 text-sm">No questions yet. Click "Add Question" above.</p>
+          <p className="text-white/40 text-sm">No questions yet. Click &quot;Add Question&quot; above.</p>
         </div>
       )}
     </div>
