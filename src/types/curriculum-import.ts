@@ -1,7 +1,8 @@
+// roguelearn-web/src/types/curriculum-import.ts
 // Note: API modules wrap responses in ApiResponse; here we define raw payload shapes.
 /**
  * Feature: Curriculum Import & Validation
- * Purpose: Import full curricula and individual subjects from raw text, and validate definitions.
+ * Purpose: Command/response payloads for importing and validating learning roadmaps from raw text or structured definitions.
  */
 
 /** Import Curriculum from raw text or structured data. */
@@ -29,7 +30,11 @@ export interface ImportSubjectFromTextCommandRequest {
 
 /** Response data containing subject import results and warnings. */
 export interface ImportSubjectFromTextCommandResponseData {
-  subjectId: string;
+  jobId: string;
+  status: string;
+  message: string;
+  // Legacy fields (may be null if async)
+  subjectId?: string;
   code?: string;
   name?: string;
   warnings?: string[];
@@ -37,6 +42,16 @@ export interface ImportSubjectFromTextCommandResponseData {
 
 /** Raw payload returned after importing a single subject. */
 export type ImportSubjectFromTextCommandResponse = ImportSubjectFromTextCommandResponseData;
+
+/** Status of a background subject import job. */
+export interface SubjectImportJobStatusResponse {
+  jobId: string;
+  status: 'Queued' | 'Processing' | 'Succeeded' | 'Failed' | 'Unknown';
+  percent: number;
+  message: string;
+  createdAt: string;
+  updatedAt?: string;
+}
 
 /** Validate a curriculum definition before import. */
 export interface ValidateCurriculumCommandRequest {
@@ -51,4 +66,4 @@ export interface ValidateCurriculumCommandResponseData {
 }
 
 /** Raw payload returned after validating curriculum content. */
-export type ValidateCurriculumCommandResponse = ValidateCurriculumCommandResponseData;
+export type ValidateRoadmapCommandResponse = ValidateCurriculumCommandResponseData;
