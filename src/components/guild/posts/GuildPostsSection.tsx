@@ -789,7 +789,7 @@ export function GuildPostsSection({ guildId }: GuildPostsSectionProps) {
                                   )}
                                 </div>
                                 {isDeleted ? (
-                                  <div className="text-sm text-white/50 italic">Comment removed</div>
+                                  <div className="text-sm text-white/50 italic">Comment deleted</div>
                                 ) : editingCommentId === c.id ? (
                                   <div className="space-y-2">
                                     <Textarea value={editCommentText} onChange={(e) => setEditCommentText(e.target.value)} className="min-h-[60px] border-[#f5c16c]/30 bg-black/40 text-white focus:border-[#f5c16c]/50" />
@@ -828,17 +828,25 @@ export function GuildPostsSection({ guildId }: GuildPostsSectionProps) {
                                           })()}
                                         </div>
                                         <div className="flex items-center gap-2">
-                                          <Button size="sm" variant="outline" onClick={() => setCommentLikedMap((prev) => ({ ...prev, [child.id]: !prev[child.id] }))} className="border-[#f5c16c]/30 bg-transparent text-[#f5c16c] hover:bg-[#f5c16c]/10">
-                                            <Heart className="mr-1.5 h-3.5 w-3.5" /> {(commentLikeCountMap[child.id] ?? 0) + (commentLikedMap[child.id] ? 1 : 0)}
-                                          </Button>
-                                          {((!!myAuthUserId && child.authorId === myAuthUserId) || canManagePosts) && (
-                                            <Button size="sm" variant="destructive" onClick={async () => { try { await guildPostsApi.deleteComment(guildId, post.id, child.id); const res = await guildPostsApi.getComments(guildId, post.id, { page: 1, size: 50, sort: "asc" }); setCommentsMap((prev) => ({ ...prev, [post.id]: res.data ?? [] })); setPosts((prev) => prev.map((p) => (p.id === post.id ? { ...p, commentCount: (res.data ?? []).length } : p))); } catch {} }} className="bg-rose-600 hover:bg-rose-700">
-                                              <Trash2 className="mr-1.5 h-3.5 w-3.5" /> Delete
-                                            </Button>
+                                          {!child.isDeleted && (
+                                            <>
+                                              <Button size="sm" variant="outline" onClick={() => setCommentLikedMap((prev) => ({ ...prev, [child.id]: !prev[child.id] }))} className="border-[#f5c16c]/30 bg-transparent text-[#f5c16c] hover:bg-[#f5c16c]/10">
+                                                <Heart className="mr-1.5 h-3.5 w-3.5" /> {(commentLikeCountMap[child.id] ?? 0) + (commentLikedMap[child.id] ? 1 : 0)}
+                                              </Button>
+                                              {((!!myAuthUserId && child.authorId === myAuthUserId) || canManagePosts) && (
+                                                <Button size="sm" variant="destructive" onClick={async () => { try { await guildPostsApi.deleteComment(guildId, post.id, child.id); const res = await guildPostsApi.getComments(guildId, post.id, { page: 1, size: 50, sort: "asc" }); setCommentsMap((prev) => ({ ...prev, [post.id]: res.data ?? [] })); setPosts((prev) => prev.map((p) => (p.id === post.id ? { ...p, commentCount: (res.data ?? []).length } : p))); } catch {} }} className="bg-rose-600 hover:bg-rose-700">
+                                                  <Trash2 className="mr-1.5 h-3.5 w-3.5" /> Delete
+                                                </Button>
+                                              )}
+                                            </>
                                           )}
                                         </div>
                                       </div>
-                                      <p className="text-sm text-white/80 whitespace-pre-wrap">{child.content}</p>
+                                      {child.isDeleted ? (
+                                        <div className="text-sm text-white/50 italic">Comment deleted</div>
+                                      ) : (
+                                        <p className="text-sm text-white/80 whitespace-pre-wrap">{child.content}</p>
+                                      )}
                                     </div>
                                   ))}
                                   <div className="space-y-2">

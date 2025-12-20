@@ -1,3 +1,4 @@
+// roguelearn-web/src/app/admin/quests/page.tsx
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
@@ -8,13 +9,13 @@ import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { 
-    Loader2, 
-    Search, 
-    ChevronLeft, 
-    ChevronRight, 
-    Sparkles, 
-    RefreshCw, 
+import {
+    Loader2,
+    Search,
+    ChevronLeft,
+    ChevronRight,
+    Sparkles,
+    RefreshCw,
     Eye,
     Trash2,
     CheckCircle
@@ -84,7 +85,7 @@ export default function AdminQuestsPage() {
     const handleGenerateSteps = async (quest: AdminQuestListItem) => {
         setGeneratingQuestId(quest.id);
         setGeneratingQuestTitle(quest.title);
-        
+
         try {
             const res = await questApi.adminGenerateQuestSteps(quest.id);
             if (res.isSuccess && res.data?.jobId) {
@@ -108,7 +109,7 @@ export default function AdminQuestsPage() {
 
         setGeneratingQuestId(quest.id);
         setGeneratingQuestTitle(quest.title);
-        
+
         try {
             const res = await questApi.adminRegenerateQuestSteps(quest.id);
             if (res.isSuccess && res.data?.jobId) {
@@ -128,7 +129,7 @@ export default function AdminQuestsPage() {
     const handleDeleteSteps = async () => {
         if (!deleteTarget) return;
         setDeleting(true);
-        
+
         try {
             const res = await questApi.adminDeleteQuestSteps(deleteTarget.id);
             if (res.isSuccess) {
@@ -150,7 +151,7 @@ export default function AdminQuestsPage() {
         setIsGenerationModalOpen(false);
         setGeneratingQuestId(null);
         setGenerationJobId(null);
-        
+
         // Navigate to the quest detail page
         if (questId) {
             router.push(`/admin/quests/${questId}`);
@@ -191,9 +192,9 @@ export default function AdminQuestsPage() {
                                 <span className="text-sm text-white/60">
                                     {totalCount} quests total
                                 </span>
-                                <Button 
-                                    variant="outline" 
-                                    size="sm" 
+                                <Button
+                                    variant="outline"
+                                    size="sm"
                                     onClick={loadQuests}
                                     className="border-[#f5c16c]/30 text-white hover:bg-[#f5c16c]/10"
                                 >
@@ -227,8 +228,7 @@ export default function AdminQuestsPage() {
                                         <TableRow className="border-[#f5c16c]/10">
                                             <TableHead className="text-white/60">Subject</TableHead>
                                             <TableHead className="text-white/60">Quest Title</TableHead>
-                                            <TableHead className="text-white/60 text-center">Steps</TableHead>
-                                            <TableHead className="text-white/60 text-center">Status</TableHead>
+                                            {/* Removed Steps and Status columns */}
                                             <TableHead className="text-white/60 text-right">Actions</TableHead>
                                         </TableRow>
                                     </TableHeader>
@@ -242,20 +242,7 @@ export default function AdminQuestsPage() {
                                                     </div>
                                                 </TableCell>
                                                 <TableCell className="font-medium text-white">{quest.title}</TableCell>
-                                                <TableCell className="text-center">
-                                                    <span className="text-white/70">{quest.stepsCount}</span>
-                                                </TableCell>
-                                                <TableCell className="text-center">
-                                                    {quest.stepsGenerated ? (
-                                                        <Badge className="bg-emerald-500/20 text-emerald-400 border-emerald-500/30">
-                                                            <CheckCircle className="w-3 h-3 mr-1" /> Generated
-                                                        </Badge>
-                                                    ) : (
-                                                        <Badge className="bg-white/10 text-white/50 border-white/20">
-                                                            <Sparkles className="w-3 h-3 mr-1" /> Not Generated
-                                                        </Badge>
-                                                    )}
-                                                </TableCell>
+                                                {/* Removed Steps and Status cells */}
                                                 <TableCell className="text-right">
                                                     <div className="flex items-center justify-end gap-2">
                                                         <Button
@@ -268,7 +255,7 @@ export default function AdminQuestsPage() {
                                                                 <Eye className="w-3 h-3 mr-1" /> View
                                                             </Link>
                                                         </Button>
-                                                        
+
                                                         {quest.stepsGenerated ? (
                                                             <>
                                                                 <Button
@@ -369,8 +356,8 @@ export default function AdminQuestsPage() {
                             </DialogDescription>
                         </DialogHeader>
                         <DialogFooter className="gap-2">
-                            <Button 
-                                variant="outline" 
+                            <Button
+                                variant="outline"
                                 onClick={() => setDeleteTarget(null)}
                                 className="border-[#f5c16c]/30 text-white/70 hover:text-white"
                             >

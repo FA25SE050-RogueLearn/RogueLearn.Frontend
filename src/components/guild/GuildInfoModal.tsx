@@ -54,7 +54,7 @@ export default function GuildInfoModal({ open, onClose, guildId }: Props) {
                 <li className="flex items-start gap-2"><ShieldCheck className="mt-0.5 h-4 w-4 text-white/60" /><span>Manage membership: <span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">transfer leadership</span>, remove members.</span></li>
                 <li className="flex items-start gap-2"><CalendarDays className="mt-0.5 h-4 w-4 text-white/60" /><span><span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">Meetings</span>: create, end, and sync <span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">transcripts</span> from <span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">Google Meet</span>.</span></li>
                 <li className="flex items-start gap-2"><FileText className="mt-0.5 h-4 w-4 text-white/60" /><span>Guild <span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">posts</span>: members can comment and like; post management is reserved for Guild Master.</span></li>
-                <li className="flex items-start gap-2"><LogOut className="mt-0.5 h-4 w-4 text-white/60" /><span><span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">Leave guild</span>; <span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">Guild Masters</span> must transfer leadership first or the next highest member will be the leader.</span></li>
+                <li className="flex items-start gap-2"><LogOut className="mt-0.5 h-4 w-4 text-white/60" /><span><span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">Leave guild</span>; <span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">Guild Masters</span> must transfer leadership first to leave the Guild.</span></li>
               </ul>
             </section>
             <section className="rounded-lg border border-white/10 bg-white/5 p-6 lg:row-span-2">
@@ -86,7 +86,7 @@ export default function GuildInfoModal({ open, onClose, guildId }: Props) {
               <div className="mb-3 flex items-center gap-2 text-xl font-semibold text-white"><Users className="h-6 w-6" /> Joining Process</div>
               <ul className="space-y-2 text-base text-white/90">
                 <li>For public guild: click on <span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">Join</span> to join the guild.</li>
-                <li>For invite only guild: click on <span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">Request to Join</span> and wait for the <span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">Guild Master</span> to approve.</li>
+                <li>For private guild: click on <span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">Request to Join</span> and wait for the <span className="rounded bg-[#f5c16c]/15 px-1.5 text-[#f5c16c]">Guild Master</span> to approve.</li>
               </ul>
             </section>
           </div>

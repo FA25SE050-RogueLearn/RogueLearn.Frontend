@@ -78,7 +78,7 @@ export default function AdminFeedbackPage() {
     });
   }, [items, category, unresolvedOnly, subjectId, questId, search]);
 
-  const fetchFeedback = async () => {
+  const fetchFeedback = useCallback(async () => {
     setLoading(true);
     try {
       const res = await questApi.adminListFeedback({ subjectId: subjectId || undefined, questId: questId || undefined, unresolvedOnly });
@@ -98,9 +98,9 @@ export default function AdminFeedbackPage() {
       } else { toast.error(res.message || 'Failed to load feedback'); }
     } catch (e: any) { toast.error('Failed to load feedback'); }
     finally { setLoading(false); }
-  };
+  }, [subjectId, questId, unresolvedOnly, subjectMap]);
 
-  const fetchSubjects = async (searchTerm: string, pageNum: number, append: boolean) => {
+  const fetchSubjects = useCallback(async (searchTerm: string, pageNum: number, append: boolean) => {
     setLoadingSubjects(true);
     try {
       const res = await adminContentApi.getSubjectsPaged({ page: pageNum, pageSize: 10, search: searchTerm || undefined });
@@ -115,13 +115,13 @@ export default function AdminFeedbackPage() {
       }
     } catch (err) { console.error('Failed to fetch subjects', err); }
     finally { setLoadingSubjects(false); }
-  };
+  }, []);
 
-  const debouncedSubjectSearch = useCallback(debounce((query: string) => { fetchSubjects(query, 1, false); }, 300), []);
+  const debouncedSubjectSearch = useMemo(() => debounce((query: string) => { fetchSubjects(query, 1, false); }, 300), [fetchSubjects]);
   const handleSubjectSearchInput = (val: string) => { setSubjectSearch(val); debouncedSubjectSearch(val); };
   const loadMoreSubjects = () => { if (!loadingSubjects && subjectsHasMore) fetchSubjects(subjectSearch, subjectsPage + 1, true); };
 
-  useEffect(() => { fetchFeedback(); fetchSubjects("", 1, false); }, [category, unresolvedOnly, page, subjectId, questId]);
+  useEffect(() => { fetchFeedback(); fetchSubjects("", 1, false); }, [category, unresolvedOnly, page, subjectId, questId, fetchFeedback, fetchSubjects]);
 
   const markResolved = async (id: string, resolved: boolean) => {
     const res = await questApi.adminUpdateFeedback(id, { isResolved: resolved });

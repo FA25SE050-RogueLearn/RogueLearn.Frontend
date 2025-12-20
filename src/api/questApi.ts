@@ -10,12 +10,7 @@ import {
 } from '../types/quest-progress';
 import { normalizeStepActivities } from '../lib/normalizeActivities';
 
-// ========== NEW RESPONSE TYPES FOR BACKGROUND JOBS ==========
-
-/**
- * Response from scheduling quest step generation
- * Returns jobId for polling status
- */
+// ... (Existing interfaces for background jobs and admin management)
 interface GenerateQuestStepsResponse {
   jobId: string;
   status: string;
@@ -23,17 +18,11 @@ interface GenerateQuestStepsResponse {
   questId: string;
 }
 
-/**
- * Skill prerequisite info
- */
 interface SkillPrerequisite {
   skillId: string;
   skillName: string;
 }
 
-/**
- * Skill info returned from quest skills endpoint
- */
 interface QuestSkillInfo {
   skillId: string;
   skillName: string;
@@ -42,9 +31,6 @@ interface QuestSkillInfo {
   prerequisites: SkillPrerequisite[];
 }
 
-/**
- * Response from POST /api/quests/{questId}/start
- */
 export interface StartQuestResponse {
   attemptId: string;
   status: string;
@@ -52,9 +38,6 @@ export interface StartQuestResponse {
   isNew: boolean;
 }
 
-/**
- * Response from GET /api/quests/{questId}/skills
- */
 export interface GetQuestSkillsResponse {
   questId: string;
   subjectId: string;
@@ -62,21 +45,14 @@ export interface GetQuestSkillsResponse {
   skills: QuestSkillInfo[];
 }
 
-/**
- * Response from checking job status
- * Check this periodically to see if generation is complete
- */
 interface JobStatusResponse {
   jobId: string;
-  status: string;  // "Processing", "Succeeded", "Failed", "Scheduled", etc.
+  status: string;
   createdAt: string;
   error?: string | null;
   message?: string | null;
 }
 
-/**
- * ⭐ NEW: Real-time progress of quest generation job
- */
 interface QuestGenerationProgressResponse {
   currentStep: number;
   totalSteps: number;
@@ -85,25 +61,6 @@ interface QuestGenerationProgressResponse {
   updatedAt: string;
 }
 
-interface AdminStepFeedbackItem {
-  id: string;
-  questId: string;
-  stepId: string;
-  subjectId: string;
-  authUserId: string;
-  rating: number;
-  category: 'ContentError' | 'TechnicalIssue' | 'TooDifficult' | 'TooEasy' | 'Other';
-  comment?: string;
-  adminNotes?: string | null;
-  isResolved: boolean;
-  createdAt: string;
-}
-
-// ========== ADMIN QUEST MANAGEMENT TYPES ==========
-
-/**
- * Quest summary for admin listing
- */
 export interface AdminQuestListItem {
   id: string;
   title: string;
@@ -116,9 +73,6 @@ export interface AdminQuestListItem {
   updatedAt: string;
 }
 
-/**
- * Paginated response for admin quest list
- */
 export interface AdminQuestListResponse {
   items: AdminQuestListItem[];
   totalCount: number;
@@ -127,9 +81,6 @@ export interface AdminQuestListResponse {
   totalPages: number;
 }
 
-/**
- * Admin quest step DTO with full content
- */
 export interface AdminQuestStepDto {
   id: string;
   stepNumber: number;
@@ -142,9 +93,6 @@ export interface AdminQuestStepDto {
   createdAt: string;
 }
 
-/**
- * Admin quest details with 3-way difficulty split
- */
 export interface AdminQuestDetailsDto {
   id: string;
   title: string;
@@ -156,80 +104,57 @@ export interface AdminQuestDetailsDto {
   subjectId?: string;
   subjectCode?: string;
   subjectName?: string;
-  // Grouped steps for 3-track visualization
   standardSteps: AdminQuestStepDto[];
   supportiveSteps: AdminQuestStepDto[];
   challengingSteps: AdminQuestStepDto[];
 }
 
+// ⭐ NEW: Response type for coding submission
+export interface SubmitCodingActivityResponse {
+  submissionId: string;
+  isPassed: boolean;
+  score: number;
+  feedback: string;
+  experiencePointsAwarded?: number;
+}
 
-/**
- * API service for handling quest-specific interactions.
- * Corresponds to QuestsController.cs and UserQuestProgressController.cs
- * Updated to support weekly module structure and background job polling.
- */
 const questApi = {
   // =================================================================
   // QUESTS (QuestsController)
   // =================================================================
 
-  /**
-   * ⭐ NEW: Gets all quests available to the current user.
-   * Replaces the need for a Learning Path wrapper.
-   * Corresponds to GET /api/quests/me
-   */
   getMyQuests: (): Promise<ApiResponse<QuestSummary[]>> =>
     axiosClient.get<QuestSummary[]>('/api/quests/me').then(res => ({
       isSuccess: true,
       data: res.data,
     })),
 
-  /**
-   * Gets the detailed information for a single quest, including all weekly steps.
-   * Corresponds to GET /api/quests/{questId}
-   */
   getQuestDetails: (questId: string): Promise<ApiResponse<QuestDetails | null>> =>
     axiosClient.get<QuestDetails>(`/api/quests/${questId}`).then(res => {
-      // ⭐ Parse content strings and normalize activity properties
       const questDetails = res.data;
       if (questDetails?.steps) {
         questDetails.steps = questDetails.steps.map(normalizeStepActivities);
       }
-      
       return {
         isSuccess: true,
         data: questDetails,
       };
     }),
 
-  /**
-   * ⭐ NEW: Gets a specific weekly step within a quest.
-   * Useful for fetching a single week's activities.
-   * Corresponds to GET /api/quests/{questId}/steps/{stepId}
-   */
   getQuestStep: (questId: string, stepId: string): Promise<ApiResponse<QuestStep | null>> =>
     axiosClient.get<QuestStep>(`/api/quests/${questId}/steps/${stepId}`).then(res => {
-      // ⭐ Parse content and normalize activity properties
       const step = normalizeStepActivities(res.data);
-      
       return {
         isSuccess: true,
         data: step,
       };
     }),
 
-  /**
-   * ⭐ UPDATED: Schedules quest step generation as a background job.
-   * Returns immediately with jobId (202 Accepted).
-   * Use checkGenerationStatus() to poll for completion.
-   * 
-   * Corresponds to POST /api/quests/{questId}/generate-steps
-   */
   generateQuestSteps: (questId: string): Promise<ApiResponse<GenerateQuestStepsResponse>> =>
     axiosClient.post<GenerateQuestStepsResponse>(`/api/quests/${questId}/generate-steps`)
       .then(res => ({
         isSuccess: true,
-        data: res.data,  // Contains: jobId, status, message, questId
+        data: res.data,
       } as const))
       .catch(error => ({
         isSuccess: false,
@@ -237,75 +162,38 @@ const questApi = {
         message: error.response?.data?.message || error.message
       } as const)),
 
-  /**
-   * ⭐ UPDATED: Checks the status of a quest step generation job.
-   * Call this repeatedly (every 1-2 seconds) to check if generation is complete.
-   * 
-   * Returns:
-   * - status: "Processing" (still running)
-   * - status: "Succeeded" (complete - fetch quest details)
-   * - status: "Failed" (failed - show error)
-   * 
-   * Corresponds to GET /api/admin/quests/generation-status/{jobId}
-   */
   checkGenerationStatus: (jobId: string): Promise<ApiResponse<JobStatusResponse>> =>
   axiosClient.get<JobStatusResponse>(`/api/admin/quests/generation-status/${jobId}`)
     .then(res => ({
       data: res.data,
       isSuccess: true,
-      is404: false,                    // ⭐ NEW: Explicit false (no error)
-      isPollingEndpoint: true,         // ⭐ NEW: Mark as polling
+      is404: false,
+      isPollingEndpoint: true,
     } as const))
-    .catch(error => {
-      // ⭐ NEW: Extract flags from axios error
-      const is404 = (error as any).is404 ?? false;
-      const isPollingEndpoint = (error as any).isPollingEndpoint ?? false;
-      const message = (error as any).normalized?.message || error.message;
-      
-      return ({
+    .catch(error => ({
         data: null,
         isSuccess: false,
-        message,
-        is404,                        // ⭐ NEW: Pass 404 flag
-        isPollingEndpoint,            // ⭐ NEW: Pass polling flag
-      } as const);
-    }),
+        message: (error as any).normalized?.message || error.message,
+        is404: (error as any).is404 ?? false,
+        isPollingEndpoint: (error as any).isPollingEndpoint ?? false,
+    } as const)),
 
-  /**
-   * ⭐ UPDATED: Gets real-time progress of quest generation job.
-   * Called by the modal to display live progress updates.
-   * Returns current step, total steps, percentage, and message.
-   * 
-   * Corresponds to GET /api/admin/quests/generation-progress/{jobId}
-   */
  getGenerationProgress: (jobId: string): Promise<ApiResponse<QuestGenerationProgressResponse>> =>
   axiosClient.get<QuestGenerationProgressResponse>(`/api/admin/quests/generation-progress/${jobId}`)
     .then(res => ({
       data: res.data,
       isSuccess: true,
-      is404: false,                    // ⭐ NEW
-      isPollingEndpoint: true,         // ⭐ NEW
+      is404: false,
+      isPollingEndpoint: true,
     } as const))
-    .catch(error => {
-      const is404 = (error as any).is404 ?? false;
-      const isPollingEndpoint = (error as any).isPollingEndpoint ?? false;
-      const message = (error as any).normalized?.message || error.message;
-      
-      return ({
+    .catch(error => ({
         data: null,
         isSuccess: false,
-        message,
-        is404,                        // ⭐ NEW
-        isPollingEndpoint,            // ⭐ NEW
-      } as const);
-    }),
+        message: (error as any).normalized?.message || error.message,
+        is404: (error as any).is404 ?? false,
+        isPollingEndpoint: (error as any).isPollingEndpoint ?? false,
+    } as const)),
 
-  /**
-   * Explicitly starts a quest for the user.
-   * Creates UserQuestAttempt and assigns difficulty track.
-   * Idempotent: returns existing attempt info if already started.
-   * POST /api/quests/{questId}/start
-   */
   startQuest: (questId: string): Promise<ApiResponse<StartQuestResponse>> =>
     axiosClient
       .post<StartQuestResponse>(`/api/quests/${questId}/start`)
@@ -314,10 +202,6 @@ const questApi = {
         data: res.data,
       })),
 
-  /**
-   * ⭐ UPDATED: Marks a specific activity within a weekly step as complete.
-   * Corresponds to POST /api/quests/{questId}/steps/{stepId}/activities/{activityId}/progress
-   */
   updateActivityProgress: (
     questId: string,
     stepId: string,
@@ -331,10 +215,32 @@ const questApi = {
         data: undefined,
       })),
 
-  /**
-   * Marks an entire weekly step as complete for the user.
-   * Corresponds to POST /api/quests/{questId}/steps/{stepId}/progress
-   */
+  // ⭐ NEW: Submit coding activity
+  submitCodingActivity: async (
+    questId: string,
+    stepId: string,
+    activityId: string,
+    payload: { code: string; language: string }
+  ): Promise<ApiResponse<SubmitCodingActivityResponse>> => {
+    try {
+      const res = await axiosClient.post<SubmitCodingActivityResponse>(
+        `/api/quests/${questId}/steps/${stepId}/activities/${activityId}/submit-code`,
+        payload
+      );
+      return {
+        isSuccess: true,
+        data: res.data,
+      };
+    } catch (error: any) {
+      const message = error.response?.data?.message || error.message || 'Failed to submit code';
+      return {
+        isSuccess: false,
+        data: null,
+        message,
+      };
+    }
+  },
+
   updateQuestStepProgress: (
     questId: string,
     stepId: string,
@@ -347,10 +253,6 @@ const questApi = {
         data: undefined,
       })),
 
-  /**
-   * Manually updates the status of an entire quest for the user.
-   * Corresponds to POST /api/quests/{questId}/progress
-   */
   updateQuestProgress: (
     questId: string,
     status: 'Completed' | 'InProgress' | 'NotStarted' | 'Abandoned'
@@ -360,78 +262,59 @@ const questApi = {
       data: undefined,
     })),
 
-  /**
-   * ⭐ NEW: Gets the user's progress for a specific quest (all weekly steps).
-   * Corresponds to GET /api/quests/{questId}/my-progress
-   */
   getMyQuestProgress: (questId: string): Promise<ApiResponse<QuestProgress | null>> =>
     axiosClient.get<QuestProgress>(`/api/quests/${questId}/my-progress`).then(res => ({
       isSuccess: true,
       data: res.data,
     })),
 
-  // ========== ⭐ NEW: USER PROGRESS ENDPOINTS ==========
-
-  /**
-   * ⭐ NEW: Gets the overall progress for a specific quest including all steps.
-   * Returns quest status, steps summary, and overall completion percentage.
-   * Corresponds to GET /api/user-progress/quests/{questId}
-   */
   getQuestProgress: (questId: string): Promise<ApiResponse<GetQuestProgressResponse>> =>
     axiosClient
       .get<GetQuestProgressResponse>(`/api/user-progress/quests/${questId}`)
       .then(res => ({
-  isSuccess: true as const,  // ✅ Now TypeScript sees this as literal true
-  data: res.data,
-}))
+        isSuccess: true as const,
+        data: res.data,
+      }))
       .catch(error => ({
         isSuccess: false,
         data: null,
         message: error.response?.data?.message || error.message
       })),
 
-  /**
-   * ⭐ NEW: Gets the progress for a specific step including completion status and percentage.
-   * Shows how many activities are completed out of total.
-   * Corresponds to GET /api/user-progress/quests/{questId}/steps/{stepId}
-   */
   getStepProgress: (questId: string, stepId: string): Promise<ApiResponse<GetStepProgressResponse>> =>
     axiosClient
       .get<GetStepProgressResponse>(`/api/user-progress/quests/${questId}/steps/${stepId}`)
       .then(res => ({
-  isSuccess: true as const,  // ✅ Now TypeScript sees this as literal true
-  data: res.data,
-}))
+        isSuccess: true as const,
+        data: res.data,
+      }))
       .catch(error => ({
         isSuccess: false,
         data: null,
         message: error.response?.data?.message || error.message
       })),
 
-  /**
-   * ⭐ NEW: Gets all activities in a step with their individual completion status.
-   * Returns detailed info for each activity (type, XP, skill, title, completion status).
-   * Corresponds to GET /api/user-progress/quests/{questId}/steps/{stepId}/activities
-   */
   getCompletedActivities: (questId: string, stepId: string): Promise<ApiResponse<GetCompletedActivitiesResponse>> =>
     axiosClient
       .get<GetCompletedActivitiesResponse>(`/api/user-progress/quests/${questId}/steps/${stepId}/activities`)
       .then(res => ({
-  isSuccess: true as const,  // ✅ Now TypeScript sees this as literal true
-  data: res.data,
-}))
+        isSuccess: true as const,
+        data: res.data,
+      }))
       .catch(error => ({
         isSuccess: false,
         data: null,
         message: error.response?.data?.message || error.message
       })),
+      
   adminListFeedback: (
     params: { subjectId?: string; questId?: string; unresolvedOnly?: boolean }
-  ): Promise<ApiResponse<AdminStepFeedbackItem[]>> =>
+  ): Promise<ApiResponse<any[]>> =>
     axiosClient
-      .get<AdminStepFeedbackItem[]>(`/api/admin/quests/feedback`, { params })
+      .get(`/api/admin/quests/feedback`, { params })
       .then(res => ({ isSuccess: true as const, data: res.data }))
       .catch(error => ({ isSuccess: false, data: null, message: error.response?.data?.message || error.message })),
+      
   adminUpdateFeedback: (
     id: string,
     payload: { isResolved?: boolean; adminNotes?: string }
@@ -440,6 +323,7 @@ const questApi = {
       .patch(`/api/admin/quests/feedback/${id}`, payload)
       .then(() => ({ isSuccess: true as const, data: undefined }))
       .catch(error => ({ isSuccess: false, data: null, message: error.response?.data?.message || error.message })),
+      
   submitStepFeedback: async (
     questId: string,
     stepId: string,
@@ -453,49 +337,38 @@ const questApi = {
       return { isSuccess: false, data: null, message };
     }
   },
-      submitQuizAnswer: async (
-  questId: string,
-  stepId: string,
-  activityId: string,
-  answers: Record<string, string>,
-  correctAnswerCount: number,
-  totalQuestions: number
-): Promise<ApiResponse<SubmitQuizAnswerResponse>> => {
-  try {
-    const response = await axiosClient.post<SubmitQuizAnswerResponse>(
-      `/api/quests/${questId}/steps/${stepId}/activities/${activityId}/submit-quiz`,
-      {
-        answers,
-        correctAnswerCount,
-        totalQuestions
-      }
-    );
+  
+  submitQuizAnswer: async (
+    questId: string,
+    stepId: string,
+    activityId: string,
+    answers: Record<string, string>,
+    correctAnswerCount: number,
+    totalQuestions: number
+  ): Promise<ApiResponse<SubmitQuizAnswerResponse>> => {
+    try {
+      const response = await axiosClient.post<SubmitQuizAnswerResponse>(
+        `/api/quests/${questId}/steps/${stepId}/activities/${activityId}/submit-quiz`,
+        {
+          answers,
+          correctAnswerCount,
+          totalQuestions
+        }
+      );
+      return {
+        isSuccess: true,
+        data: response.data,
+      };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to submit quiz';
+      return {
+        isSuccess: false,
+        data: null,
+        message,
+      };
+    }
+  },
 
-    // ✅ Explicitly return success response with literal true
-    return {
-      isSuccess: true,
-      data: response.data,
-    };
-  } catch (error) {
-    // ✅ Explicitly return failure response with literal false
-    const message = error instanceof Error 
-      ? error.message 
-      : 'Failed to submit quiz';
-    
-    return {
-      isSuccess: false,
-      data: null,
-      message,
-    };
-  }
-},
-
-  // ========== QUEST SKILLS ==========
-
-  /**
-   * Gets the skills that will be developed by completing this quest.
-   * Corresponds to GET /api/quests/{questId}/skills
-   */
   getQuestSkills: async (questId: string): Promise<ApiResponse<GetQuestSkillsResponse>> => {
     try {
       const res = await axiosClient.get<GetQuestSkillsResponse>(`/api/quests/${questId}/skills`);
@@ -513,12 +386,6 @@ const questApi = {
     }
   },
 
-  // ========== ADMIN QUEST MANAGEMENT ==========
-
-  /**
-   * Gets a paginated list of all quests for admin management.
-   * Corresponds to GET /api/admin/quests
-   */
   adminListQuests: async (params?: {
     page?: number;
     pageSize?: number;
@@ -542,21 +409,13 @@ const questApi = {
     }
   },
 
-  /**
-   * Gets detailed quest information for admin including all steps grouped by difficulty.
-   * Returns 3-way split: standardSteps, supportiveSteps, challengingSteps
-   * Corresponds to GET /api/admin/quests/{questId}
-   */
   adminGetQuestDetails: async (questId: string): Promise<ApiResponse<AdminQuestDetailsDto>> => {
     try {
       const res = await axiosClient.get<AdminQuestDetailsDto>(`/api/admin/quests/${questId}`);
       const data = res.data;
-      
-      // Parse content strings and normalize activity properties in each track
       if (data.standardSteps) data.standardSteps = data.standardSteps.map(normalizeStepActivities);
       if (data.supportiveSteps) data.supportiveSteps = data.supportiveSteps.map(normalizeStepActivities);
       if (data.challengingSteps) data.challengingSteps = data.challengingSteps.map(normalizeStepActivities);
-      
       return {
         isSuccess: true as const,
         data,
@@ -571,11 +430,6 @@ const questApi = {
     }
   },
 
-  /**
-   * Triggers quest step generation for admin.
-   * Same as generateQuestSteps but explicitly for admin use.
-   * Corresponds to POST /api/admin/quests/{questId}/generate-steps
-   */
   adminGenerateQuestSteps: async (questId: string): Promise<ApiResponse<GenerateQuestStepsResponse>> => {
     try {
       const res = await axiosClient.post<GenerateQuestStepsResponse>(`/api/admin/quests/${questId}/generate-steps`);
@@ -593,10 +447,6 @@ const questApi = {
     }
   },
 
-  /**
-   * Regenerates quest steps (deletes existing and creates new).
-   * Corresponds to POST /api/admin/quests/{questId}/regenerate-steps
-   */
   adminRegenerateQuestSteps: async (questId: string): Promise<ApiResponse<GenerateQuestStepsResponse>> => {
     try {
       const res = await axiosClient.post<GenerateQuestStepsResponse>(`/api/admin/quests/${questId}/regenerate-steps`);
@@ -614,10 +464,6 @@ const questApi = {
     }
   },
 
-  /**
-   * Deletes all steps for a quest.
-   * Corresponds to DELETE /api/admin/quests/{questId}/steps
-   */
   adminDeleteQuestSteps: async (questId: string): Promise<ApiResponse<void>> => {
     try {
       await axiosClient.delete(`/api/admin/quests/${questId}/steps`);
@@ -635,17 +481,12 @@ const questApi = {
     }
   },
 
-  /**
-   * Updates the learning activities for a specific quest step.
-   * This is a full replacement operation - the activities array will overwrite existing content.
-   * Corresponds to PUT /api/admin/quest-steps/{questStepId}/content
-   */
   adminUpdateQuestStepContent: async (
     questStepId: string,
-    activities: QuestStepActivityPayload[]
-  ): Promise<ApiResponse<UpdateQuestStepContentResponse>> => {
+    activities: any[]
+  ): Promise<ApiResponse<any>> => {
     try {
-      const res = await axiosClient.put<UpdateQuestStepContentResponse>(
+      const res = await axiosClient.put<any>(
         `/api/admin/quest-steps/${questStepId}/content`,
         { activities }
       );
@@ -664,49 +505,20 @@ const questApi = {
   },
 };
 
-// ========== QUEST STEP ACTIVITY TYPES ==========
-
-/**
- * Activity payload for updating quest step content
- */
 export interface QuestStepActivityPayload {
   activityId: string;
-  type: 'Reading' | 'KnowledgeCheck' | 'Quiz';
+  type: 'Reading' | 'KnowledgeCheck' | 'Quiz' | 'Coding';
   skillId: string;
-  payload: ReadingPayload | KnowledgeCheckPayload | QuizPayload;
+  payload: any;
 }
 
-export interface ReadingPayload {
-  experiencePoints: number;
-  url: string;
-  articleTitle: string;
-  summary: string;
-}
-
+// ⭐ EXPORTED: QuestionPayload for use in edit dialog
 export interface QuestionPayload {
   question: string;
   options: string[];
   answer: string;
   explanation: string;
   experiencePoints?: number;
-}
-
-export interface KnowledgeCheckPayload {
-  experiencePoints: number;
-  questions: QuestionPayload[];
-}
-
-export interface QuizPayload {
-  experiencePoints: number;
-  questions: QuestionPayload[];
-}
-
-export interface UpdateQuestStepContentResponse {
-  questStepId: string;
-  isSuccess: boolean;
-  message: string;
-  activityCount: number;
-  updatedAt: string;
 }
 
 export default questApi;

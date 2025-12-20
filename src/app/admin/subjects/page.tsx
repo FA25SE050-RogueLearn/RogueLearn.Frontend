@@ -1,4 +1,4 @@
-// src/app/admin/subjects/page.tsx
+// roguelearn-web/src/app/admin/content/subjects/page.tsx
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
@@ -14,8 +14,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Loader2, Plus, Trash2, Pencil, Search, ChevronLeft, ChevronRight, BookOpen, FileText, UploadCloud, CheckCircle, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
 import subjectsApi from "@/api/subjectsApi";
-import curriculumImportApi from "@/api/curriculumImportApi";
 import { Subject } from "@/types/subjects";
+import { SubjectImportModal } from "@/components/admin/subjects/SubjectImportModal"; // Imported Modal
 
 type SubjectFormData = {
     subjectCode: string;
@@ -58,9 +58,10 @@ export default function SubjectsManagementPage() {
     // Import state
     const [rawText, setRawText] = useState("");
     const [importSemester, setImportSemester] = useState<string>("");
-    const [importStatus, setImportStatus] = useState<string | null>(null);
-    const [importError, setImportError] = useState<string | null>(null);
-    const [importing, setImporting] = useState(false);
+    // Replaced simple loading state with Job ID state for modal
+    const [importJobId, setImportJobId] = useState<string | null>(null);
+    const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+    const [importing, setImporting] = useState(false); // Used only for initial API call
 
     // Debounce search
     useEffect(() => {
@@ -148,45 +149,51 @@ export default function SubjectsManagementPage() {
         }
     };
 
+    // Modified Import Handler to trigger modal
     const handleImportSubject = async () => {
         if (!rawText.trim()) {
             toast.error("Please paste the syllabus content first");
             return;
         }
 
-        // --- Added Validation for Semester ---
         if (!importSemester.trim()) {
             toast.error("Please enter a semester number");
             return;
         }
 
         setImporting(true);
-        setImportStatus("Importing subject... AI is extracting syllabus data.");
-        setImportError(null);
         try {
             const semesterValue = importSemester.trim() ? parseInt(importSemester, 10) : undefined;
-            const res = await curriculumImportApi.importSubjectFromText({
-                rawText,
-                semester: semesterValue
-            });
-            if (res.isSuccess && res.data) {
-                setImportStatus(`Import successful! Created subject: ${res.data.code || 'Unknown'} - ${res.data.name || 'Unknown'}`);
-                setRawText("");
-                setImportSemester("");
-                toast.success("Subject imported successfully");
-                setTimeout(() => {
-                    loadData();
-                    setImportStatus(null);
-                }, 2000);
+            // Call the API which now returns a Job ID
+            const res = await subjectsApi.importFromText(rawText, semesterValue);
+
+            if (res.isSuccess && res.data?.jobId) {
+                setImportJobId(res.data.jobId);
+                setIsImportModalOpen(true);
             } else {
-                throw new Error("Import failed");
+                throw new Error(res.message || "Failed to start import job");
             }
         } catch (error: any) {
-            setImportStatus(null);
-            setImportError(`Import failed: ${error.response?.data?.message || error?.normalized?.message || error?.message || 'An unexpected error occurred.'}`);
+            toast.error(`Import failed: ${error.response?.data?.message || error?.normalized?.message || error?.message || 'An unexpected error occurred.'}`);
         } finally {
             setImporting(false);
         }
+    };
+
+    const handleImportComplete = () => {
+        setIsImportModalOpen(false);
+        setImportJobId(null);
+        setRawText("");
+        setImportSemester("");
+        // Switch to list tab to see new subject
+        const tabTrigger = document.querySelector('[data-value="subjects"]') as HTMLElement;
+        if (tabTrigger) tabTrigger.click();
+        loadData();
+    };
+
+    const handleImportClose = () => {
+        setIsImportModalOpen(false);
+        setImportJobId(null);
     };
 
     return (
@@ -384,30 +391,15 @@ export default function SubjectsManagementPage() {
                                     />
                                 </div>
 
-                                {importStatus && (
-                                    <div className="flex items-center gap-2 text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 rounded-lg p-3">
-                                        <CheckCircle className="w-4 h-4 flex-shrink-0" />
-                                        <p className="text-sm">{importStatus}</p>
-                                    </div>
-                                )}
-
-                                {importError && (
-                                    <div className="flex items-center gap-2 text-red-400 bg-red-500/10 border border-red-500/20 rounded-lg p-3">
-                                        <AlertCircle className="w-4 h-4 flex-shrink-0" />
-                                        <p className="text-sm">{importError}</p>
-                                    </div>
-                                )}
-
                                 <Button
                                     onClick={handleImportSubject}
-                                    // --- Validation Check: Disable if rawText or semester is empty ---
                                     disabled={!rawText.trim() || !importSemester.trim() || importing}
                                     className="bg-[#f5c16c] hover:bg-[#f5c16c]/90 text-black font-semibold"
                                 >
                                     {importing ? (
-                                        <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Importing...</>
+                                        <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Starting...</>
                                     ) : (
-                                        <><UploadCloud className="mr-2 h-4 w-4" /> Import Subject</>
+                                        <><UploadCloud className="mr-2 h-4 w-4" /> Start Import</>
                                     )}
                                 </Button>
                             </CardContent>
@@ -503,6 +495,14 @@ export default function SubjectsManagementPage() {
                         </DialogFooter>
                     </DialogContent>
                 </Dialog>
+
+                {/* Import Status Modal */}
+                <SubjectImportModal
+                    isOpen={isImportModalOpen}
+                    jobId={importJobId}
+                    onClose={handleImportClose}
+                    onComplete={handleImportComplete}
+                />
             </div>
         </AdminLayout>
     );

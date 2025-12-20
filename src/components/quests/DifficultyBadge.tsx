@@ -31,23 +31,23 @@ const difficultyConfig: Record<DifficultyLevel, {
   Challenging: {
     icon: Zap,
     label: 'Challenging',
-    bgClass: 'bg-orange-500/20',
-    borderClass: 'border-orange-500/40',
-    textClass: 'text-orange-300',
-    glowClass: 'shadow-orange-500/20',
+    bgClass: 'bg-red-500/20',        // Changed from orange to red/fire
+    borderClass: 'border-red-500/40',
+    textClass: 'text-red-300',
+    glowClass: 'shadow-red-500/20',
   },
   Standard: {
     icon: Shield,
     label: 'Standard',
-    bgClass: 'bg-blue-500/20',
-    borderClass: 'border-blue-500/40',
-    textClass: 'text-blue-300',
-    glowClass: 'shadow-blue-500/20',
+    bgClass: 'bg-amber-500/20',      // Changed from blue to amber/yellow
+    borderClass: 'border-amber-500/40',
+    textClass: 'text-amber-300',
+    glowClass: 'shadow-amber-500/20',
   },
   Supportive: {
     icon: Heart,
     label: 'Supportive',
-    bgClass: 'bg-emerald-500/20',
+    bgClass: 'bg-emerald-500/20',    // Emerald (Green) matches supportive
     borderClass: 'border-emerald-500/40',
     textClass: 'text-emerald-300',
     glowClass: 'shadow-emerald-500/20',
@@ -76,8 +76,8 @@ export function DifficultyBadge({
   if (!config) return null;
 
   const Icon = config.icon;
-  const sizeClasses = size === 'sm' 
-    ? 'px-2 py-0.5 text-[10px] gap-1' 
+  const sizeClasses = size === 'sm'
+    ? 'px-2 py-0.5 text-[10px] gap-1'
     : 'px-2.5 py-1 text-xs gap-1.5';
   const iconSize = size === 'sm' ? 'h-3 w-3' : 'h-3.5 w-3.5';
 
@@ -100,8 +100,8 @@ export function DifficultyBadge({
         <TooltipTrigger asChild>
           {badge}
         </TooltipTrigger>
-        <TooltipContent 
-          side="top" 
+        <TooltipContent
+          side="top"
           className="max-w-xs bg-slate-900 border-slate-700 text-white"
         >
           <div className="space-y-1.5">

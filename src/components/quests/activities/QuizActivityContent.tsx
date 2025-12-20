@@ -38,7 +38,7 @@ export const QuizActivityContent = ({
     const [submitting, setSubmitting] = useState(false);
     const [quizResult, setQuizResult] = useState<any>(null);
     const [error, setError] = useState<string | null>(null);
-
+    
     const questions = payload.questions || [];
     const totalQuestions = questions.length;
 
