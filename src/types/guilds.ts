@@ -198,7 +198,7 @@ export interface ConfigureGuildSettingsCommandRequest {
   guildId: string;
   name: string;
   description: string;
-  privacy: 'public' | 'invite_only';
+  privacy: 'public' | 'private';
   maxMembers: number;
 }
 

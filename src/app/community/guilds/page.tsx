@@ -512,7 +512,7 @@ export default function GuildDirectoryPage() {
                               </div>
                             )}
                             <div className="text-white font-bold text-sm">{fullGuilds[1]?.name ?? '—'}</div>
-                            <div className="text-foreground/60 text-[11px]">{(fullGuilds[1]?.meritPoints ?? 0).toLocaleString()} Merit</div>
+                            <div className="text-foreground/60 text-[11px]">{(fullGuilds[1]?.meritPoints ?? 0).toLocaleString()} Points</div>
                             <div className="h-24 w-24 bg-linear-to-t from-gray-400/20 to-transparent rounded-t-lg mt-2"></div>
                           </div>
 
@@ -530,7 +530,7 @@ export default function GuildDirectoryPage() {
                               </div>
                             )}
                             <div className="text-[#d4a353] font-bold text-base">{fullGuilds[0]?.name ?? '—'}</div>
-                            <div className="text-[#d4a353]/80 text-sm">{(fullGuilds[0]?.meritPoints ?? 0).toLocaleString()} Merit</div>
+                            <div className="text-[#d4a353]/80 text-sm">{(fullGuilds[0]?.meritPoints ?? 0).toLocaleString()} Points</div>
                             <div className="h-32 w-32 bg-linear-to-t from-[#d4a353]/20 to-transparent rounded-t-lg mt-2 border-t border-[#d4a353]/30"></div>
                           </div>
 
@@ -547,7 +547,7 @@ export default function GuildDirectoryPage() {
                               </div>
                             )}
                             <div className="text-white font-bold text-sm">{fullGuilds[2]?.name ?? '—'}</div>
-                            <div className="text-foreground/60 text-[11px]">{(fullGuilds[2]?.meritPoints ?? 0).toLocaleString()} Merit</div>
+                            <div className="text-foreground/60 text-[11px]">{(fullGuilds[2]?.meritPoints ?? 0).toLocaleString()} Points</div>
                             <div className="h-20 w-24 bg-linear-to-t from-orange-700/20 to-transparent rounded-t-lg mt-2"></div>
                           </div>
                         </div>
