@@ -1,223 +1,169 @@
 // roguelearn-web/src/components/admin/subjects/SubjectImportModal.tsx
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React from "react";
 import {
     Loader2,
-    Sparkles,
     CheckCircle2,
     AlertCircle,
     FileText,
     Search,
     Database,
     BrainCircuit,
-    X,
+    Minus,
+    Check,
+    X
 } from "lucide-react";
-import subjectsApi from "@/api/subjectsApi";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { SubjectImportJobStatusResponse } from "@/types/curriculum-import";
 
 interface SubjectImportModalProps {
     isOpen: boolean;
     jobId: string | null;
+    statusData: SubjectImportJobStatusResponse | null;
+    error: string | null;
+    isComplete: boolean;
+    onMinimize: () => void;
     onClose: () => void;
     onComplete: () => void;
 }
 
+const STEPS = [
+    { label: "Analyzing Syllabus", min: 0, max: 20, icon: FileText },
+    { label: "Generating Questions", min: 20, max: 45, icon: BrainCircuit },
+    { label: "Enriching Content", min: 45, max: 80, icon: Search },
+    { label: "Finalizing Data", min: 80, max: 99, icon: Database },
+    { label: "Done", min: 100, max: 100, icon: CheckCircle2 },
+];
+
 export function SubjectImportModal({
     isOpen,
-    jobId,
+    statusData,
+    error,
+    isComplete,
+    onMinimize,
     onClose,
     onComplete,
 }: SubjectImportModalProps) {
-    const [statusData, setStatusData] = useState<SubjectImportJobStatusResponse | null>(null);
-    const [error, setError] = useState<string | null>(null);
-    const [isCompleted, setIsCompleted] = useState(false);
-    const [currentJobId, setCurrentJobId] = useState<string | null>(null);
-
-    const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
-    const isPollingRef = useRef(false);
-    const hasCompletedRef = useRef(false);
-    const pollAttemptsRef = useRef(0);
-    const firstSuccessfulPollRef = useRef(false);
-
-    // Reset state on new job
-    useEffect(() => {
-        if (jobId !== currentJobId && jobId !== null) {
-            // eslint-disable-next-line react-hooks/set-state-in-effect
-            setCurrentJobId(jobId);
-            setStatusData(null);
-            setError(null);
-            setIsCompleted(false);
-            hasCompletedRef.current = false;
-            pollAttemptsRef.current = 0;
-            firstSuccessfulPollRef.current = false;
-        }
-    }, [jobId, currentJobId]);
-
-    // Polling logic
-    useEffect(() => {
-        if (!isOpen || !jobId || hasCompletedRef.current) return;
-
-        const poll = async () => {
-            if (isPollingRef.current) return;
-            isPollingRef.current = true;
-            pollAttemptsRef.current += 1;
-
-            try {
-                const res = await subjectsApi.getImportStatus(jobId);
-
-                if (!res.isSuccess) {
-                    if (res.is404) {
-                        // If we've seen success before, 404 means job cleaned up -> success
-                        if (firstSuccessfulPollRef.current) {
-                            handleSuccess();
-                            return;
-                        }
-                        // Timeout after 45s of straight 404s
-                        if (pollAttemptsRef.current > 45) {
-                            handleError("Import job initialization timed out.");
-                            return;
-                        }
-                        // Job starting up, keep polling
-                    } else {
-                        // Other error
-                        handleError(res.message || "Failed to check import status.");
-                    }
-                    isPollingRef.current = false;
-                    return;
-                }
-
-                // Success response
-                if (!firstSuccessfulPollRef.current) {
-                    firstSuccessfulPollRef.current = true;
-                    pollAttemptsRef.current = 0; // Reset timeout counter
-                }
-
-                const data = res.data;
-                setStatusData(data);
-
-                if (data.status === "Succeeded" || data.percent === 100) {
-                    handleSuccess();
-                    return;
-                }
-
-                if (data.status === "Failed") {
-                    handleError(data.message || "Import failed.");
-                    return;
-                }
-
-                // Check for stuck jobs (processing > 5 mins)
-                if (data.status === "Processing" && pollAttemptsRef.current > 300) {
-                    handleError("Import is taking longer than expected. Please try again later.");
-                    return;
-                }
-
-                isPollingRef.current = false;
-            } catch (err) {
-                console.error("Polling error:", err);
-                isPollingRef.current = false;
-            }
-        };
-
-        const handleSuccess = () => {
-            setIsCompleted(true);
-            hasCompletedRef.current = true;
-            setStatusData((prev) => prev ? { ...prev, percent: 100, message: "Import completed successfully!" } : null);
-            if (pollingIntervalRef.current) clearInterval(pollingIntervalRef.current);
-            isPollingRef.current = false;
-            // Auto-complete after delay
-            setTimeout(() => onComplete(), 1500);
-        };
-
-        const handleError = (msg: string) => {
-            setError(msg);
-            hasCompletedRef.current = true;
-            if (pollingIntervalRef.current) clearInterval(pollingIntervalRef.current);
-            isPollingRef.current = false;
-        };
-
-        poll();
-        pollingIntervalRef.current = setInterval(poll, 1000);
-
-        return () => {
-            if (pollingIntervalRef.current) clearInterval(pollingIntervalRef.current);
-            isPollingRef.current = false;
-        };
-    }, [isOpen, jobId, onComplete]);
-
     if (!isOpen) return null;
 
     const percent = statusData?.percent ?? 0;
     const message = statusData?.message ?? "Initializing import...";
 
-    // Dynamic icon based on progress stage
+    // Calculate active step index
+    const currentStepIndex = STEPS.findIndex(s => percent >= s.min && percent < s.max);
+    const activeIndex = currentStepIndex === -1 ? (percent >= 100 ? STEPS.length - 1 : 0) : currentStepIndex;
+
+    // Determine stage icon
     const getStageIcon = () => {
-        if (percent < 20) return <FileText className="w-8 h-8 text-[#f5c16c] animate-pulse" />; // Cleaning/Parsing
-        if (percent < 40) return <BrainCircuit className="w-8 h-8 text-[#f5c16c] animate-pulse" />; // Generating Questions
-        if (percent < 80) return <Search className="w-8 h-8 text-[#f5c16c] animate-pulse" />; // Enriching/Search
-        if (percent < 100) return <Database className="w-8 h-8 text-[#f5c16c] animate-pulse" />; // Saving
+        if (percent < 20) return <FileText className="w-8 h-8 text-[#f5c16c] animate-pulse" />;
+        if (percent < 40) return <BrainCircuit className="w-8 h-8 text-[#f5c16c] animate-pulse" />;
+        if (percent < 80) return <Search className="w-8 h-8 text-[#f5c16c] animate-pulse" />;
+        if (percent < 100) return <Database className="w-8 h-8 text-[#f5c16c] animate-pulse" />;
         return <CheckCircle2 className="w-12 h-12 text-emerald-400" />;
     };
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-            <div className="relative w-full max-w-lg rounded-3xl border border-[#f5c16c]/20 bg-gradient-to-br from-[#2d1810] via-[#1a0a08] to-[#0a0506] p-8 shadow-2xl">
-                {/* Background Effects */}
-                <div className="pointer-events-none absolute inset-0 rounded-3xl opacity-25 mix-blend-overlay" style={{ backgroundImage: 'url(/images/asfalt-dark.png)' }} />
-                <div className="absolute inset-0 rounded-3xl opacity-20 bg-[radial-gradient(circle_at_top,_rgba(245,193,108,0.2),_transparent_70%)]" />
-
-                {/* Close Button (visible only if error or completed to prevent interrupting) */}
-                {(error || isCompleted) && (
-                    <button onClick={onClose} className="absolute top-4 right-4 z-20 text-white/40 hover:text-white">
-                        <X className="w-5 h-5" />
-                    </button>
-                )}
-
-                <div className="relative z-10 flex flex-col items-center text-center space-y-6">
-                    {/* Icon Area */}
-                    <div className="flex h-20 w-20 items-center justify-center rounded-2xl bg-gradient-to-br from-[#f5c16c]/20 to-[#d4a855]/10 shadow-lg border border-[#f5c16c]/30">
-                        {error ? <AlertCircle className="w-10 h-10 text-rose-400" /> : getStageIcon()}
-                    </div>
-
-                    <div className="space-y-2">
-                        <h2 className="text-2xl font-bold text-white">
-                            {error ? "Import Failed" : isCompleted ? "Subject Imported!" : "Importing Subject"}
-                        </h2>
-                        <p className="text-sm text-white/60 min-h-[20px]">
-                            {error || message}
-                        </p>
-                    </div>
-
-                    {/* Progress Bar */}
-                    {!error && !isCompleted && (
-                        <div className="w-full space-y-2">
-                            <div className="flex justify-between text-xs uppercase tracking-wider text-white/40">
-                                <span>Progress</span>
-                                <span>{percent}%</span>
-                            </div>
-                            <div className="h-2 w-full overflow-hidden rounded-full bg-black/40 border border-white/5">
-                                <div
-                                    className="h-full bg-gradient-to-r from-[#f5c16c] to-[#d4a855] transition-all duration-500 ease-out"
-                                    style={{ width: `${percent}%` }}
-                                />
-                            </div>
-                            <p className="text-[10px] text-white/30 pt-1">
-                                AI is processing your syllabus. This typically takes 30-60 seconds.
-                            </p>
-                        </div>
-                    )}
-
-                    {/* Actions */}
-                    {(error || isCompleted) && (
+        <Dialog open={isOpen} onOpenChange={(open) => !open && onMinimize()}>
+            <DialogContent className="max-w-xl bg-[#0a0506] border-[#f5c16c]/20 p-0 overflow-hidden shadow-2xl">
+                {/* Header with Minimize Action */}
+                <div className="flex items-center justify-between border-b border-[#f5c16c]/10 bg-[#1a0b08]/50 px-6 py-4">
+                    <h2 className="text-lg font-bold text-white">Subject Import</h2>
+                    {!isComplete && !error && (
                         <button
-                            onClick={error ? onClose : onComplete}
-                            className="w-full py-3 rounded-xl bg-gradient-to-r from-[#f5c16c] to-[#d4a855] text-black font-semibold hover:shadow-lg hover:shadow-[#f5c16c]/20 transition-all"
+                            onClick={onMinimize}
+                            className="text-white/40 hover:text-white transition-colors flex items-center gap-2 text-xs uppercase tracking-wider"
                         >
-                            {error ? "Close" : "Done"}
+                            <Minus className="w-4 h-4" /> Minimize
                         </button>
                     )}
                 </div>
-            </div>
-        </div>
+
+                <div className="p-8">
+                    <div className="relative z-10 flex flex-col items-center text-center space-y-8">
+
+                        {/* Status Icon */}
+                        <div className="relative">
+                            <div className={`absolute inset-0 rounded-full blur-xl ${error ? "bg-red-500/20" : isComplete ? "bg-emerald-500/20" : "bg-[#f5c16c]/20"}`} />
+                            <div className={`relative flex h-24 w-24 items-center justify-center rounded-2xl border shadow-lg ${error ? "border-red-500/30 bg-red-950/30" :
+                                    isComplete ? "border-emerald-500/30 bg-emerald-950/30" :
+                                        "border-[#f5c16c]/30 bg-[#1a0b08]"
+                                }`}>
+                                {error ? (
+                                    <AlertCircle className="w-10 h-10 text-red-400" />
+                                ) : isComplete ? (
+                                    <CheckCircle2 className="w-12 h-12 text-emerald-400" />
+                                ) : (
+                                    getStageIcon()
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Message Area */}
+                        <div className="space-y-2 max-w-sm">
+                            <h3 className="text-xl font-bold text-white">
+                                {error ? "Import Failed" : isComplete ? "Import Successful!" : "Processing Syllabus"}
+                            </h3>
+                            <p className="text-sm text-white/60 min-h-[40px]">
+                                {error || message}
+                            </p>
+                        </div>
+
+                        {/* Progress Stepper */}
+                        {!error && (
+                            <div className="w-full space-y-6 bg-white/5 rounded-xl p-6 border border-white/5">
+                                <div className="relative flex justify-between">
+                                    {/* Connector Line */}
+                                    <div className="absolute top-1/2 left-0 w-full h-0.5 bg-white/10 -z-10 -translate-y-1/2" />
+
+                                    {STEPS.map((step, idx) => {
+                                        const isActive = idx === activeIndex;
+                                        const isPassed = idx < activeIndex;
+                                        const StepIcon = step.icon;
+
+                                        return (
+                                            <div key={step.label} className="flex flex-col items-center gap-3">
+                                                <div className={`flex h-8 w-8 items-center justify-center rounded-full border-2 transition-all duration-500 z-10 ${isActive ? "border-[#f5c16c] bg-[#1a0b08] scale-110" :
+                                                        isPassed ? "border-emerald-500 bg-emerald-500 text-black" :
+                                                            "border-white/10 bg-[#0a0506] text-white/20"
+                                                    }`}>
+                                                    {isPassed ? <Check className="w-4 h-4" /> : <StepIcon className={`w-3.5 h-3.5 ${isActive ? "text-[#f5c16c]" : ""}`} />}
+                                                </div>
+                                                <span className={`text-[10px] font-medium uppercase tracking-wide transition-colors ${isActive ? "text-[#f5c16c]" :
+                                                        isPassed ? "text-emerald-500" :
+                                                            "text-white/20"
+                                                    }`}>
+                                                    {step.label}
+                                                </span>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+
+                                {/* Percentage Bar */}
+                                {!isComplete && (
+                                    <div className="h-1.5 w-full overflow-hidden rounded-full bg-black/40">
+                                        <div
+                                            className="h-full bg-gradient-to-r from-[#f5c16c] to-[#d4a855] transition-all duration-500 ease-out"
+                                            style={{ width: `${percent}%` }}
+                                        />
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        {/* Actions */}
+                        {(error || isComplete) && (
+                            <button
+                                onClick={error ? onClose : onComplete}
+                                className="w-full py-3 rounded-xl bg-gradient-to-r from-[#f5c16c] to-[#d4a855] text-black font-semibold hover:shadow-lg hover:shadow-[#f5c16c]/20 transition-all"
+                            >
+                                {error ? "Close" : "Done"}
+                            </button>
+                        )}
+                    </div>
+                </div>
+            </DialogContent>
+        </Dialog>
     );
 }

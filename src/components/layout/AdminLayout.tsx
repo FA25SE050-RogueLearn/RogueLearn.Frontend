@@ -1,3 +1,4 @@
+// roguelearn-web/src/components/layout/AdminLayout.tsx
 "use client";
 
 import { AdminSidebarNav } from "@/components/admin/AdminSidebarNav";
@@ -5,6 +6,8 @@ import { ReactNode, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
 import { Loader2 } from "lucide-react";
+
+// REMOVED: SubjectImportProvider import (now in app/admin/layout.tsx)
 
 export function AdminLayout({ children }: { children: ReactNode }) {
   const router = useRouter();
@@ -54,6 +57,7 @@ export function AdminLayout({ children }: { children: ReactNode }) {
     );
   }
 
+  // REMOVED: SubjectImportProvider wrapper
   return (
     <div className="relative min-h-screen w-full bg-[#0a0506] text-white">
       {/* Background layers */}
