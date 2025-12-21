@@ -7,8 +7,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
 import {
     Loader2,
     Search,
@@ -18,13 +16,14 @@ import {
     RefreshCw,
     Eye,
     Trash2,
-    CheckCircle
+    Cpu // New Icon
 } from "lucide-react";
 import { toast } from "sonner";
 import questApi, { AdminQuestListItem } from "@/api/questApi";
 import { QuestGenerationModal } from "@/components/quests/QuestGenerationModal";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 export default function AdminQuestsPage() {
     const router = useRouter();
@@ -46,6 +45,9 @@ export default function AdminQuestsPage() {
     // Delete confirmation state
     const [deleteTarget, setDeleteTarget] = useState<AdminQuestListItem | null>(null);
     const [deleting, setDeleting] = useState(false);
+
+    // Sync state
+    const [isSyncing, setIsSyncing] = useState(false);
 
     // Debounce search
     useEffect(() => {
@@ -146,6 +148,26 @@ export default function AdminQuestsPage() {
         }
     };
 
+    const handleSyncQuests = async () => {
+        setIsSyncing(true);
+        try {
+            const res = await questApi.adminSyncMasterQuests();
+            if (res.isSuccess && res.data) {
+                toast.success("Sync complete!", {
+                    description: `${res.data.createdCount} new quests created. ${res.data.existingCount} quests already existed.`
+                });
+                // Refresh the quest list after sync
+                setTimeout(loadQuests, 500);
+            } else {
+                toast.error(res.message || "Failed to sync quests from subjects.");
+            }
+        } catch (e: any) {
+            toast.error(e?.message || "Failed to sync quests from subjects.");
+        } finally {
+            setIsSyncing(false);
+        }
+    };
+
     const handleGenerationComplete = () => {
         const questId = generatingQuestId;
         setIsGenerationModalOpen(false);
@@ -188,10 +210,24 @@ export default function AdminQuestsPage() {
                                     className="pl-10 border-[#f5c16c]/30 bg-[#0a0506] text-white"
                                 />
                             </div>
-                            <div className="flex items-center gap-4">
+                            <div className="flex items-center gap-2">
                                 <span className="text-sm text-white/60">
                                     {totalCount} quests total
                                 </span>
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={handleSyncQuests}
+                                    disabled={isSyncing}
+                                    className="border-[#7289da]/30 text-white hover:bg-[#7289da]/10"
+                                >
+                                    {isSyncing ? (
+                                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                    ) : (
+                                        <Cpu className="w-4 h-4 mr-2" />
+                                    )}
+                                    Sync from Subjects
+                                </Button>
                                 <Button
                                     variant="outline"
                                     size="sm"
@@ -228,7 +264,6 @@ export default function AdminQuestsPage() {
                                         <TableRow className="border-[#f5c16c]/10">
                                             <TableHead className="text-white/60">Subject</TableHead>
                                             <TableHead className="text-white/60">Quest Title</TableHead>
-                                            {/* Removed Steps and Status columns */}
                                             <TableHead className="text-white/60 text-right">Actions</TableHead>
                                         </TableRow>
                                     </TableHeader>
@@ -242,7 +277,6 @@ export default function AdminQuestsPage() {
                                                     </div>
                                                 </TableCell>
                                                 <TableCell className="font-medium text-white">{quest.title}</TableCell>
-                                                {/* Removed Steps and Status cells */}
                                                 <TableCell className="text-right">
                                                     <div className="flex items-center justify-end gap-2">
                                                         <Button
