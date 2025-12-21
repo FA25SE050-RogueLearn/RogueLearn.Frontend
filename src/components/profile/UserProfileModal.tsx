@@ -291,8 +291,8 @@ export default function UserProfileModal({ open, onOpenChange, defaultTab = "pro
   }, [open, activeTab]);
 
   return (
-     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-[90vw]! sm:max-w-none max-w-[1600px] h-[96vh] border-[#f5c16c]/20 bg-linear-to-br from-[#0f0708] to-[#1a0b08] p-0 overflow-hidden min-w-0">
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="!w-[90vw] sm:max-w-none max-w-[1600px] h-[96vh] border-[#f5c16c]/20 bg-linear-to-br from-[#0f0708] to-[#1a0b08] p-0 overflow-hidden min-w-0">
         <DialogTitle className="sr-only">User Profile</DialogTitle>
         <div className="pointer-events-none absolute inset-0 bg-[radial-linear(circle_at_top_left,rgba(210,49,135,0.08),transparent_50%)]" />
         <div className="pointer-events-none absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] opacity-[0.03]" />
@@ -658,51 +658,12 @@ export default function UserProfileModal({ open, onOpenChange, defaultTab = "pro
                               </button>
                             </div>
                           </div>
-                          <div className="flex items-center gap-2">
-                            <button
-                              onClick={async () => {
-                                try {
-                                  await guildsApi.acceptInvitation(inv.guildId, inv.invitationId || inv.id);
-                                } catch {}
-                                try {
-                                  const res = await guildsApi.getMyPendingInvitations();
-                                  setGuildInvites(res.data || []);
-                                } catch {}
-                                await reloadJoinRequests();
-                                await reloadJoinRequestsHistory();
-                              }}
-                              className="bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/30 text-emerald-400 px-4 py-2 text-xs rounded-lg font-semibold transition"
-                            >
-                              Accept
-                            </button>
-                            <button
-                              onClick={async () => {
-                                try {
-                                  await guildsApi.declineInvitation(inv.guildId, inv.invitationId || inv.id);
-                                } catch {}
-                                try {
-                                  const res = await guildsApi.getMyPendingInvitations();
-                                  setGuildInvites(res.data || []);
-                                } catch {}
-                                await reloadJoinRequests();
-                                await reloadJoinRequestsHistory();
-                              }}
-                              className="bg-rose-500/20 hover:bg-rose-500/30 border border-rose-500/30 text-rose-400 px-4 py-2 text-xs rounded-lg font-semibold transition"
-                            >
-                              Decline
-                            </button>
-                          </div>
-                        </div>
                       ))}
                     </div>
             )}
+                  </div>
                 <div className="h-px bg-linear-to-r from-transparent via-[#f5c16c]/20 to-transparent my-6" />
                 <div>
-                  <div className="flex items-center gap-2 mb-4">
-                    <Users className="h-4 w-4 text-[#d23187]" />
-                    <span className="text-sm font-semibold text-white">Party Invites</span>
-                  </div>
-                  <div className="h-px bg-linear-to-r from-transparent via-[#f5c16c]/20 to-transparent my-6" />
                   <div>
                     <div className="flex items-center gap-2 mb-4">
                       <Users className="h-4 w-4 text-[#d23187]" />
@@ -831,7 +792,6 @@ export default function UserProfileModal({ open, onOpenChange, defaultTab = "pro
                   </div>
                 </div>
               </div>
-            </div>
 
           </div>
         </div>
