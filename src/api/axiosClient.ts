@@ -101,7 +101,8 @@ axiosClient.interceptors.response.use(
       // ⭐ NEW: Silent 404 handling for polling endpoints
       const isPollingEndpoint = 
         error.config?.url?.includes('/generation-status/') ||
-        error.config?.url?.includes('/generation-progress/');
+        error.config?.url?.includes('/generation-progress/') ||
+        error.config?.url?.includes('/import-status/'); // Added import-status
       
       const is404 = status === 404;
       const is403 = status === 403;

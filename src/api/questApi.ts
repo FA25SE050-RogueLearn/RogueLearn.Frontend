@@ -118,6 +118,12 @@ export interface SubmitCodingActivityResponse {
   experiencePointsAwarded?: number;
 }
 
+// ⭐ NEW: Response type for syncing master quests
+export interface AdminSyncQuestsResponse {
+    createdCount: number;
+    existingCount: number;
+}
+
 const questApi = {
   // =================================================================
   // QUESTS (QuestsController)
@@ -501,6 +507,26 @@ const questApi = {
         data: null,
         message,
       };
+    }
+  },
+
+  /**
+   * Scans all Subjects and creates a Master Quest shell for any that are missing.
+   */
+  adminSyncMasterQuests: async (): Promise<ApiResponse<AdminSyncQuestsResponse>> => {
+    try {
+        const res = await axiosClient.post<AdminSyncQuestsResponse>('/api/admin/quests/sync-from-subjects');
+        return {
+            isSuccess: true as const,
+            data: res.data,
+        };
+    } catch (error: any) {
+        const message = error.response?.data?.message || error.message || 'Failed to sync quests from subjects';
+        return {
+            isSuccess: false as const,
+            data: null,
+            message,
+        };
     }
   },
 };

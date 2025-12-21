@@ -1,4 +1,4 @@
-// src/app/admin/subjects/page.tsx
+// roguelearn-web/src/app/admin/subjects/page.tsx
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
@@ -11,11 +11,11 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Loader2, Plus, Trash2, Pencil, Search, ChevronLeft, ChevronRight, BookOpen, FileText, UploadCloud, CheckCircle, AlertCircle } from "lucide-react";
+import { Loader2, Plus, Trash2, Pencil, Search, ChevronLeft, ChevronRight, BookOpen, FileText, UploadCloud } from "lucide-react";
 import { toast } from "sonner";
 import subjectsApi from "@/api/subjectsApi";
-import curriculumImportApi from "@/api/curriculumImportApi";
 import { Subject } from "@/types/subjects";
+import { useSubjectImport } from "@/contexts/SubjectImportContext";
 
 type SubjectFormData = {
     subjectCode: string;
@@ -55,12 +55,12 @@ export default function SubjectsManagementPage() {
     const [deleteTarget, setDeleteTarget] = useState<Subject | null>(null);
     const [deleting, setDeleting] = useState(false);
 
-    // Import state
+    // Import state - Managed via context now
     const [rawText, setRawText] = useState("");
     const [importSemester, setImportSemester] = useState<string>("");
-    const [importStatus, setImportStatus] = useState<string | null>(null);
-    const [importError, setImportError] = useState<string | null>(null);
-    const [importing, setImporting] = useState(false);
+
+    // Access global import context
+    const { startImport, isImporting } = useSubjectImport();
 
     // Debounce search
     useEffect(() => {
@@ -89,6 +89,16 @@ export default function SubjectsManagementPage() {
 
     useEffect(() => {
         loadData();
+
+        // Listen for global completion event to refresh grid
+        const onImportComplete = () => {
+            loadData();
+            // Switch tab to list automatically on success
+            const tabTrigger = document.querySelector('[data-value="subjects"]') as HTMLElement;
+            if (tabTrigger) tabTrigger.click();
+        };
+        window.addEventListener("subject-import-completed", onImportComplete);
+        return () => window.removeEventListener("subject-import-completed", onImportComplete);
     }, [loadData]);
 
     const openCreateDialog = () => {
@@ -148,50 +158,28 @@ export default function SubjectsManagementPage() {
         }
     };
 
-    const handleImportSubject = async () => {
-        if (!rawText.trim()) {
-            toast.error("Please paste the syllabus content first");
+    // --- Import Handler ---
+    const handleStartImport = async () => {
+        if (!rawText.trim() || !importSemester.trim()) {
+            toast.error("Please fill in all fields");
             return;
         }
 
-        // --- Added Validation for Semester ---
-        if (!importSemester.trim()) {
-            toast.error("Please enter a semester number");
-            return;
-        }
+        const semesterValue = parseInt(importSemester, 10);
 
-        setImporting(true);
-        setImportStatus("Importing subject... AI is extracting syllabus data.");
-        setImportError(null);
-        try {
-            const semesterValue = importSemester.trim() ? parseInt(importSemester, 10) : undefined;
-            const res = await curriculumImportApi.importSubjectFromText({
-                rawText,
-                semester: semesterValue
-            });
-            if (res.isSuccess && res.data) {
-                setImportStatus(`Import successful! Created subject: ${res.data.code || 'Unknown'} - ${res.data.name || 'Unknown'}`);
-                setRawText("");
-                setImportSemester("");
-                toast.success("Subject imported successfully");
-                setTimeout(() => {
-                    loadData();
-                    setImportStatus(null);
-                }, 2000);
-            } else {
-                throw new Error("Import failed");
-            }
-        } catch (error: any) {
-            setImportStatus(null);
-            setImportError(`Import failed: ${error.response?.data?.message || error?.normalized?.message || error?.message || 'An unexpected error occurred.'}`);
-        } finally {
-            setImporting(false);
+        // Trigger import via context
+        const success = await startImport(rawText, semesterValue);
+
+        if (success) {
+            // Reset form fields immediately, progress handled globally
+            setRawText("");
+            setImportSemester("");
         }
     };
 
     return (
         <AdminLayout>
-            <div className="space-y-6">
+            <div className="space-y-6 relative">
                 {/* Header */}
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                     <div>
@@ -211,7 +199,6 @@ export default function SubjectsManagementPage() {
                     </TabsList>
 
                     <TabsContent value="subjects" className="space-y-6 mt-6">
-                        {/* Create Button */}
                         <div className="flex justify-end">
                             <Button onClick={openCreateDialog} className="bg-[#f5c16c] hover:bg-[#f5c16c]/90 text-black font-semibold">
                                 <Plus className="w-4 h-4 mr-2" /> Create Subject
@@ -308,34 +295,7 @@ export default function SubjectsManagementPage() {
                                 >
                                     <ChevronLeft className="w-4 h-4" />
                                 </Button>
-                                <div className="flex items-center gap-1">
-                                    {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                                        let pageNum: number;
-                                        if (totalPages <= 5) {
-                                            pageNum = i + 1;
-                                        } else if (page <= 3) {
-                                            pageNum = i + 1;
-                                        } else if (page >= totalPages - 2) {
-                                            pageNum = totalPages - 4 + i;
-                                        } else {
-                                            pageNum = page - 2 + i;
-                                        }
-                                        return (
-                                            <Button
-                                                key={pageNum}
-                                                variant={page === pageNum ? "default" : "outline"}
-                                                size="sm"
-                                                onClick={() => setPage(pageNum)}
-                                                className={page === pageNum
-                                                    ? "bg-[#f5c16c] text-black font-semibold"
-                                                    : "border-[#f5c16c]/30 text-white/70 hover:text-white"
-                                                }
-                                            >
-                                                {pageNum}
-                                            </Button>
-                                        );
-                                    })}
-                                </div>
+                                <span className="text-sm text-white/60 mx-2">Page {page} of {totalPages}</span>
                                 <Button
                                     variant="outline"
                                     size="sm"
@@ -355,23 +315,16 @@ export default function SubjectsManagementPage() {
                             <CardContent className="space-y-4 pt-6">
                                 <div>
                                     <Label htmlFor="rawText" className="text-sm text-white/70">Paste Raw Syllabus Content</Label>
-                                    <p className="text-xs text-white/50 mb-2">
-                                        Paste the HTML or text from a syllabus document. AI will extract subject code, name, description, credits, and weekly topics.
-                                    </p>
                                     <Textarea
                                         id="rawText"
                                         value={rawText}
                                         onChange={(e) => setRawText(e.target.value)}
-                                        placeholder="Paste the raw HTML or text from a syllabus document here..."
+                                        placeholder="Paste HTML or text..."
                                         className="min-h-[250px] bg-[#0a0506] border-[#f5c16c]/20 text-white placeholder:text-white/40 font-mono text-sm"
                                     />
                                 </div>
-
                                 <div>
                                     <Label htmlFor="semester" className="text-sm text-white/70">Semester</Label>
-                                    <p className="text-xs text-white/50 mb-2">
-                                        Provide the Subject semester
-                                    </p>
                                     <Input
                                         id="semester"
                                         type="number"
@@ -383,31 +336,15 @@ export default function SubjectsManagementPage() {
                                         className="w-32 bg-[#0a0506] border-[#f5c16c]/20 text-white placeholder:text-white/40"
                                     />
                                 </div>
-
-                                {importStatus && (
-                                    <div className="flex items-center gap-2 text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 rounded-lg p-3">
-                                        <CheckCircle className="w-4 h-4 flex-shrink-0" />
-                                        <p className="text-sm">{importStatus}</p>
-                                    </div>
-                                )}
-
-                                {importError && (
-                                    <div className="flex items-center gap-2 text-red-400 bg-red-500/10 border border-red-500/20 rounded-lg p-3">
-                                        <AlertCircle className="w-4 h-4 flex-shrink-0" />
-                                        <p className="text-sm">{importError}</p>
-                                    </div>
-                                )}
-
                                 <Button
-                                    onClick={handleImportSubject}
-                                    // --- Validation Check: Disable if rawText or semester is empty ---
-                                    disabled={!rawText.trim() || !importSemester.trim() || importing}
+                                    onClick={handleStartImport}
+                                    disabled={isImporting}
                                     className="bg-[#f5c16c] hover:bg-[#f5c16c]/90 text-black font-semibold"
                                 >
-                                    {importing ? (
-                                        <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Importing...</>
+                                    {isImporting ? (
+                                        <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Starting...</>
                                     ) : (
-                                        <><UploadCloud className="mr-2 h-4 w-4" /> Import Subject</>
+                                        <><UploadCloud className="mr-2 h-4 w-4" /> Start Import</>
                                     )}
                                 </Button>
                             </CardContent>
@@ -415,7 +352,7 @@ export default function SubjectsManagementPage() {
                     </TabsContent>
                 </Tabs>
 
-                {/* Create/Edit Dialog */}
+                {/* Dialogs */}
                 <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
                     <DialogContent className="bg-[#1a1410] border-[#f5c16c]/30 max-w-lg">
                         <DialogHeader>
@@ -473,13 +410,12 @@ export default function SubjectsManagementPage() {
                                 Cancel
                             </Button>
                             <Button onClick={handleSaveSubject} disabled={saving} className="bg-[#f5c16c] hover:bg-[#f5c16c]/90 text-black font-semibold">
-                                {saving ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Saving...</> : (editingSubject ? "Update" : "Create")}
+                                {saving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : "Save"}
                             </Button>
                         </DialogFooter>
                     </DialogContent>
                 </Dialog>
 
-                {/* Delete Confirmation Dialog */}
                 <Dialog open={!!deleteTarget} onOpenChange={(open: boolean) => !open && setDeleteTarget(null)}>
                     <DialogContent className="bg-[#1a1410] border-[#f5c16c]/30 max-w-md">
                         <DialogHeader>
@@ -498,7 +434,7 @@ export default function SubjectsManagementPage() {
                                 disabled={deleting}
                                 className="bg-red-500 hover:bg-red-600 text-white"
                             >
-                                {deleting ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Deleting...</> : "Delete"}
+                                {deleting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : "Delete"}
                             </Button>
                         </DialogFooter>
                     </DialogContent>

@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import axiosClient from "@/api/axiosClient";
 import type { FullUserInfoResponse } from "@/types/user-profile";
+import { createClient } from "@/utils/supabase/client";
 
 export const userKeys = {
   all: ["user"] as const,
@@ -13,6 +14,10 @@ export function useUserFullInfo() {
     queryKey: userKeys.fullInfo(),
     queryFn: async (): Promise<FullUserInfoResponse | null> => {
       try {
+        const supabase = await createClient();
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session?.access_token) return null;
+
         const res = await axiosClient.get("/api/users/me/full", {
           params: { "page[size]": 20, "page[number]": 1 },
         });
@@ -45,6 +50,10 @@ export function useUserAchievements() {
     queryKey: userKeys.achievements(),
     queryFn: async (): Promise<Achievement[]> => {
       try {
+        const supabase = await createClient();
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session?.access_token) return [];
+
         const res = await axiosClient.get("/api/users/achievements/me");
         return res.data?.achievements || [];
       } catch (error) {

@@ -17,6 +17,8 @@ export default function LoginClient() {
   const [isLoading, setIsLoading] = useState(false);
   const searchParams = useSearchParams();
   const [error, setError] = useState<string | null>(searchParams.get('error'));
+  const nextParam = searchParams.get('next');
+  const nextPath = nextParam && nextParam.startsWith('/') ? nextParam : '/dashboard';
 
   const handleSignIn = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -47,8 +49,8 @@ export default function LoginClient() {
         if (session?.refresh_token) {
           document.cookie = `rl_refresh_token=${encodeURIComponent(session.refresh_token)}; Path=/; Max-Age=${60 * 60 * 24 * 30}${secure}; SameSite=${sameSite}${dom}`;
         }
-      } catch {}
-      router.push('/dashboard');
+    } catch {}
+      router.push(nextPath);
       router.refresh();
     }
   };
@@ -62,7 +64,7 @@ export default function LoginClient() {
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${origin}/auth/callback?next=/dashboard`,
+          redirectTo: `${origin}/auth/callback?next=${encodeURIComponent(nextPath)}`,
           scopes: [
             'https://www.googleapis.com/auth/meetings.space.created',
             'https://www.googleapis.com/auth/meetings.space.readonly',

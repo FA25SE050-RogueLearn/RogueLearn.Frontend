@@ -99,7 +99,7 @@ export default function PartyListClient({ onSelectParty }: PartyListClientProps)
             const p = res.data as PartyDto | null;
             if (p) currentMap[p.id] = p.name;
           });
-        } catch {}
+        } catch { }
       }
       if (mounted) setPartyNameMap(currentMap);
     })();
@@ -152,6 +152,10 @@ export default function PartyListClient({ onSelectParty }: PartyListClientProps)
                       try {
                         await partiesApi.acceptInvitation(inv.partyId, inv.id, { partyId: inv.partyId, invitationId: inv.id, authUserId });
                         toast.success("Invitation accepted");
+                        if (inv.joinLink) {
+                          window.location.assign(inv.joinLink);
+                          return;
+                        }
                         // Refresh invitations and my parties
                         const [resInv, resMine] = await Promise.all([
                           partiesApi.getMyPendingInvitations(),

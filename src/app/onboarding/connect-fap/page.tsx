@@ -12,9 +12,10 @@ import { UserProfileDto } from '@/types/user-profile';
 import profileApi, { invalidateMyProfileCache } from '@/api/profileApi';
 import { processAcademicRecord } from '@/api/usersApi';
 import { CharacterCreationWizard } from '@/components/features/character-creation/CharacterCreationWizard';
-import { XpAwardedSummary, SkillXpAward } from '@/types/student';
+import { AnalysisReportModal } from '@/components/quests/AnalysisReportModal';
+import { XpAwardedSummary, AnalysisReport } from '@/types/student';
 
-type FlowStep = 'form' | 'processing' | 'xp-summary' | 'complete';
+type FlowStep = 'form' | 'processing' | 'xp-summary' | 'analysis' | 'complete';
 
 const HERO_CARD_CLASS = "relative overflow-hidden rounded-[28px] border border-[#f5c16c]/30 bg-gradient-to-br from-[#2d1810]/60 via-[#1a0a08]/80 to-black/90 shadow-2xl";
 const CARD_TEXTURE = {
@@ -35,6 +36,7 @@ export default function ConnectFapPage() {
   const [showInstructions, setShowInstructions] = useState(false);
   const [processingStep, setProcessingStep] = useState(0);
   const [xpAwarded, setXpAwarded] = useState<XpAwardedSummary | null>(null);
+  const [analysisReport, setAnalysisReport] = useState<AnalysisReport | null>(null);
   const [calculatedGpa, setCalculatedGpa] = useState<number | null>(null);
   const [subjectsProcessed, setSubjectsProcessed] = useState<number>(0);
 
@@ -71,50 +73,46 @@ export default function ConnectFapPage() {
       return;
     }
     setError(null);
+    setXpAwarded(null);
+    setAnalysisReport(null);
 
     try {
       setStep('processing');
-      // Visual sequence: Start reading
       setProcessingStep(1);
-
       await new Promise(r => setTimeout(r, 600));
 
-      // Step 2: Analyze (This is where we wait for the Backend API)
       setProcessingStep(2);
-
       const recordResult = await processAcademicRecord(htmlContent, userProfile.routeId);
 
       if (!recordResult.isSuccess || !recordResult.data) {
         throw new Error(recordResult.message || 'Failed to process academic record.');
       }
 
-      // API Success: The backend has finished everything (Extraction -> Grades -> XP -> Quest Gen)
-      // Now we just play the remaining animations to show the user it's done.
-
-      setProcessingStep(3); // Visual: Building skill tree (Already done by backend)
+      setProcessingStep(3);
       await new Promise(r => setTimeout(r, 700));
 
-      setProcessingStep(4); // Visual: Creating questline (Already done by backend)
+      setProcessingStep(4);
       await new Promise(r => setTimeout(r, 700));
 
-      // Critical: Advance to step 5 to visually mark step 4 as "Completed" (Green Check)
       setProcessingStep(5);
-      await new Promise(r => setTimeout(r, 1000)); // Brief pause to see the green checks
+      await new Promise(r => setTimeout(r, 1000));
 
       // Store processing results
       setCalculatedGpa(recordResult.data.calculatedGpa ?? null);
       setSubjectsProcessed(recordResult.data.subjectsProcessed);
+      setAnalysisReport(recordResult.data.analysisReport ?? null);
 
       // Check if XP was awarded
       if (recordResult.data.xpAwarded && recordResult.data.xpAwarded.totalXp > 0) {
         setXpAwarded(recordResult.data.xpAwarded);
         setStep('xp-summary');
       } else {
-        setStep('complete');
-        setTimeout(() => {
-          router.push('/skills');
-          router.refresh();
-        }, 1500);
+        // No XP, but show analysis if available, otherwise complete
+        if (recordResult.data.analysisReport) {
+          setStep('analysis');
+        } else {
+          setStep('complete');
+        }
       }
 
     } catch (err: any) {
@@ -134,6 +132,11 @@ export default function ConnectFapPage() {
   };
 
   const handleContinueFromXpSummary = () => {
+    // After showing XP, transition to analysis step
+    setStep('analysis');
+  };
+
+  const handleCloseAnalysisModal = () => {
     setStep('complete');
     setTimeout(() => {
       router.push('/skills');
@@ -200,7 +203,6 @@ export default function ConnectFapPage() {
     if (step === 'form') {
       return (
         <div className="space-y-6">
-          {/* Textarea area */}
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <span className="text-sm text-white/70">Paste your FAP page source here</span>
@@ -223,7 +225,6 @@ export default function ConnectFapPage() {
             </div>
           </div>
 
-          {/* Warning: Onboarding not completed */}
           {!userProfile?.routeId && (
             <div className="flex items-center justify-between gap-3 rounded-xl border border-amber-500/30 bg-amber-500/10 p-4">
               <div className="flex items-center gap-3">
@@ -249,7 +250,6 @@ export default function ConnectFapPage() {
             </div>
           )}
 
-          {/* Action Button */}
           <Button
             onClick={handleProcessAndInitialize}
             disabled={isSubmitting || !userProfile?.routeId || !hasContent}
@@ -271,7 +271,6 @@ export default function ConnectFapPage() {
     if (isSubmitting) {
       return (
         <div className="space-y-8 py-8">
-          {/* Progress Steps */}
           <div className="space-y-3">
             {processingSteps.map((s, i) => {
               const isActive = processingStep === i + 1;
@@ -323,7 +322,6 @@ export default function ConnectFapPage() {
 
           {step === 'xp-summary' && xpAwarded && (
             <div className="space-y-6 pt-4">
-              {/* Summary Header */}
               <div className="text-center space-y-2">
                 <div className="inline-flex items-center gap-2 rounded-full bg-[#f5c16c]/20 border border-[#f5c16c]/40 px-4 py-2">
                   <Zap className="h-5 w-5 text-[#f5c16c]" />
@@ -339,7 +337,6 @@ export default function ConnectFapPage() {
                 )}
               </div>
 
-              {/* Skills Summary */}
               <div className="space-y-3 max-h-[300px] overflow-y-auto pr-2">
                 {groupedXpAwards.slice(0, 10).map((skill) => (
                   <div
@@ -374,13 +371,12 @@ export default function ConnectFapPage() {
                 )}
               </div>
 
-              {/* Continue Button */}
               <Button
                 onClick={handleContinueFromXpSummary}
                 className="w-full h-14 rounded-2xl text-sm font-semibold uppercase tracking-[0.2em] bg-gradient-to-r from-[#d23187] via-[#f061a6] to-[#f5c16c] text-[#1a0b08] shadow-lg shadow-[#d23187]/30 hover:shadow-[#d23187]/50"
               >
                 <Sparkles className="mr-2 h-5 w-5" />
-                Continue to Skill Tree
+                View Your Profile
               </Button>
             </div>
           )}
@@ -394,7 +390,6 @@ export default function ConnectFapPage() {
   return (
     <>
       <div className="flex flex-col gap-6 pb-24">
-        {/* Step Indicator - only show during form step */}
         {step === 'form' && !isLoading && !error && (
           <div className="flex items-center justify-center gap-2">
             <div className="flex items-center gap-2">
@@ -416,21 +411,16 @@ export default function ConnectFapPage() {
           </div>
         )}
 
-        {/* Main Card */}
         <Card className={HERO_CARD_CLASS}>
-          {/* Texture overlay */}
           <div
             aria-hidden="true"
             className="pointer-events-none absolute inset-0"
             style={CARD_TEXTURE as React.CSSProperties}
           />
-          {/* Glows */}
           <div aria-hidden="true" className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(210,49,135,0.18),transparent_55%)]" />
           <div aria-hidden="true" className="absolute inset-0 bg-[radial-gradient(circle_at_bottom_left,rgba(245,193,108,0.12),transparent_55%)]" />
-          {/* Decorative runes */}
           <div className="absolute right-6 top-6 text-[#f5c16c]/10 text-2xl">◆</div>
 
-          {/* Header */}
           <div className="relative z-10 border-b border-[#f5c16c]/20 p-6 md:p-8">
             <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
               <div>
@@ -443,7 +433,6 @@ export default function ConnectFapPage() {
                     : "Import your academic record to unlock your personalized learning journey"}
                 </p>
               </div>
-              {/* What you'll get badges - only on form */}
               {step === 'form' && !isLoading && (
                 <div className="flex flex-wrap gap-2">
                   <span className="inline-flex items-center gap-1.5 rounded-full border border-[#f5c16c]/20 bg-[#f5c16c]/10 px-3 py-1 text-xs text-[#f5c16c]">
@@ -461,11 +450,9 @@ export default function ConnectFapPage() {
             {renderContent()}
           </CardContent>
 
-          {/* Bottom accent line */}
           <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-[#f5c16c]/30 to-transparent" />
         </Card>
 
-        {/* Collapsible Instructions */}
         {step === 'form' && !isLoading && !error && (
           <Card className="relative overflow-hidden rounded-[20px] border border-[#f5c16c]/20 bg-gradient-to-br from-[#1f0d09]/95 to-[#2a1510]/95">
             <div
@@ -512,7 +499,6 @@ export default function ConnectFapPage() {
                   Then come back here and paste with Ctrl+V
                 </p>
 
-                {/* Extension Download Button */}
                 <div className="mt-4 pt-4 border-t border-[#f5c16c]/10">
                   <div className="flex flex-col sm:flex-row items-center justify-between gap-3 rounded-xl border border-[#d23187]/30 bg-[#d23187]/10 p-4">
                     <div className="flex items-center gap-3 text-center sm:text-left">
@@ -540,7 +526,6 @@ export default function ConnectFapPage() {
         )}
       </div>
 
-      {/* Character Creation Wizard Dialog */}
       <Dialog open={showCharacterWizard} onOpenChange={setShowCharacterWizard}>
         <DialogContent
           aria-describedby="character-wizard-description"
@@ -561,6 +546,14 @@ export default function ConnectFapPage() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {analysisReport && (
+        <AnalysisReportModal
+          isOpen={step === 'analysis'}
+          onClose={handleCloseAnalysisModal}
+          report={analysisReport}
+        />
+      )}
     </>
   );
 }

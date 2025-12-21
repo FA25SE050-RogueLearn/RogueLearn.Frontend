@@ -30,6 +30,14 @@ export interface XpAwardedSummary {
   skillAwards: SkillXpAward[];
 }
 
+/** Personalized analysis report from academic data */
+export interface AnalysisReport {
+  studentPersona: string;
+  strongAreas: string[];
+  weakAreas: string[];
+  recommendations: string;
+}
+
 /** Response payload summarizing processing outcomes. */
 export interface ProcessAcademicRecordResponse {
   isSuccess: boolean;
@@ -38,6 +46,7 @@ export interface ProcessAcademicRecordResponse {
   questsGenerated: number; // Added to match backend response
   calculatedGpa?: number | null;
   xpAwarded?: XpAwardedSummary | null;
+  analysisReport?: AnalysisReport | null;
 }
 
 /** Response from initializing skills based on the curriculum. */

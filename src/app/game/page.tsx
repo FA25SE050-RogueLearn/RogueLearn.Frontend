@@ -218,14 +218,14 @@ export default function GamePage() {
                   )}
 
                   {/* Optional: You can embed Unity here for host to spectate; players will typically use the invite link to auto-join. */}
-                  <UnityPlayer className="mt-2" showJoinInput={false} autoConnectViaBridge={false} />
+                  <UnityPlayer className="mt-2" showJoinInput={false} autoConnectViaBridge={false} userId={userId ?? undefined} />
                 </div>
               )}
 
               {mode === "joining" && (
                 <div className="space-y-2">
                   {/* Launch Unity client immediately; join code entry is handled inside Unity's UI. */}
-                  <UnityPlayer className="mt-2" showJoinInput={false} autoConnectViaBridge={false} />
+                  <UnityPlayer className="mt-2" showJoinInput={false} autoConnectViaBridge={false} userId={userId ?? undefined} />
                 </div>
               )}
             </CardContent>

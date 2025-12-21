@@ -10,7 +10,7 @@ import {
   GetSubjectByIdResponse,
   PaginatedSubjectsResponse,
 } from '@/types/subjects';
-import { ImportSubjectFromTextCommandResponse } from '@/types/curriculum-import';
+import { ImportSubjectFromTextCommandResponse, SubjectImportJobStatusResponse } from '@/types/curriculum-import';
 
 const subjectsApi = {
   // =================================================================
@@ -52,7 +52,7 @@ const subjectsApi = {
 
   /**
    * POST /api/admin/subjects/import-from-text
-   * Imports a single subject's syllabus content from raw text.
+   * Starts a background job to import a subject from raw text.
    * @param rawText - The raw syllabus text to parse
    * @param semester - Optional semester override (if not provided, AI will extract from text)
    */
@@ -69,6 +69,26 @@ const subjectsApi = {
         data: res.data,
     }));
   },
+
+  /**
+   * GET /api/admin/subjects/import-status/{jobId}
+   * Checks the status of a background import job.
+   */
+  getImportStatus: (jobId: string): Promise<ApiResponse<SubjectImportJobStatusResponse>> =>
+    axiosClient.get<SubjectImportJobStatusResponse>(`/api/admin/subjects/import-status/${jobId}`)
+      .then(res => ({
+        isSuccess: true,
+        data: res.data,
+        is404: false,
+        isPollingEndpoint: true,
+      } as const))
+      .catch(error => ({
+          data: null,
+          isSuccess: false,
+          message: (error as any).normalized?.message || error.message,
+          is404: (error as any).is404 ?? false,
+          isPollingEndpoint: (error as any).isPollingEndpoint ?? false,
+      } as const)),
 };
 
 export default subjectsApi;

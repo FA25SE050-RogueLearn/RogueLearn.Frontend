@@ -2,7 +2,17 @@ export const dynamic = 'force-dynamic'
 
 import { createClient } from '@/utils/supabase/server'
 import { headers } from 'next/headers'
+import { redirect } from 'next/navigation'
+import Link from 'next/link'
+import { ArrowLeft, BarChart3, Calendar, Swords, Users } from 'lucide-react'
 import PracticeButton from './PracticeButton'
+
+import { DashboardLayout } from '@/components/layout/DashboardLayout'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Progress } from '@/components/ui/progress'
+import { cn } from '@/lib/utils'
 
 interface PlayerSummary {
   userId?: string
@@ -61,15 +71,13 @@ interface UnityMatch {
   xpTotal?: number
 }
 
-const theme = {
-  bg: '#1f120c',
-  panel: '#2b1a12',
-  card: '#332018',
-  accent: '#ffb347',
-  accentSoft: '#ffd9a1',
-  text: '#f7f0e9',
-  muted: '#cbbfb3',
-  success: '#4ade80',
+const HERO_CARD_CLASS =
+  'relative overflow-hidden rounded-[32px] border border-[#f5c16c]/25 bg-linear-to-br from-[#1c0906]/95 via-[#120605]/98 to-[#040101]'
+const SECTION_CARD_CLASS =
+  'relative overflow-hidden rounded-[28px] border border-[#f5c16c]/20 bg-[#120806]/75'
+const CARD_TEXTURE = {
+  backgroundImage: "url('https://www.transparenttextures.com/patterns/asfalt-dark.png')",
+  opacity: 0.25,
 }
 
 export default async function StatsPage({
@@ -79,6 +87,9 @@ export default async function StatsPage({
 }) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
+  if (!user) {
+    redirect('/login?error=Please%20log%20in%20to%20view%20match%20stats.')
+  }
   const { data: { session } } = await supabase.auth.getSession()
   const authHeaders: Record<string, string> = session?.access_token
     ? { Authorization: `Bearer ${session.access_token}` }
@@ -95,18 +106,12 @@ export default async function StatsPage({
   const proto = hdrs.get('x-forwarded-proto') || defaultProto
   const origin = `${proto}://${host}`
 
-  // Prefer explicit API base if provided; otherwise use the current origin (Next.js)
   const apiBase =
     process.env.NEXT_PUBLIC_USER_API_URL ||
     process.env.USER_API_BASE ||
     origin
-  console.log(`[StatsPage] Using API base: ${apiBase}`)
 
   const buildStatsUrl = (base: string, pathPrefix: string = '') => {
-    // Ensure base doesn't end with slash and path doesn't start with slash to avoid double slashes if we were concatenating strings,
-    // but URL constructor handles this well. 
-    // However, if we want to inject /user-service, we need to be careful.
-
     const url = new URL(`${pathPrefix}/api/quests/game/sessions/unity-matches`.replace('//', '/'), base)
     url.searchParams.set('limit', '10')
     if (user) url.searchParams.set('userId', user.id)
@@ -114,7 +119,6 @@ export default async function StatsPage({
   }
 
   let statsUrl = buildStatsUrl(apiBase)
-  console.log(`[StatsPage] Fetching stats from: ${statsUrl.toString()}`)
 
   let ok = false
   let data: { matches: UnityMatch[] } = { matches: [] }
@@ -122,63 +126,96 @@ export default async function StatsPage({
 
   try {
     let res = await fetch(statsUrl.toString(), { cache: 'no-store', headers: authHeaders })
-    console.log(`[StatsPage] Fetch status: ${res.status}`)
 
-    // Fallback: If 404 and we haven't tried user-service prefix yet, try it.
     if (res.status === 404 && !statsUrl.toString().includes('/user-service')) {
-      console.log('[StatsPage] 404 received. Retrying with /user-service prefix...')
       statsUrl = buildStatsUrl(apiBase, '/user-service')
-      console.log(`[StatsPage] Retry URL: ${statsUrl.toString()}`)
       res = await fetch(statsUrl.toString(), { cache: 'no-store', headers: authHeaders })
-      console.log(`[StatsPage] Retry status: ${res.status}`)
     }
 
     ok = res.ok
     if (ok) {
       data = await res.json()
-      console.log(`[StatsPage] Fetched ${data.matches?.length || 0} matches`)
     } else {
       const text = await res.text()
       errorMessage = `Status: ${res.status} - ${text.slice(0, 500)}`
-      console.error(`[StatsPage] Fetch failed: ${errorMessage}`)
     }
   } catch (e: any) {
     errorMessage = e?.message || String(e)
-    console.error('[StatsPage] Exception fetching stats:', e)
   }
 
   if (!ok || !data.matches || data.matches.length === 0) {
     return (
-      <div style={{
-        minHeight: '100vh',
-        background: theme.bg,
-        color: theme.text,
-        padding: '40px 20px',
-      }}>
-        <div style={{ maxWidth: 1200, margin: '0 auto' }}>
-          <h1 style={{ marginBottom: 16, fontSize: 32, fontWeight: 800 }}>Your Game Stats</h1>
-          <div style={{
-            padding: 16,
-            borderRadius: 12,
-            background: theme.card,
-            border: '1px solid rgba(255,255,255,0.08)',
-            color: theme.muted
-          }}>
-            {!ok ? (
-              <div>
-                <p>Failed to load match data. Make sure the backend is running and RESULTS_LOG_ROOT is configured.</p>
-                <div style={{ marginTop: 12, padding: 12, background: 'rgba(0,0,0,0.3)', borderRadius: 8, fontFamily: 'monospace', fontSize: 13, color: '#f87171' }}>
-                  <strong>Debug Info:</strong><br />
-                  URL: {statsUrl.toString()}<br />
-                  Error: {errorMessage}
+      <DashboardLayout>
+        <div className="flex flex-col gap-6 pb-24">
+          <Card className={HERO_CARD_CLASS}>
+            <div aria-hidden="true" className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(210,49,135,0.2),transparent_55%)]" />
+            <div aria-hidden="true" className="absolute inset-0" style={CARD_TEXTURE} />
+
+            <CardHeader className="relative z-10 gap-4 border-b border-[#f5c16c]/15 pb-7">
+              <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                <div className="flex items-center gap-4">
+                  <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-[#d23187]/40 bg-[#d23187]/20">
+                    <BarChart3 className="h-7 w-7 text-[#f5c16c]" />
+                  </div>
+                  <div className="space-y-2">
+                    <p className="text-xs uppercase tracking-[0.4em] text-[#f5c16c]/70">Battle Records</p>
+                    <CardTitle className="text-3xl text-white">Your Game Stats</CardTitle>
+                    <p className="max-w-2xl text-sm leading-relaxed text-white/70">
+                      Review your latest match results, spot weak topics, and jump straight into focused practice.
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <Button asChild variant="ghost" className="text-white/60 hover:bg-white/5 hover:text-[#f5c16c]">
+                    <Link href="/dashboard">
+                      <ArrowLeft className="h-4 w-4" />
+                      Back to Dashboard
+                    </Link>
+                  </Button>
                 </div>
               </div>
-            ) : (
-              <p>No matches found yet. Play a game to see your stats here!</p>
-            )}
-          </div>
+            </CardHeader>
+
+            <CardContent className="relative z-10 pt-6">
+              <Card className={cn(SECTION_CARD_CLASS, 'border-[#f5c16c]/15 bg-black/15')}>
+                <div aria-hidden="true" className="absolute inset-0" style={CARD_TEXTURE} />
+                <CardContent className="relative z-10 p-6">
+                  {!ok ? (
+                    <div className="space-y-4">
+                      <p className="text-sm text-white/70">
+                        Failed to load match data. Make sure the backend is running and `RESULTS_LOG_ROOT` is configured.
+                      </p>
+                      <details className="rounded-xl border border-white/10 bg-black/30 p-4">
+                        <summary className="cursor-pointer text-sm font-semibold text-[#f5c16c]">Show debug details</summary>
+                        <div className="mt-3 space-y-2 text-xs text-white/60">
+                          <div>
+                            <div className="font-semibold text-white/70">URL</div>
+                            <div className="break-all font-mono">{statsUrl.toString()}</div>
+                          </div>
+                          <div>
+                            <div className="font-semibold text-white/70">Error</div>
+                            <div className="break-words font-mono text-red-300">{errorMessage}</div>
+                          </div>
+                        </div>
+                      </details>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      <p className="text-sm text-white/70">No matches found yet. Play a game to see your stats here.</p>
+                      <Button asChild className="bg-[#f5c16c] text-[#1f120c] hover:bg-[#f5c16c]/90">
+                        <Link href="/boss-fight">
+                          <Swords className="h-4 w-4" />
+                          Start a Boss Fight
+                        </Link>
+                      </Button>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </CardContent>
+          </Card>
         </div>
-      </div>
+      </DashboardLayout>
     )
   }
 
@@ -210,382 +247,358 @@ export default async function StatsPage({
     return byId
   }
 
+  const endLocal = new Date(mostRecentMatch.endUtc)
+  const lastUpdatedLabel = isNaN(endLocal.getTime()) ? 'Unknown' : endLocal.toLocaleString()
+
   return (
-    <div style={{
-      minHeight: '100vh',
-      background: theme.bg,
-      color: theme.text,
-      padding: '40px 20px',
-    }}>
-      <div style={{ maxWidth: 1200, margin: '0 auto' }}>
-        <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 28 }}>
-          <div>
-            <div style={{ fontSize: 13, color: theme.muted, letterSpacing: 1, textTransform: 'uppercase' }}>Overview</div>
-            <h1 style={{ margin: 0, fontSize: 32, fontWeight: 800, letterSpacing: -0.5 }}>Your Game Stats</h1>
-          </div>
-          <div style={{
-            padding: '10px 14px',
-            background: theme.card,
-            borderRadius: 10,
-            border: '1px solid rgba(255,255,255,0.06)',
-            boxShadow: '0 10px 30px rgba(0,0,0,0.25)',
-            color: theme.muted,
-            fontSize: 13,
-            display: 'flex',
-            alignItems: 'center',
-            gap: 12
-          }}>
-            <span>Last updated: {new Date(mostRecentMatch.endUtc).toLocaleString()}</span>
-            {xpTotal > 0 && (
-              <span style={{
-                padding: '6px 10px',
-                borderRadius: 8,
-                background: '#14351d',
-                color: '#7ef29d',
-                border: '1px solid rgba(126,242,157,0.25)',
-                fontWeight: 700
-              }}>
-                +{xpTotal} XP
-              </span>
-            )}
-          </div>
-        </header>
+    <DashboardLayout>
+      <div className="flex flex-col gap-6 pb-24">
+        <Card className={HERO_CARD_CLASS}>
+          <div aria-hidden="true" className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(210,49,135,0.2),transparent_55%)]" />
+          <div aria-hidden="true" className="absolute inset-0" style={CARD_TEXTURE} />
 
-        {quizCompleted && (
-          <div style={{
-            marginBottom: 20,
-            padding: 16,
-            borderRadius: 12,
-            border: '1px solid rgba(255,255,255,0.08)',
-            background: 'linear-gradient(120deg, #3b82f6, #8b5cf6)',
-            boxShadow: '0 12px 30px rgba(0,0,0,0.25)',
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            color: '#fdfdfd'
-          }}>
-            <div>
-              <div style={{ fontSize: 18, fontWeight: 700, marginBottom: 4 }}>
-                {quizScore / quizTotal >= 0.7 ? 'Great work on the review quiz!' : 'Keep sharpening those skills!'}
-              </div>
-              <div style={{ fontSize: 14 }}>
-                Score: {quizScore}/{quizTotal} ({Math.round((quizScore / quizTotal) * 100)}%)
-              </div>
-            </div>
-            <a
-              href="/stats"
-              style={{
-                padding: '10px 14px',
-                borderRadius: 10,
-                background: 'rgba(255,255,255,0.14)',
-                color: '#fff',
-                textDecoration: 'none',
-                fontWeight: 700
-              }}
-            >
-              Dismiss
-            </a>
-          </div>
-        )}
-
-        <section style={{
-          display: 'grid',
-          gridTemplateColumns: '2fr 1fr',
-          gap: 16,
-          marginBottom: 20,
-          alignItems: 'stretch'
-        }}>
-          <div style={{
-            borderRadius: 14,
-            padding: 20,
-            background: theme.card,
-            border: '1px solid rgba(255,255,255,0.08)',
-            boxShadow: '0 12px 30px rgba(0,0,0,0.2)',
-          }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-              <div>
-                <div style={{ fontSize: 13, color: theme.muted, textTransform: 'uppercase', letterSpacing: 1 }}>Latest Match</div>
-                <div style={{ fontSize: 20, fontWeight: 700 }}>Match {mostRecentMatch.matchId.slice(0, 6)}</div>
-              </div>
-              <div style={{
-                padding: '6px 12px',
-                borderRadius: 999,
-                background: mostRecentMatch.result === 'win' ? 'rgba(74, 222, 128, 0.15)' : 'rgba(248, 113, 113, 0.15)',
-                color: mostRecentMatch.result === 'win' ? '#4ade80' : '#f87171',
-                fontWeight: 700,
-                fontSize: 13,
-                border: `1px solid ${mostRecentMatch.result === 'win' ? 'rgba(74, 222, 128, 0.35)' : 'rgba(248, 113, 113, 0.35)'}`
-              }}>
-                {mostRecentMatch.result === 'win' ? 'Victory' : 'Defeat'}
-              </div>
-            </div>
-
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0,1fr))', gap: 12 }}>
-              {[
-                { label: 'Players', value: mostRecentMatch.totalPlayers },
-                { label: 'Questions', value: questionsCount },
-                { label: 'Date', value: new Date(mostRecentMatch.endUtc).toLocaleDateString() },
-              ].map((item, idx) => (
-                <div key={idx} style={{
-                  padding: 12,
-                  borderRadius: 10,
-                  background: theme.panel,
-                  border: '1px solid rgba(255,255,255,0.05)',
-                  color: theme.muted
-                }}>
-                  <div style={{ fontSize: 12, textTransform: 'uppercase', letterSpacing: 1 }}>{item.label}</div>
-                  <div style={{ fontSize: 18, fontWeight: 700, color: theme.text }}>{item.value}</div>
+          <CardHeader className="relative z-10 gap-4 border-b border-[#f5c16c]/15 pb-7">
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+              <div className="flex items-center gap-4">
+                <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-[#d23187]/40 bg-[#d23187]/20">
+                  <BarChart3 className="h-7 w-7 text-[#f5c16c]" />
                 </div>
-              ))}
-            </div>
+                <div className="space-y-2">
+                  <p className="text-xs uppercase tracking-[0.4em] text-[#f5c16c]/70">Battle Records</p>
+                  <CardTitle className="text-3xl text-white">Your Game Stats</CardTitle>
+                  <p className="max-w-2xl text-sm leading-relaxed text-white/70">
+                    Latest match summary, player performance, and question-level review.
+                  </p>
+                </div>
+              </div>
 
-            {mostRecentMatch.xpRewards && mostRecentMatch.xpRewards.length > 0 && (
-              <div style={{ marginTop: 14, padding: 12, borderRadius: 10, background: 'rgba(20,53,29,0.55)', border: '1px solid rgba(126,242,157,0.25)' }}>
-                <div style={{ color: '#7ef29d', fontWeight: 700, marginBottom: 6 }}>XP Earned</div>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                  {mostRecentMatch.xpRewards.map((r, idx) => (
-                    <div key={`${r.skillId}-${idx}`} style={{ padding: '6px 10px', borderRadius: 8, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', color: '#e6fff0', fontSize: 12 }}>
-                      {r.skillName}: +{r.pointsAwarded} XP
+              <div className="flex flex-wrap items-center gap-3">
+                <div className="flex items-center gap-2 rounded-full border border-white/10 bg-black/20 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-white/70">
+                  <Calendar className="h-3.5 w-3.5 text-[#f5c16c]" />
+                  {lastUpdatedLabel}
+                </div>
+
+                {xpTotal > 0 && (
+                  <div className="flex items-center gap-2 rounded-full border border-emerald-400/30 bg-emerald-400/10 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-emerald-300">
+                    +{xpTotal} XP
+                  </div>
+                )}
+
+                <Button asChild variant="ghost" className="text-white/60 hover:bg-white/5 hover:text-[#f5c16c]">
+                  <Link href="/dashboard">
+                    <ArrowLeft className="h-4 w-4" />
+                    Back to Dashboard
+                  </Link>
+                </Button>
+              </div>
+            </div>
+          </CardHeader>
+
+          <CardContent className="relative z-10 pt-6">
+            {quizCompleted && quizTotal > 0 && (
+              <Card className="relative overflow-hidden rounded-2xl border border-white/10 bg-linear-to-r from-[#d23187]/35 via-[#4f46e5]/25 to-[#f5c16c]/25">
+                <div aria-hidden="true" className="absolute inset-0" style={CARD_TEXTURE} />
+                <CardContent className="relative z-10 flex flex-col gap-4 p-6 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="space-y-1">
+                    <p className="text-base font-semibold text-white">
+                      {quizScore / quizTotal >= 0.7 ? 'Great work on the review quiz!' : 'Keep sharpening those skills!'}
+                    </p>
+                    <p className="text-sm text-white/80">
+                      Score: {quizScore}/{quizTotal} ({Math.round((quizScore / quizTotal) * 100)}%)
+                    </p>
+                  </div>
+                  <Button asChild variant="outline" className="border-white/20 bg-white/5 text-white hover:bg-white/10">
+                    <Link href="/stats">Dismiss</Link>
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
+
+            <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-3">
+              <Card className={cn(SECTION_CARD_CLASS, 'lg:col-span-2')}>
+                <div aria-hidden="true" className="absolute inset-0" style={CARD_TEXTURE} />
+                <CardHeader className="relative z-10">
+                  <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                    <div>
+                      <p className="text-xs uppercase tracking-[0.35em] text-[#f5c16c]/70">Latest match</p>
+                      <CardTitle className="mt-2 text-2xl text-white">
+                        Match {mostRecentMatch.matchId.slice(0, 6)}
+                      </CardTitle>
                     </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-
-          <div style={{
-            borderRadius: 14,
-            padding: 18,
-            background: 'linear-gradient(160deg, rgba(255,179,71,0.18), rgba(255,255,255,0.05))',
-            border: '1px solid rgba(255,255,255,0.08)',
-            boxShadow: '0 10px 25px rgba(0,0,0,0.2)'
-          }}>
-            <div style={{ fontSize: 13, color: theme.muted, marginBottom: 8, textTransform: 'uppercase', letterSpacing: 1 }}>Weak Topics</div>
-            <div style={{ fontSize: 18, fontWeight: 700, color: theme.text, marginBottom: 10 }}>
-              Practice the topics you missed
-            </div>
-            <p style={{ fontSize: 14, color: theme.muted, marginBottom: 14 }}>
-              Jump back into a focused review quiz based on your misses from the latest match.
-            </p>
-            <a
-              href={`/review-quiz?matchId=${mostRecentMatch.matchId}&topics=${weakTopics.map(t => encodeURIComponent(t.topic)).join(',')}`}
-              style={{
-                display: 'inline-block',
-                padding: '12px 14px',
-                borderRadius: 10,
-                background: theme.accent,
-                color: '#1f120c',
-                fontWeight: 800,
-                textDecoration: 'none',
-                boxShadow: '0 8px 20px rgba(0,0,0,0.25)'
-              }}
-            >
-              Practice Weak Topics
-            </a>
-          </div>
-        </section>
-
-        {mostRecentMatch.playerSummaries && mostRecentMatch.playerSummaries.length > 0 && (
-          <section style={{
-            marginBottom: 20,
-            borderRadius: 14,
-            padding: 20,
-            background: theme.card,
-            border: '1px solid rgba(255,255,255,0.08)',
-            boxShadow: '0 10px 26px rgba(0,0,0,0.2)'
-          }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
-              <h2 style={{ margin: 0, fontSize: 22, fontWeight: 800 }}>Player Performance</h2>
-              <div style={{ fontSize: 13, color: theme.muted }}>Match breakdown by player and topic</div>
-            </div>
-
-            <div style={{ display: 'grid', gap: 12 }}>
-              {mostRecentMatch.playerSummaries.map((player) => {
-                const accuracy = player.totalQuestions > 0
-                  ? Math.round((player.correctAnswers / player.totalQuestions) * 100)
-                  : 0
-
-                return (
-                  <div key={player.playerId} style={{
-                    borderRadius: 10,
-                    padding: 16,
-                    background: theme.panel,
-                    border: '1px solid rgba(255,255,255,0.05)'
-                  }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-                      <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-                        <div style={{
-                          width: 36, height: 36, borderRadius: 10,
-                          background: 'rgba(255,255,255,0.06)',
-                          display: 'grid', placeItems: 'center',
-                          fontWeight: 700
-                        }}>
-                          P{player.playerId}
-                        </div>
-                        <div>
-                          <div style={{ fontWeight: 700, fontSize: 16 }}>Player {player.playerId}</div>
-                          <div style={{ fontSize: 12, color: theme.muted }}>Accuracy {accuracy}% · Score {player.correctAnswers}/{player.totalQuestions} · Avg Time {player.averageTime.toFixed(1)}s</div>
-                        </div>
+                    <Badge
+                      className={cn(
+                        'border px-4 py-2 text-xs font-semibold uppercase tracking-wide',
+                        mostRecentMatch.result === 'win'
+                          ? 'border-emerald-400/30 bg-emerald-400/10 text-emerald-300'
+                          : 'border-red-400/30 bg-red-400/10 text-red-300'
+                      )}
+                    >
+                      {mostRecentMatch.result === 'win' ? 'Victory' : 'Defeat'}
+                    </Badge>
+                  </div>
+                </CardHeader>
+                <CardContent className="relative z-10 space-y-5">
+                  <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                    <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
+                      <div className="flex items-center gap-2 text-xs uppercase tracking-[0.3em] text-[#f5c16c]/70">
+                        <Users className="h-3.5 w-3.5" />
+                        Players
+                      </div>
+                      <div className="mt-3 text-2xl font-semibold text-white">{mostRecentMatch.totalPlayers}</div>
+                    </div>
+                    <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
+                      <div className="flex items-center gap-2 text-xs uppercase tracking-[0.3em] text-[#f5c16c]/70">
+                        <Swords className="h-3.5 w-3.5" />
+                        Questions
+                      </div>
+                      <div className="mt-3 text-2xl font-semibold text-white">{questionsCount}</div>
+                    </div>
+                    <div className="rounded-2xl border border-white/10 bg-black/20 p-4 sm:col-span-1 col-span-2">
+                      <div className="flex items-center gap-2 text-xs uppercase tracking-[0.3em] text-[#f5c16c]/70">
+                        <Calendar className="h-3.5 w-3.5" />
+                        Date
+                      </div>
+                      <div className="mt-3 text-2xl font-semibold text-white">
+                        {isNaN(endLocal.getTime()) ? 'Unknown' : endLocal.toLocaleDateString()}
                       </div>
                     </div>
+                  </div>
 
-                    <div style={{ display: 'grid', gap: 10 }}>
-                      {player.topicBreakdown.map((topic, i) => {
-                        const topicAccuracy = topic.total > 0
-                          ? Math.round((topic.correct / topic.total) * 100)
-                          : 0
-                        return (
-                          <div key={`${player.playerId}-${topic.topic}-${i}`} style={{ display: 'grid', gap: 6 }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                              <div style={{ fontWeight: 600, color: theme.text }}>{topic.topic}</div>
-                              <div style={{ fontSize: 12, color: theme.muted }}>{topic.correct}/{topic.total} ({topicAccuracy}%)</div>
+                  {mostRecentMatch.xpRewards && mostRecentMatch.xpRewards.length > 0 && (
+                    <div className="rounded-2xl border border-emerald-400/20 bg-emerald-400/5 p-5">
+                      <div className="text-xs font-semibold uppercase tracking-[0.35em] text-emerald-300">XP Earned</div>
+                      <div className="mt-4 flex flex-wrap gap-2">
+                        {mostRecentMatch.xpRewards.map((r, idx) => (
+                          <div
+                            key={`${r.skillId}-${idx}`}
+                            className="rounded-full border border-white/10 bg-black/25 px-4 py-2 text-xs font-semibold text-white/80"
+                          >
+                            {r.skillName}: +{r.pointsAwarded} XP
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              <Card className={cn(SECTION_CARD_CLASS, 'bg-linear-to-br from-[#2d1810]/70 via-[#120806]/80 to-black/85')}>
+                <div aria-hidden="true" className="absolute inset-0 bg-[radial-gradient(circle_at_bottom_right,rgba(245,193,108,0.25),transparent_60%)]" />
+                <div aria-hidden="true" className="absolute inset-0" style={CARD_TEXTURE} />
+                <CardHeader className="relative z-10">
+                  <p className="text-xs uppercase tracking-[0.35em] text-[#f5c16c]/70">Weak topics</p>
+                  <CardTitle className="mt-2 text-2xl text-white">Practice your misses</CardTitle>
+                  <p className="mt-2 text-sm text-white/70">
+                    Jump into a focused review quiz based on the topics you missed in the latest match.
+                  </p>
+                </CardHeader>
+                <CardContent className="relative z-10 space-y-4">
+                  {weakTopics.length > 0 ? (
+                    <>
+                      <div className="flex flex-wrap gap-2">
+                        {weakTopics.slice(0, 6).map((t) => (
+                          <Badge key={t.topic} className="border-[#f5c16c]/25 bg-[#f5c16c]/10 text-[#f5c16c]">
+                            {t.topic}
+                          </Badge>
+                        ))}
+                        {weakTopics.length > 6 && (
+                          <Badge className="border-white/10 bg-white/5 text-white/70">+{weakTopics.length - 6} more</Badge>
+                        )}
+                      </div>
+                      <Button asChild className="w-full bg-[#f5c16c] text-[#1f120c] hover:bg-[#f5c16c]/90">
+                        <Link
+                          href={`/review-quiz?matchId=${mostRecentMatch.matchId}&topics=${weakTopics.map(t => encodeURIComponent(t.topic)).join(',')}`}
+                        >
+                          Practice Weak Topics
+                        </Link>
+                      </Button>
+                    </>
+                  ) : (
+                    <div className="rounded-2xl border border-white/10 bg-black/25 p-5 text-sm text-white/70">
+                      No weak topics detected in your latest match.
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+
+            {mostRecentMatch.playerSummaries && mostRecentMatch.playerSummaries.length > 0 && (
+              <Card className={cn(SECTION_CARD_CLASS, 'mt-6')}>
+                <div aria-hidden="true" className="absolute inset-0" style={CARD_TEXTURE} />
+                <CardHeader className="relative z-10">
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-baseline sm:justify-between">
+                    <CardTitle className="text-2xl text-white">Player Performance</CardTitle>
+                    <p className="text-sm text-white/60">Accuracy by player and topic</p>
+                  </div>
+                </CardHeader>
+                <CardContent className="relative z-10 space-y-4">
+                  {mostRecentMatch.playerSummaries.map((player) => {
+                    const accuracy = player.totalQuestions > 0
+                      ? Math.round((player.correctAnswers / player.totalQuestions) * 100)
+                      : 0
+
+                    return (
+                      <div key={player.playerId} className="rounded-3xl border border-white/10 bg-black/20 p-6">
+                        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                          <div className="flex items-center gap-4">
+                            <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-[#f5c16c]/25 bg-[#f5c16c]/10 text-sm font-semibold text-[#f5c16c]">
+                              P{player.playerId}
                             </div>
-                            <div style={{
-                              width: '100%',
-                              height: 8,
-                              borderRadius: 999,
-                              background: 'rgba(255,255,255,0.08)',
-                              overflow: 'hidden'
-                            }}>
-                              <div style={{
-                                width: `${topicAccuracy}%`,
-                                height: '100%',
-                                background: theme.accent
-                              }} />
+                            <div>
+                              <p className="text-base font-semibold text-white">Player {player.playerId}</p>
+                              <p className="text-sm text-white/60">
+                                Accuracy {accuracy}% · Score {player.correctAnswers}/{player.totalQuestions} · Avg Time {player.averageTime.toFixed(1)}s
+                              </p>
                             </div>
                           </div>
-                        )
-                      })}
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-          </section>
-        )}
 
-        <section style={{
-          borderRadius: 14,
-          padding: 20,
-          background: theme.card,
-          border: '1px solid rgba(255,255,255,0.08)',
-          boxShadow: '0 10px 24px rgba(0,0,0,0.2)'
-        }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-            <div>
-              <h2 style={{ margin: 0, fontSize: 22, fontWeight: 800 }}>Questions Review</h2>
-              <p style={{ margin: 0, fontSize: 13, color: theme.muted }}>Replay the questions from this match and focus on your gaps.</p>
-            </div>
-            {currentSummary && weakTopics.length > 0 && (
-              <PracticeButton
-                matchId={mostRecentMatch.matchId}
-                topics={weakTopics.map(t => t.topic)}
-              />
+                          <Badge className="border-[#f5c16c]/25 bg-[#f5c16c]/10 text-[#f5c16c]">
+                            {accuracy}%
+                          </Badge>
+                        </div>
+
+                        <div className="mt-6 grid gap-4">
+                          {player.topicBreakdown.map((topic, i) => {
+                            const topicAccuracy = topic.total > 0
+                              ? Math.round((topic.correct / topic.total) * 100)
+                              : 0
+                            return (
+                              <div key={`${player.playerId}-${topic.topic}-${i}`} className="space-y-2">
+                                <div className="flex items-center justify-between gap-4">
+                                  <p className="text-sm font-semibold text-white">{topic.topic}</p>
+                                  <p className="text-xs text-white/60">
+                                    {topic.correct}/{topic.total} ({topicAccuracy}%)
+                                  </p>
+                                </div>
+                                <Progress
+                                  value={topicAccuracy}
+                                  className="h-2 bg-white/10 [&>div]:bg-gradient-to-r [&>div]:from-[#f5c16c] [&>div]:to-[#d4a855]"
+                                />
+                              </div>
+                            )
+                          })}
+                        </div>
+                      </div>
+                    )
+                  })}
+                </CardContent>
+              </Card>
             )}
-          </div>
 
-          {mostRecentMatch.questions && mostRecentMatch.questions.length > 0 ? (
-            <div style={{ display: 'grid', gap: 10 }}>
-              {mostRecentMatch.questions.map((q, i) => {
-                const playerAnswer = q.playerAnswers?.find(pa => pa.playerId === currentSummary?.playerId)
-                const gotRight = playerAnswer?.correct
-                const packQ = findPackQuestion(q)
-                const options = Array.isArray(packQ?.options) ? packQ?.options : null
-                const correctIndex = (typeof packQ?.answerIndex === 'number') ? packQ.answerIndex : (q.correctAnswerIndex || 0)
-                const correctText = options && options[correctIndex] ? options[correctIndex] : null
-                const chosenText = options && playerAnswer && options[playerAnswer.chosenAnswer] ? options[playerAnswer.chosenAnswer] : null
-                return (
-                  <div
-                    key={q.questionId || i}
-                    style={{
-                      borderRadius: 10,
-                      padding: 14,
-                      background: gotRight ? 'rgba(74, 222, 128, 0.08)' : 'rgba(239, 68, 68, 0.08)',
-                      border: `1px solid ${gotRight ? 'rgba(74,222,128,0.25)' : 'rgba(239,68,68,0.25)'}`
-                    }}
-                  >
-                    <div style={{ fontSize: 12, color: theme.muted, marginBottom: 6 }}>
-                      Question {i + 1} • {q.topic || 'Mixed'}
-                    </div>
-                    <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 6, color: theme.text }}>
-                      {q.prompt}
-                    </div>
-                    <div style={{ fontSize: 13, color: theme.muted, marginBottom: 10 }}>
-                      Correct answer: {String.fromCharCode(65 + correctIndex)}{correctText ? ` - ${correctText}` : ''}
-                    </div>
-                    <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-                      <span style={{
-                        padding: '6px 10px',
-                        borderRadius: 999,
-                        background: gotRight ? 'rgba(74,222,128,0.15)' : 'rgba(239,68,68,0.15)',
-                        color: gotRight ? '#4ade80' : '#ef4444',
-                        fontWeight: 700,
-                        fontSize: 12
-                      }}>
-                        {gotRight ? 'Correct' : 'Review'}
-                      </span>
-                      {playerAnswer && (
-                        <span style={{ fontSize: 12, color: theme.muted }}>
-                          Your answer: {String.fromCharCode(65 + (playerAnswer.chosenAnswer || 0))}{chosenText ? ` - ${chosenText}` : ''}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-          ) : (
-            <div style={{
-              padding: 16,
-              borderRadius: 10,
-              border: '1px dashed rgba(255,255,255,0.15)',
-              color: theme.muted,
-              background: 'rgba(255,255,255,0.03)'
-            }}>
-              No detailed questions were captured for this match.
-            </div>
-          )}
-        </section>
-
-        {data.matches.length > 1 && (
-          <section style={{ marginTop: 20 }}>
-            <h2 style={{ marginBottom: 12, fontSize: 20, fontWeight: 800, color: theme.text }}>Recent Matches</h2>
-            <div style={{ display: 'grid', gap: 10 }}>
-              {data.matches.slice(1).map((match) => (
-                <div
-                  key={match.matchId}
-                  style={{
-                    padding: 14,
-                    background: theme.card,
-                    border: '1px solid rgba(255,255,255,0.08)',
-                    borderRadius: 10,
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    boxShadow: '0 8px 18px rgba(0,0,0,0.18)'
-                  }}
-                >
+            <Card className={cn(SECTION_CARD_CLASS, 'mt-6')}>
+              <div aria-hidden="true" className="absolute inset-0" style={CARD_TEXTURE} />
+              <CardHeader className="relative z-10">
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                   <div>
-                    <div style={{ fontSize: 16, fontWeight: 600, marginBottom: 4, color: theme.text }}>
-                      {match.result === 'win' ? 'Victory' : 'Defeat'}
-                    </div>
-                    <div style={{ fontSize: 12, color: theme.muted }}>
-                      {new Date(match.endUtc).toLocaleString()} • {match.totalPlayers} players
-                    </div>
+                    <CardTitle className="text-2xl text-white">Questions Review</CardTitle>
+                    <p className="mt-2 text-sm text-white/60">
+                      Replay the questions from this match and focus on your gaps.
+                    </p>
                   </div>
-                  <div style={{ fontSize: 14, color: theme.text }}>
-                    {(match.questions && match.questions.length > 0)
-                      ? match.questions.length
-                      : ((match.playerSummaries && match.playerSummaries[0] && match.playerSummaries[0].topicBreakdown)
-                        ? match.playerSummaries[0].topicBreakdown.length
-                        : 0)} questions
-                  </div>
+                  {currentSummary && weakTopics.length > 0 && (
+                    <PracticeButton matchId={mostRecentMatch.matchId} topics={weakTopics.map(t => t.topic)} />
+                  )}
                 </div>
-              ))}
-            </div>
-          </section>
-        )}
+              </CardHeader>
+              <CardContent className="relative z-10">
+                {mostRecentMatch.questions && mostRecentMatch.questions.length > 0 ? (
+                  <div className="grid gap-4">
+                    {mostRecentMatch.questions.map((q, i) => {
+                      const playerAnswer = q.playerAnswers?.find(pa => pa.playerId === currentSummary?.playerId)
+                      const gotRight = playerAnswer?.correct
+                      const packQ = findPackQuestion(q)
+                      const options = Array.isArray(packQ?.options) ? packQ?.options : null
+                      const correctIndex = (typeof packQ?.answerIndex === 'number') ? packQ.answerIndex : (q.correctAnswerIndex || 0)
+                      const correctText = options && options[correctIndex] ? options[correctIndex] : null
+                      const chosenText = options && playerAnswer && options[playerAnswer.chosenAnswer] ? options[playerAnswer.chosenAnswer] : null
+
+                      return (
+                        <div
+                          key={q.questionId || i}
+                          className={cn(
+                            'rounded-3xl border p-6 transition-all duration-300',
+                            gotRight
+                              ? 'border-emerald-400/20 bg-emerald-400/5'
+                              : 'border-red-400/20 bg-red-400/5'
+                          )}
+                        >
+                          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                            <p className="text-xs uppercase tracking-[0.35em] text-white/60">
+                              Question {i + 1} · {q.topic || 'Mixed'}
+                            </p>
+                            <Badge
+                              className={cn(
+                                'border px-3 py-1 text-xs font-semibold uppercase tracking-wide',
+                                gotRight
+                                  ? 'border-emerald-400/25 bg-emerald-400/10 text-emerald-300'
+                                  : 'border-red-400/25 bg-red-400/10 text-red-300'
+                              )}
+                            >
+                              {gotRight ? 'Correct' : 'Review'}
+                            </Badge>
+                          </div>
+
+                          <p className="mt-4 text-base font-semibold text-white">{q.prompt}</p>
+                          <p className="mt-3 text-sm text-white/60">
+                            Correct answer: {String.fromCharCode(65 + correctIndex)}{correctText ? ` - ${correctText}` : ''}
+                          </p>
+
+                          {playerAnswer && (
+                            <p className="mt-2 text-sm text-white/60">
+                              Your answer: {String.fromCharCode(65 + (playerAnswer.chosenAnswer || 0))}{chosenText ? ` - ${chosenText}` : ''}
+                            </p>
+                          )}
+                        </div>
+                      )
+                    })}
+                  </div>
+                ) : (
+                  <div className="rounded-3xl border border-white/10 bg-black/20 p-6 text-sm text-white/60">
+                    No detailed questions were captured for this match.
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {data.matches.length > 1 && (
+              <Card className={cn(SECTION_CARD_CLASS, 'mt-6')}>
+                <div aria-hidden="true" className="absolute inset-0" style={CARD_TEXTURE} />
+                <CardHeader className="relative z-10">
+                  <CardTitle className="text-2xl text-white">Recent Matches</CardTitle>
+                </CardHeader>
+                <CardContent className="relative z-10">
+                  <div className="grid gap-3">
+                    {data.matches.slice(1).map((match) => {
+                      const count = (match.questions && match.questions.length > 0)
+                        ? match.questions.length
+                        : ((match.playerSummaries && match.playerSummaries[0] && match.playerSummaries[0].topicBreakdown)
+                          ? match.playerSummaries[0].topicBreakdown.length
+                          : 0)
+                      const end = new Date(match.endUtc)
+                      return (
+                        <div
+                          key={match.matchId}
+                          className="flex flex-col gap-3 rounded-3xl border border-white/10 bg-black/20 p-5 transition-all duration-300 hover:-translate-y-0.5 hover:border-[#d23187]/40 hover:bg-black/30 sm:flex-row sm:items-center sm:justify-between"
+                        >
+                          <div className="space-y-1">
+                            <p className="text-base font-semibold text-white">
+                              {match.result === 'win' ? 'Victory' : 'Defeat'}
+                            </p>
+                            <p className="text-sm text-white/60">
+                              {isNaN(end.getTime()) ? 'Unknown date' : end.toLocaleString()} · {match.totalPlayers} players
+                            </p>
+                          </div>
+                          <div className="text-sm font-semibold text-white/80">{count} questions</div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </CardContent>
+        </Card>
       </div>
-    </div>
+    </DashboardLayout>
   )
 }
