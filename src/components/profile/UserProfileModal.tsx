@@ -291,14 +291,14 @@ export default function UserProfileModal({ open, onOpenChange, defaultTab = "pro
   }, [open, activeTab]);
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="min-w-[50vw] max-w-[1200px] max-h-[85vh] border-[#f5c16c]/20 bg-linear-to-br from-[#0f0708] to-[#1a0b08] p-0 overflow-hidden">
+     <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="w-[90vw]! sm:max-w-none max-w-[1600px] h-[96vh] border-[#f5c16c]/20 bg-linear-to-br from-[#0f0708] to-[#1a0b08] p-0 overflow-hidden min-w-0">
         <DialogTitle className="sr-only">User Profile</DialogTitle>
         <div className="pointer-events-none absolute inset-0 bg-[radial-linear(circle_at_top_left,rgba(210,49,135,0.08),transparent_50%)]" />
         <div className="pointer-events-none absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] opacity-[0.03]" />
-        <div className="relative flex h-[80vh]">
+        <div className="relative flex h-full min-w-0 min-h-0">
           {/* Sidebar */}
-          <div className="w-72 bg-linear-to-b from-[#1a0b08] to-[#0f0708] border-r border-[#f5c16c]/10 flex flex-col p-6">
+          <div className="w-64 md:w-72 lg:w-80 bg-linear-to-b from-[#1a0b08] to-[#0f0708] border-r border-[#f5c16c]/10 flex flex-col p-6">
             <div className="text-xl font-bold text-white mb-8 flex items-center gap-3">
               <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-[#f5c16c]/30 bg-linear-to-br from-[#d23187]/20 to-[#f5c16c]/20">
                 <Sparkles className="h-5 w-5 text-[#f5c16c]" />
@@ -323,7 +323,7 @@ export default function UserProfileModal({ open, onOpenChange, defaultTab = "pro
           </div>
 
           {/* Main Content */}
-          <div className="flex-1 bg-linear-to-br from-[#0f0708] to-[#1a0b08] p-8 overflow-y-auto relative">
+          <div className="flex-1 bg-linear-to-br from-[#0f0708] to-[#1a0b08] p-6 md:p-8 overflow-y-auto relative min-w-0 min-h-0">
 
             {activeTab === "profile" && (
               <div className="space-y-6">
@@ -446,9 +446,9 @@ export default function UserProfileModal({ open, onOpenChange, defaultTab = "pro
                       >
                         {saving ? <><Loader2 className="size-4 animate-spin" /> Saving...</> : "Save Changes"}
                       </button>
-                    </div>
-                  </div>
                 </div>
+                </div>
+              </div>
               </div>
             )}
 
@@ -541,15 +541,14 @@ export default function UserProfileModal({ open, onOpenChange, defaultTab = "pro
             {activeTab === "social" && (
               <div className="space-y-6">
                 <h2 className="text-2xl font-bold text-white">Social Panel</h2>
-                <div className="rounded-[20px] border border-[#f5c16c]/20 bg-linear-to-br from-[#1f0d09]/95 to-[#2a1510]/95 p-0 overflow-hidden">
+                <div className="rounded-[20px] border border-[#f5c16c]/20 bg-linear-to-br from-[#1f0d09]/95 to-[#2a1510]/95 p-0 overflow-y-auto max-h-full">
                   <SocialScryingContent />
                 </div>
               </div>
             )}
 
-            {(activeTab === "guildRequests" || activeTab === "invitations") && (
-              <div className="space-y-6">
-                <h2 className="text-2xl font-bold text-white">Requests and Invites</h2>
+            <div className={`${(activeTab === "guildRequests" || activeTab === "invitations") ? '' : 'hidden'} space-y-6`}>
+              <h2 className="text-2xl font-bold text-white">Requests and Invites</h2>
                 <div className="rounded-[20px] border border-[#f5c16c]/20 bg-linear-to-br from-[#1f0d09]/95 to-[#2a1510]/95 p-6">
                   <div className="flex items-center gap-2 mb-4">
                     <Shield className="h-4 w-4 text-[#f5c16c]" />
@@ -659,9 +658,49 @@ export default function UserProfileModal({ open, onOpenChange, defaultTab = "pro
                               </button>
                             </div>
                           </div>
-                        ))}
-                      </div>
-                    )}
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={async () => {
+                                try {
+                                  await guildsApi.acceptInvitation(inv.guildId, inv.invitationId || inv.id);
+                                } catch {}
+                                try {
+                                  const res = await guildsApi.getMyPendingInvitations();
+                                  setGuildInvites(res.data || []);
+                                } catch {}
+                                await reloadJoinRequests();
+                                await reloadJoinRequestsHistory();
+                              }}
+                              className="bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/30 text-emerald-400 px-4 py-2 text-xs rounded-lg font-semibold transition"
+                            >
+                              Accept
+                            </button>
+                            <button
+                              onClick={async () => {
+                                try {
+                                  await guildsApi.declineInvitation(inv.guildId, inv.invitationId || inv.id);
+                                } catch {}
+                                try {
+                                  const res = await guildsApi.getMyPendingInvitations();
+                                  setGuildInvites(res.data || []);
+                                } catch {}
+                                await reloadJoinRequests();
+                                await reloadJoinRequestsHistory();
+                              }}
+                              className="bg-rose-500/20 hover:bg-rose-500/30 border border-rose-500/30 text-rose-400 px-4 py-2 text-xs rounded-lg font-semibold transition"
+                            >
+                              Decline
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+            )}
+                <div className="h-px bg-linear-to-r from-transparent via-[#f5c16c]/20 to-transparent my-6" />
+                <div>
+                  <div className="flex items-center gap-2 mb-4">
+                    <Users className="h-4 w-4 text-[#d23187]" />
+                    <span className="text-sm font-semibold text-white">Party Invites</span>
                   </div>
                   <div className="h-px bg-linear-to-r from-transparent via-[#f5c16c]/20 to-transparent my-6" />
                   <div>
@@ -792,9 +831,10 @@ export default function UserProfileModal({ open, onOpenChange, defaultTab = "pro
                   </div>
                 </div>
               </div>
-            )}
+            </div>
 
           </div>
+        </div>
         </div>
       </DialogContent>
     </Dialog>

@@ -16,7 +16,8 @@ import { createClient } from "@/utils/supabase/client";
 import { Loader2, BookOpen, ScrollText, Tag as TagIcon, Sparkles, Share2, Info, ArrowLeft, Trash2 } from "lucide-react";
 
 // BlockNote imports
-import { PartialBlock, insertOrUpdateBlock } from "@blocknote/core";
+import { PartialBlock, insertOrUpdateBlock, BlockNoteSchema, createCodeBlockSpec } from "@blocknote/core";
+import { codeBlockOptions } from "@blocknote/code-block";
 import { en } from "@blocknote/core/locales";
 import "@blocknote/core/fonts/inter.css";
 import { BlockNoteView } from "@blocknote/shadcn";
@@ -148,7 +149,7 @@ export default function NoteEditorClient({ noteId }: NoteEditorClientProps) {
               }
             }
           }
-          const fallback: PartialBlock[] = [{ type: "paragraph", content: [{ type: "text", text: n.title ?? "", styles: {} }] }];
+          const fallback: PartialBlock[] = Array.from({ length: 20 }, () => ({ type: "paragraph", content: [{ type: "text", text: "", styles: {} }] }));
           setInitialBlocks(normalizeBlocks(blocks && blocks.length > 0 ? blocks : fallback));
         }
       } finally {
@@ -181,6 +182,11 @@ export default function NoteEditorClient({ noteId }: NoteEditorClientProps) {
   const AI_BASE_URL = "/api/blocknote";
 
   const editor = useCreateBlockNote({
+    schema: BlockNoteSchema.create().extend({
+      blockSpecs: {
+        codeBlock: createCodeBlockSpec(codeBlockOptions),
+      },
+    }),
     initialContent: initialBlocks,
     dictionary: AI_BASE_URL ? ({ ...en, ai: aiEn } as any) : undefined,
     extensions: AI_BASE_URL ? [createAIExtension({ transport: new DefaultChatTransport({ api: `${AI_BASE_URL}/regular/streamText` }) })] : undefined,
@@ -606,8 +612,8 @@ export default function NoteEditorClient({ noteId }: NoteEditorClientProps) {
         </div>
 
         {/* Main Editor Area */}
-        <div className="h-[80vh] overflow-y-auto p-6">
-            <BlockNoteView editor={editor} onChange={onEditorChange} formattingToolbar={false} slashMenu={false} style={{ minHeight: "60vh" }}>
+        <div className="p-6">
+            <BlockNoteView editor={editor} onChange={onEditorChange} formattingToolbar={false} slashMenu={false}>
               {AI_BASE_URL && <AIMenuController />}
               <FormattingToolbarController formattingToolbar={() => (<FormattingToolbar>{getFormattingToolbarItems()}{AI_BASE_URL && <AIToolbarButton />}</FormattingToolbar>)} />
               <SuggestionMenuController triggerCharacter="/" getItems={async (query) => {

@@ -36,7 +36,7 @@ const achievementsApi = {
       })),
 
   /**
-   * POST /api/admin/achievements (multipart)
+   * POST /api/admin/achievements/upload (multipart)
    * Create an achievement with icon upload.
    */
   createWithIconUpload: (
@@ -59,14 +59,10 @@ const achievementsApi = {
     if (payload.isActive != null)
       formData.append("isActive", String(payload.isActive));
     formData.append("sourceService", payload.sourceService);
-    // icon binary
-    formData.append("iconFile", payload.iconFile);
-    if (payload.iconFileName)
-      formData.append("iconFileName", payload.iconFileName);
-    if (payload.contentType)
-      formData.append("contentType", payload.contentType);
+    // icon binary (field name must match backend: IFormFile? icon)
+    formData.append("icon", payload.iconFile);
     return axiosClient
-      .post<CreateAchievementResponse>("/api/admin/achievements", formData, {
+      .post<CreateAchievementResponse>("/api/admin/achievements/upload", formData, {
         headers: { "Content-Type": "multipart/form-data" },
       })
       .then((res) => ({ isSuccess: true, data: res.data }));
@@ -85,7 +81,7 @@ const achievementsApi = {
       })),
 
   /**
-   * PUT /api/admin/achievements/{id} (multipart)
+   * PUT /api/admin/achievements/{id}/upload (multipart)
    * Update an achievement and optionally upload a new icon.
    */
   updateWithIconUpload: (
@@ -110,15 +106,12 @@ const achievementsApi = {
       formData.append("isActive", String(payload.isActive));
     formData.append("sourceService", payload.sourceService);
     if (payload.iconFile) {
-      formData.append("iconFile", payload.iconFile);
-      if (payload.iconFileName)
-        formData.append("iconFileName", payload.iconFileName);
-      if (payload.contentType)
-        formData.append("contentType", payload.contentType);
+      // icon binary (field name must match backend: IFormFile? icon)
+      formData.append("icon", payload.iconFile);
     }
     return axiosClient
       .put<UpdateAchievementResponse>(
-        `/api/admin/achievements/${id}`,
+        `/api/admin/achievements/${id}/upload`,
         formData,
         { headers: { "Content-Type": "multipart/form-data" } }
       )

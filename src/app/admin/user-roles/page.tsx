@@ -26,7 +26,7 @@ export default function AdminUserRolesPage() {
   const [contextLoading, setContextLoading] = useState(false);
   const [isRevokeOpen, setIsRevokeOpen] = useState(false);
   const [page, setPage] = useState(1);
-  const pageSize = 10;
+  const pageSize = 7;
 
   useEffect(() => {
     let mounted = true;

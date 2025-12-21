@@ -299,6 +299,10 @@ export default function NotesTab() {
     try {
       setDeletingId(tagId);
       await tagsApi.deleteTag(tagId);
+      setNotes(prev => prev.map(n => ({
+        ...n,
+        tagIds: Array.isArray(n.tagIds) ? n.tagIds.filter(tid => tid !== tagId) : []
+      })));
       toast.success("Tag deleted");
       await fetchTags();
     } finally {
@@ -460,10 +464,11 @@ export default function NotesTab() {
     }
     try {
       setCreatingNote(true);
-      // Initialize with a valid BlockNote document (single empty paragraph)
-      const initialDoc = [
-        { type: "paragraph", content: [{ type: "text", text: "", styles: {} }] },
-      ];
+      // Initialize with a valid BlockNote document (20 empty paragraphs)
+      const initialDoc = Array.from({ length: 20 }, () => ({
+        type: "paragraph",
+        content: [{ type: "text", text: "", styles: {} }],
+      }));
       const res = await notesApi.create({
         authUserId,
         title: "Untitled note",
@@ -697,7 +702,7 @@ export default function NotesTab() {
             </div>
           </div>
         ) : (
-          <div className="h-[80vh] overflow-y-auto p-4 pb-24">
+          <div className="p-4 pb-24">
             <div className="mb-3 flex items-center justify-between">
               <div className="text-sm text-foreground/70">
                 <span>All Notes</span>
