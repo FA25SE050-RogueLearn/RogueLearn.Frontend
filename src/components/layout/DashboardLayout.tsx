@@ -1,7 +1,9 @@
 'use client'
 
-import { DashboardFrame } from '@/components/layout/DashboardFrame'
-import { ReactNode } from 'react'
+// roguelearn-web/src/components/layout/DashboardLayout.tsx
+import { DashboardFrame } from "@/components/layout/DashboardFrame";
+import { AcademicSyncWidgetClient } from "@/components/layout/AcademicSyncWidgetClient";
+import { ReactNode } from "react";
 
 export function DashboardLayout({ children }: { children: ReactNode }) {
   return (
@@ -27,6 +29,9 @@ export function DashboardLayout({ children }: { children: ReactNode }) {
       <div className="relative z-10">
         <DashboardFrame>{children}</DashboardFrame>
       </div>
+
+      {/* Add the widget here so it's on all dashboard pages */}
+      <AcademicSyncWidgetClient />
     </div>
   )
 }

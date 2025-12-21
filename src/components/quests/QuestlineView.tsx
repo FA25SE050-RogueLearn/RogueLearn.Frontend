@@ -10,10 +10,9 @@ import {
   Map,
   ArrowLeft
 } from 'lucide-react';
-import { LearningPath } from '@/types/quest';
+import { LearningPath, QuestChapter, QuestSummary } from '@/types/quest';
 import { usePageTransition } from '@/components/layout/PageTransition';
 import QuestCard from '@/components/quests/QuestCard';
-import { AcademicSyncBanner } from '@/components/quests/AcademicSyncBanner';
 
 interface QuestlineViewProps {
   learningPath: LearningPath;
@@ -35,15 +34,17 @@ export default function QuestlineView({ learningPath }: QuestlineViewProps) {
 
       if (timelineRef.current) {
         const chapters = timelineRef.current.querySelectorAll('.chapter-section');
-        gsap.from(chapters, {
-          opacity: 0,
-          x: -20,
-          duration: 0.6,
-          stagger: 0.2,
-          delay: 0.2,
-          ease: "power2.out",
-          clearProps: "all"
-        });
+        if (chapters.length > 0) { // FIX: Check `chapters` instead of `cards`
+          gsap.from(chapters, {
+            opacity: 0,
+            x: -20,
+            duration: 0.6,
+            stagger: 0.2,
+            delay: 0.2,
+            ease: "power2.out",
+            clearProps: "all"
+          });
+        }
       }
     });
 
@@ -70,11 +71,6 @@ export default function QuestlineView({ learningPath }: QuestlineViewProps) {
     ch.status === 'InProgress' || ch.status === 'NotStarted'
   );
   const targetChapterIndex = activeChapterIndex === -1 ? learningPath.chapters.length - 1 : activeChapterIndex;
-
-  // Check if user has synced any academic records (has grades)
-  const hasAnyGrades = learningPath.chapters.some(ch => 
-    ch.quests.some(q => q.subjectGrade && q.subjectGrade.trim() !== '')
-  );
 
   return (
     <div className="flex flex-col gap-10 pb-24">
@@ -120,9 +116,6 @@ export default function QuestlineView({ learningPath }: QuestlineViewProps) {
           </div>
         </div>
       </header>
-
-      {/* Academic Sync Banner - Show if user hasn't synced FAP records */}
-      <AcademicSyncBanner hasAnyGrades={hasAnyGrades} />
 
       {/* Timeline Layout */}
       <div ref={timelineRef} className="relative pl-4 md:pl-8">
