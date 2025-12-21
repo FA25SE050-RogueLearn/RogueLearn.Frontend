@@ -3,6 +3,15 @@
 import { useEffect, useState, Suspense } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { createClient } from '@/utils/supabase/client'
+import Link from 'next/link'
+import { ArrowLeft, CheckCircle2, ChevronRight, Flame, Loader2, XCircle } from 'lucide-react'
+
+import { DashboardLayout } from '@/components/layout/DashboardLayout'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Progress } from '@/components/ui/progress'
+import { cn } from '@/lib/utils'
 
 interface QuizQuestion {
   id: string
@@ -12,6 +21,15 @@ interface QuizQuestion {
   topic: string
   difficulty: string
   explanation?: string
+}
+
+const HERO_CARD_CLASS =
+  'relative overflow-hidden rounded-[32px] border border-[#f5c16c]/25 bg-linear-to-br from-[#1c0906]/95 via-[#120605]/98 to-[#040101]'
+const SECTION_CARD_CLASS =
+  'relative overflow-hidden rounded-[28px] border border-[#f5c16c]/20 bg-[#120806]/75'
+const CARD_TEXTURE = {
+  backgroundImage: "url('https://www.transparenttextures.com/patterns/asfalt-dark.png')",
+  opacity: 0.25,
 }
 
 const getDigits = (val?: string) => {
@@ -30,6 +48,7 @@ function ReviewQuizContent() {
   const [showResult, setShowResult] = useState(false)
   const [score, setScore] = useState({ correct: 0, total: 0 })
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState<string>('')
 
   useEffect(() => {
     async function loadQuestions() {
@@ -37,15 +56,13 @@ function ReviewQuizContent() {
       const topics = topicsParam.split(',').filter(t => t.trim())
 
       if (!matchId || topics.length === 0) {
+        setQuestions([])
+        setLoadError('Missing match ID or topics to review.')
         setLoading(false)
         return
       }
 
       try {
-        console.log('[ReviewQuiz] Loading questions from matchId:', matchId)
-        console.log('[ReviewQuiz] Filtering for topics:', topics)
-
-        // Fetch the actual match data to get the real questions
         const response = await fetch(`/api/quests/game/sessions/unity-matches?limit=50`)
 
         if (!response.ok) {
@@ -53,22 +70,13 @@ function ReviewQuizContent() {
         }
 
         const data = await response.json()
-        console.log('[ReviewQuiz] Match data:', data)
-
-        // Find the specific match
         const matches = data.matches || []
-        console.log('[ReviewQuiz] Matches array:', matches)
         const match = matches.find((m: any) => m.matchId === matchId)
 
         if (!match) {
           throw new Error('Match not found')
         }
 
-        console.log('[ReviewQuiz] Found match:', match)
-        console.log('[ReviewQuiz] Match questions:', match.questions)
-        console.log('[ReviewQuiz] Player summaries:', match.playerSummaries)
-
-        // Fetch the match data from Supabase to get the complete question pack
         let questionPack = null
         try {
           const supabase = createClient()
@@ -79,7 +87,7 @@ function ReviewQuizContent() {
             .maybeSingle()
 
           if (error) {
-            console.log('[ReviewQuiz] Could not fetch match data from match_results:', error)
+            setLoadError(error.message || 'Failed to load match data from storage.')
           }
 
           if (matchRow?.match_data) {
@@ -87,12 +95,10 @@ function ReviewQuizContent() {
               ? JSON.parse(matchRow.match_data)
               : matchRow.match_data
 
-            // The question pack might be in match_data.questionPack or match_data.questions
             questionPack = parsedData?.questionPack || { questions: parsedData?.questions }
-            console.log('[ReviewQuiz] Question pack from match_results:', questionPack)
           }
         } catch (err) {
-          console.log('[ReviewQuiz] Error fetching match data from Supabase:', err)
+          setLoadError(err instanceof Error ? err.message : String(err))
         }
 
         const supabase = createClient()
@@ -175,13 +181,9 @@ function ReviewQuizContent() {
           })
           .filter(Boolean) as QuizQuestion[]
 
-        console.log('[ReviewQuiz] Generated quiz questions:', quizQuestions)
-        console.log('[ReviewQuiz] Total questions to review:', quizQuestions.length)
-
         setQuestions(quizQuestions)
-        console.log('[ReviewQuiz] Set questions:', quizQuestions)
       } catch (error) {
-        console.error('[ReviewQuiz] Failed to load questions:', error)
+        setLoadError(error instanceof Error ? error.message : String(error))
         setQuestions([])
       } finally {
         setLoading(false)
@@ -208,44 +210,67 @@ function ReviewQuizContent() {
       setSelectedAnswer(null)
       setShowResult(false)
     } else {
-      // Quiz completed, show final results
       router.push(`/stats?quizCompleted=true&score=${score.correct}&total=${score.total}`)
     }
   }
 
-  console.log('[ReviewQuiz] Render - loading:', loading, 'questions.length:', questions.length)
+  const matchId = searchParams.get('matchId') || ''
+  const selectedTopics = topicsParam.split(',').map(t => t.trim()).filter(Boolean)
 
   if (loading) {
     return (
-      <div style={{ padding: 24, maxWidth: 800, margin: '0 auto', textAlign: 'center' }}>
-        <h1 style={{ marginBottom: 24, fontSize: 32, fontWeight: 700 }}>Loading Review Quiz...</h1>
-        <div>Loading the questions you got wrong so you can review your mistakes...</div>
-      </div>
+      <DashboardLayout>
+        <div className="flex items-center justify-center gap-3 py-24">
+          <Loader2 className="h-7 w-7 animate-spin text-[#f5c16c]" />
+          <span className="text-white/70">Loading your review quiz...</span>
+        </div>
+      </DashboardLayout>
     )
   }
 
   if (questions.length === 0) {
-    console.log('[ReviewQuiz] No questions to display!')
     return (
-      <div style={{ padding: 24, maxWidth: 800, margin: '0 auto' }}>
-        <h1 style={{ marginBottom: 24, fontSize: 32, fontWeight: 700 }}>No Questions to Review</h1>
-        <p>Great job! You either got all questions correct, or there are no questions available for review in the selected topics.</p>
-        <button
-          onClick={() => router.push('/stats')}
-          style={{
-            marginTop: 20,
-            padding: '12px 24px',
-            background: '#3b82f6',
-            color: 'white',
-            border: 'none',
-            borderRadius: 8,
-            fontWeight: 600,
-            cursor: 'pointer'
-          }}
-        >
-          Back to Stats
-        </button>
-      </div>
+      <DashboardLayout>
+        <div className="mx-auto w-full max-w-4xl space-y-6 pb-24">
+          <Card className={HERO_CARD_CLASS}>
+            <div aria-hidden="true" className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(210,49,135,0.2),transparent_55%)]" />
+            <div aria-hidden="true" className="absolute inset-0" style={CARD_TEXTURE} />
+
+            <CardHeader className="relative z-10 gap-4 border-b border-[#f5c16c]/15 pb-7">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="space-y-2">
+                  <p className="text-xs uppercase tracking-[0.4em] text-[#f5c16c]/70">Review Quiz</p>
+                  <CardTitle className="text-3xl text-white">No Questions to Review</CardTitle>
+                  <p className="text-sm leading-relaxed text-white/70">
+                    {loadError || 'Great job! You either got all questions correct, or there are no questions available for review in the selected topics.'}
+                  </p>
+                </div>
+                <Button asChild variant="ghost" className="text-white/60 hover:bg-white/5 hover:text-[#f5c16c]">
+                  <Link href="/stats">
+                    <ArrowLeft className="h-4 w-4" />
+                    Back to Stats
+                  </Link>
+                </Button>
+              </div>
+            </CardHeader>
+
+            <CardContent className="relative z-10 pt-6">
+              {selectedTopics.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {selectedTopics.slice(0, 8).map((t) => (
+                    <Badge key={t} className="border-[#f5c16c]/25 bg-[#f5c16c]/10 text-[#f5c16c]">
+                      {t}
+                    </Badge>
+                  ))}
+                  {selectedTopics.length > 8 && (
+                    <Badge className="border-white/10 bg-white/5 text-white/70">+{selectedTopics.length - 8} more</Badge>
+                  )}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      </DashboardLayout>
     )
   }
 
@@ -253,129 +278,173 @@ function ReviewQuizContent() {
   const progress = ((currentIndex + 1) / questions.length) * 100
 
   return (
-    <div style={{ padding: 24, maxWidth: 800, margin: '0 auto' }}>
-      <div style={{ marginBottom: 24 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-          <h1 style={{ fontSize: 28, fontWeight: 700 }}>Review Quiz</h1>
-          <div style={{ fontSize: 14, color: '#666' }}>
-            Question {currentIndex + 1} / {questions.length}
-          </div>
-        </div>
-        <div style={{
-          width: '100%',
-          height: 8,
-          background: '#e0e0e0',
-          borderRadius: 4,
-          overflow: 'hidden'
-        }}>
-          <div style={{
-            width: `${progress}%`,
-            height: '100%',
-            background: '#3b82f6',
-            transition: 'width 0.3s ease'
-          }} />
-        </div>
-      </div>
+    <DashboardLayout>
+      <div className="mx-auto w-full max-w-4xl space-y-6 pb-24">
+        <Card className={HERO_CARD_CLASS}>
+          <div aria-hidden="true" className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(210,49,135,0.2),transparent_55%)]" />
+          <div aria-hidden="true" className="absolute inset-0" style={CARD_TEXTURE} />
 
-      <div style={{
-        padding: 24,
-        background: 'white',
-        borderRadius: 12,
-        border: '1px solid #e0e0e0',
-        boxShadow: '0 4px 6px rgba(0,0,0,0.06)',
-        marginBottom: 24
-      }}>
-        <div style={{ marginBottom: 8, fontSize: 12, color: '#666' }}>
-          Topic: {currentQuestion.topic} • Difficulty: {currentQuestion.difficulty}
-        </div>
-        <div style={{ fontSize: 20, fontWeight: 600, marginBottom: 24, color: '#111' }}>
-          {currentQuestion.prompt}
-        </div>
+          <CardHeader className="relative z-10 gap-4 border-b border-[#f5c16c]/15 pb-7">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div className="space-y-2">
+                <p className="text-xs uppercase tracking-[0.4em] text-[#f5c16c]/70">Review Quiz</p>
+                <CardTitle className="text-3xl text-white">Practice Your Weak Topics</CardTitle>
+                <p className="text-sm leading-relaxed text-white/70">
+                  Question {currentIndex + 1} of {questions.length}
+                  {matchId ? ` · Match ${matchId.slice(0, 6)}` : ''}
+                </p>
+              </div>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          {currentQuestion.options.map((option, index) => {
-            const isSelected = selectedAnswer === index
-            const isCorrect = index === currentQuestion.answerIndex
-            const showCorrect = showResult && isCorrect
-            const showWrong = showResult && isSelected && !isCorrect
+              <div className="flex flex-wrap items-center gap-3">
+                {selectedTopics.length > 0 && (
+                  <Badge className="border-[#f5c16c]/25 bg-[#f5c16c]/10 text-[#f5c16c]">
+                    {selectedTopics.length} topics
+                  </Badge>
+                )}
+                <Button asChild variant="ghost" className="text-white/60 hover:bg-white/5 hover:text-[#f5c16c]">
+                  <Link href="/stats">
+                    <ArrowLeft className="h-4 w-4" />
+                    Back to Stats
+                  </Link>
+                </Button>
+              </div>
+            </div>
+          </CardHeader>
 
-            return (
-              <button
-                key={index}
-                onClick={() => !showResult && handleAnswer(index)}
-                disabled={showResult}
-                style={{
-                  padding: 16,
-                  background: showCorrect ? '#4caf50' : showWrong ? '#f44336' : isSelected ? '#e3f2fd' : 'white',
-                  border: `2px solid ${showCorrect ? '#4caf50' : showWrong ? '#f44336' : isSelected ? '#3b82f6' : '#e0e0e0'}`,
-                  borderRadius: 8,
-                  textAlign: 'left',
-                  cursor: showResult ? 'not-allowed' : 'pointer',
-                  fontSize: 16,
-                  color: showCorrect || showWrong ? 'white' : '#111',
-                  fontWeight: isSelected ? 600 : 400,
-                  transition: 'all 0.2s ease'
-                }}
-              >
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span>{String.fromCharCode(65 + index)}) {option}</span>
-                  {showCorrect && <span>Correct</span>}
-                  {showWrong && <span>Wrong</span>}
+          <CardContent className="relative z-10 space-y-6 pt-6">
+            <div className="flex items-center justify-between gap-4">
+              <p className="text-xs uppercase tracking-[0.35em] text-white/60">Progress</p>
+              <p className="text-xs font-semibold text-white/70">{Math.round(progress)}%</p>
+            </div>
+            <Progress value={progress} className="h-2 bg-white/10 [&>div]:bg-gradient-to-r [&>div]:from-[#f5c16c] [&>div]:to-[#d4a855]" />
+          </CardContent>
+        </Card>
+
+        <Card className={SECTION_CARD_CLASS}>
+          <div aria-hidden="true" className="absolute inset-0" style={CARD_TEXTURE} />
+          <CardHeader className="relative z-10">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="flex flex-wrap items-center gap-2">
+                <Badge className="border-white/10 bg-white/5 text-white/70">{currentQuestion.topic}</Badge>
+                <Badge className="border-white/10 bg-white/5 text-white/70">{currentQuestion.difficulty}</Badge>
+              </div>
+              {showResult && (
+                <Badge
+                  className={cn(
+                    'border px-3 py-1 text-xs font-semibold uppercase tracking-wide',
+                    selectedAnswer === currentQuestion.answerIndex
+                      ? 'border-emerald-400/25 bg-emerald-400/10 text-emerald-300'
+                      : 'border-red-400/25 bg-red-400/10 text-red-300'
+                  )}
+                >
+                  {selectedAnswer === currentQuestion.answerIndex ? 'Correct' : 'Incorrect'}
+                </Badge>
+              )}
+            </div>
+          </CardHeader>
+
+          <CardContent className="relative z-10 space-y-6">
+            <p className="text-lg font-semibold leading-relaxed text-white">{currentQuestion.prompt}</p>
+
+            <div className="grid gap-3">
+              {currentQuestion.options.map((option, index) => {
+                const isSelected = selectedAnswer === index
+                const isCorrect = index === currentQuestion.answerIndex
+                const showCorrect = showResult && isCorrect
+                const showWrong = showResult && isSelected && !isCorrect
+
+                return (
+                  <Button
+                    key={index}
+                    type="button"
+                    variant="outline"
+                    onClick={() => !showResult && handleAnswer(index)}
+                    disabled={showResult}
+                    className={cn(
+                      'h-auto w-full justify-between rounded-3xl border px-5 py-4 text-left text-sm leading-relaxed transition-all duration-300 whitespace-normal',
+                      'hover:-translate-y-0.5',
+                      showCorrect && 'border-emerald-400/35 bg-emerald-400/10 text-white hover:bg-emerald-400/10',
+                      showWrong && 'border-red-400/35 bg-red-400/10 text-white hover:bg-red-400/10',
+                      !showResult && isSelected && 'border-[#f5c16c]/45 bg-[#f5c16c]/10 text-white',
+                      !showCorrect && !showWrong && !(isSelected && !showResult) && 'border-white/10 bg-black/20 text-white/80 hover:border-[#d23187]/40 hover:bg-black/30'
+                    )}
+                  >
+                    <span className="flex items-start gap-3">
+                      <span className="mt-0.5 inline-flex h-6 w-6 items-center justify-center rounded-full border border-white/10 bg-black/20 text-xs font-semibold text-white/70">
+                        {String.fromCharCode(65 + index)}
+                      </span>
+                      <span>{option}</span>
+                    </span>
+
+                    {showCorrect && (
+                      <span className="inline-flex items-center gap-2 text-xs font-semibold text-emerald-200">
+                        <CheckCircle2 className="h-4 w-4" />
+                        Correct
+                      </span>
+                    )}
+                    {showWrong && (
+                      <span className="inline-flex items-center gap-2 text-xs font-semibold text-red-200">
+                        <XCircle className="h-4 w-4" />
+                        Wrong
+                      </span>
+                    )}
+                  </Button>
+                )
+              })}
+            </div>
+
+            {showResult && currentQuestion.explanation && (
+              <Card className="relative overflow-hidden rounded-3xl border border-white/10 bg-black/25">
+                <div aria-hidden="true" className="absolute inset-0" style={CARD_TEXTURE} />
+                <CardContent className="relative z-10 space-y-2 p-6">
+                  <p className="text-xs font-semibold uppercase tracking-[0.35em] text-[#f5c16c]/70">Explanation</p>
+                  <p className="text-sm leading-relaxed text-white/75">{currentQuestion.explanation}</p>
+                </CardContent>
+              </Card>
+            )}
+
+            {showResult ? (
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="text-sm font-semibold text-white">
+                  Score: {score.correct}/{score.total} ({Math.round((score.correct / score.total) * 100)}%)
                 </div>
-              </button>
-            )
-          })}
-        </div>
-
-        {showResult && currentQuestion.explanation && (
-          <div style={{
-            marginTop: 20,
-            padding: 16,
-            background: '#f5f5f5',
-            borderRadius: 8,
-            fontSize: 14
-          }}>
-            <div style={{ fontWeight: 600, marginBottom: 8 }}>Explanation:</div>
-            <div>{currentQuestion.explanation}</div>
-          </div>
-        )}
+                <Button
+                  type="button"
+                  onClick={handleNext}
+                  className="bg-[#f5c16c] text-[#1f120c] hover:bg-[#f5c16c]/90"
+                >
+                  {currentIndex < questions.length - 1 ? (
+                    <>
+                      Next Question
+                      <ChevronRight className="h-4 w-4" />
+                    </>
+                  ) : (
+                    <>
+                      Finish Quiz
+                      <Flame className="h-4 w-4" />
+                    </>
+                  )}
+                </Button>
+              </div>
+            ) : (
+              <p className="text-sm text-white/60">Select an answer to reveal the correct choice and explanation.</p>
+            )}
+          </CardContent>
+        </Card>
       </div>
-
-      {showResult && (
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div style={{ fontSize: 16, fontWeight: 600 }}>
-            Score: {score.correct}/{score.total} ({Math.round((score.correct / score.total) * 100)}%)
-          </div>
-          <button
-            onClick={handleNext}
-            style={{
-              padding: '12px 32px',
-              background: '#3b82f6',
-              color: 'white',
-              border: 'none',
-              borderRadius: 8,
-              fontWeight: 600,
-              fontSize: 16,
-              cursor: 'pointer',
-              transition: 'background 0.2s'
-            }}
-            onMouseOver={(e) => (e.currentTarget.style.background = '#2563eb')}
-            onMouseOut={(e) => (e.currentTarget.style.background = '#3b82f6')}
-          >
-            {currentIndex < questions.length - 1 ? 'Next Question →' : 'Finish Quiz'}
-          </button>
-        </div>
-      )}
-    </div>
+    </DashboardLayout>
   )
 }
 
 export default function ReviewQuizPage() {
   return (
     <Suspense fallback={
-      <div style={{ padding: 24, maxWidth: 800, margin: '0 auto', textAlign: 'center' }}>
-        <h1 style={{ marginBottom: 24, fontSize: 32, fontWeight: 700 }}>Loading...</h1>
-      </div>
+      <DashboardLayout>
+        <div className="flex items-center justify-center gap-3 py-24">
+          <Loader2 className="h-7 w-7 animate-spin text-[#f5c16c]" />
+          <span className="text-white/70">Loading...</span>
+        </div>
+      </DashboardLayout>
     }>
       <ReviewQuizContent />
     </Suspense>

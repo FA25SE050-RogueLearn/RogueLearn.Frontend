@@ -98,6 +98,24 @@ export async function POST(req: NextRequest) {
       const message = backendError
         ? `Host controller failed: ${backendError}`
         : "Host controller not configured";
+
+      const allowStub =
+        process.env.NODE_ENV !== "production" ||
+        process.env.ALLOW_HOST_STUB === "1" ||
+        process.env.ALLOW_HOST_STUB === "true";
+
+      if (allowStub) {
+        await new Promise((r) => setTimeout(r, 200));
+        const joinCode = generateJoinCode();
+        return NextResponse.json({
+          ok: true,
+          joinCode,
+          hostId: `stub-${Date.now()}`,
+          message,
+          wsUrl: process.env.NEXT_PUBLIC_GAME_WS_URL ?? null,
+        });
+      }
+
       return NextResponse.json({ ok: false, error: message }, { status: 502 });
     }
 

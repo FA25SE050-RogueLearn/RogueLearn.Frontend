@@ -1,3 +1,5 @@
+'use client'
+
 // roguelearn-web/src/components/layout/DashboardLayout.tsx
 import { DashboardFrame } from "@/components/layout/DashboardFrame";
 import { AcademicSyncWidgetClient } from "@/components/layout/AcademicSyncWidgetClient";
@@ -31,5 +33,5 @@ export function DashboardLayout({ children }: { children: ReactNode }) {
       {/* Add the widget here so it's on all dashboard pages */}
       <AcademicSyncWidgetClient />
     </div>
-  );
+  )
 }
