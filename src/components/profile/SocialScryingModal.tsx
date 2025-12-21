@@ -110,10 +110,10 @@ export function SocialScryingContent() {
   
 
   return (
-    <div className="relative">
+    <div className="relative w-full min-w-0">
       <AnimatePresence initial={false} mode="wait">
         {!selected && (
-          <motion.div key="search" initial={{ opacity: 0, x: 40 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -40 }} transition={{ duration: 0.3 }} className="flex h-full min-h-[60vh] flex-col gap-6 p-6 bg-black/40 backdrop-blur-md">
+          <motion.div key="search" initial={{ opacity: 0, x: 40 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -40 }} transition={{ duration: 0.3 }} className="flex h-full min-h-[60vh] w-full max-w-full flex-col gap-6 p-6 bg-black/40 backdrop-blur-md overflow-x-hidden">
             <div className="flex items-center justify-between">
               <div className="text-xl font-bold text-[#f5c16c]">Scout Players</div>
             </div>
@@ -371,9 +371,11 @@ interface SocialScryingModalProps {
 export default function SocialScryingModal({ open, onOpenChange }: SocialScryingModalProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[85vh] border-[#f5c16c]/30 bg-[#0b0a13]/95 p-0">
+      <DialogContent className="w-[98vw] max-w-[1600px] h-[96vh] border-[#f5c16c]/30 bg-[#0b0a13]/95 p-0 overflow-hidden min-w-0">
         <DialogTitle className="sr-only">Social Scrying</DialogTitle>
-        <SocialScryingContent />
+        <div className="w-full h-full overflow-y-auto overflow-x-hidden min-w-0">
+          <SocialScryingContent />
+        </div>
       </DialogContent>
     </Dialog>
   );

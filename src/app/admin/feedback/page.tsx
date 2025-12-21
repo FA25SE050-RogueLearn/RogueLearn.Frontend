@@ -98,7 +98,7 @@ export default function AdminFeedbackPage() {
       } else { toast.error(res.message || 'Failed to load feedback'); }
     } catch (e: any) { toast.error('Failed to load feedback'); }
     finally { setLoading(false); }
-  }, [subjectId, questId, unresolvedOnly, subjectMap]);
+  }, [subjectId, questId, unresolvedOnly]);
 
   const fetchSubjects = useCallback(async (searchTerm: string, pageNum: number, append: boolean) => {
     setLoadingSubjects(true);
@@ -121,7 +121,7 @@ export default function AdminFeedbackPage() {
   const handleSubjectSearchInput = (val: string) => { setSubjectSearch(val); debouncedSubjectSearch(val); };
   const loadMoreSubjects = () => { if (!loadingSubjects && subjectsHasMore) fetchSubjects(subjectSearch, subjectsPage + 1, true); };
 
-  useEffect(() => { fetchFeedback(); fetchSubjects("", 1, false); }, [category, unresolvedOnly, page, subjectId, questId, fetchFeedback, fetchSubjects]);
+  useEffect(() => { fetchFeedback(); fetchSubjects("", 1, false); }, [category, unresolvedOnly, page, subjectId, questId]);
 
   const markResolved = async (id: string, resolved: boolean) => {
     const res = await questApi.adminUpdateFeedback(id, { isResolved: resolved });

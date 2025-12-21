@@ -14,12 +14,12 @@ import PartyInfoModal from "./PartyInfoModal";
 import type { PartyMemberDto, PartyInvitationDto } from "@/types/parties";
 import * as usersApi from "@/api/usersApi";
 import PartyMembersList from "./PartyMembersList";
+import { toast } from "sonner";
 
 export default function PartyDetailPageClient({ partyId }: { partyId: string }) {
   const [authUserId, setAuthUserId] = useState<string | null>(null);
   const [party, setParty] = useState<PartyDto | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [showScheduleModal, setShowScheduleModal] = useState(false);
   const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
   const [isLeaving, setIsLeaving] = useState(false);
@@ -31,7 +31,6 @@ export default function PartyDetailPageClient({ partyId }: { partyId: string }) 
   const [settingsIsPublic, setSettingsIsPublic] = useState<boolean>(true);
   const [settingsMaxMembers, setSettingsMaxMembers] = useState<number>(6);
   const [isSavingSettings, setIsSavingSettings] = useState(false);
-  const [settingsError, setSettingsError] = useState<string | null>(null);
   const [refreshAt, setRefreshAt] = useState<number>(0);
   const [meetingRefreshAt, setMeetingRefreshAt] = useState<number>(0);
   const router = useRouter();
@@ -57,14 +56,13 @@ export default function PartyDetailPageClient({ partyId }: { partyId: string }) 
     let mounted = true;
     const load = async () => {
       setLoading(true);
-      setError(null);
       try {
         const res = await partiesApi.getById(partyId);
         if (!mounted) return;
         setParty((res.data as PartyDto | null) ?? null);
       } catch (e: any) {
         if (!mounted) return;
-        setError(e?.message ?? "Failed to load party");
+        toast.error(e?.message ?? "Failed to load party");
       } finally {
         if (!mounted) return;
         setLoading(false);
@@ -141,11 +139,10 @@ export default function PartyDetailPageClient({ partyId }: { partyId: string }) 
 
   const handleSaveSettings = async () => {
     if (!party) return;
-    if (settingsMaxMembers <= members.length) { setSettingsError(`Max members must be greater than current (${members.length})`); return; }
-    if (settingsMaxMembers < 2) { setSettingsError('Max members must be at least 2'); return; }
-    if (settingsMaxMembers > 8) { setSettingsError('Max members must be at most 8'); return; }
+    if (settingsMaxMembers <= members.length) { toast.error(`Max members must be greater than current (${members.length})`); return; }
+    if (settingsMaxMembers < 2) { toast.error('Max members must be at least 2'); return; }
+    if (settingsMaxMembers > 8) { toast.error('Max members must be at most 8'); return; }
     setIsSavingSettings(true);
-    setError(null);
     try {
       await partiesApi.configure(party.id, {
         partyId: party.id,
@@ -159,7 +156,7 @@ export default function PartyDetailPageClient({ partyId }: { partyId: string }) 
       setParty((res.data as PartyDto | null) ?? null);
       setShowSettingsModal(false);
     } catch (e: any) {
-      setError(e?.message ?? "Failed to save settings");
+      toast.error(e?.message ?? "Failed to save settings");
     } finally {
       setIsSavingSettings(false);
     }
@@ -172,7 +169,7 @@ export default function PartyDetailPageClient({ partyId }: { partyId: string }) 
       await partiesApi.leave(party.id, { partyId: party.id, authUserId: authUserId! });
       router.push("/parties");
     } catch (e: any) {
-      setError(e?.message ?? "Failed to leave party");
+      toast.error(e?.message ?? "Failed to leave party");
     } finally {
       setIsLeaving(false);
       setShowLeaveConfirm(false);
@@ -463,19 +460,9 @@ export default function PartyDetailPageClient({ partyId }: { partyId: string }) 
                     min={Math.max(2, members.length + 1)}
                     max={8}
                     value={settingsMaxMembers}
-                    onChange={(e) => {
-                      const v = Number(e.target.value) || 0;
-                      setSettingsMaxMembers(v);
-                      if (v <= members.length) setSettingsError(`Max members must be greater than current (${members.length})`);
-                      else if (v < 2) setSettingsError('Max members must be at least 2');
-                      else if (v > 8) setSettingsError('Max members must be at most 8');
-                      else setSettingsError(null);
-                    }}
+                    onChange={(e) => { const v = Number(e.target.value) || 0; setSettingsMaxMembers(v); }}
                     className="mt-1.5 w-full rounded-lg border border-[#f5c16c]/20 bg-black/40 p-3 text-white placeholder-white/40 focus:border-[#f5c16c] focus:outline-none focus:ring-2 focus:ring-[#f5c16c]/30"
                   />
-                  {settingsError && (
-                    <div className="mt-1 text-xs text-rose-400">{settingsError}</div>
-                  )}
                 </div>
               </div>
               <div className="mt-6 flex justify-end gap-3">
@@ -487,7 +474,7 @@ export default function PartyDetailPageClient({ partyId }: { partyId: string }) 
                 </button>
                 <button
                   onClick={handleSaveSettings}
-                  disabled={isSavingSettings || !!settingsError}
+                  disabled={isSavingSettings}
                   className="rounded-lg bg-linear-to-r from-[#f5c16c] to-[#d4a855] px-5 py-2.5 text-sm font-medium text-black transition-all hover:from-[#d4a855] hover:to-[#f5c16c] disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {isSavingSettings ? "Saving..." : "Save"}
