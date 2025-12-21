@@ -1,6 +1,7 @@
-// roguelearn-web/src/components/layout/DashboardLayout.tsx
-import { DashboardFrame } from "@/components/layout/DashboardFrame";
-import { ReactNode } from "react";
+'use client'
+
+import { DashboardFrame } from '@/components/layout/DashboardFrame'
+import { ReactNode } from 'react'
 
 export function DashboardLayout({ children }: { children: ReactNode }) {
   return (
@@ -27,5 +28,5 @@ export function DashboardLayout({ children }: { children: ReactNode }) {
         <DashboardFrame>{children}</DashboardFrame>
       </div>
     </div>
-  );
+  )
 }

@@ -128,17 +128,21 @@ export const UnityPlayer: React.FC<UnityPlayerProps> = ({
 
   // Set up navigation callback for Unity to call when match ends
   useEffect(() => {
-    // Define the function that Unity will call
-    (window as any).navigateToStats = (result: string) => {
-      console.log(`[UnityPlayer] Match ended with result: ${result}. Navigating to stats...`);
-      router.push('/stats');
-    };
+    (window as any).navigateToStats = () => {
+      if (userId) {
+        router.push('/stats')
+        return
+      }
+
+      const message = encodeURIComponent('Sign in to save and view your match results.')
+      router.push(`/login?error=${message}`)
+    }
 
     // Cleanup function to remove the callback when component unmounts
     return () => {
       delete (window as any).navigateToStats;
     };
-  }, [router]);
+  }, [router, userId]);
 
   const doConnect = useCallback(
     (code: string) => {
