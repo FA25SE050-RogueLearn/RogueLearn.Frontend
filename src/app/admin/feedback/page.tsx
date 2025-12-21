@@ -1,3 +1,4 @@
+// roguelearn-web/src/app/admin/feedback/page.tsx
 "use client";
 
 import { AdminLayout } from "@/components/layout/AdminLayout";
@@ -11,14 +12,14 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Loader2, MessageSquare, CheckCircle2, ChevronsUpDown, Check, Eye, BookOpen, HelpCircle, Code, FileText } from "lucide-react";
-import { useEffect, useMemo, useState, useCallback } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { cn } from "@/lib/utils";
 import questApi from "@/api/questApi";
 import { toast } from "sonner";
 import subjectsApi from "@/api/subjectsApi";
 import adminContentApi from "@/api/adminContentApi";
 import type { Subject } from "@/types/subjects";
-import type { WeeklyModuleContent, Activity } from "@/types/quest";
+import type { WeeklyModuleContent } from "@/types/quest";
 import debounce from "lodash/debounce";
 
 type Category = 'ContentError' | 'TechnicalIssue' | 'TooDifficult' | 'TooEasy' | 'Other' | 'all';
@@ -78,32 +79,52 @@ export default function AdminFeedbackPage() {
     });
   }, [items, category, unresolvedOnly, subjectId, questId, search]);
 
-  const fetchFeedback = useCallback(async () => {
+  // ⭐ FIX: Removed useCallback to prevent dependency issues
+  const fetchFeedback = async () => {
     setLoading(true);
     try {
-      const res = await questApi.adminListFeedback({ subjectId: subjectId || undefined, questId: questId || undefined, unresolvedOnly });
+      const res = await questApi.adminListFeedback({
+        subjectId: subjectId || undefined,
+        questId: questId || undefined,
+        unresolvedOnly
+      });
       if (res.isSuccess && res.data) {
         const dataAny = res.data as any;
         const list: FeedbackItem[] = Array.isArray(dataAny) ? dataAny : Array.isArray(dataAny?.items) ? dataAny.items : [];
         setItems(list);
         setTotalPages(Number.isFinite(dataAny?.totalPages) ? dataAny.totalPages : 1);
+
+        // Fetch missing subjects
         const ids = Array.from(new Set(list.map(i => i.subjectId).filter(Boolean)));
         const missing = ids.filter(id => !subjectMap[id]);
         if (missing.length > 0) {
           const results = await Promise.all(missing.map(id => subjectsApi.getById(id)));
           const mapUpdate: Record<string, Subject> = {};
-          results.forEach((r, idx) => { if (r.isSuccess && r.data) mapUpdate[missing[idx]] = r.data; });
+          results.forEach((r, idx) => {
+            if (r.isSuccess && r.data) mapUpdate[missing[idx]] = r.data;
+          });
           setSubjectMap(prev => ({ ...prev, ...mapUpdate }));
         }
-      } else { toast.error(res.message || 'Failed to load feedback'); }
-    } catch (e: any) { toast.error('Failed to load feedback'); }
-    finally { setLoading(false); }
-  }, [subjectId, questId, unresolvedOnly, subjectMap]);
+      } else {
+        toast.error(res.message || 'Failed to load feedback');
+      }
+    } catch (e: any) {
+      toast.error('Failed to load feedback');
+    }
+    finally {
+      setLoading(false);
+    }
+  };
 
-  const fetchSubjects = useCallback(async (searchTerm: string, pageNum: number, append: boolean) => {
+  // ⭐ FIX: Removed useCallback to prevent dependency issues
+  const fetchSubjects = async (searchTerm: string, pageNum: number, append: boolean) => {
     setLoadingSubjects(true);
     try {
-      const res = await adminContentApi.getSubjectsPaged({ page: pageNum, pageSize: 10, search: searchTerm || undefined });
+      const res = await adminContentApi.getSubjectsPaged({
+        page: pageNum,
+        pageSize: 10,
+        search: searchTerm || undefined
+      });
       if (res.isSuccess && res.data) {
         const newItems = res.data.items || [];
         setSubjectOptions(prev => append ? [...prev, ...newItems] : newItems);
@@ -113,26 +134,64 @@ export default function AdminFeedbackPage() {
         newItems.forEach(s => newMap[s.id] = s);
         setSubjectMap(prev => ({ ...prev, ...newMap }));
       }
-    } catch (err) { console.error('Failed to fetch subjects', err); }
-    finally { setLoadingSubjects(false); }
-  }, []);
+    } catch (err) {
+      console.error('Failed to fetch subjects', err);
+    }
+    finally {
+      setLoadingSubjects(false);
+    }
+  };
 
-  const debouncedSubjectSearch = useMemo(() => debounce((query: string) => { fetchSubjects(query, 1, false); }, 300), [fetchSubjects]);
-  const handleSubjectSearchInput = (val: string) => { setSubjectSearch(val); debouncedSubjectSearch(val); };
-  const loadMoreSubjects = () => { if (!loadingSubjects && subjectsHasMore) fetchSubjects(subjectSearch, subjectsPage + 1, true); };
+  // ⭐ FIX: Create debounced function with stable reference
+  const debouncedSubjectSearch = useMemo(
+    () => debounce((query: string) => {
+      fetchSubjects(query, 1, false);
+    }, 300),
+    [] // Empty deps - only create once
+  );
 
-  useEffect(() => { fetchFeedback(); fetchSubjects("", 1, false); }, [category, unresolvedOnly, page, subjectId, questId, fetchFeedback, fetchSubjects]);
+  const handleSubjectSearchInput = (val: string) => {
+    setSubjectSearch(val);
+    debouncedSubjectSearch(val);
+  };
+
+  const loadMoreSubjects = () => {
+    if (!loadingSubjects && subjectsHasMore)
+      fetchSubjects(subjectSearch, subjectsPage + 1, true);
+  };
+
+  // ⭐ FIX: Fetch subjects only ONCE on mount
+  useEffect(() => {
+    fetchSubjects("", 1, false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Empty deps array - only run once
+
+  // ⭐ FIX: Fetch feedback when filters change, but NOT on every render
+  useEffect(() => {
+    fetchFeedback();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [category, unresolvedOnly, subjectId, questId]); // Only these specific values
 
   const markResolved = async (id: string, resolved: boolean) => {
     const res = await questApi.adminUpdateFeedback(id, { isResolved: resolved });
-    if (res.isSuccess) { setItems(prev => prev.map(it => it.id === id ? { ...it, isResolved: resolved } : it)); toast.success(resolved ? 'Marked resolved' : 'Marked unresolved'); }
-    else { toast.error(res.message || 'Failed to update'); }
+    if (res.isSuccess) {
+      setItems(prev => prev.map(it => it.id === id ? { ...it, isResolved: resolved } : it));
+      toast.success(resolved ? 'Marked resolved' : 'Marked unresolved');
+    }
+    else {
+      toast.error(res.message || 'Failed to update');
+    }
   };
 
   const saveNotes = async (id: string, notes: string) => {
     const res = await questApi.adminUpdateFeedback(id, { adminNotes: notes });
-    if (res.isSuccess) { setItems(prev => prev.map(it => it.id === id ? { ...it, adminNotes: notes } : it)); toast.success('Notes saved'); }
-    else { toast.error(res.message || 'Failed to save notes'); }
+    if (res.isSuccess) {
+      setItems(prev => prev.map(it => it.id === id ? { ...it, adminNotes: notes } : it));
+      toast.success('Notes saved');
+    }
+    else {
+      toast.error(res.message || 'Failed to save notes');
+    }
   };
 
   const viewStepContent = async (item: FeedbackItem) => {
