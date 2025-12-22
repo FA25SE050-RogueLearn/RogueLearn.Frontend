@@ -117,18 +117,6 @@ export function GuildManagementSection({ guildId, onLeftGuild }: GuildManagement
     }
   };
 
-  const assignRoleWithRole = async (authUserId: string, role: GuildRole) => {
-    if (!guildId) return;
-    try {
-      await guildsApi.assignRole(guildId, authUserId, role);
-      setMembers((prev) => prev.map((m) => m.authUserId === authUserId ? { ...m, role } : m));
-      toast.success("Role assigned");
-    } catch (err) {
-      console.error(err);
-      // toast.error("Failed to assign role.");
-    }
-  };
-
   const transferLeadership = async (toAuthUserId: string) => {
     if (!guildId) return;
     try {
