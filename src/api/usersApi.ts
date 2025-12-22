@@ -18,6 +18,7 @@ import type {
 import type {
   ProcessAcademicRecordResponse,
   GetAcademicStatusResponse,
+  UpdateSubjectGradeRequest,
 } from '@/types/student';
 
 // =================================================================
@@ -46,9 +47,6 @@ export const processAcademicRecord = async (
     .then(res => ({ isSuccess: true, data: res.data }));
 };
 
-// REMOVED: initializeSkills and establishSkillDependencies are no longer called from the frontend.
-// This logic is now orchestrated by the backend's ProcessAcademicRecordCommandHandler.
-
 /**
  * Retrieves the complete academic status for the authenticated user.
  * Corresponds to GET /api/users/me/academic-status
@@ -58,6 +56,18 @@ export const getAcademicStatus = async (): Promise<ApiResponse<GetAcademicStatus
     isSuccess: true,
     data: res.data,
   }));
+};
+
+/**
+ * Updates the grade for a single student subject record.
+ * Corresponds to PATCH /api/student/subjects/{subjectId}/grade
+ */
+export const updateSubjectGrade = async (
+    subjectId: string,
+    payload: UpdateSubjectGradeRequest
+): Promise<ApiResponse<void>> => {
+    return axiosClient.patch<void>(`/api/student/subjects/${subjectId}/grade`, payload)
+        .then(() => ({ isSuccess: true, data: undefined }));
 };
 
 /**

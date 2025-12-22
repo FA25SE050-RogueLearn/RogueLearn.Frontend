@@ -42,8 +42,9 @@ export interface AnalysisReport {
 export interface ProcessAcademicRecordResponse {
   isSuccess: boolean;
   message?: string | null;
+  learningPathId?: string | null;
   subjectsProcessed: number;
-  questsGenerated: number; // Added to match backend response
+  questsGenerated: number;
   calculatedGpa?: number | null;
   xpAwarded?: XpAwardedSummary | null;
   analysisReport?: AnalysisReport | null;
@@ -107,4 +108,9 @@ export interface SubjectProgressDto {
   grade: string | null;
   questId: string | null;
   questStatus: string | null;
+}
+
+/** Command to update the grade for a single subject. */
+export interface UpdateSubjectGradeRequest {
+    grade: string;
 }

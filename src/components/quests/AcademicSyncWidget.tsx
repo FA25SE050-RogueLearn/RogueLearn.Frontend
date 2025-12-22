@@ -29,16 +29,19 @@ export function AcademicSyncWidget({ currentGpa, lastSyncedAt, hasAnyGrades }: A
         }
     }, [hasAnyGrades]);
 
-    // If minimized, show compact floating button
+    // If minimized, show compact floating circle button
     if (isMinimized) {
         return (
             <div className="fixed bottom-6 right-6 z-50">
                 <Button
-                    onClick={() => setIsMinimized(false)}
+                    onClick={() => {
+                        setIsMinimized(false);
+                        setIsExpanded(false);
+                    }}
                     size="lg"
-                    className="rounded-full h-14 w-14 shadow-2xl bg-gradient-to-r from-[#7289da] to-[#5b6eae] hover:shadow-[#7289da]/50 transition-all"
+                    className="rounded-full h-16 w-16 shadow-2xl bg-[#7289da] hover:bg-[#5b6eae] hover:shadow-[#7289da]/50 transition-all p-0"
                 >
-                    <GraduationCap className="w-6 h-6 text-white" />
+                    <GraduationCap className="w-7 h-7 text-white" />
                 </Button>
             </div>
         );
@@ -69,11 +72,14 @@ export function AcademicSyncWidget({ currentGpa, lastSyncedAt, hasAnyGrades }: A
                         <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#7289da]/20 border border-[#7289da]/30">
                             <GraduationCap className="w-5 h-5 text-[#7289da]" />
                         </div>
+                        <div>
+                            <p className="text-sm font-medium text-white">Academic Sync</p>
+                            {hasAnyGrades && (
+                                <p className="text-xs text-emerald-400">Synced</p>
+                            )}
+                        </div>
                     </div>
                     <div className="flex items-center gap-2">
-                        {hasAnyGrades && (
-                            <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                        )}
                         {isExpanded ? (
                             <ChevronDown className="w-5 h-5 text-white/60" />
                         ) : (
