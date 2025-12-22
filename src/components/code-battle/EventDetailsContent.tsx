@@ -105,7 +105,7 @@ export default function EventDetailsContent({ eventId }: EventDetailsContentProp
       const deadline = new Date(event.assignment_date!);
 
       if (now >= deadline) {
-        toast.error('Registration deadline has passed', {
+        toast.info('Registration deadline has passed', {
           description: 'Redirecting to events page...'
         });
         setTimeout(() => {
