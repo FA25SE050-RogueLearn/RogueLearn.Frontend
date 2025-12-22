@@ -422,7 +422,7 @@ export default function CodeBattlePage() {
           setSelectedProblemStatement('');
           setSubmissionResult('');
           setLeaderboardData([]);
-        }, 2000);
+        }, 6000);
       });
 
       eventSource.addEventListener('initial_time', (e) => {

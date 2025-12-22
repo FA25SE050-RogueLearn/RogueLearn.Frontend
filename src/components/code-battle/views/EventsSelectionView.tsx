@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState, useEffect, useRef, useCallback, type CSSProperties } from 'react';
-import { ArrowRight, Trophy, Calendar, Users, Target, Activity, Flame, Plus, ChevronLeft, Clock, Zap } from 'lucide-react';
+import { ArrowRight, Trophy, Target, Activity, Flame, Plus, ChevronLeft, Clock, Zap } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useRouter } from 'next/navigation';
@@ -517,12 +517,10 @@ export default function EventsSelectionView({
         <CardContent className={`relative z-10 space-y-4 ${compact ? 'p-3' : 'p-5'}`}>
           <div className={`space-y-2 ${compact ? 'text-[10px]' : 'text-[11px]'} text-foreground/60`}>
             <div className="flex items-center gap-2">
-              <Calendar className="h-3.5 w-3.5" />
               <span>{formatDateRange(event.started_date || event.StartedDate || '', event.end_date || event.EndDate || '')}</span>
             </div>
             {!compact && (
               <div className="flex items-center gap-2">
-                <Users className="h-3.5 w-3.5" />
                 <span>Max {event.MaxGuilds} Guilds • {event.MaxPlayersPerGuild} per Guild</span>
               </div>
             )}
@@ -619,7 +617,6 @@ export default function EventsSelectionView({
               {featuredEvent && (
                 <div className="mt-6 flex flex-wrap items-center gap-4 text-sm text-foreground/80">
                   <div className="flex items-center gap-2 rounded-full border border-[#f5c16c]/30 bg-[#f5c16c]/10 px-4 py-1">
-                    <Calendar className="h-3.5 w-3.5 text-[#f5c16c]" />
                     <span>{formatDate(featuredEvent.started_date || featuredEvent.StartedDate || '')}</span>
                   </div>
                   <div className="flex items-center gap-2">
