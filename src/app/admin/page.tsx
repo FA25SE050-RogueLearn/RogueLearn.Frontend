@@ -15,7 +15,7 @@ export default function AdminDashboard() {
       title: "Subject Catalog",
       description: "Manage subject syllabi and learning content",
       icon: BookOpen,
-      href: "/admin/content/subjects",
+      href: "/admin/subjects",
     },
     {
       title: "Content Management",
