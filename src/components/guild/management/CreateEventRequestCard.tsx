@@ -187,9 +187,9 @@ export function CreateEventRequestCard({ guildId, onRequestCreated }: CreateEven
 
     // Check minimum time constraints
     const now = new Date();
-    const minStartTime = new Date(now.getTime() + 2 * 60 * 1000);
+    const minStartTime = new Date(now.getTime() + 60 * 1000);
     if (startDate < minStartTime) {
-      toast.error("Start date must be at least 2 minutes from now");
+      toast.error("Start date must be at least 1 minute from now");
       return;
     }
 
