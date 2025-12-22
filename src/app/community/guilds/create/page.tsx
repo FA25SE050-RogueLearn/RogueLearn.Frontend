@@ -13,6 +13,7 @@ import profileApi from "@/api/profileApi";
 import { getMyContext } from "@/api/usersApi";
 import type { CreateGuildResponse } from "@/types/guilds";
 import { toast } from "sonner";
+import { createClient } from "@/utils/supabase/client";
 
 const SECTION_CARD_CLASS = 'relative overflow-hidden rounded-3xl border border-[#f5c16c]/25 bg-[#120806]/80';
 const CARD_TEXTURE: CSSProperties = {
@@ -32,7 +33,7 @@ export default function CreateGuildPage() {
   const router = useRouter();
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
-  const [privacy, setPrivacy] = useState<"public" | "invite_only">("public");
+  const [privacy, setPrivacy] = useState<"public" | "private">("public");
   const [maxMembers, setMaxMembers] = useState<number>(50);
   const [myAuthUserId, setMyAuthUserId] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -68,6 +69,27 @@ export default function CreateGuildPage() {
         privacy,
         maxMembers: finalMax,
       });
+
+      // Refresh Supabase session to ensure roles/permissions are updated
+      const supabase = createClient();
+      const { data: { session } } = await supabase.auth.refreshSession();
+
+      if (session) {
+        const isHttps = window.location.protocol === 'https:';
+        const domain = process.env['NEXT_PUBLIC_COOKIE_DOMAIN'];
+        const secure = isHttps ? '; Secure' : '';
+        const sameSite = isHttps ? 'None' : 'Lax';
+        const dom = domain ? `; Domain=${domain}` : '';
+
+        if (session.access_token) {
+          const exp = session.expires_at ? Math.max(0, Math.floor(session.expires_at - Math.floor(Date.now() / 1000))) : 3600;
+          document.cookie = `rl_access_token=${encodeURIComponent(session.access_token)}; Path=/; Max-Age=${exp}${secure}; SameSite=${sameSite}${dom}`;
+        }
+        if (session.refresh_token) {
+          document.cookie = `rl_refresh_token=${encodeURIComponent(session.refresh_token)}; Path=/; Max-Age=${60 * 60 * 24 * 30}${secure}; SameSite=${sameSite}${dom}`;
+        }
+      }
+
       const data = res.data as CreateGuildResponse;
       router.push(`/community/guilds/${data.guildId}`);
     } catch (err: any) {
@@ -143,7 +165,7 @@ export default function CreateGuildPage() {
                   <label className="text-sm font-semibold uppercase tracking-wide text-white/80">
                     Privacy Setting
                   </label>
-                  <Select value={privacy} onValueChange={(v) => setPrivacy(v as "public" | "invite_only")}>
+                  <Select value={privacy} onValueChange={(v) => setPrivacy(v as "public" | "private")}>
                     <SelectTrigger className="border-[#f5c16c]/25 bg-[#140707]/80 text-white">
                       <SelectValue placeholder="Select privacy" />
                     </SelectTrigger>
