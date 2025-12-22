@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState, useEffect, useRef, useCallback, type CSSProperties } from 'react';
-import { ArrowRight, Activity, ChevronLeft, Clock, Zap } from 'lucide-react';
+import { ArrowRight, Activity, ChevronLeft, Clock, Zap, Flame, Target, Trophy } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useRouter } from 'next/navigation';
