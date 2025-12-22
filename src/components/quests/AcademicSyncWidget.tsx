@@ -69,14 +69,6 @@ export function AcademicSyncWidget({ currentGpa, lastSyncedAt, hasAnyGrades }: A
                         <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#7289da]/20 border border-[#7289da]/30">
                             <GraduationCap className="w-5 h-5 text-[#7289da]" />
                         </div>
-                        <div>
-                            <h3 className="text-sm font-semibold text-white">Academic Sync</h3>
-                            {hasAnyGrades && currentGpa !== null && currentGpa !== undefined ? (
-                                <p className="text-xs text-white/60">GPA: {currentGpa.toFixed(2)}</p>
-                            ) : (
-                                <p className="text-xs text-white/60">Not synced yet</p>
-                            )}
-                        </div>
                     </div>
                     <div className="flex items-center gap-2">
                         {hasAnyGrades && (
