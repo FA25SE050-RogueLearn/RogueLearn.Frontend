@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import type { CSSProperties, ReactNode } from 'react';
-import { ArrowLeft, ArrowRight, Users, Code, Trophy, Swords, Map, Sparkles, AlertTriangle } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Swords, AlertTriangle } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import {
@@ -251,14 +251,12 @@ export default function RoomSelectionView({
           <div aria-hidden="true" className="pointer-events-none absolute inset-0" style={CARD_TEXTURE} />
           <CardHeader className="relative z-10 flex flex-col gap-3 border-b border-white/5 pb-5 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <CardTitle className="flex items-center gap-2 text-lg font-semibold text-white">
-                <Users className="h-5 w-5 text-[#f5c16c]" />
+              <CardTitle className="text-lg font-semibold text-white">
                 Battle Rooms
               </CardTitle>
               <p className="text-xs text-foreground/55">Choose where your party drops in.</p>
             </div>
             <div className="flex items-center gap-2 text-xs text-foreground/60">
-              <Trophy className="h-4 w-4 text-[#d23187]" />
               No room locked in
             </div>
           </CardHeader>
@@ -270,7 +268,7 @@ export default function RoomSelectionView({
                 ))}
               </div>
             ) : rooms.length === 0 ? (
-              renderEmptyState(<Users className="h-12 w-12" />, 'No rooms available yet')
+              renderEmptyState(<span className="text-4xl">🏠</span>, 'No rooms available yet')
             ) : (
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 {rooms.map((room) => (
@@ -371,8 +369,7 @@ export default function RoomSelectionView({
             <div aria-hidden="true" className="pointer-events-none absolute inset-0" style={CARD_TEXTURE} />
             <CardHeader className="relative z-10 border-b border-white/5 pb-4">
               <div className="flex items-center justify-between">
-                <CardTitle className="flex items-center gap-2 text-lg font-semibold text-white">
-                  <Code className="h-5 w-5 text-[#f5c16c]" />
+                <CardTitle className="text-lg font-semibold text-white">
                   Challenges
                 </CardTitle>
                 <Button
@@ -394,7 +391,7 @@ export default function RoomSelectionView({
                   ))}
                 </div>
               ) : problems.length === 0 ? (
-                renderEmptyState(<Code className="h-12 w-12" />, 'No challenges in this room')
+                renderEmptyState(<span className="text-4xl">📋</span>, 'No challenges in this room')
               ) : (
                 <div className="space-y-4">
                   {problems.map((problem) => (
@@ -450,8 +447,7 @@ export default function RoomSelectionView({
             <Card className={SECTION_CARD_CLASS}>
               <div aria-hidden="true" className="pointer-events-none absolute inset-0" style={CARD_TEXTURE} />
               <CardHeader className="relative z-10 pb-4">
-                <CardTitle className="flex items-center gap-2 text-sm font-semibold text-white">
-                  <Sparkles className="h-4 w-4 text-[#f5c16c]" />
+                <CardTitle className="text-sm font-semibold text-white">
                   Mission Briefing
                 </CardTitle>
               </CardHeader>
