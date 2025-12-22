@@ -405,11 +405,11 @@ export default function CodeBattlePage() {
           duration: 3000,
         });
 
-        // Redirect to results page after a brief delay
+        // Redirect to event page after a brief delay
         const eventIdForRedirect = selectedEventId;
         setTimeout(() => {
           if (eventIdForRedirect) {
-            router.push(`/code-battle/${eventIdForRedirect}/results`);
+            router.push(`/code-battle`);
           } else {
             // Fallback to events if no event ID
             setCurrentView('events');
