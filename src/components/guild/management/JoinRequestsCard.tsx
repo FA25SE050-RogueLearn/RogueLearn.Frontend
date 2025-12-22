@@ -2,8 +2,10 @@
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { UserCheck, UserX, Users } from "lucide-react";
+import { UserCheck, UserX, Users, Eye } from "lucide-react";
 import type { GuildJoinRequestDto, GuildRole } from "@/types/guilds";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import { ApplicantProfileView } from "./ApplicantProfileView";
 
 interface JoinRequestsCardProps {
   loading: boolean;
@@ -25,6 +27,7 @@ const CARD_CLASS = "relative overflow-hidden rounded-[28px] border border-[#f5c1
 
 export function JoinRequestsCard({ loading, error, joinRequests, myRole, onApprove, onDecline }: JoinRequestsCardProps) {
   const [page, setPage] = useState<number>(1);
+  const [viewingRequesterId, setViewingRequesterId] = useState<string | null>(null);
   const pageSize = 10;
   const pageCount = Math.max(1, Math.ceil((joinRequests.length || 0) / pageSize));
   const safePage = Math.min(Math.max(1, page), pageCount);
@@ -71,6 +74,15 @@ export function JoinRequestsCard({ loading, error, joinRequests, myRole, onAppro
                 <div className="flex items-center gap-2">
                   <Button 
                     size="sm" 
+                    variant="outline"
+                    onClick={() => setViewingRequesterId(jr.requesterId)}
+                    className="border-[#f5c16c]/30 bg-transparent text-[#f5c16c] hover:bg-[#f5c16c]/10"
+                  >
+                    <Eye className="mr-1.5 h-3.5 w-3.5" />
+                    Profile
+                  </Button>
+                  <Button 
+                    size="sm" 
                     onClick={() => onApprove(jr.id)}
                     className="bg-emerald-600 hover:bg-emerald-700 text-white"
                   >
@@ -104,6 +116,15 @@ export function JoinRequestsCard({ loading, error, joinRequests, myRole, onAppro
           </div>
         )}
       </CardContent>
+
+      <Dialog open={!!viewingRequesterId} onOpenChange={(open) => !open && setViewingRequesterId(null)}>
+        <DialogContent className="w-[98vw] max-w-[1200px] h-[90vh] border-[#f5c16c]/30 bg-[#0b0a13]/95 p-0 overflow-hidden min-w-0">
+          <DialogTitle className="sr-only">User Profile</DialogTitle>
+          <div className="w-full h-full overflow-y-auto overflow-x-hidden min-w-0">
+             <ApplicantProfileView authUserId={viewingRequesterId ?? undefined} />
+          </div>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 }
