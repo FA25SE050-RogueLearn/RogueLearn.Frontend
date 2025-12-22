@@ -265,11 +265,11 @@ export default function EventsSelectionView({
       ) {
         // Show notification with redirect action
         toast.success(`${event.Title || event.title} has ended!`, {
-          description: 'View the final leaderboard and results.',
+          description: 'The battle has concluded.',
           duration: 10000,
           action: {
-            label: 'View Results',
-            onClick: () => router.push(`/code-battle/${eventId}/results`),
+            label: 'Back to Events',
+            onClick: () => router.push(`/code-battle`),
           },
         });
         

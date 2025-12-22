@@ -103,14 +103,14 @@ export default function CodeArenaView({
 
     // Show notification
     toast.success('Event has ended!', {
-      description: 'The code battle event has concluded. Redirecting to the leaderboard...',
+      description: 'The code battle event has concluded. Redirecting to events...',
       duration: 5000,
     });
 
     // Redirect to the event results/leaderboard page after 3 seconds
     setTimeout(() => {
       if (eventId) {
-        router.push(`/code-battle/${eventId}/results`);
+        router.push(`/code-battle`);
       } else {
         onBack();
       }
