@@ -13,6 +13,7 @@ import type { RoleDto } from "@/types/roles";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { createClient } from "@/utils/supabase/client";
 
 export default function AdminUserRolesPage() {
   const [loading, setLoading] = useState(true);
@@ -128,6 +129,27 @@ export default function AdminUserRolesPage() {
     try {
       await userRolesApi.remove({ authUserId: selectedUser.authUserId, roleId: verifiedLecturerRoleId });
       toast.success("Verified Lecturer revoked");
+
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user?.id === selectedUser.authUserId) {
+        const { data: { session } } = await supabase.auth.refreshSession();
+        if (session) {
+          const isHttps = window.location.protocol === 'https:';
+          const domain = process.env['NEXT_PUBLIC_COOKIE_DOMAIN'];
+          const secure = isHttps ? '; Secure' : '';
+          const sameSite = isHttps ? 'None' : 'Lax';
+          const dom = domain ? `; Domain=${domain}` : '';
+          if (session.access_token) {
+            const exp = session.expires_at ? Math.max(0, Math.floor(session.expires_at - Math.floor(Date.now() / 1000))) : 3600;
+            document.cookie = `rl_access_token=${encodeURIComponent(session.access_token)}; Path=/; Max-Age=${exp}${secure}; SameSite=${sameSite}${dom}`;
+          }
+          if (session.refresh_token) {
+            document.cookie = `rl_refresh_token=${encodeURIComponent(session.refresh_token)}; Path=/; Max-Age=${60 * 60 * 24 * 30}${secure}; SameSite=${sameSite}${dom}`;
+          }
+        }
+      }
+
       await refreshSelectedUser();
       await reloadAll();
       setIsRevokeOpen(false);

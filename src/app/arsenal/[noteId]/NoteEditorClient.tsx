@@ -110,7 +110,7 @@ export default function NoteEditorClient({ noteId }: NoteEditorClientProps) {
   const [sharePartyId, setSharePartyId] = useState<string | null>(null);
   const [shareTitle, setShareTitle] = useState<string>("");
   const [shareTags, setShareTags] = useState<string>("");
-  const { role: shareRole } = usePartyRole(sharePartyId ?? "");
+  const { role: shareRole, loading: shareRoleLoading } = usePartyRole(sharePartyId ?? "");
 
   useEffect(() => {
     const supabase = createClient();
@@ -444,7 +444,7 @@ export default function NoteEditorClient({ noteId }: NoteEditorClientProps) {
                       <DialogHeader><DialogTitle>Share to Party Stash</DialogTitle></DialogHeader>
                       <div className="space-y-3">
                         {!isPublic && <div className="rounded-md border border-yellow-600/40 bg-yellow-900/20 p-2 text-xs text-yellow-200">Note must be public to share.</div>}
-                        {sharePartyId && !shareRole && <div className="rounded-md border border-red-600/40 bg-red-900/20 p-2 text-xs text-red-200">You must be a party member to share notes.</div>}
+                        {sharePartyId && !shareRole && !shareRoleLoading && <div className="rounded-md border border-red-600/40 bg-red-900/20 p-2 text-xs text-red-200">You must be a party member to share notes.</div>}
                         <div className="grid grid-cols-2 gap-2 items-center">
                           <Label className="text-xs">Party</Label>
                           <Select onValueChange={(v) => setSharePartyId(v)} value={sharePartyId ?? undefined}>

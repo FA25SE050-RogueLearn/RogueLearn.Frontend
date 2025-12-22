@@ -13,6 +13,7 @@ import { AdminLecturerVerificationRequestDetail } from "@/types/lecturer-verific
 import { ChevronLeft, Loader2, AlertCircle } from "lucide-react";
 import Link from "next/link";
 import { toast } from "sonner";
+import { createClient } from "@/utils/supabase/client";
 
 export default function AdminLecturerRequestDetailPage() {
   const router = useRouter();
@@ -47,6 +48,29 @@ export default function AdminLecturerRequestDetailPage() {
     try {
       await lecturerVerificationApi.adminApprove(requestId, note ? { note } : undefined);
       toast.success('Request approved');
+
+      if (detail?.authUserId) {
+        const supabase = createClient();
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user?.id === detail.authUserId) {
+          const { data: { session } } = await supabase.auth.refreshSession();
+          if (session) {
+            const isHttps = window.location.protocol === 'https:';
+            const domain = process.env['NEXT_PUBLIC_COOKIE_DOMAIN'];
+            const secure = isHttps ? '; Secure' : '';
+            const sameSite = isHttps ? 'None' : 'Lax';
+            const dom = domain ? `; Domain=${domain}` : '';
+            if (session.access_token) {
+              const exp = session.expires_at ? Math.max(0, Math.floor(session.expires_at - Math.floor(Date.now() / 1000))) : 3600;
+              document.cookie = `rl_access_token=${encodeURIComponent(session.access_token)}; Path=/; Max-Age=${exp}${secure}; SameSite=${sameSite}${dom}`;
+            }
+            if (session.refresh_token) {
+              document.cookie = `rl_refresh_token=${encodeURIComponent(session.refresh_token)}; Path=/; Max-Age=${60 * 60 * 24 * 30}${secure}; SameSite=${sameSite}${dom}`;
+            }
+          }
+        }
+      }
+
       await fetchDetail();
     } catch (e: any) {
       toast.error(e?.normalized?.message || 'Approve failed');
