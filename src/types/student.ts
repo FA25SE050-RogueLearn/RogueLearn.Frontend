@@ -111,6 +111,8 @@ export interface SubjectProgressDto {
 }
 
 /** Command to update the grade for a single subject. */
-export interface UpdateSubjectGradeRequest {
-    grade: string;
+export interface UpdateSingleSubjectGradeRequest {
+    subjectId: string;
+    grade: number;
+    status: string; // "Passed" or "Failed" typically, based on grade
 }

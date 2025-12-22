@@ -18,7 +18,7 @@ import type {
 import type {
   ProcessAcademicRecordResponse,
   GetAcademicStatusResponse,
-  UpdateSubjectGradeRequest,
+  UpdateSingleSubjectGradeRequest,
 } from '@/types/student';
 
 // =================================================================
@@ -47,6 +47,7 @@ export const processAcademicRecord = async (
     .then(res => ({ isSuccess: true, data: res.data }));
 };
 
+
 /**
  * Retrieves the complete academic status for the authenticated user.
  * Corresponds to GET /api/users/me/academic-status
@@ -60,13 +61,12 @@ export const getAcademicStatus = async (): Promise<ApiResponse<GetAcademicStatus
 
 /**
  * Updates the grade for a single student subject record.
- * Corresponds to PATCH /api/student/subjects/{subjectId}/grade
+ * Corresponds to PUT /api/student/grades/subject
  */
 export const updateSubjectGrade = async (
-    subjectId: string,
-    payload: UpdateSubjectGradeRequest
+    payload: UpdateSingleSubjectGradeRequest
 ): Promise<ApiResponse<void>> => {
-    return axiosClient.patch<void>(`/api/student/subjects/${subjectId}/grade`, payload)
+    return axiosClient.put<void>('/api/student/grades/subject', payload)
         .then(() => ({ isSuccess: true, data: undefined }));
 };
 
