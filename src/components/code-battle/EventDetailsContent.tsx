@@ -23,7 +23,7 @@ import { toast } from "sonner";
 import eventServiceApi from "@/api/eventServiceApi";
 import guildsApi from "@/api/guildsApi";
 import type { Event, RegisteredMember } from "@/types/event-service";
-import { createClient } from "@/utils/supabase/client";
+import profileApi from "@/api/profileApi";
 import type { CSSProperties } from "react";
 import CountdownTimer from "@/components/CountdownTimer";
 
@@ -55,7 +55,6 @@ const CARD_TEXTURE: CSSProperties = {
 
 export default function EventDetailsContent({ eventId }: EventDetailsContentProps) {
   const router = useRouter();
-  const supabase = createClient();
 
   const [event, setEvent] = useState<Event | null>(null);
   const [loading, setLoading] = useState(true);
@@ -144,13 +143,14 @@ export default function EventDetailsContent({ eventId }: EventDetailsContentProp
 
   const fetchUserData = async () => {
     try {
-      // Get authenticated user from Supabase Auth
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
+      // Get authenticated user from profile API
+      const profileResponse = await profileApi.getMyProfile();
+      if (!profileResponse.isSuccess || !profileResponse.data) {
         router.push('/auth/login');
         return;
       }
-      setCurrentUserId(user.id);
+      const userId = profileResponse.data.authUserId;
+      setCurrentUserId(userId);
 
       // Fetch user's guild from Guilds API
       const guildResponse = await guildsApi.getMyGuild();
@@ -160,7 +160,7 @@ export default function EventDetailsContent({ eventId }: EventDetailsContentProp
         // Get the user's role in the guild
         const memberRolesResponse = await guildsApi.getMemberRoles(
           guildResponse.data.id,
-          user.id
+          userId
         );
 
         if (memberRolesResponse.isSuccess && memberRolesResponse.data) {

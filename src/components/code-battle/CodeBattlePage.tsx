@@ -4,7 +4,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import eventServiceApi from '@/api/eventServiceApi';
-import { createClient } from '@/utils/supabase/client';
+import profileApi from '@/api/profileApi';
 import type { Event, Room, Problem } from '@/types/event-service';
 import EventsSelectionView from './views/EventsSelectionView';
 import RoomSelectionView from './views/RoomSelectionView';
@@ -96,13 +96,16 @@ export default function CodeBattlePage() {
   const [eventSecondsLeft, setEventSecondsLeft] = useState<number | null>(null);
   const [eventEndDate, setEventEndDate] = useState<string | null>(null);
 
-  // Get current user ID from Supabase
+  // Get current user ID from profile API
   useEffect(() => {
     const getUser = async () => {
-      const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        setPlayerId(user.id);
+      try {
+        const response = await profileApi.getMyProfile();
+        if (response.isSuccess && response.data) {
+          setPlayerId(response.data.authUserId);
+        }
+      } catch (error) {
+        console.error('Failed to get user profile:', error);
       }
     };
     getUser();
@@ -300,15 +303,25 @@ export default function CodeBattlePage() {
     }
 
     try {
-      const supabase = createClient();
-      const { data: { session } } = await supabase.auth.getSession();
+      // Get access token from cookie
+      const getCookie = (name: string): string | null => {
+        const value = `; ${document.cookie}`;
+        const parts = value.split(`; ${name}=`);
+        if (parts.length === 2) {
+          const cookieValue = parts.pop()?.split(';').shift();
+          return cookieValue ? decodeURIComponent(cookieValue) : null;
+        }
+        return null;
+      };
 
-      if (!session?.access_token) {
+      const accessToken = getCookie('rl_access_token');
+
+      if (!accessToken) {
         addNotification('Unable to join room: No auth token', 'error');
         return false;
       }
 
-      const eventSource = eventServiceApi.createRoomSSE(eventId, roomId, playerId, session.access_token);
+      const eventSource = eventServiceApi.createRoomSSE(eventId, roomId, playerId, accessToken);
       eventSourceRef.current = eventSource;
 
       // Track if we successfully connected
