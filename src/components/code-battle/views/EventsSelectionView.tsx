@@ -344,14 +344,20 @@ export default function EventsSelectionView({
     checkGuildMasterStatusAndRegistrations();
   }, []);
 
-  // Check registration status for all events
+  // Check registration status only for active (live) events
   useEffect(() => {
     const checkRegistrations = async () => {
       if (!userId || events.length === 0) return;
 
       const registered = new Set<string>();
 
-      for (const event of events) {
+      // Only check registration for live events (active events)
+      const activeEventsToCheck = events.filter(event => {
+        const status = resolveEventStatus(event);
+        return status.key === 'live';
+      });
+
+      for (const event of activeEventsToCheck) {
         try {
           const eventId = event.id || event.ID;
           if (!eventId) continue;
