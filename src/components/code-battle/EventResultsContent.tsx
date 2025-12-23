@@ -250,14 +250,6 @@ export default function EventResultsContent({ eventId }: EventResultsContentProp
           <CardContent className="relative pt-6">
             {userLeaderboard && userLeaderboard.rankings.length > 0 ? (
               <div className="space-y-3">
-                <div className="mb-4 text-xs text-[#f9d9eb]/50 text-right">
-                  Last updated: {new Date(userLeaderboard.last_updated).toLocaleString('en-US', {
-                    month: 'short',
-                    day: 'numeric',
-                    hour: '2-digit',
-                    minute: '2-digit'
-                  })}
-                </div>
 
                 {/* Champion (Rank 1) */}
                 {userLeaderboard.rankings[0] && (
@@ -308,14 +300,6 @@ export default function EventResultsContent({ eventId }: EventResultsContentProp
           <CardContent className="relative pt-6">
             {guildLeaderboard && guildLeaderboard.rankings.length > 0 ? (
               <div className="space-y-3">
-                <div className="mb-4 text-xs text-[#f9d9eb]/50 text-right">
-                  Last updated: {new Date(guildLeaderboard.last_updated).toLocaleString('en-US', {
-                    month: 'short',
-                    day: 'numeric',
-                    hour: '2-digit',
-                    minute: '2-digit'
-                  })}
-                </div>
 
                 {/* Champion (Rank 1) */}
                 {guildLeaderboard.rankings[0] && (
