@@ -489,6 +489,32 @@ const eventServiceApi = {
   },
 
   /**
+   * Get the player's assigned room for an event (authenticated)
+   * Uses the bearer token to identify the player and returns their assigned room
+   * @param eventId - Event ID
+   */
+  async getMyAssignedRoom(eventId: string): Promise<ApiResponse<Room>> {
+    try {
+      const response = await axiosCodeBattleClient.get(`/events/${eventId}/my-room`);
+      console.log('📦 My Assigned Room API response:', response.data);
+
+      if (response.data.success && response.data.data) {
+        return { success: true, data: response.data.data };
+      }
+      return { success: false, error: { message: 'No assigned room found' } };
+    } catch (error: any) {
+      console.error('❌ Error fetching assigned room:', error);
+      return {
+        success: false,
+        error: {
+          message: error.normalized?.message || 'Failed to fetch assigned room',
+          details: error.normalized?.details,
+        },
+      };
+    }
+  },
+
+  /**
    * Submit solution in a room during event (authenticated)
    */
   async submitRoomSolution(

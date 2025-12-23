@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState, startTransition, type CSSProperties } from 'react';
-import { useRouter } from 'next/navigation';
+
 import { ArrowLeft, Trophy, Timer, ChevronDown, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -44,6 +44,7 @@ interface CodeArenaViewProps {
   isSubmitting: boolean;
   spaceConstraintMb: number | null;
   onBack: () => void;
+  onEventEnd?: () => void;
   eventId: string | null;
   roomId: string | null;
   eventSourceRef: React.RefObject<EventSource | null>;
@@ -80,6 +81,7 @@ export default function CodeArenaView({
   isSubmitting,
   spaceConstraintMb,
   onBack,
+  onEventEnd,
   eventId,
   roomId,
   eventSourceRef,
@@ -91,31 +93,14 @@ export default function CodeArenaView({
   selectedProblemId,
   onProblemChange,
 }: CodeArenaViewProps) {
-  const router = useRouter();
+
   const [leaderboardEntries, setLeaderboardEntries] = useState<LeaderboardEntry[]>([]);
-  const [eventEnded, setEventEnded] = useState(false);
 
-  // Handle event timer completion
+  // Timer completion is just visual - actual event end is triggered by SSE EVENT_ENDED
   const handleEventTimeout = useCallback(() => {
-    if (eventEnded) return;
-
-    setEventEnded(true);
-
-    // Show notification
-    toast.success('Event has ended!', {
-      description: 'The code battle event has concluded. Redirecting to events...',
-      duration: 5000,
-    });
-
-    // Redirect to the event results/leaderboard page after 3 seconds
-    setTimeout(() => {
-      if (eventId) {
-        router.push(`/code-battle`);
-      } else {
-        onBack();
-      }
-    }, 3000);
-  }, [eventEnded, eventId, router, onBack]);
+    // Don't trigger any redirect - wait for SSE EVENT_ENDED from server
+    console.log('Timer reached zero - waiting for server EVENT_ENDED signal');
+  }, []);
 
   const updateLeaderboard = useCallback((incoming: LeaderboardEntry[]) => {
     startTransition(() => {
@@ -178,28 +163,6 @@ export default function CodeArenaView({
     <div className="relative flex min-h-screen flex-col overflow-hidden bg-[#0a0a0a]">
       <div aria-hidden="true" className="pointer-events-none absolute inset-0" style={BACKDROP_GRADIENT} />
       <div aria-hidden="true" className="pointer-events-none absolute inset-0" style={BACKDROP_TEXTURE} />
-
-      {/* Event Ended Overlay */}
-      {eventEnded && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 backdrop-blur-md">
-          <div className="mx-4 max-w-md rounded-[24px] border-2 border-[#f5c16c]/50 bg-gradient-to-br from-[#1a0b08] via-[#2a1510] to-[#1a0b08] p-8 text-center shadow-[0_0_60px_rgba(210,49,135,0.5)]">
-            <div className="mb-6 flex justify-center">
-              <div className="rounded-full bg-[#f5c16c]/10 p-4">
-                <Clock className="h-16 w-16 text-[#f5c16c]" />
-              </div>
-            </div>
-            <h2 className="mb-3 text-2xl font-bold text-white">Event Has Ended!</h2>
-            <p className="mb-6 text-sm text-[#f5c16c]/70">
-              The code battle event has concluded. Redirecting you to the leaderboard...
-            </p>
-            <div className="flex justify-center">
-              <div className="h-1 w-32 overflow-hidden rounded-full bg-[#f5c16c]/20">
-                <div className="h-full w-full animate-pulse bg-gradient-to-r from-[#f5c16c] to-[#d23187]" />
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Top Navigation Bar */}
       <div className="sticky top-0 z-50 border-b border-[#f5c16c]/20 bg-[#0b0504]/95 backdrop-blur-xl">

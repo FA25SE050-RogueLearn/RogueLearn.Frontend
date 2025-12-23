@@ -169,35 +169,57 @@ export default function CodeBattlePage() {
     }
   }, [selectedEventId]);
 
-  // Fetch rooms when event is selected or page changes
+  // Fetch the player's assigned room when event is selected
   useEffect(() => {
     if (!selectedEventId) {
       setRooms([]);
       return;
     }
 
-    const fetchRooms = async () => {
+    const fetchAssignedRoom = async () => {
       setLoadingRooms(true);
       try {
-        const response = await eventServiceApi.getEventRooms(selectedEventId, roomsPage, roomsPageSize);
-        if (response.success && response.data && Array.isArray(response.data)) {
-          setRooms(response.data);
-
-          // Update pagination metadata
-          if (response.pagination) {
-            setRoomsTotalPages(response.pagination.total_pages);
+        // Use the new endpoint to get only the player's assigned room
+        const response = await eventServiceApi.getMyAssignedRoom(selectedEventId);
+        if (response.success && response.data) {
+          const assignedRoom = response.data;
+          
+          // Set the single assigned room as an array
+          setRooms([assignedRoom]);
+          setRoomsTotalPages(1);
+          
+          // Auto-select the assigned room since there's only one
+          setSelectedRoomId(assignedRoom.ID);
+          addNotification(`Assigned to room: ${assignedRoom.Name}`, 'success');
+          
+          // Establish SSE connection to the assigned room
+          const canJoin = await joinRoom(selectedEventId, assignedRoom.ID);
+          if (!canJoin) {
+            // If cannot join the room, kick them out of the event
+            setCurrentView('events');
+            setSelectedEventId(null);
+            setSelectedRoomId(null);
+            setRooms([]);
+            toast.error('Cannot join event', {
+              description: 'You have previously left this event and cannot rejoin. Please choose a different event.'
+            });
           }
+        } else {
+          // No room assigned - show error
+          setRooms([]);
+          addNotification('No room assigned for this event. Please contact the organizer.', 'error');
         }
       } catch (error) {
-        console.error('Error fetching rooms:', error);
-        addNotification('Failed to load rooms', 'error');
+        console.error('Error fetching assigned room:', error);
+        addNotification('Failed to load your assigned room', 'error');
       } finally {
         setLoadingRooms(false);
       }
     };
 
-    fetchRooms();
-  }, [selectedEventId, roomsPage, roomsPageSize]);
+    fetchAssignedRoom();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedEventId]);
 
   // Fetch problems when room is selected
   useEffect(() => {
@@ -390,31 +412,42 @@ export default function CodeBattlePage() {
         addNotification('Event has started!', 'success');
       });
 
-      eventSource.addEventListener('EVENT_ENDED', () => {
-        // The toast notification provides immediate feedback.
-        toast.success('Battle Complete!', {
-          description: 'The event has ended. Redirecting to the results page...',
-          duration: 3000, // 3 seconds
-        });
+      eventSource.addEventListener('EVENT_EXPIRED', (e) => {
+        // Parse the event data
+        try {
+          const eventData = JSON.parse((e as MessageEvent).data);
+          console.log('EVENT_EXPIRED received:', eventData);
+          
+          // Show toast notification with event message
+          toast.success('Battle Complete!', {
+            description: eventData.Data?.message || 'The event has ended. Redirecting to results...',
+            duration: 3000,
+          });
+        } catch (error) {
+          console.error('Error parsing EVENT_EXPIRED:', error);
+          toast.success('Battle Complete!', {
+            description: 'The event has ended. Redirecting to results...',
+            duration: 3000,
+          });
+        }
 
-        // Close the SSE connection immediately.
+        // Close the SSE connection
         if (eventSourceRef.current) {
           eventSourceRef.current.close();
           eventSourceRef.current = null;
         }
 
         const eventIdForRedirect = selectedEventId;
-        
-        // Redirect after a shorter delay.
+
+        // Redirect after a short delay
         setTimeout(() => {
           if (eventIdForRedirect) {
             router.push(`/code-battle/${eventIdForRedirect}/results`);
           } else {
-            // Fallback to the main events page if ID is lost.
             setCurrentView('events');
           }
 
-          // Clean up component state.
+          // Clean up component state
           setSelectedEventId(null);
           setSelectedRoomId(null);
           setSelectedProblemId(null);
@@ -422,7 +455,7 @@ export default function CodeBattlePage() {
           setSelectedProblemStatement('');
           setSubmissionResult('');
           setLeaderboardData([]);
-        }, 3000); // Redirect after 3 seconds, matching the toast duration.
+        }, 3000);
       });
 
       eventSource.addEventListener('initial_time', (e) => {
@@ -685,6 +718,34 @@ export default function CodeBattlePage() {
     setSubmissionResult('');
   };
 
+  // Handle event end from timer timeout - redirect to results page
+  const handleEventEnd = useCallback(() => {
+    // Close the SSE connection
+    if (eventSourceRef.current) {
+      eventSourceRef.current.close();
+      eventSourceRef.current = null;
+    }
+
+    const eventIdForRedirect = selectedEventId;
+
+    // Navigate to results page
+    if (eventIdForRedirect) {
+      router.push(`/code-battle/${eventIdForRedirect}/results`);
+    } else {
+      // Fallback to main events page
+      setCurrentView('events');
+    }
+
+    // Clean up component state
+    setSelectedEventId(null);
+    setSelectedRoomId(null);
+    setSelectedProblemId(null);
+    setSelectedProblemTitle('');
+    setSelectedProblemStatement('');
+    setSubmissionResult('');
+    setLeaderboardData([]);
+  }, [selectedEventId, router]);
+
   const handleViewModeChange = (mode: EventViewMode, status?: StatusFilter) => {
     setEventViewMode(mode);
 
@@ -768,6 +829,7 @@ export default function CodeBattlePage() {
             isSubmitting={isSubmitting}
             spaceConstraintMb={spaceConstraintMb}
             onBack={handleBackToRooms}
+            onEventEnd={handleEventEnd}
             eventId={selectedEventId}
             roomId={selectedRoomId}
             eventSourceRef={eventSourceRef}
