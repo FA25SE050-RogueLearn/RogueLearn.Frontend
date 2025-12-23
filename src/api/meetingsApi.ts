@@ -77,6 +77,9 @@ const meetingsApi = {
     axiosClient
       .get<MeetingDto[]>(`/api/meetings/guild/${guildId}`)
       .then((res) => ({ isSuccess: true, data: res.data })),
+
+  deleteMeeting: (meetingId: string): Promise<void> =>
+    axiosClient.delete<void>(`/api/meetings/${meetingId}`).then(() => {}),
 };
 
 export default meetingsApi;
