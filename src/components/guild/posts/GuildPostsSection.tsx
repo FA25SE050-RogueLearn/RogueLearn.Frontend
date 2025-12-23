@@ -72,6 +72,17 @@ export function GuildPostsSection({ guildId }: GuildPostsSectionProps) {
   const [commentLikeCountMap, setCommentLikeCountMap] = useState<Record<string, number>>({});
   const [page, setPage] = useState<number>(1);
   const pageSize = 5;
+  const [searchQuery, setSearchQuery] = useState("");
+  const [sortBy, setSortBy] = useState<"newest" | "oldest">("newest");
+
+  const formatPostDateTime = (d: string) => {
+    try {
+      const dt = new Date(d);
+      return dt.toLocaleString("en-US", { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit", timeZone: "Asia/Bangkok" });
+    } catch {
+      return d;
+    }
+  };
 
   const reload = () => {
     if (!guildId) return;
@@ -80,12 +91,7 @@ export function GuildPostsSection({ guildId }: GuildPostsSectionProps) {
       .getByGuild(guildId, { size: 50 })
       .then((res) => {
         const data = res.data ?? [];
-        // Sort by pinned first, then by date descending
-        data.sort((a, b) => {
-          if (a.isPinned && !b.isPinned) return -1;
-          if (!a.isPinned && b.isPinned) return 1;
-          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-        });
+        data.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
         setPosts(data);
         setError(null);
       })
@@ -120,21 +126,66 @@ export function GuildPostsSection({ guildId }: GuildPostsSectionProps) {
       .finally(() => {});
   }, [guildId]);
 
-  const pageCount = useMemo(() => Math.max(1, Math.ceil((posts.length || 0) / pageSize)), [posts.length]);
+  const filteredPosts = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    const list = posts.slice();
+    if (!q) return list;
+    return list.filter((p) => {
+      const title = (p.title || "").toLowerCase();
+      const content = (p.content || "").toLowerCase();
+      const tagsStr = Array.isArray(p.tags) ? p.tags.join(" ").toLowerCase() : "";
+      return title.includes(q) || content.includes(q) || tagsStr.includes(q);
+    });
+  }, [posts, searchQuery]);
+
+  const sortedPosts = useMemo(() => {
+    const arr = filteredPosts.slice();
+    if (sortBy === "newest") {
+      arr.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    } else {
+      arr.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+    }
+    return arr;
+  }, [filteredPosts, sortBy]);
+
+  const pageCount = useMemo(() => Math.max(1, Math.ceil((sortedPosts.length || 0) / pageSize)), [sortedPosts.length]);
   const safePage = useMemo(() => Math.min(Math.max(1, page), pageCount), [page, pageCount]);
   const pagedPosts = useMemo(() => {
     const start = (safePage - 1) * pageSize;
     const end = start + pageSize;
-    return posts.slice(start, end);
-  }, [posts, safePage]);
+    return sortedPosts.slice(start, end);
+  }, [sortedPosts, safePage]);
 
   const pinnedPosts = useMemo(() => posts.filter((p) => p.isPinned), [posts]);
 
   const scrollToPost = (id: string) => {
-    const el = document.getElementById(`post-${id}`);
-    if (el) {
-      el.scrollIntoView({ behavior: "smooth", block: "center" });
-      setExpandedPostId(id);
+    const indexInCurrent = sortedPosts.findIndex((p) => p.id === id);
+    if (indexInCurrent !== -1) {
+      const targetPage = Math.floor(indexInCurrent / pageSize) + 1;
+      setPage(targetPage);
+      setTimeout(() => {
+        const el = document.getElementById(`post-${id}`);
+        if (el) {
+          el.scrollIntoView({ behavior: "smooth", block: "center" });
+          setExpandedPostId(id);
+        }
+      }, 100);
+      return;
+    }
+
+    const all = posts.slice();
+    all.sort((a, b) => (sortBy === "newest" ? (new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()) : (new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())));
+    const indexInAll = all.findIndex((p) => p.id === id);
+    if (indexInAll !== -1) {
+      const targetPage = Math.floor(indexInAll / pageSize) + 1;
+      setPage(targetPage);
+      setTimeout(() => {
+        const el = document.getElementById(`post-${id}`);
+        if (el) {
+          el.scrollIntoView({ behavior: "smooth", block: "center" });
+          setExpandedPostId(id);
+        }
+      }, 100);
     }
   };
 
@@ -525,11 +576,7 @@ export function GuildPostsSection({ guildId }: GuildPostsSectionProps) {
                   {/* Content Body */}
                   <div className="flex flex-1 flex-col p-6">
                     <div className="mb-2 text-xs font-bold uppercase tracking-wider text-[#f5c16c]/80">
-                      {new Date(post.createdAt).toLocaleDateString("en-US", {
-                        month: "long",
-                        day: "numeric",
-                        year: "numeric",
-                      })}
+                      {formatPostDateTime(post.createdAt)}
                     </div>
                     
                     <h3 className="mb-3 text-xl font-bold leading-tight text-white group-hover:text-[#f5c16c] transition-colors">
@@ -682,6 +729,25 @@ export function GuildPostsSection({ guildId }: GuildPostsSectionProps) {
         </div>
       ) : (
         <div className="space-y-4">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <Input
+              placeholder="Search posts..."
+              value={searchQuery}
+              onChange={(e) => { setPage(1); setSearchQuery(e.target.value); }}
+              className="border-[#f5c16c]/20 bg-black/40 text-white placeholder:text-white/40 focus:border-[#f5c16c]/50 focus:ring-[#f5c16c]/30"
+            />
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" className="border-[#f5c16c]/30 bg-transparent text-[#f5c16c] hover:bg-[#f5c16c]/10">
+                  {sortBy === "newest" ? "Newest" : "Oldest"}
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="bg-[#1a0a08] border-[#f5c16c]/20">
+                <DropdownMenuItem onClick={() => { setPage(1); setSortBy("newest"); }} className="text-white/80">Newest</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => { setPage(1); setSortBy("oldest"); }} className="text-white/80">Oldest</DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
           {pagedPosts.map((post) => (
             <Card key={post.id} id={`post-${post.id}`} className={POST_CARD_CLASS}>
               {/* Texture overlay */}
@@ -717,7 +783,7 @@ export function GuildPostsSection({ guildId }: GuildPostsSectionProps) {
                           {post.isLocked && <div className="hidden" />} {/* Hidden lock icon */}
                           {(post.isAnnouncement || (Array.isArray(post.tags) ? post.tags : []).includes("announcement")) && <Scroll className="h-3.5 w-3.5 text-emerald-300" />}
                         </div>
-                        <div className="text-[11px] text-white/60">{new Date(post.createdAt).toLocaleString()}</div>
+                        <div className="text-[11px] text-white/60">{formatPostDateTime(post.createdAt)}</div>
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
