@@ -5,7 +5,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Trophy, Sword, Lightbulb, GraduationCap, ScrollText, Users, Shield, BookOpen, Pencil, ChevronLeft, ChevronRight } from "lucide-react";
 import { RightColumn } from "@/components/dashboard/RightColumn";
-import { useUserFullInfo, useUserAchievements } from "@/hooks/queries/useUserData";
+import { useUserFullInfo } from "@/hooks/queries/useUserData";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -17,7 +17,6 @@ const ITEMS_PER_PAGE = 10;
 
 export function DashboardClient() {
   const { data: fullInfo, isLoading: isLoadingUser, refetch: refetchUser } = useUserFullInfo();
-  const { data: achievements = [], isLoading: isLoadingAchievements, refetch: refetchAchievements } = useUserAchievements();
 
   // State for the grade update modal
   const [editingSubject, setEditingSubject] = useState<StudentTermSubjectItem | null>(null);
@@ -29,8 +28,7 @@ export function DashboardClient() {
   useEffect(() => {
     // Force refresh on mount to ensure latest data
     refetchUser();
-    refetchAchievements();
-  }, [refetchUser, refetchAchievements]);
+  }, [refetchUser]);
 
   const handleEditGrade = (subject: StudentTermSubjectItem) => {
     setEditingSubject(subject);
@@ -69,7 +67,7 @@ export function DashboardClient() {
     setCurrentPage(newPage);
   };
 
-  const isLoading = isLoadingUser || isLoadingAchievements;
+  const isLoading = isLoadingUser;
 
   return (
     <div className="flex min-h-screen">
@@ -310,7 +308,7 @@ export function DashboardClient() {
       </main>
 
       <RightColumn
-        achievements={achievements}
+        achievements={fullInfo?.relations.userAchievements || []}
         userSkills={fullInfo?.relations.userSkills || []}
       />
 
