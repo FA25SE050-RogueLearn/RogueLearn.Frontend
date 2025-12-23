@@ -119,6 +119,18 @@ const guildPostsApi = {
   unlock: (payload: UnlockGuildPostCommandRequest): Promise<UnlockGuildPostResponse> =>
     axiosClient.post<void>(`/api/guilds/${payload.guildId}/posts/${payload.postId}/unlock`).then(() => {}),
 
+  /** POST /api/guilds/{guildId}/posts/{postId}/announcement */
+  setAnnouncement: (guildId: string, postId: string): Promise<void> =>
+    axiosClient.put<void>(`/api/guilds/${guildId}/posts/${postId}/announce`).then(() => {}),
+
+  /** DELETE /api/guilds/{guildId}/posts/{postId}/announcement */
+  unsetAnnouncement: (guildId: string, postId: string): Promise<void> =>
+    axiosClient.put<void>(`/api/guilds/${guildId}/posts/${postId}/unannounce`).then(() => {}),
+
+  // =================================================================
+  // GUILD POST COMMENTS (GuildPostCommentsController)
+  // =================================================================
+
   createComment: (guildId: string, postId: string, payload: CreateGuildPostCommentRequest): Promise<ApiResponse<CreateGuildPostCommentResponse>> =>
     axiosClient.post<CreateGuildPostCommentResponse>(`/api/guilds/${guildId}/posts/${postId}/comments`, payload).then(res => ({
       isSuccess: true,
