@@ -64,6 +64,7 @@ interface QuestGenerationProgressResponse {
 export interface AdminQuestListItem {
   id: string;
   title: string;
+  status: 'Draft' | 'Published' | 'Archived'; // Added status
   subjectId: string;
   subjectCode: string;
   subjectName: string;
@@ -221,7 +222,6 @@ const questApi = {
         data: undefined,
       })),
 
-  // ⭐ NEW: Submit coding activity
   submitCodingActivity: async (
     questId: string,
     stepId: string,
@@ -398,6 +398,7 @@ const questApi = {
     search?: string;
     subjectId?: string;
     stepsGenerated?: boolean;
+    status?: string; // Added status filter
   }): Promise<ApiResponse<AdminQuestListResponse>> => {
     try {
       const res = await axiosClient.get<AdminQuestListResponse>('/api/admin/quests', { params });
@@ -527,6 +528,19 @@ const questApi = {
             data: null,
             message,
         };
+    }
+  },
+
+  /**
+   * Updates the lifecycle status of a Master Quest.
+   */
+  adminUpdateQuestStatus: async (questId: string, status: 'Draft' | 'Published' | 'Archived'): Promise<ApiResponse<void>> => {
+    try {
+      await axiosClient.put(`/api/admin/quests/${questId}/status`, { status });
+      return { isSuccess: true, data: undefined };
+    } catch (error: any) {
+      const message = error.response?.data?.message || error.message || 'Failed to update quest status';
+      return { isSuccess: false, data: null, message };
     }
   },
 };

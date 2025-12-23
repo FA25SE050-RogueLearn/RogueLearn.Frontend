@@ -12,7 +12,6 @@ interface PartyListClientProps {
 
 export default function PartyListClient({ onSelectParty }: PartyListClientProps) {
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [parties, setParties] = useState<PartyDto[]>([]);
   const [search, setSearch] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -24,7 +23,6 @@ export default function PartyListClient({ onSelectParty }: PartyListClientProps)
   useEffect(() => {
     let mounted = true;
     setLoading(true);
-    setError(null);
     const fetchParties = async () => {
       try {
         // Use non-admin endpoint: fetch current user's parties
@@ -33,7 +31,7 @@ export default function PartyListClient({ onSelectParty }: PartyListClientProps)
         setParties(res.data ?? []);
       } catch (e: any) {
         if (!mounted) return;
-        setError(e?.message ?? "Failed to load parties");
+        toast.error(e?.message ?? "Failed to load parties");
       } finally {
         if (!mounted) return;
         setLoading(false);
@@ -122,8 +120,7 @@ export default function PartyListClient({ onSelectParty }: PartyListClientProps)
         />
       </div>
       {loading && <div className="text-sm text-white/70">Loading parties...</div>}
-      {error && <div className="text-xs text-red-400">{error}</div>}
-      {!loading && !error && filtered.length === 0 && (
+      {!loading && filtered.length === 0 && (
         <div className="text-xs text-white/50">No parties found.</div>
       )}
       <div className="flex flex-col gap-2">

@@ -27,9 +27,9 @@ export default function GuildInfoModal({ open, onClose, guildId }: Props) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm">
       <div className="absolute inset-0 bg-black/80" onClick={onClose} />
-      <div className="relative w-[60vw] max-w-[60vw] max-h-[85vh] overflow-hidden rounded-[28px] border border-[#f5c16c]/30 bg-linear-to-b from-[#1a0a08] to-[#0a0506] p-8 shadow-2xl">
+      <div className="relative w-[98vw] max-w-[1600px] h-[96vh] overflow-hidden rounded-[28px] border border-[#f5c16c]/30 bg-linear-to-b from-[#1a0a08] to-[#0a0506] p-6 md:p-8 shadow-2xl min-w-0">
         <div className="pointer-events-none absolute inset-0 opacity-25" style={{ backgroundImage: "url('https://www.transparenttextures.com/patterns/asfalt-dark.png')", backgroundSize: "100px", backgroundBlendMode: "overlay" }} />
-        <div className="relative">
+        <div className="relative flex h-full flex-col min-w-0">
           <div className="mb-6 flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="rounded-full bg-[#f5c16c]/10 p-2">
@@ -45,7 +45,7 @@ export default function GuildInfoModal({ open, onClose, guildId }: Props) {
             <button onClick={onClose} className="rounded-lg border border-[#f5c16c]/30 bg-[#1a0b08]/60 px-4 py-2 text-sm font-semibold text-white transition-colors hover:border-[#f5c16c]/50 hover:bg-[#1a0b08]">Close</button>
           </div>
 
-          <div className="grid grid-cols-1 gap-6 lg:grid-cols-2 overflow-y-auto pr-2" style={{ maxHeight: 'calc(85vh - 140px)' }}>
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-2 flex-1 overflow-y-auto pr-2 min-w-0">
             <section className="rounded-lg border border-white/10 bg-white/5 p-6">
               <div className="mb-3 flex items-center gap-2 text-xl font-semibold text-white"><Users className="h-6 w-6" /> Core Features</div>
               <ul className="space-y-2 text-base text-white/90">

@@ -16,6 +16,7 @@ import { PendingInvitationsCard } from "@/components/guild/management/PendingInv
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { createClient } from "@/utils/supabase/client";
 
 interface GuildManagementSectionProps {
   guildId: string;
@@ -117,22 +118,29 @@ export function GuildManagementSection({ guildId, onLeftGuild }: GuildManagement
     }
   };
 
-  const assignRoleWithRole = async (authUserId: string, role: GuildRole) => {
-    if (!guildId) return;
-    try {
-      await guildsApi.assignRole(guildId, authUserId, role);
-      setMembers((prev) => prev.map((m) => m.authUserId === authUserId ? { ...m, role } : m));
-      toast.success("Role assigned");
-    } catch (err) {
-      console.error(err);
-      // toast.error("Failed to assign role.");
-    }
-  };
-
   const transferLeadership = async (toAuthUserId: string) => {
     if (!guildId) return;
     try {
       await guildsApi.transferLeadership(guildId, { toUserId: toAuthUserId });
+      
+      const supabase = createClient();
+      const { data: { session } } = await supabase.auth.refreshSession();
+      if (session) {
+        const isHttps = window.location.protocol === 'https:';
+        const domain = process.env['NEXT_PUBLIC_COOKIE_DOMAIN'];
+        const secure = isHttps ? '; Secure' : '';
+        const sameSite = isHttps ? 'None' : 'Lax';
+        const dom = domain ? `; Domain=${domain}` : '';
+
+        if (session.access_token) {
+          const exp = session.expires_at ? Math.max(0, Math.floor(session.expires_at - Math.floor(Date.now() / 1000))) : 3600;
+          document.cookie = `rl_access_token=${encodeURIComponent(session.access_token)}; Path=/; Max-Age=${exp}${secure}; SameSite=${sameSite}${dom}`;
+        }
+        if (session.refresh_token) {
+          document.cookie = `rl_refresh_token=${encodeURIComponent(session.refresh_token)}; Path=/; Max-Age=${60 * 60 * 24 * 30}${secure}; SameSite=${sameSite}${dom}`;
+        }
+      }
+
       reload();
       toast.success("Leadership transferred.");
       try { router.refresh(); } catch { try { window.location.reload(); } catch {} }
@@ -158,6 +166,25 @@ export function GuildManagementSection({ guildId, onLeftGuild }: GuildManagement
     try {
       await guildsApi.leaveGuild(guildId);
       onLeftGuild?.();
+      
+      const supabase = createClient();
+      const { data: { session } } = await supabase.auth.refreshSession();
+      if (session) {
+        const isHttps = window.location.protocol === 'https:';
+        const domain = process.env['NEXT_PUBLIC_COOKIE_DOMAIN'];
+        const secure = isHttps ? '; Secure' : '';
+        const sameSite = isHttps ? 'None' : 'Lax';
+        const dom = domain ? `; Domain=${domain}` : '';
+
+        if (session.access_token) {
+          const exp = session.expires_at ? Math.max(0, Math.floor(session.expires_at - Math.floor(Date.now() / 1000))) : 3600;
+          document.cookie = `rl_access_token=${encodeURIComponent(session.access_token)}; Path=/; Max-Age=${exp}${secure}; SameSite=${sameSite}${dom}`;
+        }
+        if (session.refresh_token) {
+          document.cookie = `rl_refresh_token=${encodeURIComponent(session.refresh_token)}; Path=/; Max-Age=${60 * 60 * 24 * 30}${secure}; SameSite=${sameSite}${dom}`;
+        }
+      }
+
       router.push("/community");
       toast.success("You have left the guild.");
     } catch (err: any) {

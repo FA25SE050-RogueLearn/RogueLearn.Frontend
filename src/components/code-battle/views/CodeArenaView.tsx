@@ -103,14 +103,14 @@ export default function CodeArenaView({
 
     // Show notification
     toast.success('Event has ended!', {
-      description: 'The code battle event has concluded. Redirecting to the leaderboard...',
+      description: 'The code battle event has concluded. Redirecting to events...',
       duration: 5000,
     });
 
     // Redirect to the event results/leaderboard page after 3 seconds
     setTimeout(() => {
       if (eventId) {
-        router.push(`/code-battle/${eventId}/results`);
+        router.push(`/code-battle`);
       } else {
         onBack();
       }
@@ -258,7 +258,7 @@ export default function CodeArenaView({
             {/* Language Dropdown */}
             {(() => {
               const selectedProblem = problems.find(p => p.id === selectedProblemId);
-              const supportedLanguages = selectedProblem?.supported_languages || ['Python', 'Golang'];
+              const supportedLanguages = selectedProblem?.supported_languages || ['Python', 'Golang', 'Javascript'];
               const languageDisplayMap: Record<string, string> = {
                 'python': 'Python',
                 'go': 'Golang',

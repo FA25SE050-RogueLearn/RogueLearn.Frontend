@@ -110,12 +110,45 @@ axiosClient.interceptors.response.use(
       const is415 = status === 415;
       const is429 = status === 429;
 
+      const toString = (v: any): string => {
+        if (v == null) return '';
+        if (typeof v === 'string') return v;
+        try { return JSON.stringify(v, null, 2); } catch { return String(v); }
+      };
+      const formatDetails = (d: any): string | undefined => {
+        if (!d) return undefined;
+        if (Array.isArray(d)) {
+          const items = d.map((it: any) => {
+            const prop = it?.propertyName || it?.field || '';
+            const msg = it?.errorMessage || it?.message || toString(it);
+            return prop ? `${prop}: ${msg}` : msg;
+          }).filter(Boolean);
+          return items.length ? items.join('\n') : undefined;
+        }
+        if (typeof d === 'object') {
+          const lines: string[] = [];
+          for (const k of Object.keys(d)) {
+            const v = (d as any)[k];
+            if (Array.isArray(v)) {
+              for (const m of v) lines.push(`${k}: ${toString(m)}`);
+            } else {
+              lines.push(`${k}: ${toString(v)}`);
+            }
+          }
+          return lines.length ? lines.join('\n') : undefined;
+        }
+        return toString(d);
+      };
+
+      const isValidation = is422 || (message || '').toLowerCase() === 'validation failed';
+
       // ⭐ Don't show toast for polling 404s - let caller decide
       if (!(isPollingEndpoint && is404)) {
         if (is403) {
-          toast.error('Access Denied', {
-            description: message,
-          });
+          toast.error('Access Denied', { description: message });
+        } else if (isValidation) {
+          const desc = formatDetails(details);
+          toast.error('Validation failed', desc ? { description: desc } : undefined as any);
         } else {
           toast.error(message);
         }

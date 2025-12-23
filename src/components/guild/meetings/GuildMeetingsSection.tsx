@@ -1,6 +1,6 @@
 "use client";
 import React, { useEffect, useMemo, useState } from "react";
-import { Swords, Video, Calendar, Clock, Users, ExternalLink, Play, Square, AlertCircle, FileText, RefreshCw } from "lucide-react";
+import { Swords, Video, Calendar, Clock, Users, ExternalLink, Play, Square, AlertCircle, FileText, RefreshCw, Trash2 } from "lucide-react";
 import { useGoogleMeet, MeetScopes } from "@/hooks/useGoogleMeet";
 import googleMeetApi from "@/api/googleMeetApi";
 import meetingsApi from "@/api/meetingsApi";
@@ -42,7 +42,6 @@ export default function GuildMeetingsSection({ guildId }: Props) {
   const [authUserId, setAuthUserId] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
   const [ending, setEnding] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [activeToken, setActiveToken] = useState<string | null>(null);
   const [needsAuth, setNeedsAuth] = useState<boolean>(false);
 
@@ -55,7 +54,7 @@ export default function GuildMeetingsSection({ guildId }: Props) {
       end: in30.toISOString(),
     };
   });
-  const [dateError, setDateError] = useState<string | null>(null);
+  
 
   const [activeMeeting, setActiveMeeting] = useState<{
     meeting: MeetingDto | null;
@@ -76,6 +75,7 @@ export default function GuildMeetingsSection({ guildId }: Props) {
   const [recordingLinkById, setRecordingLinkById] = useState<Record<string, string | null>>({});
   const [recordingMetaById, setRecordingMetaById] = useState<Record<string, { url: string; fileId?: string | null } | null>>({});
   const [syncingById, setSyncingById] = useState<Record<string, boolean>>({});
+  const [deletingById, setDeletingById] = useState<Record<string, boolean>>({});
 
   function isUnauthorized(err: any): boolean {
     const msg = typeof err?.message === "string" ? err.message : "";
@@ -172,7 +172,6 @@ export default function GuildMeetingsSection({ guildId }: Props) {
   ];
 
   async function handleCreateMeeting() {
-    setError(null);
     setCreating(true);
     try {
       if (!authUserId) throw new Error("Not authenticated");
@@ -274,7 +273,7 @@ export default function GuildMeetingsSection({ guildId }: Props) {
       setGuildMeetings(listRes.data ?? []);
       setNeedsAuth(false);
     } catch (e: any) {
-      setError(e?.message ?? "Failed to create meeting");
+      toast.error(e?.message ?? "Failed to create meeting");
     } finally {
       setCreating(false);
     }
@@ -396,7 +395,6 @@ export default function GuildMeetingsSection({ guildId }: Props) {
   }
 
   async function handleEndMeetingFor(meeting: MeetingDto) {
-    setError(null);
     setEnding(true);
     try {
       if (!meeting?.meetingId) throw new Error("No meeting to end");
@@ -651,14 +649,13 @@ export default function GuildMeetingsSection({ guildId }: Props) {
       const listRes = await meetingsApi.getGuildMeetings(guildId);
       setGuildMeetings(listRes.data ?? []);
     } catch (e: any) {
-      setError(e?.message ?? "Failed to end meeting");
+      toast.error(e?.message ?? "Failed to end meeting");
     } finally {
       setEnding(false);
     }
   }
 
   async function handleSyncMeetingFor(meeting: MeetingDto) {
-    setError(null);
     try {
       if (!meeting?.meetingId) throw new Error("No meeting to sync");
       if (!meeting.actualEndTime) throw new Error("Meeting has no end time yet");
@@ -690,21 +687,20 @@ export default function GuildMeetingsSection({ guildId }: Props) {
       try { await loadDetailsIfNeeded(meetingId, true); } catch {}
       setNeedsAuth(false);
     } catch (e: any) {
-      setError(e?.message ?? "Failed to sync transcripts");
+      toast.error(e?.message ?? "Failed to sync transcripts");
     } finally {
       if (meeting?.meetingId) setSyncingById((prev) => ({ ...prev, [meeting.meetingId!]: false }));
     }
   }
 
   async function handleAuthorize() {
-    setError(null);
     try {
       const newToken = await requestToken(requiredBothScopes);
       setActiveToken(newToken);
       try { sessionStorage.setItem(`guildMeetingToken:${guildId}`, newToken); } catch (_) {}
       setNeedsAuth(false);
     } catch (e: any) {
-      setError(e?.message ?? "Authorization failed");
+      toast.error(e?.message ?? "Authorization failed");
     }
   }
 
@@ -869,10 +865,28 @@ export default function GuildMeetingsSection({ guildId }: Props) {
         return null;
       }
     } catch (e: any) {
-      setError(e?.message ?? "Failed to list recordings");
+      toast.error(e?.message ?? "Failed to list recordings");
       return null;
     } finally {
       setRecordingsLoading((prev) => ({ ...prev, [meeting.meetingId as string]: false }));
+    }
+  }
+
+  async function handleDeleteMeetingFor(meeting: MeetingDto) {
+    try {
+      const meetingId = meeting?.meetingId as string;
+      if (!meetingId) return;
+      const ok = typeof window !== "undefined" ? window.confirm("Delete this meeting?") : true;
+      if (!ok) return;
+      setDeletingById((prev) => ({ ...prev, [meetingId]: true }));
+      await meetingsApi.deleteMeeting(meetingId);
+      toast.success("Meeting deleted");
+      setExpandedId("");
+      await reload();
+    } catch (e: any) {
+      toast.error(e?.message ?? "Failed to delete meeting");
+    } finally {
+      if (meeting?.meetingId) setDeletingById((prev) => ({ ...prev, [meeting.meetingId!]: false }));
     }
   }
 
@@ -928,12 +942,7 @@ export default function GuildMeetingsSection({ guildId }: Props) {
           </div>
           <h4 className="text-lg font-semibold text-[#f5c16c]">Guild Meetings</h4>
         </div>
-        {error && (
-          <div className="flex items-center gap-2 text-sm text-rose-400">
-            <AlertCircle className="h-4 w-4" />
-            <span>{error}</span>
-          </div>
-        )}
+        
       </div>
 
       {myRole === "GuildMaster" && (
@@ -973,10 +982,9 @@ export default function GuildMeetingsSection({ guildId }: Props) {
                     const dt = new Date(ms);
                     const now = new Date();
                     if (dt < now) {
-                      setDateError("Start time cannot be in the past");
+                      toast.error("Start time cannot be in the past");
                       return;
                     }
-                    setDateError(null);
                     const newStart = dt.toISOString();
                     setCreateState((s) => {
                       const currentEnd = new Date(s.end);
@@ -1003,10 +1011,9 @@ export default function GuildMeetingsSection({ guildId }: Props) {
                     const dt = new Date(ms);
                     const startDt = new Date(createState.start);
                     if (dt <= startDt) {
-                      setDateError("End time must be after start time");
+                      toast.error("End time must be after start time");
                       return;
                     }
-                    setDateError(null);
                     setCreateState((s) => ({ ...s, end: dt.toISOString() }));
                   }}
                   className="w-full rounded-lg border border-[#f5c16c]/20 bg-black/40 p-2.5 text-sm text-white focus:border-[#f5c16c]/50 focus:outline-none focus:ring-2 focus:ring-[#f5c16c]/20"
@@ -1014,13 +1021,11 @@ export default function GuildMeetingsSection({ guildId }: Props) {
               </div>
             </div>
             
-            {dateError && (
-              <div className="mt-2 text-xs text-red-400">{dateError}</div>
-            )}
+            
             <div className="mt-4 flex items-center gap-3">
               <button
                 onClick={handleCreateMeeting}
-                disabled={creating || !!dateError}
+                disabled={creating}
                 className="flex items-center gap-2 rounded-lg bg-linear-to-r from-[#f5c16c] to-[#d4a855] px-4 py-2.5 text-sm font-medium text-black transition-all hover:from-[#d4a855] hover:to-[#f5c16c] disabled:opacity-50"
               >
                 <Play className="h-4 w-4" />
@@ -1150,6 +1155,15 @@ export default function GuildMeetingsSection({ guildId }: Props) {
                               End Meeting
                             </button>
                           )}
+                          <button
+                            onClick={(e) => { e.preventDefault(); handleDeleteMeetingFor(m); }}
+                            disabled={!!deletingById[m.meetingId!]}
+                            title="Delete meeting"
+                            aria-label="Delete meeting"
+                            className="rounded p-1.5 text-white/70 hover:bg-white/10 hover:text-white disabled:opacity-50"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
                           
                           
                           </>

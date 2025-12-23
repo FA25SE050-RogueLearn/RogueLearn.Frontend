@@ -13,6 +13,7 @@ import { DashboardFrame } from "@/components/layout/DashboardFrame";
 import * as Y from "yjs";
 import YPartyKitProvider from "y-partykit/provider";
 import { nameToColor } from "@/components/collab/CursorUsersProvider";
+import { createClient } from "@/utils/supabase/client";
 const BlockNoteStashEditor = dynamic(() => import("@/components/party/BlockNoteStashEditor"), { ssr: false });
 
 // BlockNote styles for consistent editor appearance
@@ -129,6 +130,42 @@ export default function PartyStashDetailPage() {
       clearTimeout(saveTimerRef.current);
     }
     setStatus("dirty");
+    try {
+      const getMediaUrls = (blocks: any[]): Set<string> => {
+        const urls = new Set<string>();
+        const visit = (arr: any[]) => {
+          for (const b of arr ?? []) {
+            const t = (b?.type || "").toLowerCase();
+            if (t === "image" || t === "video" || t === "audio" || t === "file") {
+              const u = b?.props?.url;
+              if (typeof u === "string" && u) urls.add(u);
+            }
+            if (Array.isArray(b?.children) && b.children.length) visit(b.children);
+          }
+        };
+        visit(blocks);
+        return urls;
+      };
+      const deleteSupabaseObjectByUrl = async (url: string) => {
+        try {
+          const marker = "/party-stash-media/";
+          const idx = url.indexOf(marker);
+          if (idx === -1) return;
+          const pathPart = url.substring(idx + marker.length);
+          const noQuery = pathPart.split("?")[0];
+          const path = decodeURIComponent(noQuery);
+          const supabase = createClient();
+          await supabase.storage.from("party-stash-media").remove([path]);
+        } catch {}
+      };
+      const current = getMediaUrls(json as any);
+      const key = `stashMedia:${partyId}:${stashId}`;
+      const prevRaw = localStorage.getItem(key);
+      const prev: string[] = prevRaw ? JSON.parse(prevRaw) : [];
+      const prevSet = new Set<string>(prev);
+      for (const u of prevSet) { if (!current.has(u)) deleteSupabaseObjectByUrl(u); }
+      localStorage.setItem(key, JSON.stringify(Array.from(current)));
+    } catch {}
     saveTimerRef.current = window.setTimeout(async () => {
       setStatus("saving");
       try {
@@ -343,18 +380,19 @@ export default function PartyStashDetailPage() {
 
           {/* Editor Area */}
           <div className="h-[75vh] overflow-y-auto p-6">
-            {item && (
-              <BlockNoteStashEditor
-                initialBlocks={initialBlocks}
-                editable={canEdit}
-                provider={provider}
-                fragment={fragment}
-                cursorName={cursorName}
-                cursorColor={cursorColor}
-                onChange={onEditorChange}
-                aiBaseUrl={AI_BASE_URL}
-              />
-            )}
+          {item && (
+            <BlockNoteStashEditor
+              initialBlocks={initialBlocks}
+              editable={canEdit}
+              provider={provider}
+              fragment={fragment}
+              cursorName={cursorName}
+              cursorColor={cursorColor}
+              onChange={onEditorChange}
+              partyId={partyId}
+              aiBaseUrl={AI_BASE_URL}
+            />
+          )}
           </div>
         </div>
       </div>

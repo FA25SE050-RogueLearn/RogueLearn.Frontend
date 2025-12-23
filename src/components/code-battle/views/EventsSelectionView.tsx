@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState, useEffect, useRef, useCallback, type CSSProperties } from 'react';
-import { ArrowRight, Trophy, Calendar, Users, Target, Activity, Flame, Plus, ChevronLeft, Clock, Zap } from 'lucide-react';
+import { ArrowRight, Activity, ChevronLeft, Clock, Zap, Flame, Target, Trophy } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useRouter } from 'next/navigation';
@@ -265,11 +265,11 @@ export default function EventsSelectionView({
       ) {
         // Show notification with redirect action
         toast.success(`${event.Title || event.title} has ended!`, {
-          description: 'View the final leaderboard and results.',
+          description: 'The battle has concluded.',
           duration: 10000,
           action: {
-            label: 'View Results',
-            onClick: () => router.push(`/code-battle/${eventId}/results`),
+            label: 'Back to Events',
+            onClick: () => router.push(`/code-battle`),
           },
         });
         
@@ -517,12 +517,10 @@ export default function EventsSelectionView({
         <CardContent className={`relative z-10 space-y-4 ${compact ? 'p-3' : 'p-5'}`}>
           <div className={`space-y-2 ${compact ? 'text-[10px]' : 'text-[11px]'} text-foreground/60`}>
             <div className="flex items-center gap-2">
-              <Calendar className="h-3.5 w-3.5" />
               <span>{formatDateRange(event.started_date || event.StartedDate || '', event.end_date || event.EndDate || '')}</span>
             </div>
             {!compact && (
               <div className="flex items-center gap-2">
-                <Users className="h-3.5 w-3.5" />
                 <span>Max {event.MaxGuilds} Guilds • {event.MaxPlayersPerGuild} per Guild</span>
               </div>
             )}
@@ -609,7 +607,6 @@ export default function EventsSelectionView({
           <CardContent className="relative z-10 flex flex-col gap-10 p-8 lg:flex-row lg:items-center lg:justify-between">
             <div className="flex-1 text-white">
               <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-[#d23187]/50 bg-[#d23187]/10 px-5 py-1.5 text-xs uppercase tracking-[0.45em] text-[#f9d9eb]">
-                <Trophy className="h-4 w-4" />
                 Arena
               </div>
               <h1 className="text-4xl font-bold leading-tight sm:text-5xl">Choose Your Next Code Battle</h1>
@@ -619,7 +616,6 @@ export default function EventsSelectionView({
               {featuredEvent && (
                 <div className="mt-6 flex flex-wrap items-center gap-4 text-sm text-foreground/80">
                   <div className="flex items-center gap-2 rounded-full border border-[#f5c16c]/30 bg-[#f5c16c]/10 px-4 py-1">
-                    <Calendar className="h-3.5 w-3.5 text-[#f5c16c]" />
                     <span>{formatDate(featuredEvent.started_date || featuredEvent.StartedDate || '')}</span>
                   </div>
                   <div className="flex items-center gap-2">
@@ -661,7 +657,6 @@ export default function EventsSelectionView({
                   onClick={() => router.push('/practice')}
                   className="inline-flex items-center gap-2 rounded-full border border-[#d23187]/50 bg-linear-to-r from-[#d23187]/20 to-[#f5c16c]/20 px-6 py-2 text-xs font-semibold uppercase tracking-wider text-white shadow-[0_8px_20px_rgba(210,49,135,0.25)] hover:from-[#d23187]/30 hover:to-[#f5c16c]/30 hover:shadow-[0_12px_30px_rgba(210,49,135,0.4)] transition-all"
                 >
-                  <Target className="h-4 w-4" />
                   Solo Practice
                 </Button>
                 {isGuildMaster && guildId && (
@@ -669,7 +664,6 @@ export default function EventsSelectionView({
                     onClick={() => router.push(`/community/guilds/${guildId}#manage`)}
                     className="rounded-full bg-linear-to-r from-[#d23187] via-[#f061a6] to-[#f5c16c] text-white shadow-[0_8px_24px_rgba(210,49,135,0.4)] hover:shadow-[0_12px_32px_rgba(210,49,135,0.6)] transition-all duration-300"
                   >
-                    <Plus className="mr-2 h-4 w-4" />
                     Request Event
                   </Button>
                 )}
@@ -687,7 +681,6 @@ export default function EventsSelectionView({
               <div className="flex items-center justify-between">
                 <div>
                   <div className="flex items-center gap-2 mb-1">
-                    <Flame className="h-5 w-5 text-[#d23187]" />
                     <CardTitle className="text-xl text-white">Active Battles</CardTitle>
                   </div>
                   <p className="text-xs text-foreground/60">Currently running events</p>
@@ -734,7 +727,6 @@ export default function EventsSelectionView({
               <div className="flex items-center justify-between">
                 <div>
                   <div className="flex items-center gap-2 mb-1">
-                    <Target className="h-5 w-5 text-[#f5c16c]" />
                     <CardTitle className="text-xl text-white">Scheduled Battles</CardTitle>
                   </div>
                   <p className="text-xs text-foreground/60">Upcoming events to register</p>
@@ -782,7 +774,6 @@ export default function EventsSelectionView({
             <div className="flex items-center justify-between">
               <div>
                 <div className="flex items-center gap-2 mb-1">
-                  <Trophy className="h-5 w-5 text-gray-400" />
                   <CardTitle className="text-xl text-white">Concluded Battles</CardTitle>
                 </div>
                 <p className="text-xs text-foreground/60">View past event results</p>

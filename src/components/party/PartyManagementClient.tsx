@@ -15,7 +15,6 @@ export default function PartyManagementClient() {
   const [activeView, setActiveView] = useState<"dashboard" | "discover">("dashboard");
   const [parties, setParties] = useState<PartyDto[]>([]);
   const [loadingParties, setLoadingParties] = useState(true);
-  const [errorParties, setErrorParties] = useState<string | null>(null);
   const [myInvites, setMyInvites] = useState<PartyInvitationDto[]>([]);
   const [loadingInvites, setLoadingInvites] = useState(false);
   const [authUserId, setAuthUserId] = useState<string | null>(null);
@@ -27,13 +26,12 @@ export default function PartyManagementClient() {
     const load = async () => {
       try {
         setLoadingParties(true);
-        setErrorParties(null);
         const res = await partiesApi.getMine();
         if (!mounted) return;
         setParties(res.data ?? []);
       } catch (e: any) {
         if (!mounted) return;
-        setErrorParties(e?.message ?? "Failed to load parties");
+        toast.error(e?.message ?? "Failed to load parties");
       } finally {
         if (!mounted) return;
         setLoadingParties(false);
@@ -285,8 +283,7 @@ export default function PartyManagementClient() {
         {activeView === "dashboard" && (
           <>
             {loadingParties && <div className="text-sm text-white/50">Loading parties...</div>}
-            {errorParties && <div className="text-xs text-red-400">{errorParties}</div>}
-            {!loadingParties && !errorParties && parties.length === 0 && (
+            {!loadingParties && parties.length === 0 && (
               <div className="flex flex-col items-center justify-center gap-4 py-20 text-center">
                 <div className="rounded-full bg-[#f5c16c]/10 p-6">
                   <Users className="h-12 w-12 text-[#f5c16c]" />

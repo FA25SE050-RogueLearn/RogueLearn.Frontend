@@ -47,8 +47,9 @@ export default function PracticeArenaView({ problem, onBack }: PracticeArenaView
     return 'hard';
   };
 
-  const getLanguageParam = (lang: string): 'Golang' | 'Python' => {
+  const getLanguageParam = (lang: string): 'Golang' | 'Python' | 'Javascript' => {
     if (lang === 'go') return 'Golang';
+    if (lang === 'javascript' || lang === 'js') return 'Javascript';
     return 'Python'; // Default to Python for 'python' or any other language
   };
 
@@ -110,6 +111,8 @@ export default function PracticeArenaView({ problem, onBack }: PracticeArenaView
         setLanguage('go');
       } else if (submissionLang === 'python') {
         setLanguage('python');
+      } else if (submissionLang === 'javascript') {
+        setLanguage('javascript');
       }
       toast.success('Submission loaded', {
         description: `Loaded ${language} code from ${new Date(submittedAt).toLocaleString()}`
@@ -262,7 +265,7 @@ export default function PracticeArenaView({ problem, onBack }: PracticeArenaView
                   size="sm"
                   className="rounded-lg border-[#f5c16c]/30 bg-[#140707]/80 px-4 text-xs hover:bg-[#f5c16c]/10"
                 >
-                  Language: {language === 'python' ? 'Python' : language === 'go' ? 'Go' : language}
+                  Language: {language === 'python' ? 'Python' : language === 'go' ? 'Go' : language === 'javascript' ? 'Javascript' : language}
                   <ChevronDown className="ml-2 h-3 w-3" />
                 </Button>
               </DropdownMenuTrigger>
@@ -278,6 +281,12 @@ export default function PracticeArenaView({ problem, onBack }: PracticeArenaView
                   className="text-xs text-white cursor-pointer hover:bg-[#f5c16c]/10 focus:bg-[#f5c16c]/10"
                 >
                   Go
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => setLanguage('javascript')}
+                  className="text-xs text-white cursor-pointer hover:bg-[#f5c16c]/10 focus:bg-[#f5c16c]/10"
+                >
+                  Javascript
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>

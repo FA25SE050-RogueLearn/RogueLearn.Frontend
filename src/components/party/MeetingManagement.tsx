@@ -1,6 +1,6 @@
 "use client";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { FileText, RefreshCw, Video } from "lucide-react";
+import { FileText, RefreshCw, Video, Trash2 } from "lucide-react";
 import { useGoogleMeet, MeetScopes } from "@/hooks/useGoogleMeet";
 import googleMeetApi from "@/api/googleMeetApi";
 import meetingsApi from "@/api/meetingsApi";
@@ -45,7 +45,6 @@ export default function MeetingManagement({ partyId, variant = "full", showList 
   const [authUserId, setAuthUserId] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
   const [ending, setEnding] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [activeToken, setActiveToken] = useState<string | null>(null);
   const [needsAuth, setNeedsAuth] = useState<boolean>(false);
 
@@ -59,7 +58,7 @@ export default function MeetingManagement({ partyId, variant = "full", showList 
       spaceName: "",
     };
   });
-  const [dateError, setDateError] = useState<string | null>(null);
+  
 
   // Active meeting state for the current session
   const [activeMeeting, setActiveMeeting] = useState<{
@@ -86,6 +85,7 @@ export default function MeetingManagement({ partyId, variant = "full", showList 
   const [recordingLinkById, setRecordingLinkById] = useState<Record<string, string | null>>({});
   const [recordingMetaById, setRecordingMetaById] = useState<Record<string, { url: string; fileId?: string | null } | null>>({});
   const [syncingById, setSyncingById] = useState<Record<string, boolean>>({});
+  const [deletingById, setDeletingById] = useState<Record<string, boolean>>({});
 
   
 
@@ -300,7 +300,6 @@ export default function MeetingManagement({ partyId, variant = "full", showList 
   ];
 
   async function handleCreateMeeting() {
-    setError(null);
     setCreating(true);
     try {
       if (!authUserId) throw new Error("Not authenticated");
@@ -442,14 +441,14 @@ export default function MeetingManagement({ partyId, variant = "full", showList 
         try { onCreated(); } catch {}
       }
     } catch (e: any) {
-      setError(e?.message ?? "Failed to create meeting");
+      toast.error(e?.message ?? "Failed to create meeting");
     } finally {
       setCreating(false);
     }
   }
 
   async function handleEndMeetingFor(meeting: MeetingDto) {
-    setError(null);
+
     setEnding(true);
     try {
       if (!meeting?.meetingId) throw new Error("No meeting to end");
@@ -571,20 +570,19 @@ export default function MeetingManagement({ partyId, variant = "full", showList 
         setDetailsById((prev) => ({ ...prev, [meetingId]: { meeting: updated, participants: dedup, summaryText: prev[meetingId]?.summaryText ?? null } as any }));
       }
     } catch (e: any) {
-      setError(e?.message ?? "Failed to end meeting");
+      toast.error(e?.message ?? "Failed to end meeting");
     } finally {
       setEnding(false);
     }
   }
 
   async function handleSyncMeetingFor(meeting: MeetingDto) {
-    setError(null);
-    try {
-      if (!meeting?.meetingId) throw new Error("No meeting to sync");
-      if (!meeting.actualEndTime) throw new Error("Meeting has no end time yet");
-      const endedAt = new Date(meeting.actualEndTime).getTime();
-      const canSync = Date.now() - endedAt >= 5 * 60 * 1000;
-      if (!canSync) throw new Error("Sync available ~5 minutes after meeting ends");
+      try {
+        if (!meeting?.meetingId) throw new Error("No meeting to sync");
+        if (!meeting.actualEndTime) throw new Error("Meeting has no end time yet");
+        const endedAt = new Date(meeting.actualEndTime).getTime();
+        const canSync = Date.now() - endedAt >= 5 * 60 * 1000;
+        if (!canSync) throw new Error("Sync available ~5 minutes after meeting ends");
       const initialToken = activeToken ?? (await getAccessToken(requiredBothScopes));
       let effectiveToken = initialToken;
       const meetingId = meeting.meetingId!;
@@ -611,9 +609,27 @@ export default function MeetingManagement({ partyId, variant = "full", showList 
       try { await loadDetailsIfNeeded(meetingId, true); } catch {}
       setNeedsAuth(false);
     } catch (e: any) {
-      setError(e?.message ?? "Failed to sync transcripts");
+      toast.error(e?.message ?? "Failed to process recording");
     } finally {
       if (meeting?.meetingId) setSyncingById((prev) => ({ ...prev, [meeting.meetingId!]: false }));
+    }
+  }
+
+  async function handleDeleteMeetingFor(meeting: MeetingDto) {
+    try {
+      const meetingId = meeting?.meetingId as string;
+      if (!meetingId) return;
+      const ok = typeof window !== "undefined" ? window.confirm("Delete this meeting?") : true;
+      if (!ok) return;
+      setDeletingById((prev) => ({ ...prev, [meetingId]: true }));
+      await meetingsApi.deleteMeeting(meetingId);
+      toast.success("Meeting deleted");
+      setExpandedId("");
+      await reloadMeetings();
+    } catch (e: any) {
+      toast.error(e?.message ?? "Failed to delete meeting");
+    } finally {
+      if (meeting?.meetingId) setDeletingById((prev) => ({ ...prev, [meeting.meetingId!]: false }));
     }
   }
 
@@ -778,7 +794,7 @@ export default function MeetingManagement({ partyId, variant = "full", showList 
         return null;
       }
     } catch (e: any) {
-      // setError(e?.message ?? "Failed to list recordings");
+      toast.error(e?.message ?? "Failed to list recordings");
       return null;
     } finally {
       setRecordingsLoading((prev) => ({ ...prev, [meeting.meetingId as string]: false }));
@@ -788,14 +804,14 @@ export default function MeetingManagement({ partyId, variant = "full", showList 
   
 
   async function handleAuthorize() {
-    setError(null);
+    
     try {
       const newToken = await requestToken(requiredBothScopes);
       setActiveToken(newToken);
       try { sessionStorage.setItem(`meetingToken:${partyId}`, newToken); } catch (_) {}
       setNeedsAuth(false);
     } catch (e: any) {
-      setError(e?.message ?? "Authorization failed");
+      toast.error(e?.message ?? "Authorization failed");
     }
   }
 
@@ -821,10 +837,6 @@ export default function MeetingManagement({ partyId, variant = "full", showList 
 
   return (
     <div className="space-y-6">
-      {error && <span className="text-xs text-red-400">{error}</span>}
-
-      
-
       {/* Create meeting section */}
       {variant !== "compact" && (
         roleLoading ? (
@@ -856,10 +868,9 @@ export default function MeetingManagement({ partyId, variant = "full", showList 
                   const dt = new Date(e.target.value);
                   const now = new Date();
                   if (dt < now) {
-                    setDateError("Start time cannot be in the past");
+                    toast.error("Start time cannot be in the past");
                     return;
                   }
-                  setDateError(null);
                   const newStart = dt.toISOString();
                   setCreateState((s) => {
                     // If end is before or equal to new start, adjust end to 30 mins after start
@@ -883,10 +894,9 @@ export default function MeetingManagement({ partyId, variant = "full", showList 
                   const dt = new Date(e.target.value);
                   const startDt = new Date(createState.start);
                   if (dt <= startDt) {
-                    setDateError("End time must be after start time");
+                    toast.error("End time must be after start time");
                     return;
                   }
-                  setDateError(null);
                   setCreateState((s) => ({
                     ...s,
                     end: dt.toISOString(),
@@ -896,13 +906,11 @@ export default function MeetingManagement({ partyId, variant = "full", showList 
               />
             </div>
           </div>
-          {dateError && (
-            <div className="mt-2 text-xs text-red-400">{dateError}</div>
-          )}
+          
           <div className="mt-3 flex items-center gap-3">
             <button
               onClick={handleCreateMeeting}
-              disabled={creating || !!dateError}
+              disabled={creating}
               aria-busy={creating}
               className="rounded bg-fuchsia-600 px-4 py-2 text-xs font-medium text-white disabled:opacity-50"
             >
@@ -1058,6 +1066,15 @@ export default function MeetingManagement({ partyId, variant = "full", showList 
                                 End Meeting
                               </button>
                             )}
+                            <button
+                              onClick={() => handleDeleteMeetingFor(m)}
+                              disabled={!!deletingById[m.meetingId!]}
+                              title="Delete meeting"
+                              aria-label="Delete meeting"
+                              className="rounded p-1.5 text-white/70 hover:bg-white/10 hover:text-white disabled:opacity-50"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
                           </>
                         )}
                       </div>

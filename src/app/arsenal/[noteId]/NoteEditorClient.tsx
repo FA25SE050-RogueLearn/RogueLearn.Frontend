@@ -16,7 +16,8 @@ import { createClient } from "@/utils/supabase/client";
 import { Loader2, BookOpen, ScrollText, Tag as TagIcon, Sparkles, Share2, Info, ArrowLeft, Trash2 } from "lucide-react";
 
 // BlockNote imports
-import { PartialBlock, insertOrUpdateBlock } from "@blocknote/core";
+import { PartialBlock, insertOrUpdateBlock, BlockNoteSchema, createCodeBlockSpec } from "@blocknote/core";
+import { codeBlockOptions } from "@blocknote/code-block";
 import { en } from "@blocknote/core/locales";
 import "@blocknote/core/fonts/inter.css";
 import { BlockNoteView } from "@blocknote/shadcn";
@@ -109,7 +110,7 @@ export default function NoteEditorClient({ noteId }: NoteEditorClientProps) {
   const [sharePartyId, setSharePartyId] = useState<string | null>(null);
   const [shareTitle, setShareTitle] = useState<string>("");
   const [shareTags, setShareTags] = useState<string>("");
-  const { role: shareRole } = usePartyRole(sharePartyId ?? "");
+  const { role: shareRole, loading: shareRoleLoading } = usePartyRole(sharePartyId ?? "");
 
   useEffect(() => {
     const supabase = createClient();
@@ -148,7 +149,7 @@ export default function NoteEditorClient({ noteId }: NoteEditorClientProps) {
               }
             }
           }
-          const fallback: PartialBlock[] = [{ type: "paragraph", content: [{ type: "text", text: n.title ?? "", styles: {} }] }];
+          const fallback: PartialBlock[] = Array.from({ length: 20 }, () => ({ type: "paragraph", content: [{ type: "text", text: "", styles: {} }] }));
           setInitialBlocks(normalizeBlocks(blocks && blocks.length > 0 ? blocks : fallback));
         }
       } finally {
@@ -181,6 +182,11 @@ export default function NoteEditorClient({ noteId }: NoteEditorClientProps) {
   const AI_BASE_URL = "/api/blocknote";
 
   const editor = useCreateBlockNote({
+    schema: BlockNoteSchema.create().extend({
+      blockSpecs: {
+        codeBlock: createCodeBlockSpec(codeBlockOptions),
+      },
+    }),
     initialContent: initialBlocks,
     dictionary: AI_BASE_URL ? ({ ...en, ai: aiEn } as any) : undefined,
     extensions: AI_BASE_URL ? [createAIExtension({ transport: new DefaultChatTransport({ api: `${AI_BASE_URL}/regular/streamText` }) })] : undefined,
@@ -438,7 +444,7 @@ export default function NoteEditorClient({ noteId }: NoteEditorClientProps) {
                       <DialogHeader><DialogTitle>Share to Party Stash</DialogTitle></DialogHeader>
                       <div className="space-y-3">
                         {!isPublic && <div className="rounded-md border border-yellow-600/40 bg-yellow-900/20 p-2 text-xs text-yellow-200">Note must be public to share.</div>}
-                        {sharePartyId && !shareRole && <div className="rounded-md border border-red-600/40 bg-red-900/20 p-2 text-xs text-red-200">You must be a party member to share notes.</div>}
+                        {sharePartyId && !shareRole && !shareRoleLoading && <div className="rounded-md border border-red-600/40 bg-red-900/20 p-2 text-xs text-red-200">You must be a party member to share notes.</div>}
                         <div className="grid grid-cols-2 gap-2 items-center">
                           <Label className="text-xs">Party</Label>
                           <Select onValueChange={(v) => setSharePartyId(v)} value={sharePartyId ?? undefined}>
@@ -606,8 +612,8 @@ export default function NoteEditorClient({ noteId }: NoteEditorClientProps) {
         </div>
 
         {/* Main Editor Area */}
-        <div className="h-[80vh] overflow-y-auto p-6">
-            <BlockNoteView editor={editor} onChange={onEditorChange} formattingToolbar={false} slashMenu={false} style={{ minHeight: "60vh" }}>
+        <div className="p-6">
+            <BlockNoteView editor={editor} onChange={onEditorChange} formattingToolbar={false} slashMenu={false}>
               {AI_BASE_URL && <AIMenuController />}
               <FormattingToolbarController formattingToolbar={() => (<FormattingToolbar>{getFormattingToolbarItems()}{AI_BASE_URL && <AIToolbarButton />}</FormattingToolbar>)} />
               <SuggestionMenuController triggerCharacter="/" getItems={async (query) => {

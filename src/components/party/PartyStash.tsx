@@ -39,7 +39,6 @@ export default function PartyStash({ partyId }: { partyId: string }) {
   const [items, setItems] = useState<PartyStashItemDto[]>([]);
   const [members, setMembers] = useState<PartyMemberDto[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [showAdd, setShowAdd] = useState(false);
   const [title, setTitle] = useState("");
   const [tags, setTags] = useState<string>("");
@@ -61,7 +60,6 @@ export default function PartyStash({ partyId }: { partyId: string }) {
 
   const load = async () => {
     setLoading(true);
-    setError(null);
     try {
       const [res, membersRes] = await Promise.all([
         partiesApi.getResources(partyId),
@@ -70,7 +68,7 @@ export default function PartyStash({ partyId }: { partyId: string }) {
       setItems(res.data ?? []);
       setMembers(membersRes.data ?? []);
     } catch (e: any) {
-      setError(e?.message ?? "Failed to load stash");
+      
     } finally {
       setLoading(false);
     }
@@ -82,7 +80,6 @@ export default function PartyStash({ partyId }: { partyId: string }) {
 
   const addResource = async () => {
     setSubmitting(true);
-    setError(null);
     try {
       const payload = {
         title,
@@ -105,7 +102,7 @@ export default function PartyStash({ partyId }: { partyId: string }) {
       setShowAdd(false);
       await load();
     } catch (e: any) {
-      setError(e?.message ?? "Failed to add resource");
+        
     } finally {
       setSubmitting(false);
     }
@@ -128,7 +125,6 @@ export default function PartyStash({ partyId }: { partyId: string }) {
   const saveEdit = async () => {
     if (!editingId) return;
     setSavingEdit(true);
-    setError(null);
     try {
       const payload = {
         title: editTitle,
@@ -147,19 +143,18 @@ export default function PartyStash({ partyId }: { partyId: string }) {
       cancelEdit();
       await load();
     } catch (e: any) {
-      setError(e?.message ?? "Failed to update resource");
+        
     } finally {
       setSavingEdit(false);
     }
   };
 
   const deleteItem = async (id: string) => {
-    setError(null);
     try {
       await partiesApi.deleteResource(partyId, id);
       await load();
     } catch (e: any) {
-      setError(e?.message ?? "Failed to delete resource");
+        
     }
   };
 
@@ -274,11 +269,7 @@ export default function PartyStash({ partyId }: { partyId: string }) {
         )}
       </div>
 
-      {error && (
-        <div className="rounded-lg border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-400">
-          {error}
-        </div>
-      )}
+
 
       {/* Content */}
       {items.length === 0 ? (
