@@ -344,14 +344,20 @@ export default function EventsSelectionView({
     checkGuildMasterStatusAndRegistrations();
   }, []);
 
-  // Check registration status for all events
+  // Check registration status for active (live) and preparing events
   useEffect(() => {
     const checkRegistrations = async () => {
       if (!userId || events.length === 0) return;
 
       const registered = new Set<string>();
 
-      for (const event of events) {
+      // Check registration for live and preparing events (preparing will become live soon)
+      const eventsToCheck = events.filter(event => {
+        const status = resolveEventStatus(event);
+        return status.key === 'live' || status.key === 'preparing';
+      });
+
+      for (const event of eventsToCheck) {
         try {
           const eventId = event.id || event.ID;
           if (!eventId) continue;
@@ -375,7 +381,7 @@ export default function EventsSelectionView({
     };
 
     checkRegistrations();
-  }, [userId, events]);
+  }, [userId, events, liveEvents]);
 
   const eventStats = useMemo(() => {
     // In dashboard mode, use total counts from API

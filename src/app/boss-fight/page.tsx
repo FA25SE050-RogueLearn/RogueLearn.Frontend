@@ -510,7 +510,7 @@ export default function BossFightSetupPage() {
                         <li><strong>Teamwork</strong>: Coordinate attacks for max damage!</li>
                       </ul>
 
-                      <h4 style={{ color: '#f5c16c', marginTop: 16, marginBottom: 8, fontSize: 16, fontWeight: 800 }}>Power Play 🔥</h4>
+                      <h4 style={{ color: '#f5c16c', marginTop: 16, marginBottom: 8, fontSize: 16, fontWeight: 800 }}>Power Play</h4>
                       <ul style={{ color: 'rgba(255, 255, 255, 0.8)', paddingLeft: 20, lineHeight: 1.6 }}>
                         <li>Answer <strong>3 questions</strong> correctly in a row.</li>
                         <li>Triggers <strong>Double Damage</strong> for all players!</li>

@@ -567,7 +567,7 @@ export default function UserProfileModal({ open, onOpenChange, defaultTab = "pro
                   )}
                   {!loadingJoinRequests && !joinRequestsError && joinRequests.length === 0 && (
                     <div className="text-center py-8">
-                      <div className="text-4xl opacity-30 mb-2">🛡️</div>
+                      <div className="text-4xl opacity-30 mb-2"><Shield className="w-10 h-10 text-[#f5c16c]/30 mx-auto" /></div>
                       <p className="text-sm text-[#f5c16c]/50">No join requests</p>
                     </div>
                   )}

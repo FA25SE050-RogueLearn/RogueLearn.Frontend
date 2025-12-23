@@ -4,7 +4,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation'; // ⭐ NEW: Import router
-import { Sparkles, Zap, Crown, Star, Lock, CheckCircle2, Circle, Loader2 } from 'lucide-react';
+import { Sparkles, Zap, Crown, Star, Lock, CheckCircle2, Circle, Loader2, AlertTriangle } from 'lucide-react';
 import skillsApi from '@/api/skillsApi';
 import { SkillTree, SkillNode, SkillDependency } from '@/types/skill-tree';
 
@@ -193,7 +193,7 @@ const SkillOrb = ({ skill, position, onClick }: {
               </>
             )}
             {isLocked && (
-              <p className="text-red-400 text-xs mt-2">🔒 Complete prerequisites to unlock</p>
+              <p className="text-red-400 text-xs mt-2 flex items-center gap-1"><Lock className="w-3 h-3" /> Complete prerequisites to unlock</p>
             )}
             {/* ⭐ NEW: Call to action in tooltip */}
             <p className="text-[#f5c16c] text-[10px] mt-2 uppercase tracking-widest text-center border-t border-white/10 pt-2">
@@ -291,7 +291,7 @@ export function SkillTreeComponent() {
       <div className="flex items-center justify-center h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
         <div className="text-center">
           <div className="w-16 h-16 rounded-full bg-red-500/20 border-2 border-red-500 flex items-center justify-center mx-auto mb-4">
-            <span className="text-3xl">⚠️</span>
+            <AlertTriangle className="w-8 h-8 text-red-400" />
           </div>
           <p className="text-red-400 text-lg font-semibold mb-2">Failed to Load Skill Tree</p>
           <p className="text-white/60 text-sm">{error}</p>
