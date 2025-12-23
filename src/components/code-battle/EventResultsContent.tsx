@@ -149,18 +149,6 @@ export default function EventResultsContent({ eventId }: EventResultsContentProp
                   <span>{entry.guild_name}</span>
                 </>
               )}
-              {/* Show timestamp if available */}
-              {entry.snapshot_date && type === 'user' && entry.guild_name && (
-                <span className="text-[#f9d9eb]/30">•</span>
-              )}
-              {entry.snapshot_date && (
-                <span>
-                  {new Date(entry.snapshot_date).toLocaleTimeString('en-US', {
-                    hour: '2-digit',
-                    minute: '2-digit'
-                  })}
-                </span>
-              )}
             </div>
           </div>
 
