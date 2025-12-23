@@ -536,7 +536,7 @@ const questApi = {
    */
   adminUpdateQuestStatus: async (questId: string, status: 'Draft' | 'Published' | 'Archived'): Promise<ApiResponse<void>> => {
     try {
-      await axiosClient.patch(`/api/admin/quests/${questId}/status`, { status });
+      await axiosClient.put(`/api/admin/quests/${questId}/status`, { status });
       return { isSuccess: true, data: undefined };
     } catch (error: any) {
       const message = error.response?.data?.message || error.message || 'Failed to update quest status';

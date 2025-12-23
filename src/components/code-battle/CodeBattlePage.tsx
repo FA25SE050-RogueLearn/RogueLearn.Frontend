@@ -391,30 +391,30 @@ export default function CodeBattlePage() {
       });
 
       eventSource.addEventListener('EVENT_ENDED', () => {
-        addNotification('Event has ended! Redirecting to results...', 'success');
+        // The toast notification provides immediate feedback.
+        toast.success('Battle Complete!', {
+          description: 'The event has ended. Redirecting to the results page...',
+          duration: 3000, // 3 seconds
+        });
 
-        // Close SSE connection
+        // Close the SSE connection immediately.
         if (eventSourceRef.current) {
           eventSourceRef.current.close();
           eventSourceRef.current = null;
         }
 
-        // Show toast notification
-        toast.success('Battle Complete!', {
-          description: 'The event has ended. Redirecting to the leaderboard...',
-          duration: 3000,
-        });
-
-        // Redirect to event page after a brief delay
         const eventIdForRedirect = selectedEventId;
+        
+        // Redirect after a shorter delay.
         setTimeout(() => {
           if (eventIdForRedirect) {
-            router.push(`/code-battle`);
+            router.push(`/code-battle/${eventIdForRedirect}/results`);
           } else {
-            // Fallback to events if no event ID
+            // Fallback to the main events page if ID is lost.
             setCurrentView('events');
           }
-          // Clean up state
+
+          // Clean up component state.
           setSelectedEventId(null);
           setSelectedRoomId(null);
           setSelectedProblemId(null);
@@ -422,7 +422,7 @@ export default function CodeBattlePage() {
           setSelectedProblemStatement('');
           setSubmissionResult('');
           setLeaderboardData([]);
-        }, 6000);
+        }, 3000); // Redirect after 3 seconds, matching the toast duration.
       });
 
       eventSource.addEventListener('initial_time', (e) => {
