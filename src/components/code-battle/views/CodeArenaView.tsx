@@ -258,7 +258,7 @@ export default function CodeArenaView({
             {/* Language Dropdown */}
             {(() => {
               const selectedProblem = problems.find(p => p.id === selectedProblemId);
-              const supportedLanguages = selectedProblem?.supported_languages || ['Python', 'Golang'];
+              const supportedLanguages = selectedProblem?.supported_languages || ['Python', 'Golang', 'Javascript'];
               const languageDisplayMap: Record<string, string> = {
                 'python': 'Python',
                 'go': 'Golang',

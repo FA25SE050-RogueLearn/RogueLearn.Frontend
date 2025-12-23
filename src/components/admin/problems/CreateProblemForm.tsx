@@ -35,12 +35,14 @@ const INPUT_CLASS = "bg-white/10 border-[#f5c16c]/30 text-white placeholder:text
 const AVAILABLE_LANGUAGES = [
   { id: "550e8400-e29b-41d4-a716-446655440002", name: "Golang", file_extension: "go" },
   { id: "550e8400-e29b-41d4-a716-446655440001", name: "Python", file_extension: "py" },
+  { id: "122d98e6-82a5-4f44-aa9b-8f7ffc2ed2d7", name: "Javascript", file_extension: "js" },
 ];
 
 // Driver code placeholder hints per language
 const DRIVER_CODE_HINTS: Record<string, string> = {
   "550e8400-e29b-41d4-a716-446655440001": "In driver code section, you must replace the user's code with # USER_CODE_HERE",
   "550e8400-e29b-41d4-a716-446655440002": "In driver code section, you must replace the user's code with // USER_CODE_HERE",
+  "122d98e6-82a5-4f44-aa9b-8f7ffc2ed2d7": "In driver code section, you must replace the user's code with // USER_CODE_HERE",
 };
 
 // Helper function to unescape common escape sequences
