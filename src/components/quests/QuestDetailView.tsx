@@ -23,7 +23,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import { useState } from 'react';
+import { useState, useMemo } from 'react'; // Import useMemo
 import FeedbackModal from './FeedbackModal';
 import { usePageTransition } from '@/components/layout/PageTransition';
 
@@ -99,10 +99,23 @@ export default function QuestDetailView({
     }
   });
 
+  // ========== SOLUTION LOGIC ==========
+  // Dynamically find the lowest step number in the quest instead of assuming it's 1.
+  const lowestStepNumber = useMemo(() => {
+    if (!questDetails.steps || questDetails.steps.length === 0) {
+      return 1; // Fallback for an empty quest
+    }
+    // Find the minimum step number from the available steps.
+    return Math.min(...questDetails.steps.map(step => step.stepNumber));
+  }, [questDetails.steps]);
+
   const isStepLocked = (stepNumber: number): boolean => {
-    if (stepNumber === 1) return false;
+    // If the current step is the lowest available step, it is always unlocked.
+    if (stepNumber === lowestStepNumber) return false;
+    // For all other steps, check if the preceding step is complete.
     return !completedStepNumbers.has(stepNumber - 1);
   };
+  // ========== END SOLUTION LOGIC ==========
 
   return (
     <div className="flex flex-col gap-8 pb-24">
