@@ -85,6 +85,7 @@ export default function MeetingManagement({ partyId, variant = "full", showList 
   const [recordingLinkById, setRecordingLinkById] = useState<Record<string, string | null>>({});
   const [recordingMetaById, setRecordingMetaById] = useState<Record<string, { url: string; fileId?: string | null } | null>>({});
   const [syncingById, setSyncingById] = useState<Record<string, boolean>>({});
+  const [deletingById, setDeletingById] = useState<Record<string, boolean>>({});
 
   
 
@@ -614,6 +615,24 @@ export default function MeetingManagement({ partyId, variant = "full", showList 
     }
   }
 
+  async function handleDeleteMeetingFor(meeting: MeetingDto) {
+    try {
+      const meetingId = meeting?.meetingId as string;
+      if (!meetingId) return;
+      const ok = typeof window !== "undefined" ? window.confirm("Delete this meeting?") : true;
+      if (!ok) return;
+      setDeletingById((prev) => ({ ...prev, [meetingId]: true }));
+      await meetingsApi.deleteMeeting(meetingId);
+      toast.success("Meeting deleted");
+      setExpandedId("");
+      await reloadMeetings();
+    } catch (e: any) {
+      toast.error(e?.message ?? "Failed to delete meeting");
+    } finally {
+      if (meeting?.meetingId) setDeletingById((prev) => ({ ...prev, [meeting.meetingId!]: false }));
+    }
+  }
+
   async function handleListRecordingsFor(meeting: MeetingDto): Promise<{ url: string; fileId: string | null } | null> {
     try {
       if (!meeting?.meetingId) throw new Error("No meeting to list recordings");
@@ -1047,6 +1066,13 @@ export default function MeetingManagement({ partyId, variant = "full", showList 
                                 End Meeting
                               </button>
                             )}
+                            <button
+                              onClick={() => handleDeleteMeetingFor(m)}
+                              disabled={!!deletingById[m.meetingId!]}
+                              className="rounded bg-red-700 px-3 py-1.5 text-xs font-medium text-white disabled:opacity-50"
+                            >
+                              Delete
+                            </button>
                           </>
                         )}
                       </div>
