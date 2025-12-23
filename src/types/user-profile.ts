@@ -13,13 +13,10 @@ export interface UserProfileDto {
   email: string;
   firstName?: string | null;
   lastName?: string | null;
-  level: number;
-  experiencePoints: number;
   onboardingCompleted: boolean;
   createdAt: string; // ISO string
   profileImageUrl?: string | null;
   bio?: string | null;
-  preferencesJson?: string | null; // JSON string for preferences
   roles: string[];
   classId?: string | null; // The selected specialization/career class
   routeId?: string | null; // The selected academic route/curriculum program
@@ -122,7 +119,6 @@ export interface UserProfileSearchResult {
   username: string;
   email?: string | null;
   profileImageUrl?: string | null;
-  level: number;
   className?: string | null;
   guildName?: string | null;
 }

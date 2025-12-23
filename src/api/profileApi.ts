@@ -83,7 +83,6 @@ const profileApi = {
         username: u.username,
         email: u.email,
         profileImageUrl: u.profileImageUrl ?? null,
-        level: u.level,
         className: null,
         guildName: null,
       }));
@@ -106,7 +105,6 @@ const profileApi = {
       username: u.username,
       email: u.email,
       profileImageUrl: u.profileImageUrl ?? null,
-      level: u.level,
       className: null,
       guildName: null,
     }));
@@ -115,13 +113,12 @@ const profileApi = {
   topRanked: async (limit = 3): Promise<ApiResponse<TopRankedResponse>> => {
     const list = await profileApi.getAllUserProfilesAuthorized();
     const base = list.data?.userProfiles ?? [];
-    const sorted = [...base].sort((a, b) => b.level - a.level || b.experiencePoints - a.experiencePoints).slice(0, limit);
+    const sorted = [...base].slice(0, limit);
     const mapped: UserProfileSearchResult[] = sorted.map(u => ({
       authUserId: u.authUserId,
       username: u.username,
       email: u.email,
       profileImageUrl: u.profileImageUrl ?? null,
-      level: u.level,
       className: null,
       guildName: null,
     }));
