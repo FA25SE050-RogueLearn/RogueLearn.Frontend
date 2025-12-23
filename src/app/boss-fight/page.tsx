@@ -7,6 +7,7 @@ import { Swords, Flame, Trophy, Settings, Play, Copy, Users, ArrowLeft } from 'l
 import UnityPlayer from '@/components/unity/UnityPlayer'
 import partiesApi from '@/api/partiesApi'
 import { PartyDto, PartyMemberDto } from '@/types/parties'
+import { toast } from 'sonner'
 
 interface Subject {
   id: string
@@ -110,7 +111,10 @@ export default function BossFightSetupPage() {
             if (active) {
               setPartyMembers({ [firstId]: membersRes.data ?? [] })
               const defaults: Record<string, boolean> = {}
-                ; (membersRes.data ?? []).forEach(m => { defaults[m.authUserId] = true })
+                // Filter out self from default selection
+                ; (membersRes.data ?? [])
+                  .filter(m => m.authUserId !== userId)
+                  .forEach(m => { defaults[m.authUserId] = true })
               setSelectedInvitees(defaults)
             }
           }
@@ -181,12 +185,15 @@ export default function BossFightSetupPage() {
 
   const sendPartyGameInvite = async () => {
     if (!selectedPartyId || !inviteUrl || !sessionId || !joinCode) {
-      alert('Missing join code or party')
+      toast.error('Missing join code or party')
       return
     }
-    const targets = Object.entries(selectedInvitees).filter(([, v]) => v).map(([id]) => ({ userId: id }))
+    const targets = Object.entries(selectedInvitees)
+      .filter(([id, v]) => v && id !== userId)
+      .map(([id]) => ({ userId: id }))
+
     if (targets.length === 0) {
-      alert('Select at least one member')
+      toast.error('Select at least one member (other than yourself)')
       return
     }
     setSendingPartyInvite(true)
@@ -198,10 +205,10 @@ export default function BossFightSetupPage() {
         joinLink: inviteUrl,
         gameSessionId: sessionId,
       })
-      alert('Party game invite sent')
+      toast.success('Party game invite sent')
     } catch (err) {
       console.error(err)
-      alert('Failed to send invite')
+      toast.error('Failed to send invite')
     } finally {
       setSendingPartyInvite(false)
     }
@@ -209,7 +216,7 @@ export default function BossFightSetupPage() {
 
   const handlePrepareForBattle = async () => {
     if (selectedSubjects.length === 0) {
-      alert('Please select a subject')
+      toast.error('Please select a subject')
       return
     }
 
@@ -284,7 +291,7 @@ export default function BossFightSetupPage() {
       setMode('hosting')
     } catch (error) {
       console.error('Failed to prepare boss fight:', error)
-      alert('Failed to prepare boss fight. Please try again.')
+      toast.error('Failed to prepare boss fight. Please try again.')
     } finally {
       setLoading(false)
     }
@@ -299,12 +306,12 @@ export default function BossFightSetupPage() {
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text)
-    alert('Copied to clipboard!')
+    toast.success('Copied to clipboard!')
   }
 
   const handleJoinGame = async () => {
     if (!joinCodeInput || joinCodeInput.length !== 6) {
-      alert('Please enter a valid 6-character join code')
+      toast.error('Please enter a valid 6-character join code')
       return
     }
 
@@ -903,7 +910,8 @@ export default function BossFightSetupPage() {
                   min={5}
                   max={100}
                   value={totalQuestions}
-                  onChange={(e) => setTotalQuestions(Math.max(5, Math.min(100, parseInt(e.target.value) || 50)))}
+                  onChange={(e) => setTotalQuestions(parseInt(e.target.value) || 0)}
+                  onBlur={(e) => setTotalQuestions(Math.max(5, Math.min(100, parseInt(e.target.value) || 50)))}
                   style={{
                     flex: 1,
                     padding: 12,
