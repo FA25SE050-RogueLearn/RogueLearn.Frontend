@@ -1,6 +1,6 @@
 "use client";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { FileText, RefreshCw, Video } from "lucide-react";
+import { FileText, RefreshCw, Video, Trash2 } from "lucide-react";
 import { useGoogleMeet, MeetScopes } from "@/hooks/useGoogleMeet";
 import googleMeetApi from "@/api/googleMeetApi";
 import meetingsApi from "@/api/meetingsApi";
@@ -1069,9 +1069,11 @@ export default function MeetingManagement({ partyId, variant = "full", showList 
                             <button
                               onClick={() => handleDeleteMeetingFor(m)}
                               disabled={!!deletingById[m.meetingId!]}
-                              className="rounded bg-red-700 px-3 py-1.5 text-xs font-medium text-white disabled:opacity-50"
+                              title="Delete meeting"
+                              aria-label="Delete meeting"
+                              className="rounded p-1.5 text-white/70 hover:bg-white/10 hover:text-white disabled:opacity-50"
                             >
-                              Delete
+                              <Trash2 className="h-4 w-4" />
                             </button>
                           </>
                         )}

@@ -213,6 +213,15 @@ export default function GuildDirectoryPage() {
                     </Button>
                   )}
                 </div>
+                <Button
+                  asChild
+                  className="rounded-full bg-linear-to-r from-[#d23187] via-[#f5c16c] to-[#f5c16c] px-6 text-xs uppercase tracking-[0.4em] text-[#2b130f] shadow-[0_12px_30px_rgba(210,49,135,0.35)]"
+                >
+                  <Link href="/community/guilds/create">
+                    <Plus className="mr-2 h-4 w-4" />
+                    Create Guild
+                  </Link>
+                </Button>
               </div>
             </div>
           </Card>
@@ -385,14 +394,16 @@ export default function GuildDirectoryPage() {
                           </div>
 
                           <div className="flex gap-3">
-                            <Button
-                              asChild
-                              className="flex-1 rounded-full bg-linear-to-r from-[#d23187] via-[#f5c16c] to-[#f5c16c] px-5 py-2.5 text-xs font-semibold uppercase tracking-wider text-[#2b130f]"
-                            >
-                              <Link href={`/community/guilds/${guild.id}`}>
-                                View Guild
-                              </Link>
-                            </Button>
+                            {(guild.isPublic || (myGuild && myGuild.id === guild.id)) && (
+                              <Button
+                                asChild
+                                className="flex-1 rounded-full bg-linear-to-r from-[#d23187] via-[#f5c16c] to-[#f5c16c] px-5 py-2.5 text-xs font-semibold uppercase tracking-wider text-[#2b130f]"
+                              >
+                                <Link href={`/community/guilds/${guild.id}`}>
+                                  View Guild
+                                </Link>
+                              </Button>
+                            )}
                             {(!myGuild || myGuild.id !== guild.id) && (
                               guild.isPublic ? (
                                 <Button
