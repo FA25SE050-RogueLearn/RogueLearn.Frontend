@@ -21,6 +21,7 @@ export interface GuildPostDto {
   tags?: string[] | null;
   attachments?: Record<string, unknown> | null;
   isPinned: boolean;
+  isAnnouncement?: boolean;
   isLocked: boolean;
   status: GuildPostStatus;
   createdAt: string;

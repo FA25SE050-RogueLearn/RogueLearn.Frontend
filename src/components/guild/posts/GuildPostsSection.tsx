@@ -8,7 +8,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Scroll, Edit, Trash2, Save, X, Heart, MessageSquare, Pin, Lock, Unlock, Share2, MoreHorizontal } from "lucide-react";
+import { Scroll, Edit, Trash2, Save, X, Heart, MessageSquare, Pin, Share2, MoreHorizontal, ArrowRight } from "lucide-react";
 import Image from "next/image";
 import guildPostsApi from "@/api/guildPostsApi";
 import guildsApi from "@/api/guildsApi";
@@ -16,6 +16,7 @@ import profileApi from "@/api/profileApi";
 import type { GuildPostDto } from "@/types/guild-posts";
 import type { GuildRole, GuildMemberDto } from "@/types/guilds";
 import { toast } from "sonner";
+import ReactMarkdown from "react-markdown";
 
 interface GuildPostsSectionProps {
   guildId: string;
@@ -39,6 +40,7 @@ export function GuildPostsSection({ guildId }: GuildPostsSectionProps) {
   const [error, setError] = useState<string | null>(null);
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
+  const [tags, setTags] = useState("");
   const [createFiles, setCreateFiles] = useState<File[]>([]);
   const [createPreviewUrls, setCreatePreviewUrls] = useState<string[]>([]);
   const [createOpen, setCreateOpen] = useState(false);
@@ -48,6 +50,7 @@ export function GuildPostsSection({ guildId }: GuildPostsSectionProps) {
   const [editingPostId, setEditingPostId] = useState<string | null>(null);
   const [editTitle, setEditTitle] = useState("");
   const [editContent, setEditContent] = useState("");
+  const [editTags, setEditTags] = useState("");
   const [editFiles, setEditFiles] = useState<File[]>([]);
   const [editPreviewUrls, setEditPreviewUrls] = useState<string[]>([]);
   const [editExistingImages, setEditExistingImages] = useState<string[]>([]);
@@ -125,16 +128,28 @@ export function GuildPostsSection({ guildId }: GuildPostsSectionProps) {
     return posts.slice(start, end);
   }, [posts, safePage]);
 
+  const pinnedPosts = useMemo(() => posts.filter((p) => p.isPinned), [posts]);
+
+  const scrollToPost = (id: string) => {
+    const el = document.getElementById(`post-${id}`);
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth", block: "center" });
+      setExpandedPostId(id);
+    }
+  };
+
   const handleCreate = async () => {
     if (!guildId || !title.trim() || !content.trim()) return;
     setSubmitting(true);
     try {
+      const parsedTags = tags.split(/[\s,]+/).map(t => t.trim()).filter(Boolean);
       const res = createFiles.length
-        ? await guildPostsApi.createForm(guildId, { title, content }, createFiles)
-        : await guildPostsApi.create(guildId, { title, content });
+        ? await guildPostsApi.createForm(guildId, { title, content, tags: parsedTags }, createFiles)
+        : await guildPostsApi.create(guildId, { title, content, tags: parsedTags });
       const newPostId = res.data?.postId;
       setTitle("");
       setContent("");
+      setTags("");
       setCreateFiles([]);
       setCreatePreviewUrls([]);
       reload();
@@ -148,20 +163,52 @@ export function GuildPostsSection({ guildId }: GuildPostsSectionProps) {
   };
 
   const handleCreateSelectFiles = (files: FileList | null) => {
-    const arr = (files ? Array.from(files) : []).filter((f) => (f.type || '').startsWith('image/'));
-    setCreateFiles(arr);
+    const raw = files ? Array.from(files) : [];
+    const validFiles: File[] = [];
+    let hasLargeFile = false;
+
+    for (const f of raw) {
+      if (!(f.type || '').startsWith('image/')) continue;
+      if (f.size > 10 * 1024 * 1024) {
+        hasLargeFile = true;
+        continue;
+      }
+      validFiles.push(f);
+    }
+
+    if (hasLargeFile) {
+      toast.error("Images larger than 10MB are not allowed.");
+    }
+
+    setCreateFiles(validFiles);
     const previews: string[] = [];
-    for (const f of arr) {
+    for (const f of validFiles) {
       try { previews.push(URL.createObjectURL(f)); } catch {}
     }
     setCreatePreviewUrls(previews);
   };
 
   const handleEditSelectFiles = (files: FileList | null) => {
-    const arr = (files ? Array.from(files) : []).filter((f) => (f.type || '').startsWith('image/'));
-    setEditFiles(arr);
+    const raw = files ? Array.from(files) : [];
+    const validFiles: File[] = [];
+    let hasLargeFile = false;
+
+    for (const f of raw) {
+      if (!(f.type || '').startsWith('image/')) continue;
+      if (f.size > 10 * 1024 * 1024) {
+        hasLargeFile = true;
+        continue;
+      }
+      validFiles.push(f);
+    }
+
+    if (hasLargeFile) {
+      toast.error("Images larger than 10MB are not allowed.");
+    }
+
+    setEditFiles(validFiles);
     const previews: string[] = [];
-    for (const f of arr) {
+    for (const f of validFiles) {
       try { previews.push(URL.createObjectURL(f)); } catch {}
     }
     setEditPreviewUrls(previews);
@@ -171,6 +218,7 @@ export function GuildPostsSection({ guildId }: GuildPostsSectionProps) {
     setEditingPostId(post.id);
     setEditTitle(post.title);
     setEditContent(post.content);
+    setEditTags((post.tags ?? []).join(", "));
     try {
       const att: any = post.attachments as any;
       const imgs: any[] = Array.isArray(att?.images) ? att.images : [];
@@ -187,6 +235,7 @@ export function GuildPostsSection({ guildId }: GuildPostsSectionProps) {
     setEditingPostId(null);
     setEditTitle("");
     setEditContent("");
+    setEditTags("");
     setEditFiles([]);
     setEditPreviewUrls([]);
     setEditExistingImages([]);
@@ -197,7 +246,13 @@ export function GuildPostsSection({ guildId }: GuildPostsSectionProps) {
     if (!guildId || !editingPostId) return;
     try {
       const keptImages = editExistingImages.filter((src) => !editRemoveMap[src]);
-      await guildPostsApi.edit(guildId, editingPostId, { title: editTitle, content: editContent, attachments: { images: keptImages } as any });
+      const parsedTags = editTags.split(/[\s,]+/).map(t => t.trim()).filter(Boolean);
+      await guildPostsApi.edit(guildId, editingPostId, { 
+        title: editTitle, 
+        content: editContent, 
+        tags: parsedTags,
+        attachments: { images: keptImages } as any 
+      });
       if (editFiles.length) {
         await guildPostsApi.uploadImages(guildId, editingPostId, editFiles);
       }
@@ -314,27 +369,58 @@ export function GuildPostsSection({ guildId }: GuildPostsSectionProps) {
     }
   };
 
-  const pinPost = async (postId: string) => { try { await guildPostsApi.pin({ guildId, postId }); reload(); } catch {} };
-  const unpinPost = async (postId: string) => { try { await guildPostsApi.unpin({ guildId, postId }); reload(); } catch {} };
-  const lockPost = async (postId: string) => { try { await guildPostsApi.lock({ guildId, postId }); reload(); } catch {} };
-  const unlockPost = async (postId: string) => { try { await guildPostsApi.unlock({ guildId, postId }); reload(); } catch {} };
-  const toggleAnnouncement = async (post: GuildPostDto) => {
-    if (!myAuthUserId) return;
-    const id = post.id;
-    const tags = Array.from(new Set([...(post.tags ?? [])]));
-    const has = tags.includes("announcement");
-    const nextTags = has ? tags.filter((t) => t !== "announcement") : [...tags, "announcement"];
+  const pinPost = async (postId: string) => {
     try {
-      await guildPostsApi.edit(guildId, id, { title: post.title, content: post.content, tags: nextTags });
+      await guildPostsApi.pin({ guildId, postId });
+      toast.success("Post pinned");
+      reload();
+    } catch {
+      toast.error("Failed to pin post");
+    }
+  };
+
+  const unpinPost = async (postId: string) => {
+    try {
+      await guildPostsApi.unpin({ guildId, postId });
+      toast.success("Post unpinned");
+      reload();
+    } catch {
+      toast.error("Failed to unpin post");
+    }
+  };
+  const toggleAnnouncement = async (post: GuildPostDto) => {
+    if (!canManagePosts) return;
+    const id = post.id;
+    try {
+      if (post.isAnnouncement) {
+        await guildPostsApi.unsetAnnouncement(guildId, id);
+      } else {
+        await guildPostsApi.setAnnouncement(guildId, id);
+      }
       reload();
     } catch {}
   };
 
   const handleSelectFiles = (postId: string, files: FileList | null) => {
-    const arr = files ? Array.from(files) : [];
-    setPendingUploadsMap((prev) => ({ ...prev, [postId]: arr }));
+    const raw = files ? Array.from(files) : [];
+    const validFiles: File[] = [];
+    let hasLargeFile = false;
+
+    for (const f of raw) {
+      if (f.size > 10 * 1024 * 1024) {
+        hasLargeFile = true;
+        continue;
+      }
+      validFiles.push(f);
+    }
+
+    if (hasLargeFile) {
+      toast.error("Images larger than 10MB are not allowed.");
+    }
+
+    setPendingUploadsMap((prev) => ({ ...prev, [postId]: validFiles }));
     const previews: string[] = [];
-    for (const f of arr) {
+    for (const f of validFiles) {
       try { previews.push(URL.createObjectURL(f)); } catch {}
     }
     setPreviewUrlsMap((prev) => ({ ...prev, [postId]: previews }));
@@ -393,6 +479,92 @@ export function GuildPostsSection({ guildId }: GuildPostsSectionProps) {
 
   return (
     <div className="w-full space-y-6">
+      {/* Pinned Posts Section */}
+      {pinnedPosts.length > 0 && (
+        <div className="mb-4 space-y-2">
+          <div className="flex items-center gap-2 text-[#f5c16c]">
+            <Pin className="h-4 w-4" />
+            <h3 className="text-sm font-semibold uppercase tracking-wider">Pinned Posts</h3>
+          </div>
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {pinnedPosts.map((post) => {
+              const coverImage = (() => {
+                const att = post.attachments as any;
+                if (att?.images && Array.isArray(att.images) && att.images.length > 0) {
+                  const first = att.images[0];
+                  return typeof first === 'string' ? first : first.url;
+                }
+                return null;
+              })();
+
+              return (
+                <div
+                  key={post.id}
+                  onClick={() => scrollToPost(post.id)}
+                  className="group cursor-pointer flex flex-col overflow-hidden rounded-[20px] border border-[#f5c16c]/20 bg-[#1a0a08] shadow-lg transition-all duration-300 hover:-translate-y-1 hover:border-[#f5c16c]/40 hover:shadow-[0_10px_30px_rgba(245,193,108,0.1)]"
+                >
+                  {/* Image Header */}
+                  <div className="relative h-48 w-full overflow-hidden bg-black/50">
+                    {coverImage ? (
+                      <Image
+                        src={coverImage}
+                        alt={post.title}
+                        fill
+                        className="object-cover transition-transform duration-500 group-hover:scale-105"
+                      />
+                    ) : (
+                      <div className="absolute inset-0 bg-gradient-to-br from-[#f5c16c]/10 via-[#2d1810] to-black flex items-center justify-center">
+                        <Pin className="h-12 w-12 text-[#f5c16c]/20" />
+                      </div>
+                    )}
+                    <div className="absolute top-4 left-4 rounded bg-[#f5c16c] px-2 py-1 text-[10px] font-bold text-black uppercase tracking-wider">
+                      Pinned
+                    </div>
+                  </div>
+
+                  {/* Content Body */}
+                  <div className="flex flex-1 flex-col p-6">
+                    <div className="mb-2 text-xs font-bold uppercase tracking-wider text-[#f5c16c]/80">
+                      {new Date(post.createdAt).toLocaleDateString("en-US", {
+                        month: "long",
+                        day: "numeric",
+                        year: "numeric",
+                      })}
+                    </div>
+                    
+                    <h3 className="mb-3 text-xl font-bold leading-tight text-white group-hover:text-[#f5c16c] transition-colors">
+                      {post.title}
+                    </h3>
+
+                    <div className="mb-6 flex-1 text-sm text-white/60 line-clamp-3">
+                      <ReactMarkdown
+                         components={{
+                           p: ({node, ...props}) => <p className="mb-1" {...props} />,
+                           a: ({node, ...props}) => <span {...props} />,
+                           img: () => null,
+                           h1: ({node, ...props}) => <strong {...props} />,
+                           h2: ({node, ...props}) => <strong {...props} />,
+                           h3: ({node, ...props}) => <strong {...props} />,
+                         }}
+                      >
+                         {post.content}
+                      </ReactMarkdown>
+                    </div>
+
+                    <div className="mt-auto flex items-center gap-2 text-sm font-bold text-[#f5c16c] group-hover:underline">
+                      <div className="rounded-full border border-[#f5c16c] p-1">
+                         <ArrowRight className="h-3 w-3" />
+                      </div>
+                      Find out more
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       {canManagePosts ? (
         <div className="flex justify-end">
           <Dialog open={createOpen} onOpenChange={setCreateOpen}>
@@ -417,12 +589,21 @@ export function GuildPostsSection({ guildId }: GuildPostsSectionProps) {
                   />
                 </div>
                 <div className="space-y-2">
+                  <label className="text-sm font-medium text-[#f5c16c]/80">Tags (separated by space or comma)</label>
+                  <Input
+                    placeholder="e.g. #update #event #general"
+                    value={tags}
+                    onChange={(e) => setTags(e.target.value)}
+                    className="border-[#f5c16c]/20 bg-black/40 text-white placeholder:text-white/40 focus:border-[#f5c16c]/50 focus:ring-[#f5c16c]/30"
+                  />
+                </div>
+                <div className="space-y-2">
                   <label className="text-sm font-medium text-[#f5c16c]/80">Content</label>
                   <Textarea
-                    placeholder="Share your thoughts with the guild..."
+                    placeholder="Share your thoughts with the guild... (Markdown supported)"
                     value={content}
                     onChange={(e) => setContent(e.target.value)}
-                    className="min-h-[140px] border-[#f5c16c]/20 bg-black/40 text-white placeholder:text-white/40 focus:border-[#f5c16c]/50 focus:ring-[#f5c16c]/30"
+                    className="min-h-[200px] border-[#f5c16c]/20 bg-black/40 text-white placeholder:text-white/40 focus:border-[#f5c16c]/50 focus:ring-[#f5c16c]/30"
                   />
                 </div>
                 <div className="space-y-2">
@@ -502,17 +683,26 @@ export function GuildPostsSection({ guildId }: GuildPostsSectionProps) {
       ) : (
         <div className="space-y-4">
           {pagedPosts.map((post) => (
-            <Card key={post.id} className={POST_CARD_CLASS}>
+            <Card key={post.id} id={`post-${post.id}`} className={POST_CARD_CLASS}>
               {/* Texture overlay */}
               <div className="pointer-events-none absolute inset-0" style={CARD_TEXTURE} />
               
               <CardHeader className="relative border-b border-[#f5c16c]/10">
                 {editingPostId === post.id ? (
-                  <Input
-                    value={editTitle}
-                    onChange={(e) => setEditTitle(e.target.value)}
-                    className="border-[#f5c16c]/30 bg-black/40 text-white focus:border-[#f5c16c]/50"
-                  />
+                  <div className="space-y-2">
+                    <Input
+                      value={editTitle}
+                      onChange={(e) => setEditTitle(e.target.value)}
+                      className="border-[#f5c16c]/30 bg-black/40 text-white focus:border-[#f5c16c]/50"
+                      placeholder="Title"
+                    />
+                    <Input
+                      value={editTags}
+                      onChange={(e) => setEditTags(e.target.value)}
+                      className="border-[#f5c16c]/30 bg-black/40 text-white focus:border-[#f5c16c]/50"
+                      placeholder="Tags"
+                    />
+                  </div>
                 ) : (
                   <div className="flex items-start justify-between">
                     <div className="flex items-center gap-3">
@@ -524,8 +714,8 @@ export function GuildPostsSection({ guildId }: GuildPostsSectionProps) {
                         <div className="flex items-center gap-2">
                           <CardTitle className="text-base text-white">{getMemberDisplayName(getMemberByAuthId(post.authorId)) ?? "Member"}</CardTitle>
                           {post.isPinned && <Pin className="h-3.5 w-3.5 text-amber-300" />}
-                          {post.isLocked && <Lock className="h-3.5 w-3.5 text-white/70" />}
-                          {(Array.isArray(post.tags) ? post.tags : []).includes("announcement") && <Scroll className="h-3.5 w-3.5 text-emerald-300" />}
+                          {post.isLocked && <div className="hidden" />} {/* Hidden lock icon */}
+                          {(post.isAnnouncement || (Array.isArray(post.tags) ? post.tags : []).includes("announcement")) && <Scroll className="h-3.5 w-3.5 text-emerald-300" />}
                         </div>
                         <div className="text-[11px] text-white/60">{new Date(post.createdAt).toLocaleString()}</div>
                       </div>
@@ -552,17 +742,9 @@ export function GuildPostsSection({ guildId }: GuildPostsSectionProps) {
                                 <Pin className="h-4 w-4" /> Pin
                               </DropdownMenuItem>
                             )}
-                            {post.isLocked ? (
-                              <DropdownMenuItem onClick={() => unlockPost(post.id)} className="text-white/80">
-                                <Unlock className="h-4 w-4" /> Unlock
-                              </DropdownMenuItem>
-                            ) : (
-                              <DropdownMenuItem onClick={() => lockPost(post.id)} className="text-white/80">
-                                <Lock className="h-4 w-4" /> Lock
-                              </DropdownMenuItem>
-                            )}
+                            {/* Lock options removed */}
                             <DropdownMenuItem onClick={() => toggleAnnouncement(post)} className="text-white/80">
-                              <Scroll className="h-4 w-4" /> Announcement
+                              <Scroll className="h-4 w-4" /> {(post.isAnnouncement || post.tags?.includes('announcement')) ? "Unset Announcement" : "Set as Announcement"}
                             </DropdownMenuItem>
                             
                           </DropdownMenuContent>
@@ -578,7 +760,7 @@ export function GuildPostsSection({ guildId }: GuildPostsSectionProps) {
                     <Textarea 
                       value={editContent} 
                       onChange={(e) => setEditContent(e.target.value)}
-                      className="min-h-[100px] border-[#f5c16c]/30 bg-black/40 text-white focus:border-[#f5c16c]/50"
+                      className="min-h-[200px] border-[#f5c16c]/30 bg-black/40 text-white focus:border-[#f5c16c]/50"
                     />
                     {(() => {
                       const imgs = editExistingImages;
@@ -623,17 +805,51 @@ export function GuildPostsSection({ guildId }: GuildPostsSectionProps) {
                 ) : (
                   <>
                     <p className="text-sm font-semibold text-white">{post.title}</p>
-                    <p className="text-sm leading-relaxed text-white/70">{post.content}</p>
+                    <div className="text-sm leading-relaxed text-white/70 markdown-content">
+                      <ReactMarkdown
+                        components={{
+                          h1: ({node, ...props}) => <h1 className="text-xl font-bold mt-2 mb-1" {...props} />,
+                          h2: ({node, ...props}) => <h2 className="text-lg font-bold mt-2 mb-1" {...props} />,
+                          h3: ({node, ...props}) => <h3 className="text-md font-bold mt-2 mb-1" {...props} />,
+                          p: ({node, ...props}) => <p className="mb-2" {...props} />,
+                          ul: ({node, ...props}) => <ul className="list-disc pl-5 mb-2" {...props} />,
+                          ol: ({node, ...props}) => <ol className="list-decimal pl-5 mb-2" {...props} />,
+                          blockquote: ({node, ...props}) => <blockquote className="border-l-4 border-[#f5c16c]/50 pl-2 italic my-2 text-white/60" {...props} />,
+                          a: ({node, ...props}) => <a className="text-[#f5c16c] hover:underline" {...props} />,
+                        }}
+                      >
+                        {post.content}
+                      </ReactMarkdown>
+                    </div>
+                    {/* Tags Display */}
+                    {post.tags && post.tags.length > 0 && (
+                      <div className="flex flex-wrap gap-2 mt-2">
+                        {post.tags.map((tag, idx) => (
+                          <span key={idx} className="text-xs text-[#f5c16c] bg-[#f5c16c]/10 px-2 py-0.5 rounded-full">
+                            #{tag.startsWith("#") ? tag.slice(1) : tag}
+                          </span>
+                        ))}
+                      </div>
+                    )}
                     {(() => {
                       const att: any = post.attachments as any;
                       const imgs: any[] = Array.isArray(att?.images) ? att.images : [];
                       return imgs.length ? (
-                        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
+                        <div className="flex flex-wrap gap-4 mt-4">
                           {imgs.map((img, i) => {
                             const src = typeof img === "string" ? img : (img?.url ?? "");
+                            if (!src) return null;
                             return (
-                              <div key={src + i} className="relative h-40 w-full overflow-hidden rounded border border-white/10">
-                                {src ? <Image src={src} alt={post.title} fill style={{ objectFit: "cover" }} /> : null}
+                              <div 
+                                key={src + i} 
+                                className="relative overflow-hidden rounded-xl border-2 border-[#f5c16c]/30 bg-black/50 shadow-lg transition-all duration-300 hover:scale-[1.02] hover:shadow-[0_0_20px_rgba(245,193,108,0.2)]"
+                              >
+                                <img 
+                                  src={src} 
+                                  alt={post.title} 
+                                  className="max-h-[500px] w-auto max-w-full object-contain"
+                                  loading="lazy"
+                                />
                               </div>
                             );
                           })}

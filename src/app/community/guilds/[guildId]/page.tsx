@@ -2,8 +2,11 @@
 import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import { useParams } from "next/navigation";
 import guildsApi from "@/api/guildsApi";
+import guildPostsApi from "@/api/guildPostsApi";
 import profileApi from "@/api/profileApi";
 import type { GuildDto, GuildMemberDto, GuildRole } from "@/types/guilds";
+import type { GuildPostDto } from "@/types/guild-posts";
+import ReactMarkdown from "react-markdown";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -60,6 +63,19 @@ export default function GuildDetailPage() {
   const [cfgMaxMembers, setCfgMaxMembers] = useState<number>(50);
   const [cfgSubmitting, setCfgSubmitting] = useState<boolean>(false);
   const [cfgError, setCfgError] = useState<string | null>(null);
+  const [announcements, setAnnouncements] = useState<GuildPostDto[]>([]);
+
+  useEffect(() => {
+    if (guildId) {
+      guildPostsApi.getByGuild(guildId as string, { size: 50 })
+        .then(res => {
+          if (res.data) {
+            setAnnouncements(res.data.filter(p => p.isAnnouncement || p.tags?.includes('announcement')));
+          }
+        })
+        .catch(() => {});
+    }
+  }, [guildId]);
 
   useEffect(() => {
     let cancelled = false;
@@ -477,6 +493,98 @@ export default function GuildDetailPage() {
                       </p>
                     </CardContent>
                   </Card>
+
+                  {/* Announcements Section */}
+                  {announcements.length > 0 && (
+                    <div className="space-y-4">
+                      <div className="flex items-center gap-2 text-[#f5c16c]">
+                        <Scroll className="h-5 w-5" />
+                        <h3 className="text-lg font-semibold uppercase tracking-wider">Announcements</h3>
+                      </div>
+                      <div className="grid grid-cols-1 gap-4">
+                        {announcements.map(post => (
+                          <Card key={post.id} className={SECTION_CARD_CLASS + " hover:border-[#f5c16c]/40 transition-colors"}>
+                             <div aria-hidden="true" className="absolute inset-0" style={CARD_TEXTURE} />
+                             <CardHeader className="relative z-10 pb-2">
+                               <div className="flex items-center justify-between">
+                                 <CardTitle className="text-lg text-white">{post.title}</CardTitle>
+                                 <span className="text-xs text-[#f5c16c]/70">{new Date(post.createdAt).toLocaleDateString()}</span>
+                               </div>
+                             </CardHeader>
+                             <CardContent className="relative z-10 text-sm text-white/70">
+                               <div className="markdown-content">
+                                 <ReactMarkdown
+                                   components={{
+                                     h1: ({node, ...props}) => <h1 className="text-xl font-bold mt-2 mb-1" {...props} />,
+                                     h2: ({node, ...props}) => <h2 className="text-lg font-bold mt-2 mb-1" {...props} />,
+                                     h3: ({node, ...props}) => <h3 className="text-md font-bold mt-2 mb-1" {...props} />,
+                                     p: ({node, ...props}) => <p className="mb-2" {...props} />,
+                                     ul: ({node, ...props}) => <ul className="list-disc pl-5 mb-2" {...props} />,
+                                     ol: ({node, ...props}) => <ol className="list-decimal pl-5 mb-2" {...props} />,
+                                     blockquote: ({node, ...props}) => <blockquote className="border-l-4 border-[#f5c16c]/50 pl-2 italic my-2 text-white/60" {...props} />,
+                                     a: ({node, ...props}) => <a className="text-[#f5c16c] hover:underline" {...props} />,
+                                   }}
+                                 >
+                                   {post.content}
+                                 </ReactMarkdown>
+                               </div>
+
+                               {/* Tags Display */}
+                               {post.tags && post.tags.length > 0 && (
+                                 <div className="flex flex-wrap gap-2 mt-2">
+                                   {post.tags.map((tag, idx) => (
+                                     <span key={idx} className="text-xs text-[#f5c16c] bg-[#f5c16c]/10 px-2 py-0.5 rounded-full">
+                                       #{tag.startsWith("#") ? tag.slice(1) : tag}
+                                     </span>
+                                   ))}
+                                 </div>
+                               )}
+
+                               {/* Attachments Display */}
+                               {(() => {
+                                 const att: any = post.attachments as any;
+                                 const imgs: any[] = Array.isArray(att?.images) ? att.images : [];
+                                 return imgs.length ? (
+                                   <div className="flex flex-wrap gap-4 mt-4">
+                                     {imgs.map((img, i) => {
+                                       const src = typeof img === "string" ? img : (img?.url ?? "");
+                                       if (!src) return null;
+                                       return (
+                                         <div 
+                                           key={src + i} 
+                                           className="relative overflow-hidden rounded-xl border-2 border-[#f5c16c]/30 bg-black/50 shadow-lg transition-all duration-300 hover:scale-[1.02] hover:shadow-[0_0_20px_rgba(245,193,108,0.2)]"
+                                         >
+                                           <img 
+                                             src={src} 
+                                             alt={post.title} 
+                                             className="max-h-[500px] w-auto max-w-full object-contain"
+                                             loading="lazy"
+                                           />
+                                         </div>
+                                       );
+                                     })}
+                                   </div>
+                                 ) : null;
+                               })()}
+
+                               <Button variant="link" className="px-0 text-[#f5c16c] mt-4 h-auto" onClick={() => {
+                                 setActiveTab("posts");
+                                 if (typeof window !== "undefined") {
+                                   window.location.hash = "posts";
+                                   setTimeout(() => {
+                                      const el = document.getElementById(`post-${post.id}`);
+                                      if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
+                                   }, 500);
+                                 }
+                               }}>
+                                 View Discussion
+                               </Button>
+                             </CardContent>
+                          </Card>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </TabsContent>
 
                 <TabsContent value="posts" className="space-y-4">
