@@ -184,7 +184,7 @@ export interface CreateGuildCommandRequest {
   creatorAuthUserId: string;
   name: string;
   description: string;
-  privacy: 'public' | 'invite_only';
+  privacy: 'public' | 'private';
   maxMembers: number;
 }
 export interface CreateGuildResponse {

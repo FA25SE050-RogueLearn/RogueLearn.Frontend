@@ -128,6 +128,7 @@ export default function AdminUserRolesPage() {
     try {
       await userRolesApi.remove({ authUserId: selectedUser.authUserId, roleId: verifiedLecturerRoleId });
       toast.success("Verified Lecturer revoked");
+
       await refreshSelectedUser();
       await reloadAll();
       setIsRevokeOpen(false);
