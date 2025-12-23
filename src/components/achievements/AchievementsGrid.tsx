@@ -65,7 +65,7 @@ export function AchievementsGrid({ achievements }: AchievementsGridProps) {
                           achievement.description.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesSource = selectedSource === "all" || achievement.sourceService === selectedSource;
     return matchesSearch && matchesSource;
-  });
+  }).sort((a, b) => new Date(b.earnedAt).getTime() - new Date(a.earnedAt).getTime());
 
   return (
     <>

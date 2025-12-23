@@ -1,16 +1,17 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useMemo } from "react";
 import { Trophy, Zap, ExternalLink, X, Calendar, Award } from "lucide-react";
 import { formatDistanceToNow, format } from "date-fns";
 import { safeDate } from "@/utils/time";
 import Link from "next/link";
 import Image from "next/image";
 import { motion, useMotionValue, useSpring } from "motion/react";
+import type { UserAchievementItem, UserSkillItem } from "@/types/user-profile";
 
 interface RightColumnProps {
-  achievements: Achievement[];
-  userSkills: UserSkill[];
+  achievements: UserAchievementItem[];
+  userSkills: UserSkillItem[];
 }
 
 interface Achievement {
@@ -22,12 +23,6 @@ interface Achievement {
   sourceService: string;
   earnedAt: string;
   context: string | null;
-}
-
-interface UserSkill {
-  skillName: string;
-  level: number;
-  experiencePoints: number;
 }
 
 function TiltingCard({ children, className }: { children: React.ReactNode; className?: string }) {
@@ -59,7 +54,20 @@ function TiltingCard({ children, className }: { children: React.ReactNode; class
   );
 }
 
-export function RightColumn({ achievements, userSkills }: RightColumnProps) {
+export function RightColumn({ achievements: rawAchievements, userSkills }: RightColumnProps) {
+  const achievements = useMemo(() => {
+    return rawAchievements.map(a => ({
+      achievementId: a.achievementId,
+      key: a.achievementId,
+      name: a.achievementName || "Unknown Achievement",
+      description: "",
+      iconUrl: a.achievementIconUrl || null,
+      sourceService: "System",
+      earnedAt: a.earnedAt,
+      context: null
+    } as Achievement));
+  }, [rawAchievements]);
+
   const [selectedAchievement, setSelectedAchievement] = useState<Achievement | null>(null);
 
   const getSkillProgress = (xp: number) => {
@@ -178,8 +186,8 @@ export function RightColumn({ achievements, userSkills }: RightColumnProps) {
         {achievements.length > 0 ? (
           <div className="space-y-3">
             {achievements
-              .slice(0, 5)
               .sort((a, b) => new Date(b.earnedAt).getTime() - new Date(a.earnedAt).getTime())
+              .slice(0, 5)
               .map((achievement, idx) => (
                 <button
                   key={`${achievement.achievementId}-${idx}`}

@@ -42,7 +42,6 @@ export function SocialScryingContent() {
           username: u.username,
           email: u.email,
           profileImageUrl: u.profileImageUrl ?? null,
-          level: u.level,
           className: null,
           guildName: null,
         });
