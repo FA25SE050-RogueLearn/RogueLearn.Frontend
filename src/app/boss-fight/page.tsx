@@ -665,12 +665,14 @@ export default function BossFightSetupPage() {
                   {(partyMembers[selectedPartyId ?? ''] ?? []).length === 0 && (
                     <div style={{ color: '#888', fontSize: 12 }}>No members to invite.</div>
                   )}
-                  {(partyMembers[selectedPartyId ?? ''] ?? []).map(m => (
-                    <label key={m.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '4px 6px', color: 'white', fontSize: 13 }}>
-                      <span>{m.username ?? m.email ?? 'Member'}</span>
-                      <input type="checkbox" checked={!!selectedInvitees[m.authUserId]} onChange={() => toggleInvitee(m.authUserId)} />
-                    </label>
-                  ))}
+                  {(partyMembers[selectedPartyId ?? ''] ?? [])
+                    .filter(m => m.authUserId !== userId)
+                    .map(m => (
+                      <label key={m.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '4px 6px', color: 'white', fontSize: 13 }}>
+                        <span>{m.username ?? m.email ?? 'Member'}</span>
+                        <input type="checkbox" checked={!!selectedInvitees[m.authUserId]} onChange={() => toggleInvitee(m.authUserId)} />
+                      </label>
+                    ))}
                 </div>
               </div>
               <div style={{ marginTop: 12, textAlign: 'right' }}>
