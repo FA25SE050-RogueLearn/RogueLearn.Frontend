@@ -91,7 +91,7 @@ const ReadingActivityContent = ({
                 ) : (
                     <div className="p-4 rounded-lg bg-amber-950/30 border border-amber-700/50">
                         <p className="text-sm text-amber-300">
-                            📚 No reading material available for this topic yet.
+                            No reading material available for this topic yet.
                         </p>
                     </div>
                 )}
@@ -592,7 +592,7 @@ export function ModuleLearningView({
                             <Trophy className="w-12 h-12 text-emerald-400" />
                             <div className="flex-1">
                                 <h3 className="text-xl font-bold text-white mb-1">
-                                    Week {weeklyStep.stepNumber} Complete! 🎉
+                                    Week {weeklyStep.stepNumber} Complete!
                                 </h3>
                                 <p className="text-sm text-emerald-300">
                                     You&apos;ve completed all {totalActivities} activities and earned {weeklyStep.experiencePoints} XP!

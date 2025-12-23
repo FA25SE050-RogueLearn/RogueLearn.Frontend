@@ -477,7 +477,7 @@ export default function GuildDirectoryPage() {
                   <CardHeader className="relative z-10 border-b border-[#f5c16c]/20 pb-4">
                     <div className="flex items-center justify-between">
                       <h3 className="text-white font-bold uppercase tracking-widest text-sm flex items-center gap-2">
-                        <span className="text-[#d4a353]">🏆</span> Hall of Legends
+                        <Crown className="h-5 w-5 text-[#d4a353]" /> Hall of Legends
                       </h3>
                       <span className="text-[10px] text-foreground/60">Global</span>
                     </div>
@@ -511,7 +511,7 @@ export default function GuildDirectoryPage() {
 
                           {/* Gold (#1) */}
                           <div className="flex flex-col items-center relative -top-6">
-                            <div className="absolute -top-8 text-4xl">👑</div>
+                            <div className="absolute -top-8 text-4xl"><Crown className="w-8 h-8 text-[#d4a353]" /></div>
                             {fullGuilds[0] && (
                               <div className="w-24 h-24 rounded-full border-4 border-[#d4a353] overflow-hidden mb-2 relative">
                                 {fullGuilds[0].bannerImageUrl ? (

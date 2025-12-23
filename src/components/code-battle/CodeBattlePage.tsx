@@ -580,10 +580,10 @@ export default function CodeBattlePage() {
       if (registeredMembers.length === 0) {
         // If event is active or completed, registration window has closed
         if (event.status === 'active') {
-          toast.error('Registration closed. This event is already live - you missed the registration window.');
+          toast.info('Registration closed. This event is already live - you missed the registration window.');
           return;
         } else if (event.status === 'completed') {
-          toast.error('This event has ended. Registration is no longer available.');
+          toast.info('This event has ended. Registration is no longer available.');
           return;
         } else {
           toast.error('Your guild has not registered any members for this event yet. Contact your guild master to register.');
@@ -596,10 +596,10 @@ export default function CodeBattlePage() {
       if (!isUserRegistered) {
         // If event is active or completed, it's too late to register
         if (event.status === 'active') {
-          toast.error('Registration closed. This event is already live - only registered members can participate.');
+          toast.info('Registration closed. This event is already live - only registered members can participate.');
           return;
         } else if (event.status === 'completed') {
-          toast.error('This event has ended. You were not registered for this event.');
+          toast.info('This event has ended. You were not registered for this event.');
           return;
         } else {
           toast.error('You are not registered for this event. Contact your guild master to add you to the roster.');
