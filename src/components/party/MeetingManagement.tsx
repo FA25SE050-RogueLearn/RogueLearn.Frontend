@@ -601,7 +601,7 @@ export default function MeetingManagement({ partyId, variant = "full", showList 
         { artifactType: "recording", url: link, fileId: meta?.fileId ?? null }
       ];
       await meetingsApi.processArtifactsAndSummarize(meetingId, artifacts, effectiveToken);
-      toast.success("recording process successfully");
+      toast.success("Recording process successfully");
       const completed: MeetingDto = { ...meeting, status: MeetingStatus.Completed } as MeetingDto;
       try { await meetingsApi.upsertMeeting(completed); } catch { }
       const listRes = await meetingsApi.getPartyMeetings(partyId);
@@ -785,7 +785,7 @@ export default function MeetingManagement({ partyId, variant = "full", showList 
       if (cleanUrl) {
         setRecordingLinkById((prev) => ({ ...prev, [meetingId]: cleanUrl }));
         setRecordingMetaById((prev) => ({ ...prev, [meetingId]: { url: cleanUrl, fileId } }));
-        toast.info("recording found, pls wait for processing");
+        toast.info("Recording found, please wait for processing");
         return { url: cleanUrl, fileId };
       } else {
         setRecordingLinkById((prev) => ({ ...prev, [meetingId]: null }));

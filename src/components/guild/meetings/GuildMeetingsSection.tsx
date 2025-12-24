@@ -678,7 +678,7 @@ export default function GuildMeetingsSection({ guildId }: Props) {
         { artifactType: "recording", url: link, fileId: meta?.fileId ?? null }
       ];
       await meetingsApi.processArtifactsAndSummarize(meetingId, artifacts, token);
-      toast.success("recording process successfully");
+      toast.success("Recording process successfully");
       const completed: MeetingDto = { ...meeting, status: MeetingStatus.Completed } as MeetingDto;
       setActiveMeeting((prev) => ({ ...prev, meeting: completed }));
       try { await meetingsApi.upsertMeeting(completed); } catch {}
@@ -856,7 +856,7 @@ export default function GuildMeetingsSection({ guildId }: Props) {
       if (cleanUrl) {
         setRecordingLinkById((prev) => ({ ...prev, [meetingId]: cleanUrl }));
         setRecordingMetaById((prev) => ({ ...prev, [meetingId]: { url: cleanUrl, fileId } }));
-        toast.info("recording found, pls wait for processing");
+        toast.info("Recording found, please wait for processing");
         return { url: cleanUrl, fileId };
       } else {
         setRecordingLinkById((prev) => ({ ...prev, [meetingId]: null }));
