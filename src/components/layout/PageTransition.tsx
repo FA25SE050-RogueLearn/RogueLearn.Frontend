@@ -73,25 +73,8 @@ export function PageTransitionProvider({ children }: { children: React.ReactNode
           }`}
         />
 
-        {/* Magical particles */}
-        <div className="absolute inset-0 overflow-hidden">
-          {phase !== 'idle' && [...Array(12)].map((_, i) => (
-            <div
-              key={i}
-              className="absolute w-1 h-1 rounded-full bg-[#f5c16c] animate-float-particle"
-              style={{
-                left: `${10 + (i * 7)}%`,
-                top: `${20 + (i % 4) * 20}%`,
-                animationDelay: `${i * 0.05}s`,
-                opacity: 0.6,
-              }}
-            />
-          ))}
-        </div>
-
         {/* Center portal effect */}
         <div className="absolute inset-0 flex items-center justify-center">
-          {/* Outer rune circle */}
           <div 
             className={`absolute w-40 h-40 rounded-full border-2 border-[#f5c16c]/30 transition-all duration-500 ${
               phase === 'exit' 
@@ -108,7 +91,7 @@ export function PageTransitionProvider({ children }: { children: React.ReactNode
             {[0, 60, 120, 180, 240, 300].map((deg) => (
               <div
                 key={deg}
-                className="absolute w-2 h-2 bg-[#f5c16c] rounded-full"
+                className="absolute w-2 h-2 bg-[#f5c16c] opacity-0 rounded-full"
                 style={{
                   top: '50%',
                   left: '50%',
