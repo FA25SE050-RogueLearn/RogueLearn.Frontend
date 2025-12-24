@@ -146,7 +146,14 @@ export default function TagsTab() {
               </button>
               <span className="inline-flex h-2 w-2 rounded-full" style={{ backgroundColor: hashColor(t.id) }} />
               {editingId === t.id ? (
-                <Input value={editName} onChange={(e) => setEditName(e.target.value)} className="h-7 w-40" />
+                <Input
+                  value={editName}
+                  onChange={(e) => setEditName(e.target.value)}
+                  className="h-7 w-40"
+                  autoFocus
+                  onMouseDown={(e) => e.stopPropagation()}
+                  onKeyDown={(e) => e.stopPropagation()}
+                />
               ) : (
                 <span className="truncate">{t.name}</span>
               )}
