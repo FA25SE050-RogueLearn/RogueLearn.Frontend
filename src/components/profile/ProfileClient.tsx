@@ -15,7 +15,8 @@ import {
     Sparkles,
     Save,
     GraduationCap,
-    Map
+    Map,
+    Loader2
 } from "lucide-react";
 import Link from "next/link";
 import { updateMyProfile, getMyContext } from "@/api/usersApi";
@@ -115,7 +116,7 @@ export function ProfileClient({ initialProfile }: ProfileClientProps) {
             }
 
             setIsEditing(false);
-            setSuccessMessage("✨ Profile updated successfully!");
+            setSuccessMessage("Profile updated successfully!");
 
             setTimeout(() => setSuccessMessage(""), 3000);
         } catch (error: any) {
@@ -198,7 +199,7 @@ export function ProfileClient({ initialProfile }: ProfileClientProps) {
                     </Button>
                 </Link>
                 <h1 className="text-4xl md:text-5xl font-bold mt-4">
-                    <span className="text-[#f5c16c]">⚔️</span> My Profile
+                    My Profile
                 </h1>
                 <p className="text-white/50 mt-2">Manage your RogueLearn scholar profile</p>
             </div>
@@ -289,7 +290,7 @@ export function ProfileClient({ initialProfile }: ProfileClientProps) {
                     <Card className="relative overflow-hidden border-[#f5c16c]/20 bg-gradient-to-br from-[#2d1810] via-[#1a0a08] to-[#0a0506]">
                         <CardHeader>
                             <CardTitle className="text-[#f5c16c] uppercase tracking-widest">
-                                {isEditing ? "✏️ Edit Profile" : "📋 Profile Information"}
+                                {isEditing ? "Edit Profile" : "Profile Information"}
                             </CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-4">
@@ -388,7 +389,7 @@ export function ProfileClient({ initialProfile }: ProfileClientProps) {
                                         onClick={() => setIsEditing(true)}
                                         className="flex-1 bg-gradient-to-r from-[#f5c16c] to-[#d4a855] text-black font-semibold hover:from-[#d4a855] hover:to-[#f5c16c]"
                                     >
-                                        ✏️ Edit Profile
+                                        Edit Profile
                                     </Button>
                                 ) : (
                                     <>
@@ -399,7 +400,7 @@ export function ProfileClient({ initialProfile }: ProfileClientProps) {
                                         >
                                             {isSaving ? (
                                                 <>
-                                                    <span className="animate-spin mr-2">⏳</span>
+                                                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                                                     Saving...
                                                 </>
                                             ) : (
@@ -426,7 +427,7 @@ export function ProfileClient({ initialProfile }: ProfileClientProps) {
                     <Card className="relative overflow-hidden border-[#f5c16c]/20 bg-gradient-to-br from-[#2d1810] via-[#1a0a08] to-[#0a0506]">
                         <CardHeader>
                             <CardTitle className="text-[#f5c16c] uppercase tracking-widest">
-                                📧 Account Information
+                                Account Information
                             </CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-4">
@@ -458,7 +459,7 @@ export function ProfileClient({ initialProfile }: ProfileClientProps) {
                         <Card className="relative overflow-hidden border-[#f5c16c]/20 bg-gradient-to-br from-[#2d1810] via-[#1a0a08] to-[#0a0506]">
                             <CardHeader>
                                 <CardTitle className="text-[#f5c16c] uppercase tracking-widest">
-                                    ⚡ Top Skills
+                                    Top Skills
                                 </CardTitle>
                             </CardHeader>
                             <CardContent>
@@ -480,7 +481,7 @@ export function ProfileClient({ initialProfile }: ProfileClientProps) {
                     <Card className="relative overflow-hidden border-red-500/30 bg-gradient-to-br from-red-950/20 via-[#1a0a08] to-[#0a0506]">
                         <CardHeader>
                             <CardTitle className="text-red-400 uppercase tracking-widest">
-                                ⚠️ Danger Zone
+                                Danger Zone
                             </CardTitle>
                         </CardHeader>
                         <CardContent>
@@ -492,7 +493,7 @@ export function ProfileClient({ initialProfile }: ProfileClientProps) {
                                 className="w-full bg-red-500/20 text-red-400 border border-red-500/30 hover:bg-red-500/30"
                             >
                                 <LogOut className="w-4 h-4 mr-2" />
-                                🚪 Sign Out
+                                Sign Out
                             </Button>
                         </CardContent>
                     </Card>

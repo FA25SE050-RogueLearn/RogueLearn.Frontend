@@ -365,7 +365,7 @@ export function QuestGenerationModal({
                         <div className="space-y-4">
                             <div className="rounded-2xl border border-emerald-400/50 bg-emerald-400/10 p-4 text-center">
                                 <p className="text-sm font-semibold text-emerald-300">
-                                    ✨ Your quest is ready to begin!
+                                    Your quest is ready to begin!
                                 </p>
                             </div>
 
@@ -412,7 +412,7 @@ export function QuestGenerationModal({
                     {/* Tips Section */}
                     {!isCompleted && !error && (
                         <div className="text-xs text-white/60 space-y-2 rounded-lg border border-white/10 bg-white/5 p-3">
-                            <p className="font-semibold text-white/70">💡 Tip:</p>
+                            <p className="font-semibold text-white/70">Tip:</p>
                             <p>Our AI is crafting personalized learning modules tailored to your progress and skills. This typically takes 5–10 minutes.</p>
                             <p className="text-white/50 pt-2">
                                 Can&apos;t wait? Click &quot;Start Quest Anyway&quot; to begin immediately. Content will load as it&apos;s generated.

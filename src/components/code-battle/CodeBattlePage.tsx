@@ -4,7 +4,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import eventServiceApi from '@/api/eventServiceApi';
-import { createClient } from '@/utils/supabase/client';
+import profileApi from '@/api/profileApi';
 import type { Event, Room, Problem } from '@/types/event-service';
 import EventsSelectionView from './views/EventsSelectionView';
 import RoomSelectionView from './views/RoomSelectionView';
@@ -96,13 +96,16 @@ export default function CodeBattlePage() {
   const [eventSecondsLeft, setEventSecondsLeft] = useState<number | null>(null);
   const [eventEndDate, setEventEndDate] = useState<string | null>(null);
 
-  // Get current user ID from Supabase
+  // Get current user ID from profile API
   useEffect(() => {
     const getUser = async () => {
-      const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        setPlayerId(user.id);
+      try {
+        const response = await profileApi.getMyProfile();
+        if (response.isSuccess && response.data) {
+          setPlayerId(response.data.authUserId);
+        }
+      } catch (error) {
+        console.error('Failed to get user profile:', error);
       }
     };
     getUser();
@@ -169,35 +172,57 @@ export default function CodeBattlePage() {
     }
   }, [selectedEventId]);
 
-  // Fetch rooms when event is selected or page changes
+  // Fetch the player's assigned room when event is selected
   useEffect(() => {
     if (!selectedEventId) {
       setRooms([]);
       return;
     }
 
-    const fetchRooms = async () => {
+    const fetchAssignedRoom = async () => {
       setLoadingRooms(true);
       try {
-        const response = await eventServiceApi.getEventRooms(selectedEventId, roomsPage, roomsPageSize);
-        if (response.success && response.data && Array.isArray(response.data)) {
-          setRooms(response.data);
-
-          // Update pagination metadata
-          if (response.pagination) {
-            setRoomsTotalPages(response.pagination.total_pages);
+        // Use the new endpoint to get only the player's assigned room
+        const response = await eventServiceApi.getMyAssignedRoom(selectedEventId);
+        if (response.success && response.data) {
+          const assignedRoom = response.data;
+          
+          // Set the single assigned room as an array
+          setRooms([assignedRoom]);
+          setRoomsTotalPages(1);
+          
+          // Auto-select the assigned room since there's only one
+          setSelectedRoomId(assignedRoom.ID);
+          addNotification(`Assigned to room: ${assignedRoom.Name}`, 'success');
+          
+          // Establish SSE connection to the assigned room
+          const canJoin = await joinRoom(selectedEventId, assignedRoom.ID);
+          if (!canJoin) {
+            // If cannot join the room, kick them out of the event
+            setCurrentView('events');
+            setSelectedEventId(null);
+            setSelectedRoomId(null);
+            setRooms([]);
+            toast.error('Cannot join event', {
+              description: 'You have previously left this event and cannot rejoin. Please choose a different event.'
+            });
           }
+        } else {
+          // No room assigned - show error
+          setRooms([]);
+          addNotification('No room assigned for this event. Please contact the organizer.', 'error');
         }
       } catch (error) {
-        console.error('Error fetching rooms:', error);
-        addNotification('Failed to load rooms', 'error');
+        console.error('Error fetching assigned room:', error);
+        addNotification('Failed to load your assigned room', 'error');
       } finally {
         setLoadingRooms(false);
       }
     };
 
-    fetchRooms();
-  }, [selectedEventId, roomsPage, roomsPageSize]);
+    fetchAssignedRoom();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedEventId]);
 
   // Fetch problems when room is selected
   useEffect(() => {
@@ -278,15 +303,25 @@ export default function CodeBattlePage() {
     }
 
     try {
-      const supabase = createClient();
-      const { data: { session } } = await supabase.auth.getSession();
+      // Get access token from cookie
+      const getCookie = (name: string): string | null => {
+        const value = `; ${document.cookie}`;
+        const parts = value.split(`; ${name}=`);
+        if (parts.length === 2) {
+          const cookieValue = parts.pop()?.split(';').shift();
+          return cookieValue ? decodeURIComponent(cookieValue) : null;
+        }
+        return null;
+      };
 
-      if (!session?.access_token) {
+      const accessToken = getCookie('rl_access_token');
+
+      if (!accessToken) {
         addNotification('Unable to join room: No auth token', 'error');
         return false;
       }
 
-      const eventSource = eventServiceApi.createRoomSSE(eventId, roomId, playerId, session.access_token);
+      const eventSource = eventServiceApi.createRoomSSE(eventId, roomId, playerId, accessToken);
       eventSourceRef.current = eventSource;
 
       // Track if we successfully connected
@@ -390,31 +425,42 @@ export default function CodeBattlePage() {
         addNotification('Event has started!', 'success');
       });
 
-      eventSource.addEventListener('EVENT_ENDED', () => {
-        // The toast notification provides immediate feedback.
-        toast.success('Battle Complete!', {
-          description: 'The event has ended. Redirecting to the results page...',
-          duration: 3000, // 3 seconds
-        });
+      eventSource.addEventListener('EVENT_EXPIRED', (e) => {
+        // Parse the event data
+        try {
+          const eventData = JSON.parse((e as MessageEvent).data);
+          console.log('EVENT_EXPIRED received:', eventData);
+          
+          // Show toast notification with event message
+          toast.success('Battle Complete!', {
+            description: eventData.Data?.message || 'The event has ended. Redirecting to results...',
+            duration: 3000,
+          });
+        } catch (error) {
+          console.error('Error parsing EVENT_EXPIRED:', error);
+          toast.success('Battle Complete!', {
+            description: 'The event has ended. Redirecting to results...',
+            duration: 3000,
+          });
+        }
 
-        // Close the SSE connection immediately.
+        // Close the SSE connection
         if (eventSourceRef.current) {
           eventSourceRef.current.close();
           eventSourceRef.current = null;
         }
 
         const eventIdForRedirect = selectedEventId;
-        
-        // Redirect after a shorter delay.
+
+        // Redirect after a short delay
         setTimeout(() => {
           if (eventIdForRedirect) {
             router.push(`/code-battle/${eventIdForRedirect}/results`);
           } else {
-            // Fallback to the main events page if ID is lost.
             setCurrentView('events');
           }
 
-          // Clean up component state.
+          // Clean up component state
           setSelectedEventId(null);
           setSelectedRoomId(null);
           setSelectedProblemId(null);
@@ -422,7 +468,7 @@ export default function CodeBattlePage() {
           setSelectedProblemStatement('');
           setSubmissionResult('');
           setLeaderboardData([]);
-        }, 3000); // Redirect after 3 seconds, matching the toast duration.
+        }, 3000);
       });
 
       eventSource.addEventListener('initial_time', (e) => {
@@ -547,10 +593,10 @@ export default function CodeBattlePage() {
       if (registeredMembers.length === 0) {
         // If event is active or completed, registration window has closed
         if (event.status === 'active') {
-          toast.error('Registration closed. This event is already live - you missed the registration window.');
+          toast.info('Registration closed. This event is already live - you missed the registration window.');
           return;
         } else if (event.status === 'completed') {
-          toast.error('This event has ended. Registration is no longer available.');
+          toast.info('This event has ended. Registration is no longer available.');
           return;
         } else {
           toast.error('Your guild has not registered any members for this event yet. Contact your guild master to register.');
@@ -563,10 +609,10 @@ export default function CodeBattlePage() {
       if (!isUserRegistered) {
         // If event is active or completed, it's too late to register
         if (event.status === 'active') {
-          toast.error('Registration closed. This event is already live - only registered members can participate.');
+          toast.info('Registration closed. This event is already live - only registered members can participate.');
           return;
         } else if (event.status === 'completed') {
-          toast.error('This event has ended. You were not registered for this event.');
+          toast.info('This event has ended. You were not registered for this event.');
           return;
         } else {
           toast.error('You are not registered for this event. Contact your guild master to add you to the roster.');
@@ -685,6 +731,34 @@ export default function CodeBattlePage() {
     setSubmissionResult('');
   };
 
+  // Handle event end from timer timeout - redirect to results page
+  const handleEventEnd = useCallback(() => {
+    // Close the SSE connection
+    if (eventSourceRef.current) {
+      eventSourceRef.current.close();
+      eventSourceRef.current = null;
+    }
+
+    const eventIdForRedirect = selectedEventId;
+
+    // Navigate to results page
+    if (eventIdForRedirect) {
+      router.push(`/code-battle/${eventIdForRedirect}/results`);
+    } else {
+      // Fallback to main events page
+      setCurrentView('events');
+    }
+
+    // Clean up component state
+    setSelectedEventId(null);
+    setSelectedRoomId(null);
+    setSelectedProblemId(null);
+    setSelectedProblemTitle('');
+    setSelectedProblemStatement('');
+    setSubmissionResult('');
+    setLeaderboardData([]);
+  }, [selectedEventId, router]);
+
   const handleViewModeChange = (mode: EventViewMode, status?: StatusFilter) => {
     setEventViewMode(mode);
 
@@ -768,6 +842,7 @@ export default function CodeBattlePage() {
             isSubmitting={isSubmitting}
             spaceConstraintMb={spaceConstraintMb}
             onBack={handleBackToRooms}
+            onEventEnd={handleEventEnd}
             eventId={selectedEventId}
             roomId={selectedRoomId}
             eventSourceRef={eventSourceRef}

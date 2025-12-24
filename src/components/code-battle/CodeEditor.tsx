@@ -6,6 +6,7 @@ import { Play } from 'lucide-react';
 import CodeMirror from '@uiw/react-codemirror';
 import { python } from '@codemirror/lang-python';
 import { go } from '@codemirror/lang-go';
+import { javascript } from '@codemirror/lang-javascript';
 import { EditorView } from '@codemirror/view';
 
 interface CodeEditorProps {
@@ -27,6 +28,9 @@ export default function CodeEditor({ code, setCode, language, onSubmit, submissi
         return [python()];
       case 'go':
         return [go()];
+      case 'javascript':
+      case 'js':
+        return [javascript()];
       default:
         return [];
     }

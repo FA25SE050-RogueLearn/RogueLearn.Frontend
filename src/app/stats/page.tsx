@@ -219,16 +219,21 @@ export default async function StatsPage({
     )
   }
 
-  const mostRecentMatch = data.matches[0]
-  const currentSummary = (mostRecentMatch.playerSummaries || []).find(s =>
+  const selectedMatchId = params.matchId as string | undefined
+
+  const displayedMatch = selectedMatchId
+    ? data.matches.find(m => m.matchId === selectedMatchId) || data.matches[0]
+    : data.matches[0]
+
+  const currentSummary = (displayedMatch.playerSummaries || []).find(s =>
     user?.id && s.userId && s.userId.toLowerCase() === user.id.toLowerCase()
-  ) || mostRecentMatch.playerSummaries?.[0]
+  ) || displayedMatch.playerSummaries?.[0]
   const topics = currentSummary?.topicBreakdown || []
   const weakTopics = topics.filter(t => t.correct < t.total)
-  const questionsCount = (mostRecentMatch.questions && mostRecentMatch.questions.length > 0)
-    ? mostRecentMatch.questions.length
+  const questionsCount = (displayedMatch.questions && displayedMatch.questions.length > 0)
+    ? displayedMatch.questions.length
     : topics.length
-  const xpTotal = mostRecentMatch.xpTotal ?? mostRecentMatch.xpRewards?.reduce((sum, r) => sum + (r.pointsAwarded || 0), 0) ?? 0
+  const xpTotal = displayedMatch.xpTotal ?? displayedMatch.xpRewards?.reduce((sum: number, r: any) => sum + (r.pointsAwarded || 0), 0) ?? 0
 
   const getDigits = (val?: string) => {
     if (!val) return ''
@@ -237,7 +242,7 @@ export default async function StatsPage({
   }
 
   const findPackQuestion = (q: QuestionResult) => {
-    const packQuestions = mostRecentMatch.questionPack?.questions || []
+    const packQuestions = displayedMatch.questionPack?.questions || []
     const byPrompt = packQuestions.find(pq => pq?.prompt && q.prompt && pq.prompt === q.prompt)
     if (byPrompt) return byPrompt
     const byId = packQuestions.find(pq => {
@@ -247,7 +252,7 @@ export default async function StatsPage({
     return byId
   }
 
-  const endLocal = new Date(mostRecentMatch.endUtc)
+  const endLocal = new Date(displayedMatch.endUtc)
   const lastUpdatedLabel = isNaN(endLocal.getTime()) ? 'Unknown' : endLocal.toLocaleString()
 
   return (
@@ -320,20 +325,22 @@ export default async function StatsPage({
                 <CardHeader className="relative z-10">
                   <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                     <div>
-                      <p className="text-xs uppercase tracking-[0.35em] text-[#f5c16c]/70">Latest match</p>
+                      <p className="text-xs uppercase tracking-[0.35em] text-[#f5c16c]/70">
+                        {selectedMatchId && selectedMatchId !== data.matches[0].matchId ? 'Selected Match' : 'Latest match'}
+                      </p>
                       <CardTitle className="mt-2 text-2xl text-white">
-                        Match {mostRecentMatch.matchId.slice(0, 6)}
+                        Match {displayedMatch.matchId.slice(0, 6)}
                       </CardTitle>
                     </div>
                     <Badge
                       className={cn(
                         'border px-4 py-2 text-xs font-semibold uppercase tracking-wide',
-                        mostRecentMatch.result === 'win'
+                        displayedMatch.result === 'win'
                           ? 'border-emerald-400/30 bg-emerald-400/10 text-emerald-300'
                           : 'border-red-400/30 bg-red-400/10 text-red-300'
                       )}
                     >
-                      {mostRecentMatch.result === 'win' ? 'Victory' : 'Defeat'}
+                      {displayedMatch.result === 'win' ? 'Victory' : 'Defeat'}
                     </Badge>
                   </div>
                 </CardHeader>
@@ -344,7 +351,7 @@ export default async function StatsPage({
                         <Users className="h-3.5 w-3.5" />
                         Players
                       </div>
-                      <div className="mt-3 text-2xl font-semibold text-white">{mostRecentMatch.totalPlayers}</div>
+                      <div className="mt-3 text-2xl font-semibold text-white">{displayedMatch.totalPlayers}</div>
                     </div>
                     <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
                       <div className="flex items-center gap-2 text-xs uppercase tracking-[0.3em] text-[#f5c16c]/70">
@@ -364,11 +371,11 @@ export default async function StatsPage({
                     </div>
                   </div>
 
-                  {mostRecentMatch.xpRewards && mostRecentMatch.xpRewards.length > 0 && (
+                  {displayedMatch.xpRewards && displayedMatch.xpRewards.length > 0 && (
                     <div className="rounded-2xl border border-emerald-400/20 bg-emerald-400/5 p-5">
                       <div className="text-xs font-semibold uppercase tracking-[0.35em] text-emerald-300">XP Earned</div>
                       <div className="mt-4 flex flex-wrap gap-2">
-                        {mostRecentMatch.xpRewards.map((r, idx) => (
+                        {displayedMatch.xpRewards.map((r, idx) => (
                           <div
                             key={`${r.skillId}-${idx}`}
                             className="rounded-full border border-white/10 bg-black/25 px-4 py-2 text-xs font-semibold text-white/80"
@@ -407,7 +414,7 @@ export default async function StatsPage({
                       </div>
                       <Button asChild className="w-full bg-[#f5c16c] text-[#1f120c] hover:bg-[#f5c16c]/90">
                         <Link
-                          href={`/review-quiz?matchId=${mostRecentMatch.matchId}&topics=${weakTopics.map(t => encodeURIComponent(t.topic)).join(',')}`}
+                          href={`/review-quiz?matchId=${displayedMatch.matchId}&topics=${weakTopics.map(t => encodeURIComponent(t.topic)).join(',')}`}
                         >
                           Practice Weak Topics
                         </Link>
@@ -422,7 +429,7 @@ export default async function StatsPage({
               </Card>
             </div>
 
-            {mostRecentMatch.playerSummaries && mostRecentMatch.playerSummaries.length > 0 && (
+            {displayedMatch.playerSummaries && displayedMatch.playerSummaries.length > 0 && (
               <Card className={cn(SECTION_CARD_CLASS, 'mt-6')}>
                 <div aria-hidden="true" className="absolute inset-0" style={CARD_TEXTURE} />
                 <CardHeader className="relative z-10">
@@ -432,7 +439,7 @@ export default async function StatsPage({
                   </div>
                 </CardHeader>
                 <CardContent className="relative z-10 space-y-4">
-                  {mostRecentMatch.playerSummaries.map((player) => {
+                  {displayedMatch.playerSummaries.map((player) => {
                     const accuracy = player.totalQuestions > 0
                       ? Math.round((player.correctAnswers / player.totalQuestions) * 100)
                       : 0
@@ -496,14 +503,14 @@ export default async function StatsPage({
                     </p>
                   </div>
                   {currentSummary && weakTopics.length > 0 && (
-                    <PracticeButton matchId={mostRecentMatch.matchId} topics={weakTopics.map(t => t.topic)} />
+                    <PracticeButton matchId={displayedMatch.matchId} topics={weakTopics.map(t => t.topic)} />
                   )}
                 </div>
               </CardHeader>
               <CardContent className="relative z-10">
-                {mostRecentMatch.questions && mostRecentMatch.questions.length > 0 ? (
+                {displayedMatch.questions && displayedMatch.questions.length > 0 ? (
                   <div className="grid gap-4">
-                    {mostRecentMatch.questions.map((q, i) => {
+                    {displayedMatch.questions.map((q, i) => {
                       const playerAnswer = q.playerAnswers?.find(pa => pa.playerId === currentSummary?.playerId)
                       const gotRight = playerAnswer?.correct
                       const packQ = findPackQuestion(q)
@@ -514,7 +521,7 @@ export default async function StatsPage({
 
                       return (
                         <div
-                          key={q.questionId || i}
+                          key={`${q.questionId || 'q'}-${i}`}
                           className={cn(
                             'rounded-3xl border p-6 transition-all duration-300',
                             gotRight
@@ -560,7 +567,7 @@ export default async function StatsPage({
               </CardContent>
             </Card>
 
-            {data.matches.length > 1 && (
+            {data.matches.length > 0 && (
               <Card className={cn(SECTION_CARD_CLASS, 'mt-6')}>
                 <div aria-hidden="true" className="absolute inset-0" style={CARD_TEXTURE} />
                 <CardHeader className="relative z-10">
@@ -568,28 +575,41 @@ export default async function StatsPage({
                 </CardHeader>
                 <CardContent className="relative z-10">
                   <div className="grid gap-3">
-                    {data.matches.slice(1).map((match) => {
+                    {data.matches.map((match) => {
                       const count = (match.questions && match.questions.length > 0)
                         ? match.questions.length
                         : ((match.playerSummaries && match.playerSummaries[0] && match.playerSummaries[0].topicBreakdown)
                           ? match.playerSummaries[0].topicBreakdown.length
                           : 0)
                       const end = new Date(match.endUtc)
+                      const isSelected = match.matchId === displayedMatch.matchId
+
                       return (
-                        <div
+                        <Link
                           key={match.matchId}
-                          className="flex flex-col gap-3 rounded-3xl border border-white/10 bg-black/20 p-5 transition-all duration-300 hover:-translate-y-0.5 hover:border-[#d23187]/40 hover:bg-black/30 sm:flex-row sm:items-center sm:justify-between"
+                          href={`/stats?matchId=${match.matchId}`}
+                          className={cn(
+                            "flex flex-col gap-3 rounded-3xl border p-5 transition-all duration-300 sm:flex-row sm:items-center sm:justify-between",
+                            isSelected
+                              ? "border-[#f5c16c]/40 bg-[#f5c16c]/10"
+                              : "border-white/10 bg-black/20 hover:-translate-y-0.5 hover:border-[#d23187]/40 hover:bg-black/30"
+                          )}
                         >
                           <div className="space-y-1">
-                            <p className="text-base font-semibold text-white">
-                              {match.result === 'win' ? 'Victory' : 'Defeat'}
-                            </p>
+                            <div className="flex items-center gap-2">
+                              <p className={cn("text-base font-semibold", isSelected ? "text-[#f5c16c]" : "text-white")}>
+                                {match.result === 'win' ? 'Victory' : 'Defeat'}
+                              </p>
+                              {isSelected && (
+                                <Badge className="bg-[#f5c16c] text-[#1f120c] hover:bg-[#f5c16c]">Current</Badge>
+                              )}
+                            </div>
                             <p className="text-sm text-white/60">
                               {isNaN(end.getTime()) ? 'Unknown date' : end.toLocaleString()} · {match.totalPlayers} players
                             </p>
                           </div>
                           <div className="text-sm font-semibold text-white/80">{count} questions</div>
-                        </div>
+                        </Link>
                       )
                     })}
                   </div>

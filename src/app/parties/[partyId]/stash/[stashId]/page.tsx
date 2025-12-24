@@ -382,6 +382,7 @@ export default function PartyStashDetailPage() {
           <div className="h-[75vh] overflow-y-auto p-6">
           {item && (
             <BlockNoteStashEditor
+              key={cursorName}
               initialBlocks={initialBlocks}
               editable={canEdit}
               provider={provider}

@@ -1,7 +1,7 @@
 "use client";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { Unity, useUnityContext } from "react-unity-webgl";
-import { unityPaths, unityRelayConfig, userApiBase } from "@/config/unity";
+import { unityPaths, unityRelayConfig, userApiBase, unityBuildVersion } from "@/config/unity";
 import { useRouter } from "next/navigation";
 
 type UnityPlayerProps = {
@@ -33,15 +33,30 @@ export const UnityPlayer: React.FC<UnityPlayerProps> = ({
   const unityInstanceRef = useRef<boolean>(false);
   const baseConfiguredRef = useRef<boolean>(false);
 
-  const { unityProvider, sendMessage, isLoaded, loadingProgression, addEventListener, removeEventListener } = useUnityContext({
-    loaderUrl: unityPaths.loaderUrl!,
-    dataUrl: unityPaths.dataUrl!,
-    frameworkUrl: unityPaths.frameworkUrl!,
-    codeUrl: unityPaths.codeUrl!,
+  // Use a stable build version for cache busting instead of Date.now().
+  // Using Date.now() on every mount forces a full re-download and can flood the
+  // browser's internal cache/IndexedDB, leading to "Maximum call stack size exceeded"
+  // errors in the Unity loader.
+  const appendQuery = (url: string | null | undefined) => url ? `${url}${url.includes('?') ? '&' : '?'}v=${unityBuildVersion}` : url;
+
+  const { unityProvider, sendMessage, isLoaded, loadingProgression, addEventListener, removeEventListener, unload } = useUnityContext({
+    loaderUrl: appendQuery(unityPaths.loaderUrl)!,
+    dataUrl: appendQuery(unityPaths.dataUrl)!,
+    frameworkUrl: appendQuery(unityPaths.frameworkUrl)!,
+    codeUrl: appendQuery(unityPaths.codeUrl)!,
     companyName: "RogueLearn",
     productName: "BossFight2D",
-    productVersion: "1.0",
+    productVersion: unityBuildVersion,
   });
+
+  // Cleanup Unity instance on unmount
+  useEffect(() => {
+    return () => {
+      if (unload) {
+        unload().catch((e) => console.warn("Unity unload failed:", e));
+      }
+    };
+  }, [unload]);
 
   const [joinCode, setJoinCode] = useState<string>(initialJoinCode ?? "");
   const [error, setError] = useState<string | null>(null);

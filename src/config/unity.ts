@@ -30,6 +30,11 @@ export const unityRelayConfig = {
   joinMethodName: process.env.NEXT_PUBLIC_UNITY_RELAY_JOIN_METHOD ?? "JoinWithCode",
 };
 
+// Increment this version when you update the Unity build in public/unity/Build
+// This ensures browsers (and the Unity loader) pick up the new files while avoiding
+// cache flooding issues caused by random/timestamp-based cache busting on every reload.
+export const unityBuildVersion = "1.0.1";
+
 export const getDefaultUnityConfigJson = (): string => {
   // Default local path where you can place the Unity WebGL build.
   // For example, copy your WebGL build into public/UnityBuild and set this to "/UnityBuild/Build.json".

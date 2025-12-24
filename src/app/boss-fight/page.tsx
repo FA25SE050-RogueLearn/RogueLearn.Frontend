@@ -3,10 +3,11 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/utils/supabase/client'
-import { Swords, Flame, Trophy, Settings, Play, Copy, Users, ArrowLeft } from 'lucide-react'
+import { Swords, Flame, Trophy, Settings, Play, Copy, Users, ArrowLeft, HelpCircle, ChevronDown, ChevronUp, Keyboard } from 'lucide-react'
 import UnityPlayer from '@/components/unity/UnityPlayer'
 import partiesApi from '@/api/partiesApi'
 import { PartyDto, PartyMemberDto } from '@/types/parties'
+import { toast } from 'sonner'
 
 interface Subject {
   id: string
@@ -39,6 +40,7 @@ export default function BossFightSetupPage() {
   const [selectedPartyId, setSelectedPartyId] = useState<string | null>(null)
   const [selectedInvitees, setSelectedInvitees] = useState<Record<string, boolean>>({})
   const [sendingPartyInvite, setSendingPartyInvite] = useState(false)
+  const [showTutorial, setShowTutorial] = useState(false)
 
   useEffect(() => {
     const fetchUserAndSubjects = async () => {
@@ -110,7 +112,10 @@ export default function BossFightSetupPage() {
             if (active) {
               setPartyMembers({ [firstId]: membersRes.data ?? [] })
               const defaults: Record<string, boolean> = {}
-                ; (membersRes.data ?? []).forEach(m => { defaults[m.authUserId] = true })
+                // Filter out self from default selection
+                ; (membersRes.data ?? [])
+                  .filter(m => m.authUserId !== userId)
+                  .forEach(m => { defaults[m.authUserId] = true })
               setSelectedInvitees(defaults)
             }
           }
@@ -181,12 +186,15 @@ export default function BossFightSetupPage() {
 
   const sendPartyGameInvite = async () => {
     if (!selectedPartyId || !inviteUrl || !sessionId || !joinCode) {
-      alert('Missing join code or party')
+      toast.error('Missing join code or party')
       return
     }
-    const targets = Object.entries(selectedInvitees).filter(([, v]) => v).map(([id]) => ({ userId: id }))
+    const targets = Object.entries(selectedInvitees)
+      .filter(([id, v]) => v && id !== userId)
+      .map(([id]) => ({ userId: id }))
+
     if (targets.length === 0) {
-      alert('Select at least one member')
+      toast.error('Select at least one member (other than yourself)')
       return
     }
     setSendingPartyInvite(true)
@@ -198,10 +206,10 @@ export default function BossFightSetupPage() {
         joinLink: inviteUrl,
         gameSessionId: sessionId,
       })
-      alert('Party game invite sent')
+      toast.success('Party game invite sent')
     } catch (err) {
       console.error(err)
-      alert('Failed to send invite')
+      toast.error('Failed to send invite')
     } finally {
       setSendingPartyInvite(false)
     }
@@ -209,7 +217,7 @@ export default function BossFightSetupPage() {
 
   const handlePrepareForBattle = async () => {
     if (selectedSubjects.length === 0) {
-      alert('Please select a subject')
+      toast.error('Please select a subject')
       return
     }
 
@@ -284,7 +292,7 @@ export default function BossFightSetupPage() {
       setMode('hosting')
     } catch (error) {
       console.error('Failed to prepare boss fight:', error)
-      alert('Failed to prepare boss fight. Please try again.')
+      toast.error('Failed to prepare boss fight. Please try again.')
     } finally {
       setLoading(false)
     }
@@ -299,12 +307,12 @@ export default function BossFightSetupPage() {
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text)
-    alert('Copied to clipboard!')
+    toast.success('Copied to clipboard!')
   }
 
   const handleJoinGame = async () => {
     if (!joinCodeInput || joinCodeInput.length !== 6) {
-      alert('Please enter a valid 6-character join code')
+      toast.error('Please enter a valid 6-character join code')
       return
     }
 
@@ -413,6 +421,106 @@ export default function BossFightSetupPage() {
                 </div>
               </div>
             </button>
+          </div>
+
+          <div style={{ marginTop: 48, textAlign: 'center' }}>
+            <button
+              onClick={() => setShowTutorial(!showTutorial)}
+              style={{
+                background: 'transparent',
+                border: 'none',
+                color: '#f5c16c',
+                fontSize: 16,
+                fontWeight: 600,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8,
+                margin: '0 auto',
+                opacity: 0.8,
+                transition: 'opacity 0.2s'
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.opacity = '1'}
+              onMouseLeave={(e) => e.currentTarget.style.opacity = '0.8'}
+            >
+              <HelpCircle size={20} />
+              How to Play
+              {showTutorial ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+            </button>
+
+            {showTutorial && (
+              <div style={{
+                marginTop: 24,
+                background: 'rgba(255, 255, 255, 0.05)',
+                borderRadius: 16,
+                padding: 32,
+                textAlign: 'left',
+                border: '1px solid rgba(255, 255, 255, 0.1)',
+                animation: 'fadeIn 0.3s ease-out'
+              }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 32, marginBottom: 32 }}>
+                  <div>
+                    <h3 style={{ color: '#d23187', fontSize: 20, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8, fontWeight: 800 }}>
+                      <Trophy size={20} /> Host a Game
+                    </h3>
+                    <ol style={{ color: 'rgba(255, 255, 255, 0.8)', paddingLeft: 20, lineHeight: 1.6 }}>
+                      <li>Click "Host Game" to configure your session.</li>
+                      <li>Select subjects and difficulty levels.</li>
+                      <li>Invite friends from your party or share the join code.</li>
+                      <li>Start the game once everyone is ready!</li>
+                    </ol>
+                  </div>
+                  <div>
+                    <h3 style={{ color: '#f5c16c', fontSize: 20, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8, fontWeight: 800 }}>
+                      <Users size={20} /> Join a Game
+                    </h3>
+                    <ol style={{ color: 'rgba(255, 255, 255, 0.8)', paddingLeft: 20, lineHeight: 1.6 }}>
+                      <li>Click "Join Game" and enter the 6-character code.</li>
+                      <li>Wait in the lobby for the host to start.</li>
+                      <li>Compete to answer questions and defeat the boss!</li>
+                    </ol>
+                  </div>
+                </div>
+
+                <div style={{ borderTop: '1px solid rgba(255, 255, 255, 0.1)', paddingTop: 24 }}>
+                  <h3 style={{ color: '#4ade80', fontSize: 20, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8, fontWeight: 800 }}>
+                    <Keyboard size={20} /> Game Controls
+                  </h3>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24 }}>
+                    <div>
+                      <h4 style={{ color: 'white', marginBottom: 8, fontSize: 16, fontWeight: 800 }}>Movement & Combat</h4>
+                      <ul style={{ color: 'rgba(255, 255, 255, 0.8)', paddingLeft: 20, lineHeight: 1.6 }}>
+                        <li><strong>WASD</strong>: Move your character</li>
+                        <li><strong>Left Shift</strong>: Dash to dodge attacks</li>
+                        <li><strong>Left Click</strong>: Attack the boss</li>
+                      </ul>
+
+                      <h4 style={{ color: 'white', marginTop: 16, marginBottom: 8, fontSize: 16, fontWeight: 800 }}>Preparation</h4>
+                      <ul style={{ color: 'rgba(255, 255, 255, 0.8)', paddingLeft: 20, lineHeight: 1.6 }}>
+                        <li><strong>Ready Station</strong>: Go to the glowing area and press <strong>R</strong> to ready up.</li>
+                        <li><strong>Re-Ready</strong>: If you answer wrong, you must return to the station and press <strong>R</strong>.</li>
+                      </ul>
+                    </div>
+                    <div>
+                      <h4 style={{ color: 'white', marginBottom: 8, fontSize: 16, fontWeight: 800 }}>Mechanics</h4>
+                      <ul style={{ color: 'rgba(255, 255, 255, 0.8)', paddingLeft: 20, lineHeight: 1.6 }}>
+                        <li><strong>Answer Questions Correct</strong>: Gain attack charges and deal damage to the boss.</li>
+                        <li><strong>Answer Question Wrong</strong>: The boss will attack you if you answer wrong.</li>
+                        <li><strong>Attack Charges</strong>: Required to deal damage</li>
+                        <li><strong>Teamwork</strong>: Coordinate attacks for max damage!</li>
+                      </ul>
+
+                      <h4 style={{ color: '#f5c16c', marginTop: 16, marginBottom: 8, fontSize: 16, fontWeight: 800 }}>Power Play</h4>
+                      <ul style={{ color: 'rgba(255, 255, 255, 0.8)', paddingLeft: 20, lineHeight: 1.6 }}>
+                        <li>Answer <strong>3 questions</strong> correctly in a row.</li>
+                        <li>Triggers <strong>Double Damage</strong> for all players!</li>
+                        <li>Attacks are allowed freely during Power Play.</li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -658,12 +766,14 @@ export default function BossFightSetupPage() {
                   {(partyMembers[selectedPartyId ?? ''] ?? []).length === 0 && (
                     <div style={{ color: '#888', fontSize: 12 }}>No members to invite.</div>
                   )}
-                  {(partyMembers[selectedPartyId ?? ''] ?? []).map(m => (
-                    <label key={m.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '4px 6px', color: 'white', fontSize: 13 }}>
-                      <span>{m.username ?? m.email ?? 'Member'}</span>
-                      <input type="checkbox" checked={!!selectedInvitees[m.authUserId]} onChange={() => toggleInvitee(m.authUserId)} />
-                    </label>
-                  ))}
+                  {(partyMembers[selectedPartyId ?? ''] ?? [])
+                    .filter(m => m.authUserId !== userId)
+                    .map(m => (
+                      <label key={m.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '4px 6px', color: 'white', fontSize: 13 }}>
+                        <span>{m.username ?? m.email ?? 'Member'}</span>
+                        <input type="checkbox" checked={!!selectedInvitees[m.authUserId]} onChange={() => toggleInvitee(m.authUserId)} />
+                      </label>
+                    ))}
                 </div>
               </div>
               <div style={{ marginTop: 12, textAlign: 'right' }}>
@@ -903,7 +1013,8 @@ export default function BossFightSetupPage() {
                   min={5}
                   max={100}
                   value={totalQuestions}
-                  onChange={(e) => setTotalQuestions(Math.max(5, Math.min(100, parseInt(e.target.value) || 50)))}
+                  onChange={(e) => setTotalQuestions(parseInt(e.target.value) || 0)}
+                  onBlur={(e) => setTotalQuestions(Math.max(5, Math.min(100, parseInt(e.target.value) || 50)))}
                   style={{
                     flex: 1,
                     padding: 12,
