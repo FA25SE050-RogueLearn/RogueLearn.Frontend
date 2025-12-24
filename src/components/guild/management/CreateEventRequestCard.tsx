@@ -189,30 +189,30 @@ export function CreateEventRequestCard({ guildId, onRequestCreated }: CreateEven
     const now = new Date();
     const minStartTime = new Date(now.getTime() + 60 * 1000);
     if (startDate < minStartTime) {
-      toast.error("Start date must be at least 1 minute from now");
+      toast.info("Start date must be at least 1 minute from now");
       return;
     }
 
     const minEndTime = new Date(startDate.getTime() + 1 * 60 * 1000);
     if (endDate < minEndTime) {
-      toast.error("End date must be at least 1 minute after start date");
+      toast.info("End date must be at least 1 minute after start date");
       return;
     }
 
     if (startDate >= endDate) {
-      toast.error("End date must be after start date");
+      toast.info("End date must be after start date");
       return;
     }
     
     // Validate max guilds (3-100)
     if (maxGuilds < 3 || maxGuilds > 100) {
-      toast.error("Max guilds must be between 3 and 100");
+      toast.info("Max guilds must be between 3 and 100");
       return;
     }
     
     // Validate max players per guild (1-10)
     if (maxPlayersPerGuild < 1 || maxPlayersPerGuild > 10) {
-      toast.error("Max players per guild must be between 1 and 10");
+      toast.info("Max players per guild must be between 1 and 10");
       return;
     }
     
