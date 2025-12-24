@@ -6,17 +6,11 @@ export interface SpecializationSubjectEntry {
   subjectId: string;
   subjectName?: string;
   subjectCode?: string;
-  // Removed placeholderSubjectCode - no longer used
-  semester: number;
-  isRequired?: boolean;
 }
 
 export interface AddSpecializationRequest {
   classId: string;
   subjectId: string;
-  semester: number;
-  isRequired: boolean;
-  // Removed placeholderSubjectCode
 }
 
 export interface AddSubjectToProgramRequest {

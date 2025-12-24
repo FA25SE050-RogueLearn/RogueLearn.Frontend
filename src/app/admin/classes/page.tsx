@@ -49,7 +49,6 @@ export default function ClassesManagementPage() {
     const [specSubjects, setSpecSubjects] = useState<SpecializationSubjectEntry[]>([]);
     const [specLoading, setSpecLoading] = useState(false);
     const [addSpecId, setAddSpecId] = useState("");
-    const [addSemester, setAddSemester] = useState(1);
     const [subjectSearch, setSubjectSearch] = useState("");
     const [searchingSubjects, setSearchingSubjects] = useState(false);
     const [subjectMap, setSubjectMap] = useState<Record<string, Subject>>({});
@@ -167,8 +166,6 @@ export default function ClassesManagementPage() {
             await adminManagementApi.addClassSpecialization({
                 classId: selectedClass.id,
                 subjectId: addSpecId,
-                semester: addSemester,
-                isRequired: true
             });
             toast.success("Subject added to curriculum");
             const res = await adminManagementApi.getClassSpecialization(selectedClass.id);
@@ -489,17 +486,6 @@ export default function ClassesManagementPage() {
                                     </Select>
                                 </div>
                             </div>
-                            <div className="w-32 space-y-2">
-                                <Label className="text-white/70">Semester</Label>
-                                <Input
-                                    type="number"
-                                    value={addSemester}
-                                    onChange={e => setAddSemester(parseInt(e.target.value))}
-                                    className="border-[#f5c16c]/30 bg-[#0a0506]"
-                                    min={1}
-                                    max={10}
-                                />
-                            </div>
                             <Button onClick={handleAddSpec} disabled={!addSpecId} className="bg-[#f5c16c] hover:bg-[#f5c16c]/90 text-white">
                                 <Plus className="w-4 h-4" />
                             </Button>
@@ -521,11 +507,16 @@ export default function ClassesManagementPage() {
                                     </div>
                                     {(Array.isArray(specSubjects) ? specSubjects : [])
                                         .slice()
-                                        .sort((a, b) => ((a.semester ?? 0) - (b.semester ?? 0)))
+                                        .sort((a, b) => {
+                                            const semesterA = subjectMap[a.subjectId]?.semester ?? 0;
+                                            const semesterB = subjectMap[b.subjectId]?.semester ?? 0;
+                                            return semesterA - semesterB;
+                                        })
                                         .map(sub => {
                                             const resolvedSubject = subjectMap[sub.subjectId];
                                             const code = sub.subjectCode || resolvedSubject?.subjectCode || 'Loading...';
                                             const name = sub.subjectName || resolvedSubject?.subjectName || '';
+                                            const semester = resolvedSubject?.semester ?? 'N/A';
 
                                             return (
                                                 <div key={sub.id} className="grid grid-cols-[1fr_100px_48px] items-center bg-[#0a0506] p-3 rounded-lg border border-[#f5c16c]/20">
@@ -533,7 +524,7 @@ export default function ClassesManagementPage() {
                                                         <span className="text-[#f5c16c] font-mono text-xs font-bold shrink-0">{code}</span>
                                                         <span className="text-sm text-white truncate" title={name}>{name}</span>
                                                     </div>
-                                                    <div className="text-sm text-white/70 text-right">{sub.semester}</div>
+                                                    <div className="text-sm text-white/70 text-right">{semester}</div>
                                                     <div className="flex justify-end">
                                                         <Button size="icon" variant="ghost" className="h-7 w-7 text-[#e07a5f] hover:bg-[#e07a5f]/10" onClick={() => handleRemoveSpec(sub.id)}>
                                                             <Trash2 className="w-3.5 h-3.5" />

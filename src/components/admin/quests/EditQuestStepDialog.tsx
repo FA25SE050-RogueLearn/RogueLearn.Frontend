@@ -1,4 +1,3 @@
-// roguelearn-web/src/components/admin/quests/EditQuestStepDialog.tsx
 "use client";
 
 import { useState, useEffect } from "react";
@@ -34,12 +33,9 @@ import {
   ChevronDown,
   ChevronUp,
   GripVertical,
-  Code,
-  Cpu
 } from "lucide-react";
 import questApi, {
   AdminQuestStepDto,
-  QuestStepActivityPayload,
   QuestionPayload,
 } from "@/api/questApi";
 import adminContentApi from "@/api/adminContentApi";
@@ -60,7 +56,7 @@ interface EditQuestStepDialogProps {
   onSaved: () => void;
 }
 
-type ActivityType = "Reading" | "KnowledgeCheck" | "Quiz" | "Coding";
+type ActivityType = "Reading" | "KnowledgeCheck" | "Quiz";
 
 interface ActivityFormData {
   activityId: string;
@@ -72,12 +68,6 @@ interface ActivityFormData {
     articleTitle?: string;
     summary?: string;
     questions?: QuestionPayload[];
-    // Coding specific fields
-    topic?: string;
-    language?: string;
-    description?: string;
-    starterCode?: string;
-    validationCriteria?: string;
   };
   isExpanded: boolean;
 }
@@ -145,12 +135,6 @@ export function EditQuestStepDialog({
                     answer: get(q, 'answer') || "",
                     explanation: get(q, 'explanation') || "",
                   })),
-                  // Map Coding fields
-                  topic: get(payload, 'topic') || "",
-                  language: get(payload, 'language') || "",
-                  description: get(payload, 'description') || "",
-                  starterCode: get(payload, 'starterCode') || "",
-                  validationCriteria: get(payload, 'validationCriteria') || "",
                 },
                 isExpanded: idx === 0,
               };
@@ -202,16 +186,11 @@ export function EditQuestStepDialog({
       type,
       skillId: skills.length > 0 ? skills[0].skillId : "",
       payload: {
-        experiencePoints: type === "Reading" ? 15 : type === "KnowledgeCheck" ? 30 : type === "Coding" ? 60 : 50,
+        experiencePoints: type === "Reading" ? 15 : type === "KnowledgeCheck" ? 30 : 50,
         url: "",
         articleTitle: "",
         summary: "",
         questions: (type === "KnowledgeCheck" || type === "Quiz") ? [createEmptyQuestion()] : [],
-        topic: type === "Coding" ? "New Coding Challenge" : "",
-        language: type === "Coding" ? "csharp" : "",
-        description: "",
-        starterCode: "",
-        validationCriteria: ""
       },
       isExpanded: true,
     };
@@ -326,12 +305,6 @@ export function EditQuestStepDialog({
           }
         });
       }
-      if (a.type === "Coding") {
-        if (!a.payload.topic) validationErrors.push(`Activity ${i + 1}: Topic is required`);
-        if (!a.payload.language) validationErrors.push(`Activity ${i + 1}: Language is required`);
-        if (!a.payload.description) validationErrors.push(`Activity ${i + 1}: Description is required`);
-        if (!a.payload.starterCode) validationErrors.push(`Activity ${i + 1}: Starter code is required`);
-      }
     });
 
     if (validationErrors.length > 0) {
@@ -352,21 +325,6 @@ export function EditQuestStepDialog({
               url: a.payload.url || "",
               articleTitle: a.payload.articleTitle || "",
               summary: a.payload.summary || "",
-            }
-          }
-        }
-        if (a.type === 'Coding') {
-          return {
-            activityId: a.activityId,
-            type: a.type,
-            skillId: a.skillId,
-            payload: {
-              experiencePoints: Number(a.payload.experiencePoints),
-              topic: a.payload.topic,
-              language: a.payload.language,
-              description: a.payload.description,
-              starterCode: a.payload.starterCode,
-              validationCriteria: a.payload.validationCriteria
             }
           }
         }
@@ -407,8 +365,6 @@ export function EditQuestStepDialog({
         return <CheckCircle className="w-4 h-4 text-amber-400" />;
       case "Quiz":
         return <BrainCircuit className="w-4 h-4 text-purple-400" />;
-      case "Coding":
-        return <Code className="w-4 h-4 text-green-400" />;
     }
   };
 
@@ -420,8 +376,6 @@ export function EditQuestStepDialog({
         return "border-amber-500/30 bg-amber-500/5";
       case "Quiz":
         return "border-purple-500/30 bg-purple-500/5";
-      case "Coding":
-        return "border-green-500/30 bg-green-500/5";
     }
   };
 
@@ -472,14 +426,6 @@ export function EditQuestStepDialog({
                     className="border-amber-500/30 text-amber-400 hover:bg-amber-500/10"
                   >
                     <CheckCircle className="w-3 h-3 mr-1" /> Knowledge Check
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => addActivity("Coding")}
-                    className="border-green-500/30 text-green-400 hover:bg-green-500/10"
-                  >
-                    <Code className="w-3 h-3 mr-1" /> Coding
                   </Button>
                   <Button
                     size="sm"
@@ -593,13 +539,6 @@ export function EditQuestStepDialog({
                           />
                         )}
 
-                        {activity.type === "Coding" && (
-                          <CodingActivityForm
-                            payload={activity.payload}
-                            onUpdate={(updates) => updatePayload(activityIndex, updates)}
-                          />
-                        )}
-
                         {(activity.type === "KnowledgeCheck" ||
                           activity.type === "Quiz") && (
                             <QuestionsForm
@@ -686,77 +625,6 @@ function ReadingActivityForm({
           onChange={(e) => onUpdate({ summary: e.target.value })}
           placeholder="Brief description of what the article covers..."
           className="border-[#f5c16c]/30 bg-[#0a0506] min-h-[80px] resize-none"
-        />
-      </div>
-    </div>
-  );
-}
-
-function CodingActivityForm({
-  payload,
-  onUpdate,
-}: {
-  payload: ActivityFormData["payload"];
-  onUpdate: (updates: Partial<ActivityFormData["payload"]>) => void;
-}) {
-  return (
-    <div className="space-y-4">
-      <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label className="text-white/70">Topic *</Label>
-          <Input
-            value={payload.topic || ""}
-            onChange={(e) => onUpdate({ topic: e.target.value })}
-            placeholder="e.g., Recursion"
-            className="border-[#f5c16c]/30 bg-[#0a0506]"
-          />
-        </div>
-        <div className="space-y-2">
-          <Label className="text-white/70">Language *</Label>
-          <Select
-            value={payload.language || "csharp"}
-            onValueChange={(v) => onUpdate({ language: v })}
-          >
-            <SelectTrigger className="border-[#f5c16c]/30 bg-[#0a0506]">
-              <SelectValue placeholder="Select language" />
-            </SelectTrigger>
-            <SelectContent className="bg-[#1a1410] border-[#f5c16c]/30">
-              <SelectItem value="csharp">C#</SelectItem>
-              <SelectItem value="java">Java</SelectItem>
-              <SelectItem value="python">Python</SelectItem>
-              <SelectItem value="javascript">JavaScript</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
-
-      <div className="space-y-2">
-        <Label className="text-white/70">Description *</Label>
-        <Textarea
-          value={payload.description || ""}
-          onChange={(e) => onUpdate({ description: e.target.value })}
-          placeholder="Detailed instructions for the coding task..."
-          className="border-[#f5c16c]/30 bg-[#0a0506] min-h-[100px] resize-y"
-        />
-      </div>
-
-      <div className="space-y-2">
-        <Label className="text-white/70">Starter Code *</Label>
-        <Textarea
-          value={payload.starterCode || ""}
-          onChange={(e) => onUpdate({ starterCode: e.target.value })}
-          placeholder="// Initial code provided to the user..."
-          className="border-[#f5c16c]/30 bg-[#0a0506] min-h-[150px] font-mono text-xs"
-        />
-      </div>
-
-      <div className="space-y-2">
-        <Label className="text-white/70">Validation Criteria (Internal) *</Label>
-        <Textarea
-          value={payload.validationCriteria || ""}
-          onChange={(e) => onUpdate({ validationCriteria: e.target.value })}
-          placeholder="Instructions for the AI grader on how to evaluate the solution..."
-          className="border-[#f5c16c]/30 bg-[#0a0506] min-h-[80px]"
         />
       </div>
     </div>
